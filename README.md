@@ -1,1 +1,1 @@
-# OTP
+# OTP, written in Rust.

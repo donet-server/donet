@@ -1,5 +1,0 @@
-cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
-set(PROJECT_NAME otp)
-project(${PROJECT_NAME})
-
-set(CMAKE_CXX_STANDARD 17) # Following Google style docs
