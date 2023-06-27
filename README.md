@@ -1,8 +1,11 @@
-# Disney's OTP server, written in Rust.
+# PandaNet
 
 ![](https://img.shields.io/discord/1066973060357443644?color=blue&label=Discord&logo=discord&logoColor=white)
 ![](https://img.shields.io/github/license/Max-Rodriguez/otp)
 ![](https://img.shields.io/github/last-commit/Max-Rodriguez/otp)
+
+This server software project implements the Distributed Class system and protocol in Panda3D's distributed module for networking,
+which was originally designed to interact with a server technology, the OTP server, designed by Disney and used in-house from 2001 to 2013.
 
 Resources for more info on Disney's OTP server (Sources listed in chronological order):
 
