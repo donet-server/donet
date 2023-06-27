@@ -7,6 +7,8 @@
 This server software project implements the Distributed Class system and protocol in Panda3D's distributed module for networking,
 which was originally designed to interact with a server technology, the OTP server, designed by Disney and used in-house from 2001 to 2013.
 
+This open source software project will always aim to stay compatible with the networking module of the Panda3D engine.
+
 Resources for more info on Disney's OTP server (Sources listed in chronological order):
 
 - [October 2003: Building a MMOG for the Million - Disney's Toontown Online](https://dl.acm.org/doi/10.1145/950566.950589)
