@@ -1,11 +1,11 @@
 [package]
-name = "otp"
-version = "0.1.0"
+name = "pandanet"
+version = "0.0.0"
 edition = "2021"
 license = "GPL-2.0"
 authors = ["Max Rodriguez <max@vulkray.com>"]
-homepage = "https://github.com/Max-Rodriguez/otp/"
-repository = "https://github.com/Max-Rodriguez/otp/"
+homepage = "https://github.com/Max-Rodriguez/PandaNet/"
+repository = "https://github.com/Max-Rodriguez/PandaNet/"
 keywords = ["otp", "panda", "networking", "server", "mmo"]
 readme = "README.md"
 publish = false

@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "otp"
-version = "0.1.0"
+name = "pandanet"
+version = "0.0.0"
