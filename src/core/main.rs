@@ -17,6 +17,9 @@
 
 fn main() {
 	let args: Vec<String> = std::env::args().collect();
-	let _option: &String = &args[1];
+
+	if args.len() > 1 {
+		let _option: &String = &args[1];	
+	}
     println!("Hello, world!");
 }
