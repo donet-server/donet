@@ -18,11 +18,53 @@
 #[path = "types.rs"]
 mod type_aliases;
 
-#[path = "message_types.rs"]
-mod messages;
+// Detect system endianness (byte order)
+mod endianness {
+    #[cfg(target_endian = "big")]
+    pub fn swap_le_16(v: u16) -> u16 {
+        return (v & 0x00ff) << 8 |
+               (v & 0xff00) >> 8;
+    }
+
+    #[cfg(target_endian = "big")]
+    pub fn swap_le_32(v: u32) -> u32 {
+        return (v & 0x000000ff) << 24 |
+               (v & 0x0000ff00) <<  8 |
+               (v & 0x00ff0000) >>  8 |
+               (v & 0xff000000) >> 24;
+    }
+
+    #[cfg(target_endian = "big")]
+    pub fn swap_le_64(v: u64) -> u64 {
+        return (v & 0x00000000000000ff) << 56 |
+               (v & 0x000000000000ff00) << 40 |
+               (v & 0x0000000000ff0000) << 24 |
+               (v & 0x00000000ff000000) <<  8 |
+               (v & 0x000000ff00000000) >>  8 |
+               (v & 0x0000ff0000000000) >> 24 |
+               (v & 0x00ff000000000000) >> 40 |
+               (v & 0xff00000000000000) >> 56;
+    }
+
+    #[cfg(target_endian = "little")]
+    pub fn swap_le_16(v: u16) -> u16 {
+        return v; // no need to swap bytes
+    }
+
+    #[cfg(target_endian = "little")]
+    pub fn swap_le_32(v: u32) -> u32 {
+        return v;
+    }
+
+    #[cfg(target_endian = "little")]
+    pub fn swap_le_64(v: u64) -> u64 {
+        return v;
+    }
+}
 
 #[allow(dead_code)] // FIXME: Remove once project matures
 mod datagram {
+    use crate::datagram::endianness;
     use std::vec::Vec;
     use std::result::Result; // not to be confused with std::io::Result
 
@@ -58,9 +100,18 @@ mod datagram {
             return Ok(());
         }
 
-        // Adds an 8-bit integer to the datagram that is guaranteed
-        // to be one of the values 0x00 (false) or 0x01 (true).
-        fn add_bool(&mut self, v: bool) -> DgResult {
+        fn add_multiple_bytes(&mut self, bytes: DgSize, ) -> DgResult {
+            let res: DgResult = self.check_add_length(bytes);
+            if res.is_err() {
+                return res;
+            }
+
+            return Ok(());
+        }
+
+        // Adds an unsigned 8-bit integer to the datagram that is
+        // guaranteed to be one of the values 0x00 (false) or 0x01 (true).
+        pub fn add_bool(&mut self, v: bool) -> DgResult {
             let mut res: DgResult = self.check_add_length(1);
             if res.is_err() {
                 return res;
@@ -73,12 +124,22 @@ mod datagram {
             return res;
         }
 
-        fn add_u8(&mut self, v: u8) -> DgResult {
+        // Adds an unsigned 8-bit integer value to the datagram.
+        pub fn add_u8(&mut self, v: u8) -> DgResult {
             let res: DgResult = self.check_add_length(1);
             if res.is_err() {
                 return res;
             }
             self.buffer.push(v);
+            return Ok(());
+        }
+
+        pub fn add_u16(&mut self, v: u16) -> DgResult {
+            let res: DgResult = self.check_add_length(2);
+            if res.is_err() {
+                return res;
+            }
+            let x: u16 = endianness::swap_le_16(v);
             return Ok(());
         }
     }
