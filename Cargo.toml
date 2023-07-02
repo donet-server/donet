@@ -1,12 +1,12 @@
 [package]
-name = "pandanet"
+name = "donet"
 version = "0.0.0"
 edition = "2021"
 license = "GPL-2.0"
 authors = ["Max Rodriguez <max@vulkray.com>"]
-homepage = "https://github.com/Max-Rodriguez/PandaNet/"
-repository = "https://github.com/Max-Rodriguez/PandaNet/"
-keywords = ["pandanet", "networking", "panda", "server", "otp", "mmo"]
+homepage = "https://github.com/Max-Rodriguez/Donet/"
+repository = "https://github.com/Max-Rodriguez/Donet/"
+keywords = ["donet", "dc", "networking", "panda", "server", "otp", "mmo"]
 readme = "README.md"
 publish = false
 

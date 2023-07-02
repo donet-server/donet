@@ -1,4 +1,6 @@
-# PandaNet
+# Donet
+
+**D**istributed **O**bject **Net**working server
 
 ![](https://img.shields.io/discord/1066973060357443644?color=blue&label=Discord&logo=discord&logoColor=white)
 ![](https://img.shields.io/github/license/Max-Rodriguez/otp)

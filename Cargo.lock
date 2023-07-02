@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "pandanet"
+name = "donet"
 version = "0.0.0"
