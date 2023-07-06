@@ -134,12 +134,47 @@ mod datagram {
             return Ok(());
         }
 
-        pub fn add_u16(&mut self, v: u16) -> DgResult {
+        pub fn add_u16(&mut self, mut v: u16) -> DgResult {
             let res: DgResult = self.check_add_length(2);
             if res.is_err() {
                 return res;
             }
-            let x: u16 = endianness::swap_le_16(v);
+            v = endianness::swap_le_16(v);
+            // FIXME: There is definitely a simpler way to do this.
+            // Masking each byte and shifting it to the first byte,
+            // then casting it as a u8 to represent one byte.
+            self.buffer.push((v & 0xff00) as u8);
+            self.buffer.push(((v & 0x00ff) << 8) as u8);
+            return Ok(());
+        }
+
+        pub fn add_u32(&mut self, mut v: u32) -> DgResult {
+            let res: DgResult = self.check_add_length(4);
+            if res.is_err() {
+                return res;
+            }
+            v = endianness::swap_le_32(v);
+            self.buffer.push((v & 0xff000000) as u8);
+            self.buffer.push(((v & 0x00ff0000) << 8) as u8);
+            self.buffer.push(((v & 0x0000ff00) << 16) as u8);
+            self.buffer.push(((v & 0x000000ff) << 24) as u8);
+            return Ok(());
+        }
+
+        pub fn add_u64(&mut self, mut v: u64) -> DgResult {
+            let res: DgResult = self.check_add_length(8);
+            if res.is_err() {
+                return res;
+            }
+            v = endianness::swap_le_64(v);
+            self.buffer.push((v & 0xff00000000000000) as u8);
+            self.buffer.push(((v & 0x00ff000000000000) << 8) as u8);
+            self.buffer.push(((v & 0x0000ff0000000000) << 16) as u8);
+            self.buffer.push(((v & 0x000000ff00000000) << 24) as u8);
+            self.buffer.push(((v & 0x00000000ff000000) << 32) as u8);
+            self.buffer.push(((v & 0x0000000000ff0000) << 40) as u8);
+            self.buffer.push(((v & 0x000000000000ff00) << 48) as u8);
+            self.buffer.push(((v & 0x00000000000000ff) << 56) as u8);
             return Ok(());
         }
     }
