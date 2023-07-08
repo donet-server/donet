@@ -123,7 +123,7 @@ mod datagram {
             }
             return res;
         }
-
+ 
         // Adds an unsigned 8-bit integer value to the datagram.
         pub fn add_u8(&mut self, v: u8) -> DgResult {
             let res: DgResult = self.check_add_length(1);
@@ -176,6 +176,23 @@ mod datagram {
             self.buffer.push(((v & 0x000000000000ff00) << 48) as u8);
             self.buffer.push(((v & 0x00000000000000ff) << 56) as u8);
             return Ok(());
+        }
+
+        // signed integer aliases. same bitwise operations.
+        pub fn add_i8(&mut self, v: i8) -> DgResult {
+            return self.add_u8(v as u8);
+        }
+
+        pub fn add_i16(&mut self, v: i16) -> DgResult {
+            return self.add_u16(v as u16);
+        }
+
+        pub fn add_i32(&mut self, v: i32) -> DgResult { 
+            return self.add_u32(v as u32);
+        }
+
+        pub fn add_i64(&mut self, v: i64) -> DgResult { 
+            return self.add_u64(v as u64);
         }
     }
 
