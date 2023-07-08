@@ -19,7 +19,7 @@
 mod type_aliases;
 
 // Detect system endianness (byte order)
-mod endianness {
+pub mod endianness {
     #[cfg(target_endian = "big")]
     pub fn swap_le_16(v: u16) -> u16 {
         return (v & 0x00ff) << 8 |
@@ -63,7 +63,8 @@ mod endianness {
 }
 
 #[allow(dead_code)] // FIXME: Remove once project matures
-mod datagram {
+pub mod datagram {
+    use crate::datagram::type_aliases::type_aliases as types;
     use crate::datagram::endianness;
     use std::vec::Vec;
     use std::result::Result; // not to be confused with std::io::Result
@@ -193,6 +194,42 @@ mod datagram {
 
         pub fn add_i64(&mut self, v: i64) -> DgResult { 
             return self.add_u64(v as u64);
+        }
+        
+        // 32-bit IEEE 754 floating point. same bitwise operations.
+        pub fn add_f32(&mut self, v: f32) -> DgResult {
+            return self.add_u32(v as u32);
+        }
+
+        // 64-bit IEEE 754 floating point. same bitwise operations.
+        pub fn add_f64(&mut self, v: f64) -> DgResult {
+            return self.add_u64(v as u64);
+        }
+
+        pub fn add_size(&mut self, v: DgSize) -> DgResult {
+            return self.add_u16(v as u16);
+        }
+
+        pub fn add_channel(&mut self, v: types::Channel) -> DgResult {
+            return self.add_u64(v as u64);
+        }
+
+        pub fn add_doid(&mut self, v: types::DoId) -> DgResult {
+            return self.add_u32(v as u32);
+        }
+
+        pub fn add_zone(&mut self, v: types::Zone) -> DgResult {
+            return self.add_u32(v as u32);
+        }
+
+        // Added for convenience, but also better performance
+        // than adding the parent and the zone separately.
+        pub fn add_location(&mut self, parent: types::DoId, zone: types::Zone) -> DgResult {
+            let res: DgResult = self.add_u32(parent as u32);
+            if res.is_err() {
+                return res;
+            }
+            return self.add_u32(zone as u32);
         }
     }
 
