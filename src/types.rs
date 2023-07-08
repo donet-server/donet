@@ -16,27 +16,27 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #[allow(dead_code)] // FIXME: Remove once project matures
-mod type_aliases {
+pub mod type_aliases {
     use std::mem;
 
     // Type Definitions
-    type Channel = u64;
-    type DoId = u32;
-    type Zone = u32;
+    pub type Channel = u64;
+    pub type DoId = u32;
+    pub type Zone = u32;
 
     // Type Limits
-    const CHANNEL_MAX: Channel = u64::MAX;
-    const DOID_MAX: DoId = u32::MAX;
-    const ZONE_MAX: Zone = u32::MAX;
-    const ZONE_BITS: usize = 8 * mem::size_of::<Zone>();
+    pub const CHANNEL_MAX: Channel = u64::MAX;
+    pub const DOID_MAX: DoId = u32::MAX;
+    pub const ZONE_MAX: Zone = u32::MAX;
+    pub const ZONE_BITS: usize = 8 * mem::size_of::<Zone>();
 
     // DoId Constants
-    const INVALID_DOID: DoId = 0;
+    pub const INVALID_DOID: DoId = 0;
 
     // Channel Constants
-    const INVALID_CHANNEL: Channel = 0;
-    const CONTROL_CHANNEL: Channel = 1;
-    const BCHAN_CLIENTS: Channel = 10;
-    const BCHAN_STATESERVERS: Channel = 12;
-    const BCHAN_DBSERVERS: Channel = 13;
+    pub const INVALID_CHANNEL: Channel = 0;
+    pub const CONTROL_CHANNEL: Channel = 1;
+    pub const BCHAN_CLIENTS: Channel = 10;
+    pub const BCHAN_STATESERVERS: Channel = 12;
+    pub const BCHAN_DBSERVERS: Channel = 13;
 }
