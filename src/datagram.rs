@@ -231,6 +231,20 @@ pub mod datagram {
             }
             return self.add_u32(zone as u32);
         }
+
+        // Adds raw bytes to the datagram via an unsigned 8-bit integer vector.
+        // NOTE: not to be confused with add_blob(), which adds a dclass blob to the datagram.
+        pub fn add_data(&mut self, mut v: Vec<u8>) -> DgResult {
+            if v.len() > DG_SIZE_MAX.into() { // check input to avoid panic at .try_into() below
+                return Err(DgError::DatagramOverflow); 
+            }
+            let res: DgResult = self.check_add_length(v.len().try_into().unwrap());
+            if res.is_err() {
+                return res;
+            }
+            self.buffer.append(&mut v);
+            return Ok(());
+        }
     }
 
     //pub struct DatagramIterator {
