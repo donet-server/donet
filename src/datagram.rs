@@ -206,18 +206,22 @@ pub mod datagram {
             return self.add_u64(v as u64);
         }
 
+        // Adds a Datagram / Field length tag to the end of the datagram.
         pub fn add_size(&mut self, v: DgSize) -> DgResult {
             return self.add_u16(v as u16);
         }
 
+        // Adds a 64-bit channel ID to the end of the datagram.
         pub fn add_channel(&mut self, v: types::Channel) -> DgResult {
             return self.add_u64(v as u64);
         }
 
+        // Adds a 32-bit Distributed Object ID to the end of the datagram.
         pub fn add_doid(&mut self, v: types::DoId) -> DgResult {
             return self.add_u32(v as u32);
         }
 
+        // Adds a 32-bit zone ID to the end of the datagram.
         pub fn add_zone(&mut self, v: types::Zone) -> DgResult {
             return self.add_u32(v as u32);
         }
@@ -241,6 +245,61 @@ pub mod datagram {
             let res: DgResult = self.check_add_length(v.len().try_into().unwrap());
             if res.is_err() {
                 return res;
+            }
+            self.buffer.append(&mut v);
+            return Ok(());
+        }
+
+        // Appends another datagram's binary data to this datagram.
+        pub fn add_datagram(&mut self, dg: Datagram) -> DgResult {
+            let mut dg_buffer: Vec<u8> = dg.buffer;
+            
+            if dg_buffer.len() > DG_SIZE_MAX.into() {
+                // Technically should not happen as the datagram given should
+                // keep its buffer under the max dg size, but we should still handle
+                // this error to avoid a panic at self.check_add_length().
+                return Err(DgError::DatagramOverflow);
+            }
+            let res: DgResult = self.check_add_length(dg_buffer.len().try_into().unwrap());
+            if res.is_err() {
+                return res;
+            }
+            self.buffer.append(&mut dg_buffer);
+            return Ok(());
+        }
+
+        // Adds a dclass string value to the end of the datagram.
+        // A 16-bit length tag prefix with the string's size in bytes is added.
+        pub fn add_string(&mut self, v: &str) -> DgResult {
+            if v.len() > DG_SIZE_MAX.into() {
+                // The string is too big to be described with a 16-bit length tag.
+                return Err(DgError::DatagramOverflow);
+            }
+            let mut res: DgResult = self.add_u16(v.len().try_into().unwrap());
+            if res.is_err() {
+                return res; // couldn't fit length tag ;(
+            }
+            res = self.check_add_length(v.len().try_into().unwrap());
+            if res.is_err() {
+                return res; // can't fit the string ;(
+            }
+            // FIXME: i should've downloaded rust docs. sure there is a method
+            // to convert a string to a byte array. this kid won't shut up
+            // in my flight too so im reasonably pissed at the moment.
+            // update: who tf turns their flash light on in the cabin at 1 AM???
+            return Ok(());
+        }
+
+        // Adds a dclass blob value (binary data) to the end of the datagram.
+        // A 16-bit length tag prefix with the blob's size in bytes is added.
+        pub fn add_blob(&mut self, mut v: Vec<u8>) -> DgResult {
+            let mut res: DgResult = self.add_size(v.len().try_into().unwrap());
+            if res.is_err() {
+                return res; // couldn't fit the length tag
+            }
+            res = self.check_add_length(v.len().try_into().unwrap());
+            if res.is_err() {
+                return res; // blob overflows datagram
             }
             self.buffer.append(&mut v);
             return Ok(());
