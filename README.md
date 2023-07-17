@@ -21,3 +21,5 @@ Resources for more info on Disney's OTP server (Sources listed in chronological 
 - [Apr 30, 2008: OTP Server Internals](https://www.youtube.com/watch?v=SzybRdxjYoA)
 - [October 2010: (GDC Online) MMO 101 - Building Disney's Server System](https://www.gdcvault.com/play/1013776/MMO-101-Building-Disney-s)
 - [(PDF Slideshow) MMO 101 - Building Disney's Server System](https://ubm-twvideo01.s3.amazonaws.com/o1/vault/gdconline10/slides/11516-MMO_101_Building_Disneys_Sever.pdf)
+
+DoNet logo artwork created & designed by [Karla Valeria Rodriguez](https://github.com/karla-valeria).
