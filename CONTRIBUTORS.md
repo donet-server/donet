@@ -8,3 +8,4 @@
 > sorted by first names.
 
 Max Rodriguez <max@vulkray.com>
+Karla Valeria Rodriguez <valartist554@gmail.com>
