@@ -1,3 +1,5 @@
+<img src="logo/donet_banner.png" align="right" width="50%"/>
+
 # Donet
 
 **D**istributed **O**bject **Net**working server
