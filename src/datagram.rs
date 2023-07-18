@@ -101,15 +101,6 @@ pub mod datagram {
             return Ok(());
         }
 
-        fn add_multiple_bytes(&mut self, bytes: DgSize, ) -> DgResult {
-            let res: DgResult = self.check_add_length(bytes);
-            if res.is_err() {
-                return res;
-            }
-
-            return Ok(());
-        }
-
         // Adds an unsigned 8-bit integer to the datagram that is
         // guaranteed to be one of the values 0x00 (false) or 0x01 (true).
         pub fn add_bool(&mut self, v: bool) -> DgResult {
@@ -275,18 +266,22 @@ pub mod datagram {
                 // The string is too big to be described with a 16-bit length tag.
                 return Err(DgError::DatagramOverflow);
             }
-            let mut res: DgResult = self.add_u16(v.len().try_into().unwrap());
-            if res.is_err() {
-                return res; // couldn't fit length tag ;(
+            let mut results: Vec<DgResult> = vec![];
+
+            // Add string length to the datagram
+            results.push(self.add_u16(v.len().try_into().unwrap()));
+
+            // convert the string into a byte array, as a vector
+            let str_bytes: &mut Vec<u8> = &mut v.as_bytes().to_vec();
+            
+            // make sure the byte array won't overflow the datagram
+            results.push(self.check_add_length(str_bytes.len().try_into().unwrap()));
+
+            for res in results { // return any error results
+                return if res.is_err() { res } else { continue }
             }
-            res = self.check_add_length(v.len().try_into().unwrap());
-            if res.is_err() {
-                return res; // can't fit the string ;(
-            }
-            // FIXME: i should've downloaded rust docs. sure there is a method
-            // to convert a string to a byte array. this kid won't shut up
-            // in my flight too so im reasonably pissed at the moment.
-            // update: who tf turns their flash light on in the cabin at 1 AM???
+            // convert string to bytes,
+            self.buffer.append(str_bytes);
             return Ok(());
         }
 
@@ -299,10 +294,68 @@ pub mod datagram {
             }
             res = self.check_add_length(v.len().try_into().unwrap());
             if res.is_err() {
-                return res; // blob overflows datagram
+                return res; // blob overflows datagram!
             }
             self.buffer.append(&mut v);
             return Ok(());
+        }
+
+        // TODO: add_buffer() method to reserve space in datagram buffer.
+
+        // Appends a generic header for messages that are to be routed to
+        // one or more role instances within the server cluster.
+        // Use this method to avoid repetitive code for every internal message.
+        //
+        // The header is formatted as shown below:
+        //     (recipients: u8, recipients: Vec<Channel>, sender: Channel, message_type: u16)
+        //
+        pub fn add_server_header(&mut self, to: Vec<types::Channel>,
+                                 from: types::Channel, msg_type: u16) -> DgResult {
+            let mut results: Vec<DgResult> = vec![];
+            // Add recipient(s) count
+            results.push(self.add_u8(to.len().try_into().unwrap()));
+
+            for recipient in to { // append each recipient in vector given
+                results.push(self.add_channel(recipient));
+            }
+            results.push(self.add_channel(from));
+            results.push(self.add_u16(msg_type));
+
+            for res in results {
+                return if res.is_err() { res } else { continue } // compiler needs else clause
+            }
+            return Ok(());
+        }
+
+        // Appends a control header, which is very similar to a server header,
+        // but it always has only one recipient, which is the control channel,
+        // and does not require a sender (or 'from') channel to be provided.
+        pub fn add_control_header(&mut self, msg_type: u16) -> DgResult {
+            let mut results: Vec<DgResult> = vec![];
+            
+            results.push(self.add_u8(1));
+            results.push(self.add_channel(types::CONTROL_CHANNEL));
+            results.push(self.add_u16(msg_type));
+
+            for res in results {
+                return if res.is_err() { res } else { continue }
+            }
+            return Ok(());
+        }
+
+        pub fn size(&mut self) -> DgSize {
+            return self.buffer.len().try_into().unwrap();
+        }
+
+        pub fn get_data(&mut self) -> Vec<u8> {
+            // we can't give out ownership of our vector,
+            // so a copy of the vector is made instead
+            let mut vec_copy: Vec<u8> = vec![];
+            for byte in &self.buffer {
+                // dereference the borrowed 'byte'
+                vec_copy.push(*byte);
+            }
+            return vec_copy;
         }
     }
 
