@@ -1,5 +1,5 @@
 // DONET SOFTWARE
-// Copyright (c) 2023, Donet Authors.
+// Copyright (c) 2023, DoNet Authors.
 
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License version 3.
@@ -72,9 +72,11 @@ pub mod datagram {
     type DgSize = u16;
     const DG_SIZE_MAX: DgSize = u16::MAX;
 
-    // All possible errors that can be returned within Datagram's implementation.
+    // All possible errors that can be returned by
+    // the Datagram and DatagramIterator implementations.
     pub enum DgError {
         DatagramOverflow,
+        DatagramIteratorEOF,
     }
 
     pub type DgResult = Result<(), DgError>;
@@ -359,7 +361,54 @@ pub mod datagram {
         }
     }
 
-    //pub struct DatagramIterator {
+    // Utility for iterating value by value of a datagram message.
+    pub struct DatagramIterator {
+        datagram: Datagram,
+        buffer_offset: DgSize,
+    }
 
-    //}
+    impl DatagramIterator {
+        pub fn new(&self, dg: Datagram) -> DatagramIterator {
+            DatagramIterator {
+                datagram: dg,
+                buffer_offset: 0 as DgSize,
+            }
+        }
+
+        pub fn check_read_length(&mut self, bytes: DgSize) -> DgResult {
+            let new_offset: DgSize = self.buffer_offset + bytes;
+
+            if new_offset > self.datagram.size() {
+                // FIXME: print an error msg once we have a logger utility
+                return Err(DgError::DatagramIteratorEOF);
+            }
+            return Ok(());
+        }
+
+        // Returns the value of `buffer_offset` in bytes.
+        pub fn tell(&mut self) -> DgSize {
+            return self.buffer_offset;
+        }
+
+        // Manually sets the buffer_offset position.
+        pub fn seek(&mut self, to: DgSize) -> () {
+            self.buffer_offset = to;
+        }
+
+        // Increments the buffer_offset by `bytes` length.
+        // Returns DgError.DatagramIteratorEOF if it's past the end of the buffer.
+        pub fn skip(&mut self, bytes: DgSize) -> DgResult {
+            let res: DgResult = self.check_read_length(bytes);
+            if res.is_err() {
+                return res;
+            }
+            self.buffer_offset += bytes;
+            return Ok(());
+        }
+
+        // Returns the number of unread bytes left in the datagram
+        pub fn get_remaining(&mut self) -> DgSize {
+            return self.datagram.size() - self.buffer_offset;
+        }
+    }
 }
