@@ -15,6 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#[path = "results.rs"]
+mod results;
+
 #[path = "types.rs"]
 mod type_aliases;
 
@@ -64,22 +67,13 @@ pub mod endianness {
 
 #[allow(dead_code)] // FIXME: Remove once project matures
 pub mod datagram {
+    use crate::datagram::results::results as res;
     use crate::datagram::type_aliases::type_aliases as types;
     use crate::datagram::endianness;
     use std::vec::Vec;
-    use std::result::Result; // not to be confused with std::io::Result
 
     type DgSize = u16;
     const DG_SIZE_MAX: DgSize = u16::MAX;
-
-    // All possible errors that can be returned by
-    // the Datagram and DatagramIterator implementations.
-    pub enum DgError {
-        DatagramOverflow,
-        DatagramIteratorEOF,
-    }
-
-    pub type DgResult = Result<(), DgError>;
 
     pub struct Datagram {
         buffer: Vec<u8>,
@@ -93,20 +87,20 @@ pub mod datagram {
         }
 
         // Checks if we can add `length` number of bytes to the datagram.
-        fn check_add_length(&self, length: DgSize) -> DgResult {
+        fn check_add_length(&self, length: DgSize) -> res::DgResult {
             let new_offset: usize = self.buffer.len() + usize::from(length);
             
             if new_offset > DG_SIZE_MAX.into() {
                 // TODO: log error with more information
-                return Err(DgError::DatagramOverflow);
+                return Err(res::DgError::DatagramOverflow);
             }
             return Ok(());
         }
 
         // Adds an unsigned 8-bit integer to the datagram that is
         // guaranteed to be one of the values 0x00 (false) or 0x01 (true).
-        pub fn add_bool(&mut self, v: bool) -> DgResult {
-            let mut res: DgResult = self.check_add_length(1);
+        pub fn add_bool(&mut self, v: bool) -> res::DgResult {
+            let mut res: res::DgResult = self.check_add_length(1);
             if res.is_err() {
                 return res;
             }
@@ -119,8 +113,8 @@ pub mod datagram {
         }
  
         // Adds an unsigned 8-bit integer value to the datagram.
-        pub fn add_u8(&mut self, v: u8) -> DgResult {
-            let res: DgResult = self.check_add_length(1);
+        pub fn add_u8(&mut self, v: u8) -> res::DgResult {
+            let res: res::DgResult = self.check_add_length(1);
             if res.is_err() {
                 return res;
             }
@@ -128,8 +122,8 @@ pub mod datagram {
             return Ok(());
         }
 
-        pub fn add_u16(&mut self, mut v: u16) -> DgResult {
-            let res: DgResult = self.check_add_length(2);
+        pub fn add_u16(&mut self, mut v: u16) -> res::DgResult {
+            let res: res::DgResult = self.check_add_length(2);
             if res.is_err() {
                 return res;
             }
@@ -142,8 +136,8 @@ pub mod datagram {
             return Ok(());
         }
 
-        pub fn add_u32(&mut self, mut v: u32) -> DgResult {
-            let res: DgResult = self.check_add_length(4);
+        pub fn add_u32(&mut self, mut v: u32) -> res::DgResult {
+            let res: res::DgResult = self.check_add_length(4);
             if res.is_err() {
                 return res;
             }
@@ -155,8 +149,8 @@ pub mod datagram {
             return Ok(());
         }
 
-        pub fn add_u64(&mut self, mut v: u64) -> DgResult {
-            let res: DgResult = self.check_add_length(8);
+        pub fn add_u64(&mut self, mut v: u64) -> res::DgResult {
+            let res: res::DgResult = self.check_add_length(8);
             if res.is_err() {
                 return res;
             }
@@ -173,56 +167,56 @@ pub mod datagram {
         }
 
         // signed integer aliases. same bitwise operations.
-        pub fn add_i8(&mut self, v: i8) -> DgResult {
+        pub fn add_i8(&mut self, v: i8) -> res::DgResult {
             return self.add_u8(v as u8);
         }
 
-        pub fn add_i16(&mut self, v: i16) -> DgResult {
+        pub fn add_i16(&mut self, v: i16) -> res::DgResult {
             return self.add_u16(v as u16);
         }
 
-        pub fn add_i32(&mut self, v: i32) -> DgResult { 
+        pub fn add_i32(&mut self, v: i32) -> res::DgResult { 
             return self.add_u32(v as u32);
         }
 
-        pub fn add_i64(&mut self, v: i64) -> DgResult { 
+        pub fn add_i64(&mut self, v: i64) -> res::DgResult { 
             return self.add_u64(v as u64);
         }
         
         // 32-bit IEEE 754 floating point. same bitwise operations.
-        pub fn add_f32(&mut self, v: f32) -> DgResult {
+        pub fn add_f32(&mut self, v: f32) -> res::DgResult {
             return self.add_u32(v as u32);
         }
 
         // 64-bit IEEE 754 floating point. same bitwise operations.
-        pub fn add_f64(&mut self, v: f64) -> DgResult {
+        pub fn add_f64(&mut self, v: f64) -> res::DgResult {
             return self.add_u64(v as u64);
         }
 
         // Adds a Datagram / Field length tag to the end of the datagram.
-        pub fn add_size(&mut self, v: DgSize) -> DgResult {
+        pub fn add_size(&mut self, v: DgSize) -> res::DgResult {
             return self.add_u16(v as u16);
         }
 
         // Adds a 64-bit channel ID to the end of the datagram.
-        pub fn add_channel(&mut self, v: types::Channel) -> DgResult {
+        pub fn add_channel(&mut self, v: types::Channel) -> res::DgResult {
             return self.add_u64(v as u64);
         }
 
         // Adds a 32-bit Distributed Object ID to the end of the datagram.
-        pub fn add_doid(&mut self, v: types::DoId) -> DgResult {
+        pub fn add_doid(&mut self, v: types::DoId) -> res::DgResult {
             return self.add_u32(v as u32);
         }
 
         // Adds a 32-bit zone ID to the end of the datagram.
-        pub fn add_zone(&mut self, v: types::Zone) -> DgResult {
+        pub fn add_zone(&mut self, v: types::Zone) -> res::DgResult {
             return self.add_u32(v as u32);
         }
 
         // Added for convenience, but also better performance
         // than adding the parent and the zone separately.
-        pub fn add_location(&mut self, parent: types::DoId, zone: types::Zone) -> DgResult {
-            let res: DgResult = self.add_u32(parent as u32);
+        pub fn add_location(&mut self, parent: types::DoId, zone: types::Zone) -> res::DgResult {
+            let res: res::DgResult = self.add_u32(parent as u32);
             if res.is_err() {
                 return res;
             }
@@ -231,11 +225,11 @@ pub mod datagram {
 
         // Adds raw bytes to the datagram via an unsigned 8-bit integer vector.
         // NOTE: not to be confused with add_blob(), which adds a dclass blob to the datagram.
-        pub fn add_data(&mut self, mut v: Vec<u8>) -> DgResult {
+        pub fn add_data(&mut self, mut v: Vec<u8>) -> res::DgResult {
             if v.len() > DG_SIZE_MAX.into() { // check input to avoid panic at .try_into() below
-                return Err(DgError::DatagramOverflow); 
+                return Err(res::DgError::DatagramOverflow); 
             }
-            let res: DgResult = self.check_add_length(v.len().try_into().unwrap());
+            let res: res::DgResult = self.check_add_length(v.len().try_into().unwrap());
             if res.is_err() {
                 return res;
             }
@@ -244,16 +238,16 @@ pub mod datagram {
         }
 
         // Appends another datagram's binary data to this datagram.
-        pub fn add_datagram(&mut self, dg: Datagram) -> DgResult {
+        pub fn add_datagram(&mut self, dg: Datagram) -> res::DgResult {
             let mut dg_buffer: Vec<u8> = dg.buffer;
             
             if dg_buffer.len() > DG_SIZE_MAX.into() {
                 // Technically should not happen as the datagram given should
                 // keep its buffer under the max dg size, but we should still handle
                 // this error to avoid a panic at self.check_add_length().
-                return Err(DgError::DatagramOverflow);
+                return Err(res::DgError::DatagramOverflow);
             }
-            let res: DgResult = self.check_add_length(dg_buffer.len().try_into().unwrap());
+            let res: res::DgResult = self.check_add_length(dg_buffer.len().try_into().unwrap());
             if res.is_err() {
                 return res;
             }
@@ -263,12 +257,12 @@ pub mod datagram {
 
         // Adds a dclass string value to the end of the datagram.
         // A 16-bit length tag prefix with the string's size in bytes is added.
-        pub fn add_string(&mut self, v: &str) -> DgResult {
+        pub fn add_string(&mut self, v: &str) -> res::DgResult {
             if v.len() > DG_SIZE_MAX.into() {
                 // The string is too big to be described with a 16-bit length tag.
-                return Err(DgError::DatagramOverflow);
+                return Err(res::DgError::DatagramOverflow);
             }
-            let mut results: Vec<DgResult> = vec![];
+            let mut results: Vec<res::DgResult> = vec![];
 
             // Add string length to the datagram
             results.push(self.add_u16(v.len().try_into().unwrap()));
@@ -289,8 +283,8 @@ pub mod datagram {
 
         // Adds a dclass blob value (binary data) to the end of the datagram.
         // A 16-bit length tag prefix with the blob's size in bytes is added.
-        pub fn add_blob(&mut self, mut v: Vec<u8>) -> DgResult {
-            let mut res: DgResult = self.add_size(v.len().try_into().unwrap());
+        pub fn add_blob(&mut self, mut v: Vec<u8>) -> res::DgResult {
+            let mut res: res::DgResult = self.add_size(v.len().try_into().unwrap());
             if res.is_err() {
                 return res; // couldn't fit the length tag
             }
@@ -312,8 +306,8 @@ pub mod datagram {
         //     (recipients: u8, recipients: Vec<Channel>, sender: Channel, message_type: u16)
         //
         pub fn add_server_header(&mut self, to: Vec<types::Channel>,
-                                 from: types::Channel, msg_type: u16) -> DgResult {
-            let mut results: Vec<DgResult> = vec![];
+                                 from: types::Channel, msg_type: u16) -> res::DgResult {
+            let mut results: Vec<res::DgResult> = vec![];
             // Add recipient(s) count
             results.push(self.add_u8(to.len().try_into().unwrap()));
 
@@ -332,8 +326,8 @@ pub mod datagram {
         // Appends a control header, which is very similar to a server header,
         // but it always has only one recipient, which is the control channel,
         // and does not require a sender (or 'from') channel to be provided.
-        pub fn add_control_header(&mut self, msg_type: u16) -> DgResult {
-            let mut results: Vec<DgResult> = vec![];
+        pub fn add_control_header(&mut self, msg_type: u16) -> res::DgResult {
+            let mut results: Vec<res::DgResult> = vec![];
             
             results.push(self.add_u8(1));
             results.push(self.add_channel(types::CONTROL_CHANNEL));
@@ -375,12 +369,12 @@ pub mod datagram {
             }
         }
 
-        pub fn check_read_length(&mut self, bytes: DgSize) -> DgResult {
+        pub fn check_read_length(&mut self, bytes: DgSize) -> res::DgResult {
             let new_offset: DgSize = self.buffer_offset + bytes;
 
             if new_offset > self.datagram.size() {
                 // FIXME: print an error msg once we have a logger utility
-                return Err(DgError::DatagramIteratorEOF);
+                return Err(res::DgError::DatagramIteratorEOF);
             }
             return Ok(());
         }
@@ -397,8 +391,8 @@ pub mod datagram {
 
         // Increments the buffer_offset by `bytes` length.
         // Returns DgError.DatagramIteratorEOF if it's past the end of the buffer.
-        pub fn skip(&mut self, bytes: DgSize) -> DgResult {
-            let res: DgResult = self.check_read_length(bytes);
+        pub fn skip(&mut self, bytes: DgSize) -> res::DgResult {
+            let res: res::DgResult = self.check_read_length(bytes);
             if res.is_err() {
                 return res;
             }
