@@ -1,32 +1,32 @@
-p_otp_internal = Proto ("otp_internal", "OTP Internal Protocol (MD)")
-p_otp_client = Proto ("otp_client", "OTP Client Protocol (CA)")
+p_donet_internal = Proto ("donet_internal", "DoNet Internal Protocol (MD)")
+p_donet_client = Proto ("donet_client", "DoNet Client Protocol (CA)")
 
 -- TODO: check lectures / documents for the original MD/CA port #s?
-otp_md_port = 7199
-otp_ca_port = 6667
+donet_md_port = 7199
+donet_ca_port = 6667
 
--- OTP Internal protocol fields
+-- Donet Internal protocol fields
 
-local f_length = ProtoField.uint16("otp_internal.length", "Message length", base.DEC)
+local f_length = ProtoField.uint16("donet_internal.length", "Message length", base.DEC)
 
-local f_recipient = ProtoField.uint64("otp_internal.recipient", "Recipient channel", base.HEX)
-local f_sender = ProtoField.uint64("otp_internal.sender", "Sender channel", base.HEX)
+local f_recipient = ProtoField.uint64("donet_internal.recipient", "Recipient channel", base.HEX)
+local f_sender = ProtoField.uint64("donet_internal.sender", "Sender channel", base.HEX)
 
-local f_msgtype = ProtoField.uint16("otp_internal.msgtype", "Message type", base.DEC)
+local f_msgtype = ProtoField.uint16("donet_internal.msgtype", "Message type", base.DEC)
 
-local f_doid = ProtoField.uint32("otp_internal.doid", "DistributedObject ID", base.DEC)
-local f_field = ProtoField.uint16("otp_internal.field", "Field ID", base.DEC)
-local f_field_count = ProtoField.uint16("otp_internal.field_count", "Field count", base.DEC)
+local f_doid = ProtoField.uint32("donet_internal.doid", "DistributedObject ID", base.DEC)
+local f_field = ProtoField.uint16("donet_internal.field", "Field ID", base.DEC)
+local f_field_count = ProtoField.uint16("donet_internal.field_count", "Field count", base.DEC)
 
-local f_object_count = ProtoField.uint32("otp_internal.object_count", "Object count", base.DEC)
+local f_object_count = ProtoField.uint32("donet_internal.object_count", "Object count", base.DEC)
 
-local f_parent = ProtoField.uint32("otp_internal.parent", "Parent ID", base.DEC)
-local f_zone = ProtoField.uint32("otp_internal.zone", "Zone ID", base.DEC)
-local f_zone_count = ProtoField.uint16("otp_internal.zone_count", "Zone count", base.DEC)
+local f_parent = ProtoField.uint32("donet_internal.parent", "Parent ID", base.DEC)
+local f_zone = ProtoField.uint32("donet_internal.zone", "Zone ID", base.DEC)
+local f_zone_count = ProtoField.uint16("donet_internal.zone_count", "Zone count", base.DEC)
 
-local f_context = ProtoField.uint32("otp_internal.context", "Request context", base.DEC)
+local f_context = ProtoField.uint32("donet_internal.context", "Request context", base.DEC)
 
-p_otp_internal.fields = {
+p_donet_internal.fields = {
 	f_length, f_recipient, f_sender, f_msgtype,
 
 	f_doid, f_field, f_field_count,
@@ -38,12 +38,12 @@ p_otp_internal.fields = {
 	f_context,
 }
 
--- OTP Client protocol fields
+-- DoNet Client protocol fields
 
-local f_length_client = ProtoField.uint16("otp_client.length", "Message length", base.DEC)
-local f_msgtype_client = ProtoField.uint16("otp_client.msgtype", "Message type", base.DEC)
+local f_length_client = ProtoField.uint16("donet_client.length", "Message length", base.DEC)
+local f_msgtype_client = ProtoField.uint16("donet_client.msgtype", "Message type", base.DEC)
 
-p_otp_client.fields = {
+p_donet_client.fields = {
 	f_length_client, f_msgtype_client
 }
 
@@ -985,12 +985,12 @@ function dissect_one (buf, root, packet_descriptions)
 	return length + 2
 end
 
--- OTP_INTERNAL protocol
+-- DONET_INTERNAL protocol
 
-function p_otp_internal.dissector (buf, pinfo, root)
+function p_donet_internal.dissector (buf, pinfo, root)
 	if buf:len() < 2 then return end
 
-	local root = root:add(p_otp_internal, buf())
+	local root = root:add(p_donet_internal, buf())
 
 	local descriptions = {}
 	local message_count = 0
@@ -1011,25 +1011,25 @@ function p_otp_internal.dissector (buf, pinfo, root)
 	end
 
 	if message_count > 0 then
-		pinfo.cols.protocol = "OTP (Internal)"
+		pinfo.cols.protocol = "DoNet (Internal)"
 		pinfo.cols.info = table.concat(descriptions, "; ")
 	end
 
 	return offset
 end
 
-function p_otp_internal.init()
+function p_donet_internal.init()
 	local tcp_dissector_table = DissectorTable.get("tcp.port")
 
-	tcp_dissector_table:add(otp_md_port, p_otp_internal)
+	tcp_dissector_table:add(donet_md_port, p_donet_internal)
 end
 
--- OTP_CLIENT protocol
+-- DONET_CLIENT protocol
 
-function p_otp_client.dissector (buf, pinfo, root)
+function p_donet_client.dissector (buf, pinfo, root)
 	if buf:len() < 2 then return end
 
-	local subtree = root:add(p_otp_client, buf())
+	local subtree = root:add(p_donet_client, buf())
 
 	local len = buf(0, 2):le_uint()
 	local type = buf(2, 2):le_uint()
@@ -1039,12 +1039,12 @@ function p_otp_client.dissector (buf, pinfo, root)
 
 	if len > 2 then subtree:add(buf(4), "Payload") end -- TODO: Dissect message payload
 
-	pinfo.cols.protocol = "OTP (Client)"
+	pinfo.cols.protocol = "DoNet (Client)"
 	pinfo.cols.info = pretty_msgtype(type)
 end
 
-function p_otp_client.init()
+function p_donet_client.init()
 	local tcp_dissector_table = DissectorTable.get("tcp.port")
 
-	tcp_dissector_table:add(otp_ca_port, p_otp_client)
+	tcp_dissector_table:add(donet_ca_port, p_donet_client)
 end
