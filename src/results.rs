@@ -23,6 +23,7 @@ pub mod results {
     pub enum DgError {
         DatagramOverflow,
         DatagramIteratorEOF,
+        //FieldConstraintViolation,
     }
 
     pub type DgResult = Result<(), DgError>;

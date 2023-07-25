@@ -358,19 +358,19 @@ pub mod datagram {
     // Utility for iterating value by value of a datagram message.
     pub struct DatagramIterator {
         datagram: Datagram,
-        buffer_offset: DgSize,
+        offset: usize,
     }
 
     impl DatagramIterator {
         pub fn new(&self, dg: Datagram) -> DatagramIterator {
             DatagramIterator {
                 datagram: dg,
-                buffer_offset: 0 as DgSize,
+                offset: 0 as usize,
             }
         }
 
         pub fn check_read_length(&mut self, bytes: DgSize) -> res::DgResult {
-            let new_offset: DgSize = self.buffer_offset + bytes;
+            let new_offset: DgSize = self.offset as DgSize + bytes;
 
             if new_offset > self.datagram.size() {
                 // FIXME: print an error msg once we have a logger utility
@@ -381,12 +381,12 @@ pub mod datagram {
 
         // Returns the value of `buffer_offset` in bytes.
         pub fn tell(&mut self) -> DgSize {
-            return self.buffer_offset;
+            return self.offset as DgSize;
         }
 
         // Manually sets the buffer_offset position.
         pub fn seek(&mut self, to: DgSize) -> () {
-            self.buffer_offset = to;
+            self.offset = to as usize;
         }
 
         // Increments the buffer_offset by `bytes` length.
@@ -396,13 +396,51 @@ pub mod datagram {
             if res.is_err() {
                 return res;
             }
-            self.buffer_offset += bytes;
+            self.offset += bytes as usize;
             return Ok(());
         }
 
         // Returns the number of unread bytes left in the datagram
         pub fn get_remaining(&mut self) -> DgSize {
-            return self.datagram.size() - self.buffer_offset;
+            return self.datagram.size() - self.offset as DgSize;
+        }
+
+        pub fn read_bool(&mut self) -> bool {
+            let data: u8 = self.read_u8();
+            return if data == 1 { true } else { false }
+        }
+
+        pub fn read_u8(&mut self) -> u8 {
+            let data: Vec<u8> = self.datagram.get_data();
+            self.offset += 1; // bytes
+            return data[self.offset];
+        }
+
+        pub fn read_u16(&mut self) -> u16 {
+            let data: Vec<u8> = self.datagram.get_data();
+            self.offset += 2;
+
+            // bitwise operations to concatenate two u8's into one u16.
+            // graphical explanation:
+            //      a0   (byte 1)           b0   (byte 2)
+            //      11010001                00100111
+            //
+            //      [ a1 = a0 as u16 ]      [ b1 = b0 as u16 ]
+            //      00000000 11010001       00000000 00100111
+            //
+            //      [ a2 = a1 << 8 ]             v v v v
+            //      11010001 00000000
+            //
+            //              00000000 00100111
+            //          OR  11010001 00000000
+            //
+            //              11010001 00100111  (u16, 2 bytes)
+            //
+            //  After, we use the swap_le_xx() function to make sure the bytes
+            //  are swapped to the native system byte endianness.
+            //
+            let value: u16 = ((data[self.offset] as u16) << 8) | data[self.offset + 1] as u16;
+            return endianness::swap_le_16(value);
         }
     }
 }
