@@ -21,7 +21,7 @@ The terms of this license are available in the "[LICENSE](./LICENSE)" file of th
 
 ### Distributed Networking architecture resources
 
-Resources for more info on Disney's OTP server (Sources listed in chronological order):
+Resources for more info on Panda's Distributed Networking (Sources listed in chronological order):
 
 - [October 2003: Building a MMOG for the Million - Disney's Toontown Online](https://dl.acm.org/doi/10.1145/950566.950589)
 - [Apr 16, 2008: The DistributedObject System, client side](https://www.youtube.com/watch?v=JsgCFVpXQtQ)
