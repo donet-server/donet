@@ -405,20 +405,29 @@ pub mod datagram {
             return self.datagram.size() - self.offset as DgSize;
         }
 
-        pub fn read_bool(&mut self) -> bool {
-            let data: u8 = self.read_u8();
-            return if data == 1 { true } else { false }
+        // Reads the next number of bytes in the datagram.
+        pub fn read_data(&mut self, bytes: DgSize) -> Vec<u8> {
+            let data: Vec<u8> = self.datagram.get_data();
+
+            let mut new_data: Vec<u8> = vec![];
+            let read_end: usize = self.offset + bytes as usize;
+
+            for n in self.offset..read_end {
+                new_data.push(data[n]);
+            }
+            self.offset += bytes as usize;
+            return new_data;
         }
 
         pub fn read_u8(&mut self) -> u8 {
             let data: Vec<u8> = self.datagram.get_data();
+            let value: u8 = data[self.offset];
             self.offset += 1; // bytes
-            return data[self.offset];
+            return value;
         }
 
         pub fn read_u16(&mut self) -> u16 {
             let data: Vec<u8> = self.datagram.get_data();
-            self.offset += 2;
 
             // bitwise operations to concatenate two u8's into one u16.
             // graphical explanation:
@@ -440,7 +449,80 @@ pub mod datagram {
             //  are swapped to the native system byte endianness.
             //
             let value: u16 = ((data[self.offset] as u16) << 8) | data[self.offset + 1] as u16;
+            self.offset += 1;
             return endianness::swap_le_16(value);
+        }
+
+        pub fn read_u32(&mut self) -> u32 {
+            let data: Vec<u8> = self.datagram.get_data();
+            let value: u32 = ((data[self.offset] as u32) << 24) |
+                             ((data[self.offset + 1] as u32) << 16) |
+                             ((data[self.offset + 2] as u32) << 8) |
+                               data[self.offset + 3] as u32;
+            self.offset += 4;
+            return endianness::swap_le_32(value);
+        }
+
+        pub fn read_u64(&mut self) -> u64 {
+            let data: Vec<u8> = self.datagram.get_data();
+            let value: u64 = ((data[self.offset] as u64) << 56) |
+                             ((data[self.offset + 1] as u64) << 48) |
+                             ((data[self.offset + 2] as u64) << 40) |
+                             ((data[self.offset + 3] as u64) << 32) |
+                             ((data[self.offset + 4] as u64) << 24) |
+                             ((data[self.offset + 5] as u64) << 16) |
+                             ((data[self.offset + 6] as u64) << 8) |
+                               data[self.offset + 7] as u64;
+            self.offset += 8;
+            return endianness::swap_le_64(value);
+        }
+
+        // Signed integer aliases, same read operation.
+        pub fn read_i8(&mut self) -> i8 {
+            return self.read_u8() as i8;
+        }
+
+        pub fn read_i16(&mut self) -> i16 {
+            return self.read_u16() as i16;
+        }
+
+        pub fn read_i32(&mut self) -> i32 {
+            return self.read_u32() as i32;
+        }
+
+        pub fn read_i64(&mut self) -> i64 {
+            return self.read_u64() as i64;
+        }
+
+        // 32-bit IEEE 754 floating point in native endianness.
+        pub fn read_f32(&mut self) -> f32 {
+            return self.read_u32() as f32;
+        }
+
+        // 64-bit IEEE 754 floating point in native endianness.
+        pub fn read_f64(&mut self) -> f64 {
+            return self.read_u64() as f64;
+        }
+
+        pub fn read_bool(&mut self) -> bool {
+            let data: u8 = self.read_u8();
+            return if data == 1 { true } else { false }
+        }
+
+        pub fn read_size(&mut self) -> DgSize {
+            return self.read_u16() as DgSize;
+        }
+
+        pub fn read_channel(&mut self) -> types::Channel {
+            return self.read_u64() as types::Channel;
+        }
+
+        pub fn read_doid(&mut self) -> types::DoId {
+            return self.read_u32() as types::DoId;
+        }
+
+        pub fn read_zone(&mut self) -> types::Zone {
+            return self.read_u32() as types::Zone;
         }
     }
 }
