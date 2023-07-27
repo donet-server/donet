@@ -1,0 +1,89 @@
+dclass DistributedTestObject1 {
+	setRequired1(uint32 r = 78) required broadcast ram;
+	setB1(uint8 x) broadcast;
+	setBA1(uint16 y) broadcast airecv;
+	setBR1(string z) broadcast ram;
+	setBRA1(uint32 BRA) broadcast ram airecv;
+	setBRO1(uint32 BRO) broadcast ram ownrecv;
+};
+
+dclass DistributedTestObject2 {
+	setB2(uint32 test) broadcast;
+	setBRam2(uint32 test) broadcast ram;
+};
+
+dclass DistributedTestObject3 : DistributedTestObject1 {
+	setDb3(string data) ram db;
+	setRDB3(uint32 rdb) required broadcast db;
+	setADb3(string data) ram db airecv;
+};
+
+dclass DistributedTestObject4 {
+	setX(uint32 x) broadcast required;
+	setY(uint32 y) broadcast required;
+	setUnrelated(uint32 lol) broadcast required;
+	setZ(uint32 z) broadcast required;
+
+	setXyz : setX, setY, setZ;
+
+	setOne(uint8 one) broadcast ram;
+	setTwo(uint8 two) broadcast ram;
+	setThree(uint8 three) broadcast ram;
+
+	set123 : setOne, setTwo, setThree;
+};
+
+dclass DistributedTestObject5 : DistributedTestObject3 {
+	setRDbD5(uint8 rdbd = 20) required db;
+	setFoo(uint16 foo) db;
+};
+
+dclass UberDog1 {
+	request(string what) clsend;
+	response(string what);
+};
+
+dclass UberDog2 {
+	foo(uint8 a, uint8 b, uint8 c) clsend;
+	bar(uint16 d);
+};
+
+dclass DistributedClientTestObject {
+	setName(string name) required;
+	setColor(uint8(0-100) r, uint8(0-100) g, uint8(0-100) b) required broadcast ownsend;
+	requestKill() clsend airecv;
+	sendMessage(string msg) clsend ownrecv;
+        sendMessageConstraint(string(8-16) msg) clsend ownrecv;
+        setColorConstraint(uint8(0-100) r, uint8(0-100) g, uint8(0-100) b) clsend ownrecv;
+};
+
+struct Block {
+	uint32 blockX;
+	uint32 blockY;
+	uint32 blockZ;
+};
+
+dclass DistributedChunk {
+	blockList(Block blocks[]) required clrecv;
+	lastBlock(Block block) ram clrecv airecv;
+	newBlock(Block block) broadcast;
+};
+
+dclass DistributedDBTypeTestObject {
+	uint8 db_uint8 db;
+	uint16 db_uint16 db;
+	uint32 db_uint32 db;
+	uint64 db_uint64 db;
+	int8 db_int8 db;
+	int16 db_int16 db;
+	int32 db_int32 db;
+	int64 db_int64 db;
+	char db_char db;
+	float64 db_float64 db;
+	string db_string db;
+	string(32) db_fixstr db;
+	blob db_blob db;
+	blob(16) db_fixblob db;
+	db_complex(Block named[], Block[3]) db;
+};
+
