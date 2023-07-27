@@ -17,4 +17,9 @@ target/
 .vscode/
 .idea/
 *~
-#*
+
+# Python Virtual Env
+# Used for testing (with Panda3D)
+venv/
+.venv/
+
