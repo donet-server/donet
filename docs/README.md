@@ -1,3 +1,5 @@
+<img src="../logo/donet_banner.png" align="right" width="40%"/>
+
 # DoNet Protocol / Architecture Documentation
 
 This directory includes markdown files with documentation
