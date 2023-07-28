@@ -47,48 +47,78 @@ The architecture of a DoNet server cluster is made up of 6 different units, or m
 ### **[MD] - Message Director**
   
   The Message Director listens for messages from other components in a DoNet server cluster, 
-  and **routes** them to other components based on the recipients in the messages received. A message 
-  is a blob of binary data sent over the network, with a maximum size of approximately **64 kilobytes**. 
-  The routing is performed by means of routing identifiers called **channels**, where a message contains any 
-  number of destination channels, and most messages include a source, or sender channel. Each component tells 
-  the Message Director which channels it would like to **subscribe** to, and receives messages sent to its 
-  subscribed channels.
+  and **routes** them to other components based on the recipients in the messages received. A 
+  message is a blob of binary data sent over the network, with a maximum size of approximately 
+  **64 kilobytes**. The routing is performed by means of routing identifiers called **channels**, 
+  where a message contains any number of destination channels, and most messages include a source, 
+  or sender channel. Each component tells the Message Director which channels it would like to 
+  **subscribe** to, and receives messages sent to its subscribed channels.
   
 ### **[SS] - State Server**
   
-  The State Server
+  The State Server component is responsible of coordinating the short-term existance of Distributed 
+  Objects and their **states**. This component provides one of the main features in a DoNet server 
+  cluster, which is **short-term persistance**. All Distributed Objects in a State Server exist 
+  in memory and are part of a graph hierarchy called the **visibility tree**. The State Server has 
+  data stored for each Distributed Object such as the class of the object, what its Distributed 
+  Object ID (DoId) is, and where it is located in the visibility tree. Other components in a DoNet 
+  cluster may communicate with the State Server through a Message Director to **manipulate** and 
+  **query** Distributed Objects in the State Server's visibility tree.
 
 ### **[DB] - Database Server**
   
-  The Database Server
+  The Database Server component is responsible for the long-term persistence of Distributed Object 
+  **fields** that are marked in the DC file with a **"db" keyword**, which tells the Database 
+  Server to store them on disk. It stores these fields in a **SQL database**, and can **update or 
+  query** the Distributed Object's field's value.
   
 ### **[DBSS] - Database State Server**
   
-  The Database State Server (DBSS for short) is a kind of hybrid component of a State 
-  Server and a Database Server.
+  The Database State Server (DBSS for short) is a kind of **hybrid** component of a State 
+  Server and a Database Server. This component is allows for other services in the cluster 
+  to manipulate Distributed Object fields that are **currently not loaded on a State Server**. 
+  The DBSS can also be configured to **listen to a range of DoId's** which it manages. If 
+  it sees a location update for an object in its range, it will query the object from the 
+  database and **convert it into a State Server object** in memory. For example, this is 
+  useful if you have an avatar object that is currently offline and stored on the database. 
+  If you would like to award a prize to the avatar while they're offline, the DBSS allows 
+  you to query and manipulate the object even though it is not currently needed in memory 
+  as the avatar is not actively 'present' in the visibility tree.
   
 ### **[EL] - Event Logger**
   
   The Event Logger listens to the Message Director for log messages that it should
   write to the disk. These log messages can be sent from AI processes, which are sent to
-  a Message Director instance, which then routes it to the Event Logger.
+  a Message Director instance, which then routes it to the Event Logger. The Event Logger 
+  is a useful tool for providing instrumentation to your server cluster and allows the 
+  developer to analyze data in the game, depending on what the developer chooses to log.
+
+<br>
 
 DoNet can be configured to serve as all these roles under one process, which is 
 handy for development on your local machine. For a production environment, many instances
 of DoNet can be running on different machines and configured to serve as one component each. 
 This configuration would be in a .par file that the DoNet process would read on startup.
 
-There are many acronyms that will be used in the documentation. Please review the list 
-below to learn and understand the different concepts and terms used in DoNet.
+<br>
+
+## Fundamental Terms & Concepts
+
+There are many acronyms that you will find as you read the documentation. Please review the 
+list below to learn and understand the different concepts and terms used in DoNet.
 
 - **DO**
 
-  Distributed Object. Represents an object in the virtual world.
+  Distributed Object. Represents an object present in a State Server's visibility tree.
   
 - **DOG**
   
-  Distributed Object Global. Similar to a Distributed Object, but is known globally
-  and always accessible by all participants. (clients and AI processes)
+  Distributed Object Global. Similar to a Distributed Object, but is **omnipresent**
+  in the Distributed Object visibility tree. This means that it is known globally and
+  always remains accessible by all participants, such as Clients and AI processes.
+  DOGs are **useful for authentication**, as anonymous (or non-authenticated) clients
+  can interact with a Distributed Object Global object, as its not part of the visibility
+  tree and it's DoId is a constant that is **globally known** by all clients.
   
 - **DoId**
   
@@ -97,29 +127,37 @@ below to learn and understand the different concepts and terms used in DoNet.
   
 - **AI**
   
-  Artificial Intelligence
+  Artificial Intelligence. An AI is a process on the server cluster's internal network
+  that acts as a client connected directly to a Message Director instance. This means
+  that all AI clients bypass the Client Agent, as they are part of the 'safe zone.'
   
 - **UD**
   
-  Uber DOG, see Uber DOGs.
+  Uber DOG. This is similar to an AI process, but is dedicated to managing Distributed
+  Object Global (DOGs) objects.
   
 - **OV**
   
-  Owner View, see Owner View.
+  Owner View. This is a suffix given to Distributed Object instances on a client process
+  that the client has **ownership** of.
   
 - **DC**
   
-  Distributed Class, see Distributed Class Definition.
-  
-- **SR**
-  
-  Server Repository, see Server Repositories.
+  Distributed Class. This is a class definition that the developer defines in the DC file.
+  Distributed Objects are instantiated based on a Distributed Class in which it **inherits**
+  it's properties, or **fields**, from.
   
 - **CR**
   
-  Client Repository, see Client Repositories.
+  Client Repository. See [Panda3D's Client Repository](https://docs.panda3d.org/1.10/python/programming/networking/distributed/client-repositories).
 
-If you wish to learn more, you can also visit these resources available online:
+- **AIR**
+
+  AI Repository. See [Panda3D's AI Repository](https://docs.panda3d.org/1.10/python/programming/networking/distributed/ai-repositories).
+
+<br>
+
+If you wish to learn more about Panda3D's Distributed Networking, you can also visit these resources available online:
 
 - [October 2003: Building a MMOG for the Million - Disney's Toontown Online](https://dl.acm.org/doi/10.1145/950566.950589)
 - [Apr 16, 2008: The DistributedObject System, client side](https://www.youtube.com/watch?v=JsgCFVpXQtQ)
@@ -127,5 +165,4 @@ If you wish to learn more, you can also visit these resources available online:
 - [Apr 30, 2008: OTP Server Internals](https://www.youtube.com/watch?v=SzybRdxjYoA)
 - [October 2010: (GDC Online) MMO 101 - Building Disney's Server System](https://www.gdcvault.com/play/1013776/MMO-101-Building-Disney-s)
 - [(PDF Slideshow) MMO 101 - Building Disney's Server System](https://ubm-twvideo01.s3.amazonaws.com/o1/vault/gdconline10/slides/11516-MMO_101_Building_Disneys_Sever.pdf)
-
 
