@@ -1,4 +1,4 @@
-<img src="logo/donet_banner.png" align="right" width="40%"/>
+<img src="../logo/donet_banner.png" align="right" width="40%"/>
 
 # 01 - Introduction to DoNet
 
