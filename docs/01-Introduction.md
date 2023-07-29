@@ -127,9 +127,11 @@ list below to learn and understand the different concepts and terms used in DoNe
   
 - **AI**
   
-  Artificial Intelligence. An AI is a process on the server cluster's internal network
-  that acts as a client connected directly to a Message Director instance. This means
-  that all AI clients bypass the Client Agent, as they are part of the 'safe zone.'
+  Artificial Intelligence. The name for this is arbitrary, as it is not in any way 
+  related to the field of machine learning. An AI is a process on the server cluster's 
+  internal network that acts as a client connected directly to a Message Director instance. 
+  This means that all AI clients bypass the Client Agent, as they are part of the 'safe zone.' 
+  AI processes have authority over Distributed Objects and host the game's or application's logic.
   
 - **UD**
   
