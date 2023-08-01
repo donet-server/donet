@@ -26,8 +26,8 @@ distributed object is created, all interested clients will automatically create 
 copy of that object. Updates to the object will automatically propagate to the copies.
 
 The distributed network is composed of several layers: The DC file (*.dc), which defines 
-the communication, ServerRepositories which handle communication between clients, 
-ClientRepositories which interact and manage the Distributed Objects, 
+the communication, or the 'contract', the DoNet cluster which handles communication between 
+clients, ClientRepositories which interact and manage the Distributed Objects, 
 and the Distributed Objects themselves.
 
 The architecture of a DoNet server cluster is made up of 6 different units, or modules:
