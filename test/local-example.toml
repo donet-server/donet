@@ -1,0 +1,74 @@
+# The 'daemon' section describes identification 
+# information which can be queried from an MD instance.
+[daemon]
+name = "Master Message Director"
+#id = 3 # default: automatically assigned
+
+# The 'global' section contains configuration that 
+# is shared among all daemons in the cluster.
+[global]
+eventlogger = "127.0.0.1:9090"
+dc_files = ["main.dc", "game.dc"]
+
+
+# The 'DOGs' section describes the existence of
+# Distributed Object Globals, which are objects 
+# that are globally known by all AI and Clients
+# and are accessible to anonymous clients.
+[[dogs]]
+id = 1000
+dclass = "AuthService"
+# The 'anonymous' value specifies whether a DOG
+# can be accessed through by an unauthenticated client.
+anonymous = true # default: false
+
+# Note that this section (and the one above) uses
+# double brackets '[[dogs]]', as these are entries
+# of the 'dogs' section.
+[[dogs]]
+id = 2000
+dclass = "ScratchCardService"
+anonymous = false
+
+# The Message Director instance that routes messages
+# to this daemon process. (its gateway to the cluster)
+[gateway]
+bind = "127.0.0.1:7199"
+
+# The 'services' section describes the service(s) that 
+# this daemon should perform as. (e.g. Client Agent, State Server, etc.)
+#
+#    Valid Services:
+#        - 'services.client_agent'
+#        - 'services.state_server'
+#        - 'services.dbss'
+#        - 'services.database_server'
+#        - 'services.event_logger'
+
+[services.client_agent]
+bind = "127.0.0.1:6667"
+# 'dc_file_hash' tells the daemon what DC hash (32-bit) to expect from the client.
+# This setting may be used if the AI / clients don't have the same DC parser as DoNet.
+#dc_file_hash = 0xABCDEF12
+version_string = "v1.0.0"
+
+[services.state_server]
+control_channel = "102000"
+
+[services.database_server]
+control_channel = "103000"
+# Valid Database Backends:
+#    - 'mysql'
+db_backend = "mysql"
+
+# The DBSS service does not have a control channel, so
+# it cannot generate or activate new Distributed Objects.
+[services.dbss]
+db_channel = "103000"
+# The DBSS manages a range of Distributed Objects by DoIDs.
+range.min = 100000000
+range.max = 200000000
+
+[services.event_logger]
+bind = "127.0.0.1:9090" # NOTE: UDP protocol
+output = "/var/log/donet/" # Logs output directory
