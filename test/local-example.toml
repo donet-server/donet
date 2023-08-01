@@ -17,7 +17,7 @@ dc_files = ["main.dc", "game.dc"]
 # and are accessible to anonymous clients.
 [[dogs]]
 id = 1000
-dclass = "AuthService"
+dclass = "LoginManager"
 # The 'anonymous' value specifies whether a DOG
 # can be accessed through by an unauthenticated client.
 anonymous = true # default: false
@@ -27,7 +27,7 @@ anonymous = true # default: false
 # of the 'dogs' section.
 [[dogs]]
 id = 2000
-dclass = "ScratchCardService"
+dclass = "ScratchCardManager"
 anonymous = false
 
 # The Message Director instance that routes messages
