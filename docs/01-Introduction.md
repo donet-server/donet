@@ -125,22 +125,11 @@ list below to learn and understand the different concepts and terms used in DoNe
   Distributed Object Identifier. This is a **32-bit long identifier** that is generated
   at runtime to identify a Distributed Object that exists in the State Server.
 
-- **Views**
-
-  Views are implementations of a Distributed Class from different **perspectives**.
-  Distributed Object instances on a client inherit from a Distributed Class **and**
-  have a suffix which describes the object's perspective from the client. Valid suffixes
-  are: "AI", "UD", and "OV".
-
-  "AI" views are runtime instances of a Distributed Object managed by an AI process.
+- **DC**
   
-  "UD" views are used by UberDOG processes (similar to AI clients).
-  
-  "OV" views are used by clients which have ownership over that Distributed Object instance.
-
-  The concept of views is very similar to the
-  [Model-view-controller (MVC)](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller)
-  software design pattern.
+  Distributed Class. This is a class definition that the developer defines in the DC file.
+  Distributed Objects are instantiated based on a Distributed Class in which it **inherits**
+  it's properties, or **fields**, from.
   
 - **AI**
   
@@ -153,18 +142,35 @@ list below to learn and understand the different concepts and terms used in DoNe
 - **UD**
   
   Uber DOG. This is similar to an AI process, but is dedicated to managing Distributed
-  Object Global (DOGs) objects. Distributed Object views 
+  Object Global (DOGs) objects.
+
+- **Views**
+
+  Views are local implementations of a Distributed Class from different **perspectives**.
+  A view is essentially a representation of a Distributed Object in the eyes of a client.
+  Distributed Object instances on a client inherit from a Distributed Class **and**
+  are usually, by convention, named with a suffix which describes the object's
+  perspective from the client's point of view in the virtual world. Valid suffixes
+  are: **"AI"** (Artificial Intelligence), **"UD"** (UberDOG), and **"OV"** (Owner View).
+
+  **"AI"** views are the AI-side representation of a Distributed Object instance.
   
-- **OV**
+  **"UD"** views are used by UberDOG processes (similar to AI clients).
   
-  Owner View. This is a suffix given to Distributed Object instances on a client process
-  that the client has **ownership** of.
-  
-- **DC**
-  
-  Distributed Class. This is a class definition that the developer defines in the DC file.
-  Distributed Objects are instantiated based on a Distributed Class in which it **inherits**
-  it's properties, or **fields**, from.
+  **"OV"** views are used by clients, which have **ownership** over that Distributed Object instance.
+
+  Objects seen by a client, but not owned by it, also have their client-side representation without a suffix.
+
+  Each view implements the logic that is executed when a field of the Distributed Object is called.
+  For example, a Distributed Class named 'DistributedAvatar' has AI and OV views. The AI view
+  may have the privilege to add currency to the 'DistributedAvatar' object, while the OV view has
+  the ability to set the username of the 'DistributedAvatar' object. **In a nutshell**, AI processes
+  implement administrative logic for a Distributed Object while client processes may implement special
+  logic over objects they have ownership of, or use shared logic for objects they do not own.
+
+  The concept of views is very similar to the
+  [Model-view-controller (MVC)](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller)
+  software design pattern.
   
 - **CR**
   
