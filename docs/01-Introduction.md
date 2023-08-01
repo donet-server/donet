@@ -30,11 +30,11 @@ the communication, or the 'contract', the DoNet cluster which handles communicat
 clients, ClientRepositories which interact and manage the Distributed Objects, 
 and the Distributed Objects themselves.
 
-The architecture of a DoNet server cluster is made up of 6 different units, or modules:
+The architecture of a DoNet server cluster is made up of 6 different types of services:
 
 ### **[CA] - Client Agent**
 
-  The Client Agent component manages connections with **anonymous clients** that are connecting 
+  The Client Agent service manages connections with **anonymous clients** that are connecting 
   from outside of the internal server network. Clients do not directly communicate with the 
   DoNet cluster. Instead, the Client Agent relays client messages over to the network. This 
   component provides two of the main features in a DoNet server cluster, which is **security** 
@@ -46,35 +46,35 @@ The architecture of a DoNet server cluster is made up of 6 different units, or m
   
 ### **[MD] - Message Director**
   
-  The Message Director listens for messages from other components in a DoNet server cluster, 
-  and **routes** them to other components based on the recipients in the messages received. A 
+  The Message Director listens for messages from other services in a DoNet server cluster, 
+  and **routes** them to other services based on the recipients in the message headers. A 
   message is a blob of binary data sent over the network, with a maximum size of approximately 
   **64 kilobytes**. The routing is performed by means of routing identifiers called **channels**, 
   where a message contains any number of destination channels, and most messages include a source, 
-  or sender channel. Each component tells the Message Director which channels it would like to 
+  or sender channel. Each service tells the Message Director which channels it would like to 
   **subscribe** to, and receives messages sent to its subscribed channels.
   
 ### **[SS] - State Server**
   
-  The State Server component is responsible of coordinating the short-term existance of Distributed 
+  The State Server service is responsible of coordinating the short-term existance of Distributed 
   Objects and their **states**. This component provides one of the main features in a DoNet server 
   cluster, which is **short-term persistance**. All Distributed Objects in a State Server exist 
   in memory and are part of a graph hierarchy called the **visibility tree**. The State Server has 
   data stored for each Distributed Object such as the class of the object, what its Distributed 
-  Object ID (DoId) is, and where it is located in the visibility tree. Other components in a DoNet 
+  Object ID (DoId) is, and where it is located in the visibility tree. Other services in a DoNet 
   cluster may communicate with the State Server through a Message Director to **manipulate** and 
   **query** Distributed Objects in the State Server's visibility tree.
 
 ### **[DB] - Database Server**
   
-  The Database Server component is responsible for the long-term persistence of Distributed Object 
+  The Database Server service is responsible for the long-term persistence of Distributed Object 
   **fields** that are marked in the DC file with a **"db" keyword**, which tells the Database 
   Server to store them on disk. It stores these fields in a **SQL database**, and can **update or 
   query** the Distributed Object's field's value.
   
 ### **[DBSS] - Database State Server**
   
-  The Database State Server (DBSS for short) is a kind of **hybrid** component of a State 
+  The Database State Server (DBSS for short) is a kind of **hybrid** service of a State 
   Server and a Database Server. This component is allows for other services in the cluster 
   to manipulate Distributed Object fields that are **currently not loaded on a State Server**. 
   The DBSS can also be configured to **listen to a range of DoId's** which it manages. If 
@@ -95,10 +95,10 @@ The architecture of a DoNet server cluster is made up of 6 different units, or m
 
 <br>
 
-DoNet can be configured to serve as all these roles under one process, which is 
+DoNet can be configured to serve as all these roles under one daemon, which is 
 handy for development on your local machine. For a production environment, many instances
-of DoNet can be running on different machines and configured to serve as one component each. 
-This configuration would be in a .par file that the DoNet process would read on startup.
+of DoNet can be running on different machines and configured to serve as one service each. 
+This configuration would be in a **.toml file** that the DoNet daemon would read on startup.
 
 <br>
 
@@ -122,8 +122,25 @@ list below to learn and understand the different concepts and terms used in DoNe
   
 - **DoId**
   
-  Distributed Object Identifier. This is a 32-bit long identifier that is generated
+  Distributed Object Identifier. This is a **32-bit long identifier** that is generated
   at runtime to identify a Distributed Object that exists in the State Server.
+
+- **Views**
+
+  Views are implementations of a Distributed Class from different **perspectives**.
+  Distributed Object instances on a client inherit from a Distributed Class **and**
+  have a suffix which describes the object's perspective from the client. Valid suffixes
+  are: "AI", "UD", and "OV".
+
+  "AI" views are runtime instances of a Distributed Object managed by an AI process.
+  
+  "UD" views are used by UberDOG processes (similar to AI clients).
+  
+  "OV" views are used by clients which have ownership over that Distributed Object instance.
+
+  The concept of views is very similar to the
+  [Model-view-controller (MVC)](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller)
+  software design pattern.
   
 - **AI**
   
@@ -131,12 +148,12 @@ list below to learn and understand the different concepts and terms used in DoNe
   related to the field of machine learning. An AI is a process on the server cluster's 
   internal network that acts as a client connected directly to a Message Director instance. 
   This means that all AI clients bypass the Client Agent, as they are part of the 'safe zone.' 
-  AI processes have authority over Distributed Objects and host the game's or application's logic.
+  AI processes have **authority over Distributed Objects** and host the game/application's logic.
   
 - **UD**
   
   Uber DOG. This is similar to an AI process, but is dedicated to managing Distributed
-  Object Global (DOGs) objects.
+  Object Global (DOGs) objects. Distributed Object views 
   
 - **OV**
   
