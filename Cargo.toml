@@ -16,5 +16,6 @@ publish = false
 # where it can find the OpenSSL include & library files.
 # Please prefix your cargo build command with: `OPENSSL_DIR=/usr/`
 # The directory may vary depending on your distribution of Linux.
+toml = "0.7.6"
 mysql = "24.0.0"
 
