@@ -15,7 +15,7 @@ This open source software project will always aim to stay compatible with [Panda
 
 ## Software License
 The DoNet project is released under the GNU Affero General Public License, version 3.0 (AGPL-3.0), which is a copyleft open source software license.
-The terms of this license are available in the "[LICENSE](./LICENSE)" file of this git repository.
+The terms of this license are available in the "[LICENSE](./LICENSE)" file.
 
 <br>
 
