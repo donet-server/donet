@@ -2,20 +2,30 @@
 
 # Donet
 
-**D**istributed **O**bject **Net**working server
+**D**istributed **O**bject **Net**working Engine
 
 ![](https://img.shields.io/discord/1066973060357443644?color=blue&label=Discord&logo=discord&logoColor=white)
 ![](https://img.shields.io/github/license/donet-server/Donet)
 ![](https://img.shields.io/github/last-commit/donet-server/Donet)
 
-The DoNet software project provides a server-side system that implements the Distributed Class protocol, as defined in the high-level networking API of the [Panda3D](https://panda3d.org) engine,
-which was originally designed by Disney Interactive (*formerly known as Disney VR Studios*) to connect with their in-house server technology, the OTP (*Online Theme Park*) server, which was used to power their massive multiplayer online games, such as Toontown Online and Pirates of the Caribbean Online, from 2001 to 2013.
+The DoNet software project is a network engine that implements the Distributed Networking protocol, 
+as defined in the high-level networking API of the [Panda3D](https://panda3d.org) game engine,
+which was originally developed by Disney Interactive (*formerly known as Disney VR Studios*) to connect 
+with their in-house server technology, the OTP (*Online Theme Park*) server, which was used to power 
+their massive multiplayer online games, such as Toontown Online and Pirates of the Caribbean Online, 
+from 2001 to 2013.
 
-This open source software project will always aim to stay compatible with [Panda3D’s](https://panda3d.org) high-level network API.
+This open source software project will always aim to stay compatible with 
+[Panda3D’s](https://panda3d.org) high-level network API.
 
 ## Software License
-The DoNet project is released under the GNU Affero General Public License, version 3.0 (AGPL-3.0), which is a copyleft open source software license.
-The terms of this license are available in the "[LICENSE](./LICENSE)" file.
+The DoNet engine is released under the GNU Affero General Public License, version 3.0 (AGPL-3.0), which 
+is a copyleft open source software license. The terms of this license are available in the 
+"[LICENSE](./LICENSE)" file.
+
+## Getting Started
+Please read the [introduction to DoNet](./docs/01-Introduction.md) for an overview of the project 
+and how the system works.
 
 <br>
 
