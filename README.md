@@ -1,6 +1,6 @@
-<img src="logo/donet_banner.png" align="right" width="40%"/>
+<img src="logo/donet_banner.png" align="right" width="43%"/>
 
-# Donet
+# DoNet
 
 **D**istributed **O**bject **Net**working Engine
 
@@ -26,8 +26,6 @@ is a copyleft open source software license. The terms of this license are availa
 ## Getting Started
 Please read the [introduction to DoNet](./docs/01-Introduction.md) for an overview of the project 
 and how the system works.
-
-<br>
 
 ### Distributed Networking architecture resources
 
