@@ -15,11 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#[path = "results.rs"]
-mod results;
+#[path = "results.rs"] mod results;
 
-#[path = "types.rs"]
-mod type_aliases;
+#[path = "types.rs"] mod type_aliases;
 
 // Detect system endianness (byte order)
 pub mod endianness {
@@ -67,9 +65,9 @@ pub mod endianness {
 
 #[allow(dead_code)] // FIXME: Remove once project matures
 pub mod datagram {
-    use crate::datagram::results::results as res;
-    use crate::datagram::type_aliases::type_aliases as types;
-    use crate::datagram::endianness;
+    use super::results::results as res;
+    use super::type_aliases::type_aliases as types;
+    use super::endianness;
     use std::vec::Vec;
 
     type DgSize = u16;

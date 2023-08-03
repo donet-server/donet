@@ -15,14 +15,13 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#[path = "datagram.rs"]
-mod datagram;
+//#[path = "dbserver.rs"]
+//mod dbserver;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() > 1 {
         let _option: &String = &args[1];
-    }
-    println!("Hello, world!");
+    } 
 }
