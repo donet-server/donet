@@ -15,7 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#[allow(dead_code)] // FIXME: Remove once project matures
+#[allow(dead_code)]
 pub mod type_aliases {
     use std::mem;
 
@@ -23,6 +23,8 @@ pub mod type_aliases {
     pub type Channel = u64;
     pub type DoId = u32;
     pub type Zone = u32;
+    pub type DClassId = u16;
+    pub type FieldId = u16;
 
     // Type Limits
     pub const CHANNEL_MAX: Channel = u64::MAX;

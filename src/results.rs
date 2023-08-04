@@ -15,8 +15,10 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#[allow(dead_code)]
 pub mod results {
     use std::result::Result; // not to be confused with std::io::Result
+    use std::error::Error;
 
     // All possible errors that can be returned by
     // the Datagram and DatagramIterator implementations.
@@ -27,4 +29,7 @@ pub mod results {
     }
 
     pub type DgResult = Result<(), DgError>;
+
+    // MySQL Result (mysql crate API response)
+    pub type SqlResult = Result<(), Box<dyn Error>>;
 }
