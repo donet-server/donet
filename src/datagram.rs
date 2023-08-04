@@ -16,7 +16,6 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #[path = "results.rs"] mod results;
-
 #[path = "types.rs"] mod type_aliases;
 
 // Detect system endianness (byte order)
@@ -65,6 +64,7 @@ pub mod endianness {
 
 #[allow(dead_code)] // FIXME: Remove once project matures
 pub mod datagram {
+    use log::{error};
     use super::results::results as res;
     use super::type_aliases::type_aliases as types;
     use super::endianness;
@@ -89,7 +89,7 @@ pub mod datagram {
             let new_offset: usize = self.buffer.len() + usize::from(length);
             
             if new_offset > DG_SIZE_MAX.into() {
-                // TODO: log error with more information
+                error!("Tried to add data to the datagram past its maximum size!");
                 return Err(res::DgError::DatagramOverflow);
             }
             return Ok(());
@@ -117,7 +117,7 @@ pub mod datagram {
         pub fn add_u16(&mut self, mut v: u16) -> res::DgResult {
             self.check_add_length(2)?;
             v = endianness::swap_le_16(v);
-            // FIXME: There is definitely a simpler way to do this.
+            // NOTE: I feel like there is a simpler way to do this.
             // Masking each byte and shifting it to the first byte,
             // then casting it as a u8 to represent one byte.
             self.buffer.push((v & 0xff00) as u8);
@@ -325,7 +325,7 @@ pub mod datagram {
             let new_offset: DgSize = self.offset as DgSize + bytes;
 
             if new_offset > self.datagram.size() {
-                // FIXME: print an error msg once we have a logger utility
+                error!("The DatagramIterator tried to read past the end of the buffer!");
                 return Err(res::DgError::DatagramIteratorEOF);
             }
             return Ok(());
