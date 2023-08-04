@@ -418,6 +418,7 @@ dependencies = [
 name = "donet"
 version = "0.0.0"
 dependencies = [
+ "log",
  "mysql",
  "toml 0.7.6",
 ]
