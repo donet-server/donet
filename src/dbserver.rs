@@ -20,7 +20,7 @@
 #[path = "datagram.rs"] mod datagram;
 
 pub mod dbserver {
-    use log::{error};
+    use log::{error, info};
     use super::results::results as res;
     use super::type_aliases::type_aliases as types;
     use std::vec::Vec;
@@ -74,7 +74,8 @@ pub mod dbserver {
                                     creds.password, port_str, 
                                     creds.database);
             let url_str: &str = url.as_str(); // can't do `as_str()` in line above, due to lifetime
-            
+           
+            info!("Connecting to SQL database backend with URL: {}", url_str);
             let p_res: Result<Pool, Error> = Pool::new(url_str);
             let pool: Pool;
 
@@ -93,6 +94,7 @@ pub mod dbserver {
             let conn: PooledConn;
 
             if c_res.is_err() {
+                error!("Failed to get SQL conn from pooled connection: {}", c_res.unwrap_err());
                 panic!("An error occured while connecting to the SQL database.");
             } else {
                 conn = c_res.unwrap();
@@ -103,6 +105,11 @@ pub mod dbserver {
                 sql_conn: conn,
                 _credentials: creds,
             }
+        }
+
+        pub fn init_service(&mut self) -> res::SqlResult {
+            self.check_database_tables()?;
+            return Ok(());
         }
 
         // If the Objects, DClasses, & Fields tables do not exist in the

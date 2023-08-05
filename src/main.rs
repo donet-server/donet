@@ -16,8 +16,34 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #[path = "dbserver.rs"] mod dbserver;
+use log::{Record, Level, Metadata, SetLoggerError, LevelFilter};
+
+struct DaemonLogger;
+
+impl log::Log for DaemonLogger {
+    fn enabled(&self, metadata: &Metadata) -> bool {
+        metadata.level() <= Level::Info
+    }
+
+    fn log(&self, record: &Record) {
+        if self.enabled(record.metadata()) {
+            println!("{} - {}", record.level(), record.args());
+        }
+    }
+    fn flush(&self) {}
+}
+
+static LOGGER: DaemonLogger = DaemonLogger;
 
 fn main() {
+    // Initialize the logger utility
+    let res: Result<(), SetLoggerError> = log::set_logger(&LOGGER)
+        .map(|()| log::set_max_level(LevelFilter::Info));
+
+    if res.is_err() {
+        panic!("Failed to initialize the logger utility!");
+    }
+
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() > 1 {
@@ -35,7 +61,7 @@ fn main() {
         password: "",
     };
     let mut db: DatabaseServer = DatabaseServer::new(creds);
-    let res = db.check_database_tables();
+    let res = db.init_service();
     if res.is_err() {
         panic!("error haha");
     }

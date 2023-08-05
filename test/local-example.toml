@@ -3,6 +3,7 @@
 [daemon]
 name = "Master Message Director"
 #id = 3 # default: automatically assigned
+log_level = "info" # default: "info"
 
 # The 'global' section contains configuration that 
 # is shared among all daemons in the cluster.
