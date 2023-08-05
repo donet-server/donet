@@ -15,13 +15,28 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-//#[path = "dbserver.rs"]
-//mod dbserver;
+#[path = "dbserver.rs"] mod dbserver;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() > 1 {
         let _option: &String = &args[1];
-    } 
+    }
+    
+    use dbserver::dbserver::DatabaseServer;
+    use dbserver::dbserver::DBCredentials;
+
+    let creds: DBCredentials = DBCredentials {
+        host: "192.168.1.252",
+        port: 3306,
+        database: "test",
+        user: "root",
+        password: "",
+    };
+    let mut db: DatabaseServer = DatabaseServer::new(creds);
+    let res = db.check_database_tables();
+    if res.is_err() {
+        panic!("error haha");
+    }
 }
