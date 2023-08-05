@@ -16,7 +16,8 @@ their massive multiplayer online games, such as Toontown Online and Pirates of t
 from 2001 to 2013.
 
 This open source software project will always aim to stay compatible with 
-[Panda3D’s](https://panda3d.org) high-level network API.
+[Panda3D’s](https://panda3d.org) high-level network API, which utilizes its own unique protocol, 
+[CMU message types](https://github.com/panda3d/panda3d/blob/master/direct/src/distributed/MsgTypesCMU.py).
 
 ## Software License
 The DoNet engine is released under the GNU Affero General Public License, version 3.0 (AGPL-3.0), which 
