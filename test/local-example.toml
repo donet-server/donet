@@ -61,6 +61,11 @@ control_channel = "103000"
 # Valid Database Backends:
 #    - 'mysql'
 db_backend = "mysql"
+[services.database_server.sql]
+host = "192.168.1.252:3306"
+user = "root"
+pass = "admin"
+database = "test_db"
 
 # The DBSS service does not have a control channel, so
 # it cannot generate or activate new Distributed Objects.
