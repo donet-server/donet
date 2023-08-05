@@ -50,15 +50,15 @@ pub mod dbserver {
         storable: bool, // BOOLEAN NOT NULL
     }
 
-    // NOTE: For persisting dclass field data, we serialize the field
-    // parameters into a binary blob. This way, we avoid creating more
-    // tables for each 'db' field in each dclass that is on the dc file.
+    // FIXME: Every dclass field that has the 'db' keyword has its
+    // own SQL table created in the database. Not sure if this struct
+    // will be able to represent all field tables.
     #[derive(Debug, PartialEq, Eq)]
     struct Field {
         doid: types::DoId, // INT UNSIGNED NOT NULL PRIMARY KEY
         dclass: types::DClassId, // SMALLINT UNSIGNED NOT NULL
         field: types::FieldId, // SMALLINT UNSIGNED NOT NULL
-        data: Vec<u8>, // BLOB NOT NULL 
+        parameters: Vec<Vec<u8>>, // NOT NULL 
     }
 
     pub struct DatabaseServer<'a> {
@@ -85,7 +85,7 @@ pub mod dbserver {
                 // can't pass the error over to whoever is calling this method. So if issues
                 // occur with establishing the conn, the service will simply panic and halt.
                 error!("Failed to create SQL conn pool: {}", p_res.unwrap_err());
-                panic!("An error occured while connecting to the SQL database.");
+                panic!("An error occurred while connecting to the SQL database.");
             } else {
                 pool = p_res.unwrap();
             }
@@ -95,7 +95,7 @@ pub mod dbserver {
 
             if c_res.is_err() {
                 error!("Failed to get SQL conn from pooled connection: {}", c_res.unwrap_err());
-                panic!("An error occured while connecting to the SQL database.");
+                panic!("An error occurred while connecting to the SQL database.");
             } else {
                 conn = c_res.unwrap();
             }
@@ -125,12 +125,12 @@ pub mod dbserver {
                                         name VARCHAR(32) NOT NULL,
                                         storable BOOLEAN NOT NULL
                                     );")?;
-            self.sql_conn.query_drop(r"CREATE TABLE IF NOT EXISTS fields (
-                                        doid INT UNSIGNED NOT NULL PRIMARY KEY,
-                                        dclass SMALLINT UNSIGNED NOT NULL
-                                        field SMALLINT UNSIGNED NOT NULL
-                                        data BLOB NOT NULL
-                                    );")?;
+            //self.sql_conn.query_drop(r"CREATE TABLE IF NOT EXISTS fields (
+                                        //doid INT UNSIGNED NOT NULL PRIMARY KEY,
+                                        //dclass SMALLINT UNSIGNED NOT NULL
+                                        //field SMALLINT UNSIGNED NOT NULL
+                                        //data BLOB NOT NULL
+                                    //);")?;
             return Ok(());
         }
     }
