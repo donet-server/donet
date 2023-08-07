@@ -70,9 +70,6 @@ pub mod datagram {
     use super::endianness;
     use std::vec::Vec;
 
-    type DgSize = u16;
-    const DG_SIZE_MAX: DgSize = u16::MAX;
-
     pub struct Datagram {
         buffer: Vec<u8>,
     }
@@ -85,10 +82,10 @@ pub mod datagram {
         }
 
         // Checks if we can add `length` number of bytes to the datagram.
-        fn check_add_length(&self, length: DgSize) -> res::DgResult {
+        fn check_add_length(&mut self, length: types::DgSize) -> res::DgResult {
             let new_offset: usize = self.buffer.len() + usize::from(length);
             
-            if new_offset > DG_SIZE_MAX.into() {
+            if new_offset > types::DG_SIZE_MAX.into() {
                 error!("Tried to add data to the datagram past its maximum size!");
                 return Err(res::DgError::DatagramOverflow);
             }
@@ -177,7 +174,7 @@ pub mod datagram {
         }
 
         // Adds a Datagram / Field length tag to the end of the datagram.
-        pub fn add_size(&mut self, v: DgSize) -> res::DgResult {
+        pub fn add_size(&mut self, v: types::DgSize) -> res::DgResult {
             return self.add_u16(v as u16);
         }
 
@@ -206,7 +203,7 @@ pub mod datagram {
         // Adds raw bytes to the datagram via an unsigned 8-bit integer vector.
         // NOTE: not to be confused with add_blob(), which adds a dclass blob to the datagram.
         pub fn add_data(&mut self, mut v: Vec<u8>) -> res::DgResult {
-            if v.len() > DG_SIZE_MAX.into() { // check input to avoid panic at .try_into() below
+            if v.len() > types::DG_SIZE_MAX.into() { // check input to avoid panic at .try_into() below
                 return Err(res::DgError::DatagramOverflow); 
             }
             self.check_add_length(v.len().try_into().unwrap())?;
@@ -218,7 +215,7 @@ pub mod datagram {
         pub fn add_datagram(&mut self, dg: Datagram) -> res::DgResult {
             let mut dg_buffer: Vec<u8> = dg.buffer;
             
-            if dg_buffer.len() > DG_SIZE_MAX.into() {
+            if dg_buffer.len() > types::DG_SIZE_MAX.into() {
                 // Technically should not happen as the datagram given should
                 // keep its buffer under the max dg size, but we should still handle
                 // this error to avoid a panic at self.check_add_length().
@@ -232,7 +229,7 @@ pub mod datagram {
         // Adds a dclass string value to the end of the datagram.
         // A 16-bit length tag prefix with the string's size in bytes is added.
         pub fn add_string(&mut self, v: &str) -> res::DgResult {
-            if v.len() > DG_SIZE_MAX.into() {
+            if v.len() > types::DG_SIZE_MAX.into() {
                 // The string is too big to be described with a 16-bit length tag.
                 return Err(res::DgError::DatagramOverflow);
             }
@@ -259,7 +256,16 @@ pub mod datagram {
             return Ok(());
         }
 
-        // TODO: add_buffer() method to reserve space in datagram buffer.
+        // Reserves an amount of bytes in the datagram buffer.
+        pub fn add_buffer(&mut self, bytes: types::DgSize) -> res::DgBufferResult {
+            self.check_add_length(bytes)?;
+            // get start length (before push)
+            let start: types::DgSize = self.size();
+            for _n in 1..bytes {
+                self.buffer.push(0 as u8);
+            }
+            return Ok(start);
+        }
 
         // Appends a generic header for messages that are to be routed to
         // one or more role instances within the server cluster.
@@ -291,7 +297,7 @@ pub mod datagram {
             return Ok(());
         }
 
-        pub fn size(&mut self) -> DgSize {
+        pub fn size(&mut self) -> types::DgSize {
             return self.buffer.len().try_into().unwrap();
         }
 
@@ -321,8 +327,8 @@ pub mod datagram {
             }
         }
 
-        pub fn check_read_length(&mut self, bytes: DgSize) -> res::DgResult {
-            let new_offset: DgSize = self.offset as DgSize + bytes;
+        pub fn check_read_length(&mut self, bytes: types::DgSize) -> res::DgResult {
+            let new_offset: types::DgSize = self.offset as types::DgSize + bytes;
 
             if new_offset > self.datagram.size() {
                 error!("The DatagramIterator tried to read past the end of the buffer!");
@@ -332,30 +338,30 @@ pub mod datagram {
         }
 
         // Returns the value of `buffer_offset` in bytes.
-        pub fn tell(&mut self) -> DgSize {
-            return self.offset as DgSize;
+        pub fn tell(&mut self) -> types::DgSize {
+            return self.offset as types::DgSize;
         }
 
         // Manually sets the buffer_offset position.
-        pub fn seek(&mut self, to: DgSize) -> () {
+        pub fn seek(&mut self, to: types::DgSize) -> () {
             self.offset = to as usize;
         }
 
         // Increments the buffer_offset by `bytes` length.
         // Returns DgError.DatagramIteratorEOF if it's past the end of the buffer.
-        pub fn skip(&mut self, bytes: DgSize) -> res::DgResult {
+        pub fn skip(&mut self, bytes: types::DgSize) -> res::DgResult {
             self.check_read_length(bytes)?;
             self.offset += bytes as usize;
             return Ok(());
         }
 
         // Returns the number of unread bytes left in the datagram
-        pub fn get_remaining(&mut self) -> DgSize {
-            return self.datagram.size() - self.offset as DgSize;
+        pub fn get_remaining(&mut self) -> types::DgSize {
+            return self.datagram.size() - self.offset as types::DgSize;
         }
 
         // Reads the next number of bytes in the datagram.
-        pub fn read_data(&mut self, bytes: DgSize) -> Vec<u8> {
+        pub fn read_data(&mut self, bytes: types::DgSize) -> Vec<u8> {
             let data: Vec<u8> = self.datagram.get_data();
 
             let mut new_data: Vec<u8> = vec![];
@@ -458,8 +464,8 @@ pub mod datagram {
             return if data == 1 { true } else { false }
         }
 
-        pub fn read_size(&mut self) -> DgSize {
-            return self.read_u16() as DgSize;
+        pub fn read_size(&mut self) -> types::DgSize {
+            return self.read_u16() as types::DgSize;
         }
 
         pub fn read_channel(&mut self) -> types::Channel {
@@ -473,5 +479,76 @@ pub mod datagram {
         pub fn read_zone(&mut self) -> types::Zone {
             return self.read_u32() as types::Zone;
         }
+    }
+}
+
+// Unit Testing
+#[cfg(test)]
+mod tests {
+    use super::results::results as res;
+    use super::type_aliases::type_aliases as types;
+    use super::endianness;
+    use super::datagram;
+   
+    // ----------- Endianness ----------- //
+
+    #[test]
+    #[cfg(target_endian = "big")]
+    fn endianness_swap_le_16() -> () {
+        let res: u16 = endianness::swap_le_16(1000 as u16);
+        assert_eq!(res, 59395); 
+    }
+
+    #[test]
+    #[cfg(target_endian = "little")]
+    fn endianness_swap_le_16() -> () {
+        let res: u16 = endianness::swap_le_16(1000 as u16);
+        assert_eq!(res, 1000);
+    }
+
+    #[test]
+    #[cfg(target_endian = "big")]
+    fn endianness_swap_le_32() -> () {
+        let res: u32 = endianness::swap_le_32(100000000 as u32);
+        assert_eq!(res, 14808325); 
+    }
+
+    #[test]
+    #[cfg(target_endian = "little")]
+    fn endianness_swap_le_32() -> () {
+        let res: u32 = endianness::swap_le_32(100000000 as u32);
+        assert_eq!(res, 100000000);
+    }
+
+    #[test]
+    #[cfg(target_endian = "big")]
+    fn endianness_swap_le_64() -> () {
+        let res: u64 = endianness::swap_le_64(100000000000000000 as u64);
+        assert_eq!(res, 152134054404865); 
+    }
+
+    #[test]
+    #[cfg(target_endian = "little")]
+    fn endianness_swap_le_64() -> () {
+        let res: u64 = endianness::swap_le_64(100000000000000000 as u64);
+        assert_eq!(res, 100000000000000000);
+    }
+
+    // ----------- Datagram ------------ //
+    
+    #[test]
+    fn datagram_overflow_test() -> () {
+        let mut dg: datagram::Datagram = datagram::Datagram::new(); 
+        let res_1: res::DgBufferResult = dg.add_buffer(types::DG_SIZE_MAX);
+
+        assert!(!res_1.is_err(), "Could not append 2^16 bytes to datagram buffer.");
+        assert_eq!(res_1.unwrap(), 0, "add_buffer() didn't return start of reserve.");
+        assert_eq!(dg.size() + 1, types::DG_SIZE_MAX, "Datagram didn't add 2^16 bytes to the buffer.");
+
+        let res_2: res::DgResult = dg.add_u16(0);
+        assert!(res_2.is_err(), "Datagram overflow occurred, but did not throw an error.");
+
+        assert_eq!(res_2.unwrap_err(), res::DgError::DatagramOverflow, 
+                   "Datagram overflow occurred, but failed to respond with DgError::DatagramOverflow.");
     }
 }

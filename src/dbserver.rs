@@ -135,3 +135,10 @@ pub mod dbserver {
         }
     }
 }
+
+// DBServer Unit Testing
+#[cfg(test)]
+mod tests {
+    #[allow(unused_imports)] // FIXME: remove once we write tests
+    use super::*;
+}

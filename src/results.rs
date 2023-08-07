@@ -15,13 +15,17 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#[path = "types.rs"] mod type_aliases;
+
 #[allow(dead_code)]
 pub mod results {
     use std::result::Result; // not to be confused with std::io::Result
     use std::error::Error;
+    use super::type_aliases::type_aliases as types;
 
     // All possible errors that can be returned by
     // the Datagram and DatagramIterator implementations.
+    #[derive(Debug, PartialEq)]
     pub enum DgError {
         DatagramOverflow,
         DatagramIteratorEOF,
@@ -29,6 +33,7 @@ pub mod results {
     }
 
     pub type DgResult = Result<(), DgError>;
+    pub type DgBufferResult = Result<types::DgSize, DgError>;
 
     // MySQL Result (mysql crate API response)
     pub type SqlResult = Result<(), Box<dyn Error>>;

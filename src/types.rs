@@ -20,6 +20,7 @@ pub mod type_aliases {
     use std::mem;
 
     // Type Definitions
+    pub type DgSize = u16; 
     pub type Channel = u64;
     pub type DoId = u32;
     pub type Zone = u32;
@@ -27,6 +28,7 @@ pub mod type_aliases {
     pub type FieldId = u16;
 
     // Type Limits
+    pub const DG_SIZE_MAX: DgSize = u16::MAX;
     pub const CHANNEL_MAX: Channel = u64::MAX;
     pub const DOID_MAX: DoId = u32::MAX;
     pub const ZONE_MAX: Zone = u32::MAX;
