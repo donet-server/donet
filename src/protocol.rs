@@ -15,9 +15,8 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#[allow(dead_code)] // FIXME: Remove once project matures
-mod messages {
-
+#[allow(dead_code)]
+mod protocol {
     enum Client { 
         Hello =                         1,
         HelloResp =                     2,
