@@ -1,4 +1,4 @@
-name: Cargo Build
+name: Build Workflow
 on: [push, pull_request]
 
 jobs:
@@ -33,6 +33,7 @@ jobs:
         run: |
           rustup component add rustfmt
           rustup component add clippy
+          rustup target add i686-unknown-linux-gnu
       - name: Print Rust compiler version
         run: rustc --version
       - name: Verify Rust code format
