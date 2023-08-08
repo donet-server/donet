@@ -28,6 +28,12 @@ jobs:
           rustup component add rustfmt
           rustup component add clippy
           rustup target add i686-unknown-linux-gnu
+      - name: Update System Packages
+        run: |
+          # Update package lists
+          apt update -qq
+          # Verify OpenSSL libraries are installed
+          apt install -y libssl-dev
       - name: Print Rust compiler version
         run: rustc --version
       - name: Verify Rust code format
