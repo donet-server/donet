@@ -5,8 +5,8 @@
 **D**istributed **O**bject **Net**working Engine
 
 ![](https://img.shields.io/discord/1066973060357443644?color=blue&label=Discord&logo=discord&logoColor=white)
+![](https://img.shields.io/github/actions/workflow/status/donet-server/Donet/build.yml?logo=github&label=Build%20Workflow)
 ![](https://img.shields.io/github/license/donet-server/Donet)
-![](https://img.shields.io/github/last-commit/donet-server/Donet)
 
 The DoNet software project is a network engine that implements the Distributed Networking protocol, 
 as defined in the high-level networking API of the [Panda3D](https://panda3d.org) game engine,
