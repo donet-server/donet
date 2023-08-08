@@ -7,6 +7,7 @@ jobs:
     timeout-minutes: 10
     env:
       DEBIAN_FRONTEND: "noninteractive"
+      OPENSSL_DIR: "/usr/"
     strategy:
       matrix:
         rust-version: [
@@ -31,8 +32,9 @@ jobs:
         run: rustc --version
       - name: Verify Rust code format
         run: cargo fmt --all -- --check
+      - name: Run Unit Tests
+        run: cargo test
       - name: Build DoNet debug
         run: cargo build
       - name: Build DoNet release
         run: cargo build --release
-        
