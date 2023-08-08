@@ -15,35 +15,36 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#[path = "results.rs"] mod results;
-#[path = "types.rs"] mod type_aliases;
+#[path = "results.rs"]
+mod results;
+#[path = "types.rs"]
+mod type_aliases;
 
 // Detect system endianness (byte order)
 pub mod endianness {
     #[cfg(target_endian = "big")]
     pub fn swap_le_16(v: u16) -> u16 {
-        return (v & 0x00ff) << 8 |
-               (v & 0xff00) >> 8;
+        return (v & 0x00ff) << 8 | (v & 0xff00) >> 8;
     }
 
     #[cfg(target_endian = "big")]
     pub fn swap_le_32(v: u32) -> u32 {
-        return (v & 0x000000ff) << 24 |
-               (v & 0x0000ff00) <<  8 |
-               (v & 0x00ff0000) >>  8 |
-               (v & 0xff000000) >> 24;
+        return (v & 0x000000ff) << 24
+            | (v & 0x0000ff00) << 8
+            | (v & 0x00ff0000) >> 8
+            | (v & 0xff000000) >> 24;
     }
 
     #[cfg(target_endian = "big")]
     pub fn swap_le_64(v: u64) -> u64 {
-        return (v & 0x00000000000000ff) << 56 |
-               (v & 0x000000000000ff00) << 40 |
-               (v & 0x0000000000ff0000) << 24 |
-               (v & 0x00000000ff000000) <<  8 |
-               (v & 0x000000ff00000000) >>  8 |
-               (v & 0x0000ff0000000000) >> 24 |
-               (v & 0x00ff000000000000) >> 40 |
-               (v & 0xff00000000000000) >> 56;
+        return (v & 0x00000000000000ff) << 56
+            | (v & 0x000000000000ff00) << 40
+            | (v & 0x0000000000ff0000) << 24
+            | (v & 0x00000000ff000000) << 8
+            | (v & 0x000000ff00000000) >> 8
+            | (v & 0x0000ff0000000000) >> 24
+            | (v & 0x00ff000000000000) >> 40
+            | (v & 0xff00000000000000) >> 56;
     }
 
     #[cfg(target_endian = "little")]
@@ -64,10 +65,10 @@ pub mod endianness {
 
 #[allow(dead_code)] // FIXME: Remove once project matures
 pub mod datagram {
-    use log::{error};
+    use super::endianness;
     use super::results::results as res;
     use super::type_aliases::type_aliases as types;
-    use super::endianness;
+    use log::error;
     use std::vec::Vec;
 
     pub struct Datagram {
@@ -76,15 +77,13 @@ pub mod datagram {
 
     impl Datagram {
         pub fn new() -> Datagram {
-            Datagram {
-                buffer: Vec::new(),
-            }
+            Datagram { buffer: Vec::new() }
         }
 
         // Checks if we can add `length` number of bytes to the datagram.
         fn check_add_length(&mut self, length: types::DgSize) -> res::DgResult {
             let new_offset: usize = self.buffer.len() + usize::from(length);
-            
+
             if new_offset > types::DG_SIZE_MAX.into() {
                 error!("Tried to add data to the datagram past its maximum size!");
                 return Err(res::DgError::DatagramOverflow);
@@ -103,7 +102,7 @@ pub mod datagram {
             }
             return Ok(());
         }
- 
+
         // Adds an unsigned 8-bit integer value to the datagram.
         pub fn add_u8(&mut self, v: u8) -> res::DgResult {
             self.check_add_length(1)?;
@@ -155,14 +154,14 @@ pub mod datagram {
             return self.add_u16(v as u16);
         }
 
-        pub fn add_i32(&mut self, v: i32) -> res::DgResult { 
+        pub fn add_i32(&mut self, v: i32) -> res::DgResult {
             return self.add_u32(v as u32);
         }
 
-        pub fn add_i64(&mut self, v: i64) -> res::DgResult { 
+        pub fn add_i64(&mut self, v: i64) -> res::DgResult {
             return self.add_u64(v as u64);
         }
-        
+
         // 32-bit IEEE 754 floating point. same bitwise operations.
         pub fn add_f32(&mut self, v: f32) -> res::DgResult {
             return self.add_u32(v as u32);
@@ -203,8 +202,9 @@ pub mod datagram {
         // Adds raw bytes to the datagram via an unsigned 8-bit integer vector.
         // NOTE: not to be confused with add_blob(), which adds a dclass blob to the datagram.
         pub fn add_data(&mut self, mut v: Vec<u8>) -> res::DgResult {
-            if v.len() > types::DG_SIZE_MAX.into() { // check input to avoid panic at .try_into() below
-                return Err(res::DgError::DatagramOverflow); 
+            if v.len() > types::DG_SIZE_MAX.into() {
+                // check input to avoid panic at .try_into() below
+                return Err(res::DgError::DatagramOverflow);
             }
             self.check_add_length(v.len().try_into().unwrap())?;
             self.buffer.append(&mut v);
@@ -214,7 +214,7 @@ pub mod datagram {
         // Appends another datagram's binary data to this datagram.
         pub fn add_datagram(&mut self, dg: Datagram) -> res::DgResult {
             let mut dg_buffer: Vec<u8> = dg.buffer;
-            
+
             if dg_buffer.len() > types::DG_SIZE_MAX.into() {
                 // Technically should not happen as the datagram given should
                 // keep its buffer under the max dg size, but we should still handle
@@ -238,7 +238,7 @@ pub mod datagram {
 
             // convert the string into a byte array, as a vector
             let str_bytes: &mut Vec<u8> = &mut v.as_bytes().to_vec();
-            
+
             // make sure the byte array won't overflow the datagram
             self.check_add_length(str_bytes.len().try_into().unwrap())?;
             self.buffer.append(str_bytes);
@@ -274,12 +274,17 @@ pub mod datagram {
         // The header is formatted as shown below:
         //     (recipients: u8, recipients: Vec<Channel>, sender: Channel, message_type: u16)
         //
-        pub fn add_server_header(&mut self, to: Vec<types::Channel>,
-                                 from: types::Channel, msg_type: u16) -> res::DgResult {
+        pub fn add_server_header(
+            &mut self,
+            to: Vec<types::Channel>,
+            from: types::Channel,
+            msg_type: u16,
+        ) -> res::DgResult {
             // Add recipient(s) count
             self.add_u8(to.len().try_into().unwrap())?;
 
-            for recipient in to { // append each recipient in vector given
+            for recipient in to {
+                // append each recipient in vector given
                 self.add_channel(recipient)?;
             }
             self.add_channel(from)?;
@@ -410,24 +415,24 @@ pub mod datagram {
 
         pub fn read_u32(&mut self) -> u32 {
             let data: Vec<u8> = self.datagram.get_data();
-            let value: u32 = ((data[self.offset] as u32) << 24) |
-                             ((data[self.offset + 1] as u32) << 16) |
-                             ((data[self.offset + 2] as u32) << 8) |
-                               data[self.offset + 3] as u32;
+            let value: u32 = ((data[self.offset] as u32) << 24)
+                | ((data[self.offset + 1] as u32) << 16)
+                | ((data[self.offset + 2] as u32) << 8)
+                | data[self.offset + 3] as u32;
             self.offset += 4;
             return endianness::swap_le_32(value);
         }
 
         pub fn read_u64(&mut self) -> u64 {
             let data: Vec<u8> = self.datagram.get_data();
-            let value: u64 = ((data[self.offset] as u64) << 56) |
-                             ((data[self.offset + 1] as u64) << 48) |
-                             ((data[self.offset + 2] as u64) << 40) |
-                             ((data[self.offset + 3] as u64) << 32) |
-                             ((data[self.offset + 4] as u64) << 24) |
-                             ((data[self.offset + 5] as u64) << 16) |
-                             ((data[self.offset + 6] as u64) << 8) |
-                               data[self.offset + 7] as u64;
+            let value: u64 = ((data[self.offset] as u64) << 56)
+                | ((data[self.offset + 1] as u64) << 48)
+                | ((data[self.offset + 2] as u64) << 40)
+                | ((data[self.offset + 3] as u64) << 32)
+                | ((data[self.offset + 4] as u64) << 24)
+                | ((data[self.offset + 5] as u64) << 16)
+                | ((data[self.offset + 6] as u64) << 8)
+                | data[self.offset + 7] as u64;
             self.offset += 8;
             return endianness::swap_le_64(value);
         }
@@ -461,7 +466,7 @@ pub mod datagram {
 
         pub fn read_bool(&mut self) -> bool {
             let data: u8 = self.read_u8();
-            return if data == 1 { true } else { false }
+            return if data == 1 { true } else { false };
         }
 
         pub fn read_size(&mut self) -> types::DgSize {
@@ -485,18 +490,17 @@ pub mod datagram {
 // Unit Testing
 #[cfg(test)]
 mod tests {
+    use super::datagram;
+    use super::endianness;
     use super::results::results as res;
     use super::type_aliases::type_aliases as types;
-    use super::endianness;
-    use super::datagram;
-   
-    // ----------- Endianness ----------- //
 
+    // ----------- Endianness ----------- //
     #[test]
     #[cfg(target_endian = "big")]
     fn endianness_swap_le_16() -> () {
         let res: u16 = endianness::swap_le_16(1000 as u16);
-        assert_eq!(res, 59395); 
+        assert_eq!(res, 59395);
     }
 
     #[test]
@@ -510,7 +514,7 @@ mod tests {
     #[cfg(target_endian = "big")]
     fn endianness_swap_le_32() -> () {
         let res: u32 = endianness::swap_le_32(100000000 as u32);
-        assert_eq!(res, 14808325); 
+        assert_eq!(res, 14808325);
     }
 
     #[test]
@@ -524,7 +528,7 @@ mod tests {
     #[cfg(target_endian = "big")]
     fn endianness_swap_le_64() -> () {
         let res: u64 = endianness::swap_le_64(100000000000000000 as u64);
-        assert_eq!(res, 152134054404865); 
+        assert_eq!(res, 152134054404865);
     }
 
     #[test]
@@ -535,20 +539,29 @@ mod tests {
     }
 
     // ----------- Datagram ------------ //
-    
     #[test]
     fn datagram_overflow_test() -> () {
-        let mut dg: datagram::Datagram = datagram::Datagram::new(); 
+        let mut dg: datagram::Datagram = datagram::Datagram::new();
         let res_1: res::DgBufferResult = dg.add_buffer(types::DG_SIZE_MAX);
 
         assert!(!res_1.is_err(), "Could not append 2^16 bytes to datagram buffer.");
         assert_eq!(res_1.unwrap(), 0, "add_buffer() didn't return start of reserve.");
-        assert_eq!(dg.size() + 1, types::DG_SIZE_MAX, "Datagram didn't add 2^16 bytes to the buffer.");
+        assert_eq!(
+            dg.size() + 1,
+            types::DG_SIZE_MAX,
+            "Datagram didn't add 2^16 bytes to the buffer."
+        );
 
         let res_2: res::DgResult = dg.add_u16(0);
-        assert!(res_2.is_err(), "Datagram overflow occurred, but did not throw an error.");
+        assert!(
+            res_2.is_err(),
+            "Datagram overflow occurred, but did not throw an error."
+        );
 
-        assert_eq!(res_2.unwrap_err(), res::DgError::DatagramOverflow, 
-                   "Datagram overflow occurred, but failed to respond with DgError::DatagramOverflow.");
+        assert_eq!(
+            res_2.unwrap_err(),
+            res::DgError::DatagramOverflow,
+            "Datagram overflow occurred, but failed to respond with DgError::DatagramOverflow."
+        );
     }
 }

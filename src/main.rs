@@ -15,8 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#[path = "dbserver.rs"] mod dbserver;
-use log::{Record, Level, Metadata, SetLoggerError, LevelFilter};
+#[path = "dbserver.rs"]
+mod dbserver;
+use log::{Level, LevelFilter, Metadata, Record, SetLoggerError};
 
 struct DaemonLogger;
 
@@ -37,8 +38,8 @@ static LOGGER: DaemonLogger = DaemonLogger;
 
 fn main() {
     // Initialize the logger utility
-    let res: Result<(), SetLoggerError> = log::set_logger(&LOGGER)
-        .map(|()| log::set_max_level(LevelFilter::Info));
+    let res: Result<(), SetLoggerError> =
+        log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Info));
 
     if res.is_err() {
         panic!("Failed to initialize the logger utility!");
@@ -49,9 +50,8 @@ fn main() {
     if args.len() > 1 {
         let _option: &String = &args[1];
     }
-    
-    use dbserver::dbserver::DatabaseServer;
     use dbserver::dbserver::DBCredentials;
+    use dbserver::dbserver::DatabaseServer;
 
     let creds: DBCredentials = DBCredentials {
         host: "192.168.1.252",

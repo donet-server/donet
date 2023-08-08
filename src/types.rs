@@ -20,7 +20,7 @@ pub mod type_aliases {
     use std::mem;
 
     // Type Definitions
-    pub type DgSize = u16; 
+    pub type DgSize = u16;
     pub type Channel = u64;
     pub type DoId = u32;
     pub type Zone = u32;

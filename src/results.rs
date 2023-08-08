@@ -15,13 +15,14 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#[path = "types.rs"] mod type_aliases;
+#[path = "types.rs"]
+mod type_aliases;
 
 #[allow(dead_code)]
 pub mod results {
-    use std::result::Result; // not to be confused with std::io::Result
-    use std::error::Error;
     use super::type_aliases::type_aliases as types;
+    use std::error::Error;
+    use std::result::Result; // not to be confused with std::io::Result
 
     // All possible errors that can be returned by
     // the Datagram and DatagramIterator implementations.
