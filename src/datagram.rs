@@ -63,7 +63,7 @@ pub mod endianness {
     }
 }
 
-#[allow(dead_code)] // FIXME: Remove once project matures
+#[allow(dead_code)]
 pub mod datagram {
     use super::endianness;
     use super::results::results as res;
@@ -73,18 +73,22 @@ pub mod datagram {
 
     pub struct Datagram {
         buffer: Vec<u8>,
+        index: usize,
     }
 
     impl Datagram {
         pub fn new() -> Datagram {
-            Datagram { buffer: Vec::new() }
+            Datagram {
+                buffer: Vec::new(),
+                index: 0,
+            }
         }
 
         // Checks if we can add `length` number of bytes to the datagram.
         fn check_add_length(&mut self, length: types::DgSize) -> res::DgResult {
-            let new_offset: usize = self.buffer.len() + usize::from(length);
+            let new_index: usize = self.index + usize::from(length);
 
-            if new_offset > types::DG_SIZE_MAX.into() {
+            if new_index > types::DG_SIZE_MAX.into() {
                 error!("Tried to add data to the datagram past its maximum size!");
                 return Err(res::DgError::DatagramOverflow);
             }
@@ -107,6 +111,7 @@ pub mod datagram {
         pub fn add_u8(&mut self, v: u8) -> res::DgResult {
             self.check_add_length(1)?;
             self.buffer.push(v);
+            self.index += 1;
             return Ok(());
         }
 
@@ -118,6 +123,7 @@ pub mod datagram {
             // then casting it as a u8 to represent one byte.
             self.buffer.push((v & 0xff00) as u8);
             self.buffer.push(((v & 0x00ff) << 8) as u8);
+            self.index += 2;
             return Ok(());
         }
 
@@ -128,6 +134,7 @@ pub mod datagram {
             self.buffer.push(((v & 0x00ff0000) << 8) as u8);
             self.buffer.push(((v & 0x0000ff00) << 16) as u8);
             self.buffer.push(((v & 0x000000ff) << 24) as u8);
+            self.index += 4;
             return Ok(());
         }
 
@@ -142,6 +149,7 @@ pub mod datagram {
             self.buffer.push(((v & 0x0000000000ff0000) << 40) as u8);
             self.buffer.push(((v & 0x000000000000ff00) << 48) as u8);
             self.buffer.push(((v & 0x00000000000000ff) << 56) as u8);
+            self.index += 8;
             return Ok(());
         }
 
@@ -208,6 +216,7 @@ pub mod datagram {
             }
             self.check_add_length(v.len().try_into().unwrap())?;
             self.buffer.append(&mut v);
+            self.index += v.len();
             return Ok(());
         }
 
@@ -223,6 +232,7 @@ pub mod datagram {
             }
             self.check_add_length(dg_buffer.len().try_into().unwrap())?;
             self.buffer.append(&mut dg_buffer);
+            self.index += dg_buffer.len();
             return Ok(());
         }
 
@@ -242,6 +252,7 @@ pub mod datagram {
             // make sure the byte array won't overflow the datagram
             self.check_add_length(str_bytes.len().try_into().unwrap())?;
             self.buffer.append(str_bytes);
+            self.index += v.len();
             return Ok(());
         }
 
@@ -253,6 +264,7 @@ pub mod datagram {
             // manually check add length before appending byte array
             self.check_add_length(v.len().try_into().unwrap())?;
             self.buffer.append(&mut v);
+            self.index += v.len();
             return Ok(());
         }
 
@@ -260,9 +272,10 @@ pub mod datagram {
         pub fn add_buffer(&mut self, bytes: types::DgSize) -> res::DgBufferResult {
             self.check_add_length(bytes)?;
             // get start length (before push)
-            let start: types::DgSize = self.size();
+            let start: types::DgSize = self.index as types::DgSize;
             for _n in 1..bytes {
                 self.buffer.push(0 as u8);
+                self.index += 1;
             }
             return Ok(start);
         }
