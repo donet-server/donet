@@ -1,0 +1,44 @@
+name: Cargo Build
+on: [push, pull_request]
+
+jobs:
+  linux:
+    name: Ubuntu Linux
+    timeout-minutes: 10
+    env:
+      DEBIAN_FRONTEND: "noninteractive"
+    strategy:
+      matrix:
+        rust-version: [
+          "1.60.0",
+          "1.61.0",
+          "1.62.0",
+          "1.63.0",
+          "1.64.0",
+          "1.65.0",
+          "1.66.0",
+          "1.67.0",
+          "1.68.0",
+          "1.69.0",
+          "1.70.0",
+          "1.71.0",
+          "latest"
+        ]
+    runs-on: ubuntu-latest
+    container: rust:${{ matrix.rust-version }}
+    steps:
+      - name: Git Checkout
+        uses: actions/checkout@v3
+      - name: Install Rust components
+        run: |
+          rustup component add rustfmt
+          rustup component add clippy
+      - name: Print Rust compiler version
+        run: rustc --version
+      - name: Verify Rust code format
+        run: cargo fmt --all -- --check
+      - name: Build DoNet debug
+        run: cargo build
+      - name: Build DoNet release
+        run: cargo build --release
+        
