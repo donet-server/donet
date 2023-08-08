@@ -275,8 +275,8 @@ pub mod datagram {
             let start: types::DgSize = self.index as types::DgSize;
             for _n in 1..bytes {
                 self.buffer.push(0 as u8);
-                self.index += 1;
             }
+            self.index += usize::from(bytes);
             return Ok(start);
         }
 
