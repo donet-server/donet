@@ -26,7 +26,6 @@ jobs:
         run: |
           rustup component add rustfmt
           rustup component add clippy
-          rustup target add i686-unknown-linux-gnu
       - name: Update System Packages
         run: |
           # Update package lists
