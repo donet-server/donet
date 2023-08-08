@@ -15,6 +15,8 @@ with their in-house server technology, the OTP (*Online Theme Park*) server, whi
 their massive multiplayer online games, such as Toontown Online and Pirates of the Caribbean Online, 
 from 2001 to 2013.
 
+DoNet is currently in its early stages, but it aims to be a drop-in replacement for Astron.
+
 ## Software License
 The DoNet engine is released under the GNU Affero General Public License, version 3.0 (AGPL-3.0), which 
 is a copyleft open source software license. The terms of this license are available in the 
