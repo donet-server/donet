@@ -15,6 +15,8 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#[path = "protocol.rs"]
+mod protocol;
 #[path = "results.rs"]
 mod results;
 #[path = "types.rs"]
@@ -66,10 +68,13 @@ pub mod endianness {
 #[allow(dead_code)]
 pub mod datagram {
     use super::endianness;
+    use super::protocol::protocol;
     use super::results::results as res;
     use super::type_aliases::type_aliases as types;
     use log::error;
+    use std::mem;
     use std::vec::Vec;
+    use strum::IntoEnumIterator;
 
     pub struct Datagram {
         buffer: Vec<u8>,
@@ -334,48 +339,48 @@ pub mod datagram {
     // Utility for iterating value by value of a datagram message.
     pub struct DatagramIterator {
         datagram: Datagram,
-        offset: usize,
+        index: usize,
     }
 
     impl DatagramIterator {
         pub fn new(&self, dg: Datagram) -> DatagramIterator {
             DatagramIterator {
                 datagram: dg,
-                offset: 0 as usize,
+                index: 0 as usize,
             }
         }
 
         pub fn check_read_length(&mut self, bytes: types::DgSize) -> res::DgResult {
-            let new_offset: types::DgSize = self.offset as types::DgSize + bytes;
+            let new_index: types::DgSize = self.index as types::DgSize + bytes;
 
-            if new_offset > self.datagram.size() {
+            if new_index > self.datagram.size() {
                 error!("The DatagramIterator tried to read past the end of the buffer!");
                 return Err(res::DgError::DatagramIteratorEOF);
             }
             return Ok(());
         }
 
-        // Returns the value of `buffer_offset` in bytes.
+        // Returns the value of `self.index` in bytes.
         pub fn tell(&mut self) -> types::DgSize {
-            return self.offset as types::DgSize;
+            return self.index as types::DgSize;
         }
 
         // Manually sets the buffer_offset position.
         pub fn seek(&mut self, to: types::DgSize) -> () {
-            self.offset = to as usize;
+            self.index = to as usize;
         }
 
         // Increments the buffer_offset by `bytes` length.
         // Returns DgError.DatagramIteratorEOF if it's past the end of the buffer.
         pub fn skip(&mut self, bytes: types::DgSize) -> res::DgResult {
             self.check_read_length(bytes)?;
-            self.offset += bytes as usize;
+            self.index += bytes as usize;
             return Ok(());
         }
 
         // Returns the number of unread bytes left in the datagram
         pub fn get_remaining(&mut self) -> types::DgSize {
-            return self.datagram.size() - self.offset as types::DgSize;
+            return self.datagram.size() - self.index as types::DgSize;
         }
 
         // Reads the next number of bytes in the datagram.
@@ -383,19 +388,19 @@ pub mod datagram {
             let data: Vec<u8> = self.datagram.get_data();
 
             let mut new_data: Vec<u8> = vec![];
-            let read_end: usize = self.offset + bytes as usize;
+            let read_end: usize = self.index + bytes as usize;
 
-            for n in self.offset..read_end {
+            for n in self.index..read_end {
                 new_data.push(data[n]);
             }
-            self.offset += bytes as usize;
+            self.index += bytes as usize;
             return new_data;
         }
 
         pub fn read_u8(&mut self) -> u8 {
             let data: Vec<u8> = self.datagram.get_data();
-            let value: u8 = data[self.offset];
-            self.offset += 1; // bytes
+            let value: u8 = data[self.index];
+            self.index += 1; // bytes
             return value;
         }
 
@@ -421,32 +426,32 @@ pub mod datagram {
             //  After, we use the swap_le_xx() function to make sure the bytes
             //  are swapped to the native system byte endianness.
             //
-            let value: u16 = ((data[self.offset] as u16) << 8) | data[self.offset + 1] as u16;
-            self.offset += 1;
+            let value: u16 = ((data[self.index] as u16) << 8) | data[self.index + 1] as u16;
+            self.index += 1;
             return endianness::swap_le_16(value);
         }
 
         pub fn read_u32(&mut self) -> u32 {
             let data: Vec<u8> = self.datagram.get_data();
-            let value: u32 = ((data[self.offset] as u32) << 24)
-                | ((data[self.offset + 1] as u32) << 16)
-                | ((data[self.offset + 2] as u32) << 8)
-                | data[self.offset + 3] as u32;
-            self.offset += 4;
+            let value: u32 = ((data[self.index] as u32) << 24)
+                | ((data[self.index + 1] as u32) << 16)
+                | ((data[self.index + 2] as u32) << 8)
+                | data[self.index + 3] as u32;
+            self.index += 4;
             return endianness::swap_le_32(value);
         }
 
         pub fn read_u64(&mut self) -> u64 {
             let data: Vec<u8> = self.datagram.get_data();
-            let value: u64 = ((data[self.offset] as u64) << 56)
-                | ((data[self.offset + 1] as u64) << 48)
-                | ((data[self.offset + 2] as u64) << 40)
-                | ((data[self.offset + 3] as u64) << 32)
-                | ((data[self.offset + 4] as u64) << 24)
-                | ((data[self.offset + 5] as u64) << 16)
-                | ((data[self.offset + 6] as u64) << 8)
-                | data[self.offset + 7] as u64;
-            self.offset += 8;
+            let value: u64 = ((data[self.index] as u64) << 56)
+                | ((data[self.index + 1] as u64) << 48)
+                | ((data[self.index + 2] as u64) << 40)
+                | ((data[self.index + 3] as u64) << 32)
+                | ((data[self.index + 4] as u64) << 24)
+                | ((data[self.index + 5] as u64) << 16)
+                | ((data[self.index + 6] as u64) << 8)
+                | data[self.index + 7] as u64;
+            self.index += 8;
             return endianness::swap_le_64(value);
         }
 
@@ -496,6 +501,43 @@ pub mod datagram {
 
         pub fn read_zone(&mut self) -> types::Zone {
             return self.read_u32() as types::Zone;
+        }
+
+        // Get the recipient count in a datagram message.
+        // Does not advance the DatagramIterator index.
+        pub fn read_recipient_count(&mut self) -> u8 {
+            if self.datagram.size() == 0 {
+                error!("Cannot read from an empty datagram!");
+                // FIXME: Throw error instead of panic here.
+                panic!("Tried to read from an empty datagram.");
+            }
+            let start_index: usize = self.index;
+            let value: u8 = self.read_u8();
+            self.index = start_index;
+            return value;
+        }
+
+        // Returns the datagram's message type. Does not advance the index.
+        // Useful for if index needs to be saved or if next field isn't msg type.
+        // If iterating through a fresh datagram, use read_u16.
+        pub fn read_msg_type(&mut self) -> protocol::Message {
+            let start_index: usize = self.index;
+
+            self.index = 1
+                + usize::from(self.read_recipient_count()) * mem::size_of::<types::Channel>()
+                + mem::size_of::<types::Channel>(); // seek message type
+
+            let msg_type: u16 = self.read_u16(); // read message type
+            self.index = start_index; // do not advance dgi index
+
+            for message in protocol::Message::iter() {
+                let msg_id: u16 = message as u16;
+                if msg_type == msg_id {
+                    return message;
+                }
+            }
+            // FIXME: Throw error instead of panic here.
+            panic!("Tried to read an invalid message type from datagram.");
         }
     }
 }
