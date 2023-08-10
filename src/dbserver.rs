@@ -74,8 +74,8 @@ pub mod dbserver {
         pub fn new(creds: DBCredentials) -> DatabaseServer {
             let port_str: &str = &creds.port.to_string();
             let url: String = format!(
-                "mysql://{}:{}:{}/{}",
-                creds.user, creds.password, port_str, creds.database
+                "mysql://{}:{}@{}:{}/{}",
+                creds.user, creds.password, creds.host, port_str, creds.database
             );
             let url_str: &str = url.as_str(); // can't do `as_str()` in line above, due to lifetime
 
