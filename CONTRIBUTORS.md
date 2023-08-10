@@ -7,5 +7,5 @@
 > Please make sure to keep the list of contributors
 > sorted by first names.
 
-maxrdz <me@maxrdz.com>  
+Max Rodriguez <me@maxrdz.com>  
 Karla Valeria Rodriguez <valartist554@gmail.com>
