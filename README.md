@@ -26,6 +26,8 @@ is a copyleft open source software license. The terms of this license are availa
 Please read the [introduction to DoNet](./docs/01-Introduction.md) for an overview of the project 
 and how the system works.
 
+If you have any questions, feel free to join [our Discord server](https://discord.gg/T6jGjEutfy).
+
 ### Distributed Networking architecture resources
 
 Resources for more info on Panda's Distributed Networking (Sources listed in chronological order):
