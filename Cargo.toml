@@ -1,6 +1,6 @@
 [package]
 name = "donet"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 license = "AGPL-3.0-only"
 authors = ["maxrdz <me@maxrdz.com>"]
@@ -11,12 +11,14 @@ readme = "README.md"
 publish = false
 
 [dependencies]
-# For the 'mysql' package, if you're on a linux system that
+# For the 'mysql' package, if you're on a 32-bit linux system that
 # is not Debian/RHEL-based, you may have to define the directory
 # where it can find the OpenSSL include & library files.
 # Please prefix your cargo build command with: `OPENSSL_DIR=/usr/`
 # The directory may vary depending on your distribution of Linux.
+strum = "0.25"
+strum_macros = "0.25"
 log = "0.4"
 toml = "0.7.6"
-mysql = "24.0.0"
+mysql = "24.0"
 
