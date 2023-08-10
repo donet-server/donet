@@ -17,6 +17,10 @@
 
 #[allow(dead_code)]
 pub mod protocol {
+    use strum_macros::EnumIter;
+
+    #[repr(u16)] // 16-bit alignment
+    #[derive(Copy, Clone, EnumIter)]
     pub enum Message {
         ClientHello = 1,
         ClientHelloResp = 2,
