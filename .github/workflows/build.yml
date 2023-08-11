@@ -3,22 +3,22 @@ on: [push, pull_request]
 
 jobs:
   linux:
-    name: Ubuntu Linux
+    name: Ubuntu
     timeout-minutes: 10
     env:
       DEBIAN_FRONTEND: "noninteractive"
     strategy:
       matrix:
-        rust-version: [
-          "1.67.0",
-          "1.68.0",
-          "1.69.0",
-          "1.70.0",
-          "1.71.0",
-          "latest"
+        containers: [
+          "rust:1.67.0",
+          "rust:1.68.0",
+          "rust:1.69.0",
+          "rust:1.70.0",
+          "rust:1.71.0",
+          "rust:latest"
         ]
     runs-on: ubuntu-latest
-    container: rust:${{ matrix.rust-version }}
+    container: ${{ matrix.containers }}
     steps:
       - name: Git Checkout
         uses: actions/checkout@v3
