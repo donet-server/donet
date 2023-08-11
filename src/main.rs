@@ -15,31 +15,19 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//#[path = "config.rs"]
+//mod config;
 #[path = "dbserver.rs"]
 mod dbserver;
-use log::{Level, LevelFilter, Metadata, Record, SetLoggerError};
-
-struct DaemonLogger;
-
-impl log::Log for DaemonLogger {
-    fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= Level::Info
-    }
-
-    fn log(&self, record: &Record) {
-        if self.enabled(record.metadata()) {
-            println!("{} - {}", record.level(), record.args());
-        }
-    }
-    fn flush(&self) {}
-}
-
-static LOGGER: DaemonLogger = DaemonLogger;
+#[path = "logger.rs"]
+mod logger;
 
 fn main() {
+    use self::logger::logger;
+    use log::SetLoggerError;
+
     // Initialize the logger utility
-    let res: Result<(), SetLoggerError> =
-        log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Info));
+    let res: Result<(), SetLoggerError> = logger::initialize_logger();
 
     if res.is_err() {
         panic!("Failed to initialize the logger utility!");
@@ -50,6 +38,8 @@ fn main() {
     if args.len() > 1 {
         let _option: &String = &args[1];
     }
+
+    // FIXME: Remove temporary bootstrap code for prototype dbserver
     use dbserver::dbserver::DBCredentials;
     use dbserver::dbserver::DatabaseServer;
 
