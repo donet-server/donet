@@ -1,0 +1,42 @@
+// Some abstractions for readability.
+typedef uint32 doId;
+typedef uint32 zoneId;
+typedef uint64 channel;
+
+// The views for these distributed classes.
+from views import Root/AI/AE
+from views import AnonymousContact/UD
+from views import LoginManager/AI/AE
+from views import DistributedWorld/AI/AE
+from views import DistributedAvatar/AI/AE/OV
+
+// Container for services and top-level stuff.
+dclass Root {
+};
+
+// A simple DOG for anonymous clients to submit
+// username/password credentials and handoff
+// to the login manager for auth & avatar creation.
+dclass AnonymousContact {
+  login(string username, string password) clsend airecv;
+};
+
+// Authentication AI service, calls avatar creation.
+dclass LoginManager {
+  login(channel client, string username, string password) airecv;
+};
+
+// The root object of the map, container for the DistributedAvatars.
+dclass DistributedWorld {
+  create_avatar(channel client) airecv;
+};
+
+// The actual class for avatar control.
+// The idea is that a Client can set its intention for its heading
+// and speed, but only the controlling AI can set its actual
+// position and heading.
+dclass DistributedAvatar {
+  // FIXME: Can't use 'required' key @ `set_xyzh()` field due to libastron.python incomplete implementation.
+  set_xyzh(int16 x, int16 y, int16 z, int16 h) broadcast;
+  indicate_intent(int16 / 10, int16 / 10) ownsend airecv;
+};
