@@ -95,6 +95,10 @@ The architecture of a DoNet server cluster is made up of 6 different types of se
 
 <br>
 
+The following diagram shows an example of a DoNet cluster:
+
+<img src="./images/cluster_diagram.png" width=50% />
+
 DoNet can be configured to serve as all these roles under one daemon, which is 
 handy for development on your local machine. For a production environment, many instances
 of DoNet can be running on different machines and configured to serve as one service each. 
