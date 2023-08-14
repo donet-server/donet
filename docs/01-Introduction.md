@@ -14,7 +14,7 @@ Toontown Online, Pirates of the Caribbean Online, and others. DoNet is licensed
 under the GNU Affero General Public License (AGPLv3).
 
 DoNet is designed to distribute the workload of operating a virtual world (or online 
-application) by separating it's fundamental functions into different modules. In a 
+application) by separating it's fundamental functions into different services. In a 
 production environment, many instances of DoNet can be running in different machines, 
 each serving a specific role in the cluster while communicating with each other over 
 the DoNet protocol.
@@ -140,7 +140,7 @@ list below to learn and understand the different concepts and terms used in DoNe
   Artificial Intelligence. The name for this is arbitrary, as it is not in any way 
   related to the field of machine learning. An AI is a process on the server cluster's 
   internal network that acts as a client connected directly to a Message Director instance. 
-  This means that all AI clients bypass the Client Agent, as they are part of the 'safe zone.' 
+  This means that all AI clients bypass the Client Agent, as they are inside of the 'trusted zone.' 
   AI processes have **authority over Distributed Objects** and host the game/application's logic.
   
 - **UD**
