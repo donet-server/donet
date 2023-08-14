@@ -34,7 +34,20 @@ fn main() -> ExitCode {
 
     if args.len() > 1 {
         for argument in args {
-            if argument == "-v" || argument == "--version" {
+            if argument == "-h" || argument == "--help" {
+                println!(
+                    "Usage:    donet [options] ... [CONFIG_FILE]\n\
+                    \n\
+                    DoNet - Distributed Object Network Engine.\n\
+                    This binary will look for a configuration file (.toml)\n\
+                    in the current working directory as \"{}\".\n\
+                    \n\
+                    -h, --help      Print the help page.\n\
+                    -v, --version   Print DoNet binary version & build info.\n",
+                    CONFIG_FILE
+                );
+                return ExitCode::from(0);
+            } else if argument == "-v" || argument == "--version" {
                 let bin_arch: &str = if cfg!(target_arch = "x86") {
                     "x86"
                 } else if cfg!(target_arch = "x86_64") {
