@@ -4,7 +4,7 @@ on: [push, pull_request]
 jobs:
   linux:
     name: Ubuntu
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       DEBIAN_FRONTEND: "noninteractive"
     strategy:
