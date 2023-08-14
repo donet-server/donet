@@ -22,21 +22,60 @@ mod dbserver;
 #[path = "logger.rs"]
 mod logger;
 
-fn main() {
+use std::process::ExitCode;
+
+fn main() -> ExitCode {
     use self::logger::logger;
     use log::SetLoggerError;
 
-    // Initialize the logger utility
-    let res: Result<(), SetLoggerError> = logger::initialize_logger();
-
-    if res.is_err() {
-        panic!("Failed to initialize the logger utility!");
-    }
-
+    const VERSION_STRING: &str = "0.1.0";
+    const CONFIG_FILE: &str = "daemon.toml";
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() > 1 {
-        let _option: &String = &args[1];
+        for argument in args {
+            if argument == "-v" || argument == "--version" {
+                let bin_arch: &str = if cfg!(target_arch = "x86") {
+                    "x86"
+                } else if cfg!(target_arch = "x86_64") {
+                    "x86_64"
+                } else if cfg!(target_arch = "aarch64") {
+                    "aarch64"
+                } else {
+                    "unknown" // aka not supported
+                };
+                let bin_platform: &str = if cfg!(target_os = "linux") {
+                    "linux"
+                } else if cfg!(target_os = "windows") {
+                    "windows"
+                } else if cfg!(target_os = "macos") {
+                    "macos"
+                } else if cfg!(target_os = "freebsd") {
+                    "freebsd"
+                } else {
+                    "unknown" // aka not supported
+                };
+                let bin_env: &str = if cfg!(target_env = "gnu") {
+                    "gnu"
+                } else if cfg!(target_env = "msvc") {
+                    "msvc"
+                } else {
+                    "other"
+                };
+                println!(
+                    "DoNet, version {} ({} {}-{})\n\
+                    Released under the AGPL-3.0 license. <https://www.gnu.org/licenses/agpl-3.0.html>\n\
+                    View the source code on GitHub: https://github.com/donet-server/DoNet\n",
+                    VERSION_STRING, bin_arch, bin_platform, bin_env
+                );
+                return ExitCode::from(0);
+            }
+        }
+    }
+    // Initialize the logger utility
+    let res: Result<(), SetLoggerError> = logger::initialize_logger();
+    if res.is_err() {
+        panic!("Failed to initialize the logger utility!");
     }
 
     // FIXME: Remove temporary bootstrap code for prototype dbserver
@@ -55,4 +94,5 @@ fn main() {
     if res.is_err() {
         panic!("error haha");
     }
+    return ExitCode::from(0);
 }
