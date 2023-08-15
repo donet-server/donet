@@ -18,6 +18,7 @@ publish = false
 # The directory may vary depending on your distribution of Linux.
 strum = "0.25"
 strum_macros = "0.25"
+serde = "1.0"
 log = "0.4"
 toml = "0.7.6"
 mysql = "24.0"

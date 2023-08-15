@@ -55,26 +55,26 @@ protocol = "TCP" # Underlying protocol to use below DoNet's (Options: 'TCP', 'UD
 version_string = "v1.0.0"
 
 [services.state_server]
-control_channel = "102000"
+control_channel = 102000
 
 [services.database_server]
-control_channel = "103000"
+control_channel = 103000
 # Valid Database Backends:
 #    - 'mysql'
 db_backend = "mysql"
 [services.database_server.sql]
 host = "192.168.1.252:3306"
 user = "root"
-pass = "admin"
-database = "test_db"
+pass = ""
+database = "test"
 
 # The DBSS service does not have a control channel, so
 # it cannot generate or activate new Distributed Objects.
 [services.dbss]
-db_channel = "103000"
+db_channel = 103000
 # The DBSS manages a range of Distributed Objects by DoIDs.
-range.min = 100000000
-range.max = 200000000
+range_min = 100000000
+range_max = 200000000
 
 [services.event_logger]
 bind = "127.0.0.1:9090" # NOTE: UDP protocol

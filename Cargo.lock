@@ -420,6 +420,7 @@ version = "0.1.0"
 dependencies = [
  "log",
  "mysql",
+ "serde",
  "strum",
  "strum_macros",
  "toml 0.7.6",

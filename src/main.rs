@@ -15,18 +15,17 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-//#[path = "config.rs"]
-//mod config;
+#[path = "config.rs"]
+mod config;
 #[path = "dbserver.rs"]
 mod dbserver;
 #[path = "logger.rs"]
 mod logger;
 
-use std::process::ExitCode;
-
-fn main() -> ExitCode {
+fn main() -> std::io::Result<()> {
     use self::logger::logger;
     use log::SetLoggerError;
+    use std::fs::File;
 
     const VERSION_STRING: &str = "0.1.0";
     const CONFIG_FILE: &str = "daemon.toml";
@@ -46,7 +45,7 @@ fn main() -> ExitCode {
                     -v, --version   Print DoNet binary version & build info.\n",
                     CONFIG_FILE
                 );
-                return ExitCode::from(0);
+                return Ok(());
             } else if argument == "-v" || argument == "--version" {
                 let bin_arch: &str = if cfg!(target_arch = "x86") {
                     "x86"
@@ -81,7 +80,7 @@ fn main() -> ExitCode {
                     View the source code on GitHub: https://github.com/donet-server/DoNet\n",
                     VERSION_STRING, bin_arch, bin_platform, bin_env
                 );
-                return ExitCode::from(0);
+                return Ok(());
             }
         }
     }
@@ -90,6 +89,9 @@ fn main() -> ExitCode {
     if res.is_err() {
         panic!("Failed to initialize the logger utility!");
     }
+
+    // Read the daemon configuration file
+    let mut conf_file = File::open(CONFIG_FILE)?;
 
     // FIXME: Remove temporary bootstrap code for prototype dbserver
     use dbserver::dbserver::DBCredentials;
@@ -107,5 +109,5 @@ fn main() -> ExitCode {
     if res.is_err() {
         panic!("error haha");
     }
-    return ExitCode::from(0);
+    return Ok(());
 }
