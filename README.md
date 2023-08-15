@@ -2,7 +2,7 @@
 
 # DoNet
 
-**D**istributed **O**bject **Net**working Engine
+**D**istributed **O**bject **Net**work Engine
 
 ![](https://img.shields.io/discord/1066973060357443644?color=blue&label=Discord&logo=discord&logoColor=white)
 ![](https://img.shields.io/github/actions/workflow/status/donet-server/Donet/build.yml?logo=github&label=build)
