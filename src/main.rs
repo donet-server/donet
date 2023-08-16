@@ -17,10 +17,10 @@
 
 #[path = "config.rs"]
 mod config;
-#[path = "dbserver.rs"]
-mod dbserver;
 #[path = "logger.rs"]
 mod logger;
+#[path = "service_factory.rs"]
+mod service_factory;
 
 fn main() -> std::io::Result<()> {
     use self::logger::logger;
@@ -92,22 +92,5 @@ fn main() -> std::io::Result<()> {
 
     // Read the daemon configuration file
     let mut conf_file = File::open(CONFIG_FILE)?;
-
-    // FIXME: Remove temporary bootstrap code for prototype dbserver
-    use dbserver::dbserver::DBCredentials;
-    use dbserver::dbserver::DatabaseServer;
-
-    let creds: DBCredentials = DBCredentials {
-        host: "192.168.1.252",
-        port: 3306,
-        database: "test",
-        user: "root",
-        password: "",
-    };
-    let mut db: DatabaseServer = DatabaseServer::new(creds);
-    let res = db.init_service();
-    if res.is_err() {
-        panic!("error haha");
-    }
     return Ok(());
 }
