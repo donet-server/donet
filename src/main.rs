@@ -24,8 +24,10 @@ mod service_factory;
 
 fn main() -> std::io::Result<()> {
     use self::logger::logger;
+    use config::config::DonetConfig;
     use log::SetLoggerError;
     use std::fs::File;
+    use std::io::Read;
 
     const VERSION_STRING: &str = "0.1.0";
     static GIT_SHA1: &str = env!("GIT_SHA1");
@@ -67,6 +69,10 @@ fn main() -> std::io::Result<()> {
 
     // Read the daemon configuration file
     let mut conf_file = File::open(config_file)?;
+    let mut contents: String = String::new();
+    conf_file.read_to_string(&mut contents)?;
+
+    let daemon_config: DonetConfig = toml::from_str(contents.as_str()).unwrap();
     return Ok(());
 }
 

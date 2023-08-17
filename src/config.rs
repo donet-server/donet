@@ -15,30 +15,31 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#[allow(dead_code)]
 pub mod config {
     use serde::Deserialize;
     use std::vec::Vec;
 
     #[derive(Deserialize)]
-    struct Daemon {
+    pub struct Daemon {
         name: String,
         id: Option<u32>,
         log_level: Option<String>,
     }
 
     #[derive(Deserialize)]
-    struct Global {
+    pub struct Global {
         eventlogger: String, // '<host>:<port>'
         dc_files: Vec<String>,
     }
 
     #[derive(Deserialize)]
-    struct Gateway {
+    pub struct Gateway {
         bind: String, // '<host>:<port>'
     }
 
     #[derive(Deserialize)]
-    struct ClientAgent {
+    pub struct ClientAgent {
         bind: String, // '<host>:<port>'
         protocol: String,
         dc_file_hash: String, // FIXME: Can we deserialize as hex literal?
@@ -46,12 +47,12 @@ pub mod config {
     }
 
     #[derive(Deserialize)]
-    struct StateServer {
+    pub struct StateServer {
         control_channel: u64,
     }
 
     #[derive(Deserialize)]
-    struct SQL {
+    pub struct SQL {
         host: String, // '<host>:<port>'
         user: String,
         pass: String,
@@ -59,27 +60,27 @@ pub mod config {
     }
 
     #[derive(Deserialize)]
-    struct DBServer {
+    pub struct DBServer {
         control_channel: u64,
         db_backend: String,
         sql: SQL,
     }
 
     #[derive(Deserialize)]
-    struct DBSS {
+    pub struct DBSS {
         db_channel: u64,
         range_min: u64,
         range_max: u64,
     }
 
     #[derive(Deserialize)]
-    struct EventLogger {
+    pub struct EventLogger {
         bind: String,   // '<host>:<port>'
         output: String, // path, relative to root
     }
 
     #[derive(Deserialize)]
-    struct Services {
+    pub struct Services {
         client_agent: ClientAgent,
         state_server: StateServer,
         database_server: DBServer,
@@ -88,7 +89,7 @@ pub mod config {
     }
 
     #[derive(Deserialize)]
-    struct Config {
+    pub struct DonetConfig {
         daemon: Daemon,
         global: Global,
         gateway: Gateway,
