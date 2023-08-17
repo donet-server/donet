@@ -24,11 +24,13 @@ mod service_factory;
 
 fn main() -> std::io::Result<()> {
     use self::logger::logger;
+    use git_sha1::GitSHA1;
     use log::SetLoggerError;
     use std::fs::File;
 
     const VERSION_STRING: &str = "0.1.0";
     const CONFIG_FILE: &str = "daemon.toml";
+    static GIT_SHA1: &str = env!("GIT_SHA1");
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() > 1 {
@@ -76,9 +78,10 @@ fn main() -> std::io::Result<()> {
                 };
                 println!(
                     "DoNet, version {} ({} {}-{})\n\
+                    Revision (Git SHA1): {}\n\n\
                     Released under the AGPL-3.0 license. <https://www.gnu.org/licenses/agpl-3.0.html>\n\
                     View the source code on GitHub: https://github.com/donet-server/DoNet\n",
-                    VERSION_STRING, bin_arch, bin_platform, bin_env
+                    VERSION_STRING, bin_arch, bin_platform, bin_env, GIT_SHA1
                 );
                 return Ok(());
             }
