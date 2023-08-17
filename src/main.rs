@@ -24,66 +24,38 @@ mod service_factory;
 
 fn main() -> std::io::Result<()> {
     use self::logger::logger;
-    use git_sha1::GitSHA1;
     use log::SetLoggerError;
     use std::fs::File;
 
     const VERSION_STRING: &str = "0.1.0";
-    const CONFIG_FILE: &str = "daemon.toml";
     static GIT_SHA1: &str = env!("GIT_SHA1");
+    let mut config_file: &str = "daemon.toml"; // default
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() > 1 {
-        for argument in args {
-            if argument == "-h" || argument == "--help" {
-                println!(
-                    "Usage:    donet [options] ... [CONFIG_FILE]\n\
-                    \n\
-                    DoNet - Distributed Object Network Engine.\n\
-                    This binary will look for a configuration file (.toml)\n\
-                    in the current working directory as \"{}\".\n\
-                    \n\
-                    -h, --help      Print the help page.\n\
-                    -v, --version   Print DoNet binary version & build info.\n",
-                    CONFIG_FILE
-                );
-                return Ok(());
-            } else if argument == "-v" || argument == "--version" {
-                let bin_arch: &str = if cfg!(target_arch = "x86") {
-                    "x86"
-                } else if cfg!(target_arch = "x86_64") {
-                    "x86_64"
-                } else if cfg!(target_arch = "aarch64") {
-                    "aarch64"
+        let mut index: usize = 0;
+        for argument in &args {
+            if index == 0 {
+                index += 1; // skip binary name
+                continue;
+            }
+            if argument.starts_with("-") {
+                if argument == "-h" || argument == "--help" {
+                    print_help_page(config_file);
+                    return Ok(());
+                } else if argument == "-v" || argument == "--version" {
+                    print_version(VERSION_STRING, GIT_SHA1);
+                    return Ok(());
                 } else {
-                    "unknown" // aka not supported
-                };
-                let bin_platform: &str = if cfg!(target_os = "linux") {
-                    "linux"
-                } else if cfg!(target_os = "windows") {
-                    "windows"
-                } else if cfg!(target_os = "macos") {
-                    "macos"
-                } else if cfg!(target_os = "freebsd") {
-                    "freebsd"
-                } else {
-                    "unknown" // aka not supported
-                };
-                let bin_env: &str = if cfg!(target_env = "gnu") {
-                    "gnu"
-                } else if cfg!(target_env = "msvc") {
-                    "msvc"
-                } else {
-                    "other"
-                };
-                println!(
-                    "DoNet, version {} ({} {}-{})\n\
-                    Revision (Git SHA1): {}\n\n\
-                    Released under the AGPL-3.0 license. <https://www.gnu.org/licenses/agpl-3.0.html>\n\
-                    View the source code on GitHub: https://github.com/donet-server/DoNet\n",
-                    VERSION_STRING, bin_arch, bin_platform, bin_env, GIT_SHA1
-                );
-                return Ok(());
+                    println!("donet: {}: Invalid argument.\n", argument);
+                    print_help_page(config_file);
+                    return Ok(());
+                }
+            } else if index == (args.len() - 1) {
+                // last argument given & doesn't match any of the above,
+                // so it must be the configuration file path given.
+                config_file = argument.as_str();
+                break;
             }
         }
     }
@@ -94,6 +66,57 @@ fn main() -> std::io::Result<()> {
     }
 
     // Read the daemon configuration file
-    let mut conf_file = File::open(CONFIG_FILE)?;
+    let mut conf_file = File::open(config_file)?;
     return Ok(());
+}
+
+fn print_help_page(config_path: &str) -> () {
+    println!(
+        "Usage:    donet [options] ... [CONFIG_FILE]\n\
+        \n\
+        DoNet - Distributed Object Network Engine.\n\
+        This binary will look for a configuration file (.toml)\n\
+        in the current working directory as \"{}\".\n\
+        \n\
+        -h, --help      Print the help page.\n\
+        -v, --version   Print DoNet binary version & build info.\n",
+        config_path
+    );
+}
+
+fn print_version(version_string: &str, git_sha1: &str) -> () {
+    let bin_arch: &str = if cfg!(target_arch = "x86") {
+        "x86"
+    } else if cfg!(target_arch = "x86_64") {
+        "x86_64"
+    } else if cfg!(target_arch = "aarch64") {
+        "aarch64"
+    } else {
+        "unknown" // aka not supported
+    };
+    let bin_platform: &str = if cfg!(target_os = "linux") {
+        "linux"
+    } else if cfg!(target_os = "windows") {
+        "windows"
+    } else if cfg!(target_os = "macos") {
+        "macos"
+    } else if cfg!(target_os = "freebsd") {
+        "freebsd"
+    } else {
+        "unknown" // aka not supported
+    };
+    let bin_env: &str = if cfg!(target_env = "gnu") {
+        "gnu"
+    } else if cfg!(target_env = "msvc") {
+        "msvc"
+    } else {
+        "other"
+    };
+    println!(
+        "DoNet, version {} ({} {}-{})\n\
+        Revision (Git SHA1): {}\n\n\
+        Released under the AGPL-3.0 license. <https://www.gnu.org/licenses/agpl-3.0.html>\n\
+        View the source code on GitHub: https://github.com/donet-server/DoNet\n",
+        version_string, bin_arch, bin_platform, bin_env, git_sha1
+    );
 }
