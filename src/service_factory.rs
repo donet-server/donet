@@ -15,11 +15,14 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#[path = "config.rs"]
+mod config;
 #[path = "dbserver.rs"]
 mod dbserver;
 
 pub mod service_factory {
     use super::dbserver::dbserver::{DBCredentials, DatabaseServer};
+    use crate::config::config::*;
     use log::info;
     use std::io::Result;
 
@@ -34,13 +37,13 @@ pub mod service_factory {
     pub struct EventLoggerService;
 
     pub trait DonetService {
-        fn start(&self) -> Result<()>;
+        fn start(&self, _conf: DonetConfig) -> Result<()>;
         fn create(&self) -> Result<Box<dyn DonetService>>;
     }
 
     impl DonetService for ClientAgentService {
         // TODO: implement client agent xd
-        fn start(&self) -> Result<()> {
+        fn start(&self, _conf: DonetConfig) -> Result<()> {
             info!("Booting Client Agent service.");
             return Ok(());
         }
@@ -52,7 +55,7 @@ pub mod service_factory {
 
     impl DonetService for MessageDirectorService {
         // TODO: write the md lmbo. this is repetitive
-        fn start(&self) -> Result<()> {
+        fn start(&self, _conf: DonetConfig) -> Result<()> {
             info!("Booting Message Director service.");
             return Ok(());
         }
@@ -63,7 +66,7 @@ pub mod service_factory {
     }
 
     impl DonetService for StateServerService {
-        fn start(&self) -> Result<()> {
+        fn start(&self, _conf: DonetConfig) -> Result<()> {
             info!("Booting State Server service.");
             return Ok(());
         }
@@ -74,7 +77,7 @@ pub mod service_factory {
     }
 
     impl DonetService for DatabaseServerService {
-        fn start(&self) -> Result<()> {
+        fn start(&self, _conf: DonetConfig) -> Result<()> {
             info!("Booting Database Server service.");
 
             // FIXME: pull credentials from configuration file
@@ -101,7 +104,7 @@ pub mod service_factory {
     }
 
     impl DonetService for DBSSService {
-        fn start(&self) -> Result<()> {
+        fn start(&self, _conf: DonetConfig) -> Result<()> {
             info!("Booting DBSS Service.");
             return Ok(());
         }
@@ -112,7 +115,7 @@ pub mod service_factory {
     }
 
     impl DonetService for EventLoggerService {
-        fn start(&self) -> Result<()> {
+        fn start(&self, _conf: DonetConfig) -> Result<()> {
             info!("Booting Event Logger Service.");
             return Ok(());
         }

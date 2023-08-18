@@ -77,43 +77,43 @@ fn main() -> std::io::Result<()> {
 
     if toml_parse.is_ok() {
         let daemon_config: DonetConfig = toml_parse.unwrap();
-        let services: Services = daemon_config.services;
+        let services: Services = daemon_config.services.clone();
 
         // Initialize the daemon's message director
         let md_factory: MessageDirectorService = MessageDirectorService {};
         let md_service: Box<dyn DonetService> = md_factory.create()?;
-        md_service.start()?;
+        md_service.start(daemon_config.clone())?;
 
         // Initialize other services per TOML configuration file.
         if services.client_agent.is_some() {
             // Initialize the Client Agent
             let ca_factory: ClientAgentService = ClientAgentService {};
             let ca_service: Box<dyn DonetService> = ca_factory.create()?;
-            ca_service.start()?;
+            ca_service.start(daemon_config.clone())?;
         }
         if services.state_server.is_some() {
             // Initialize the State Server
             let ss_factory: StateServerService = StateServerService {};
             let ss_service: Box<dyn DonetService> = ss_factory.create()?;
-            ss_service.start()?;
+            ss_service.start(daemon_config.clone())?;
         }
         if services.database_server.is_some() {
             // Initialize the Database Server
             let db_factory: DatabaseServerService = DatabaseServerService {};
             let db_service: Box<dyn DonetService> = db_factory.create()?;
-            db_service.start()?;
+            db_service.start(daemon_config.clone())?;
         }
         if services.dbss.is_some() {
             // Initialize the Database State Server
             let dbss_factory: DBSSService = DBSSService {};
             let dbss_service: Box<dyn DonetService> = dbss_factory.create()?;
-            dbss_service.start()?;
+            dbss_service.start(daemon_config.clone())?;
         }
         if services.event_logger.is_some() {
             // Initialize the Event Logger
             let el_factory: EventLoggerService = EventLoggerService {};
             let el_service: Box<dyn DonetService> = el_factory.create()?;
-            el_service.start()?;
+            el_service.start(daemon_config.clone())?;
         }
         return Ok(());
     }
