@@ -20,79 +20,79 @@ pub mod config {
     use serde::Deserialize;
     use std::vec::Vec;
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, PartialEq)]
     pub struct Daemon {
-        name: String,
-        id: Option<u32>,
-        log_level: Option<String>,
+        pub name: String,
+        pub id: Option<u32>,
+        pub log_level: Option<String>,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, PartialEq)]
     pub struct Global {
-        eventlogger: String, // '<host>:<port>'
-        dc_files: Vec<String>,
+        pub eventlogger: String, // '<host>:<port>'
+        pub dc_files: Vec<String>,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, PartialEq)]
     pub struct Gateway {
-        bind: String, // '<host>:<port>'
+        pub bind: String, // '<host>:<port>'
     }
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, PartialEq)]
     pub struct ClientAgent {
-        bind: String, // '<host>:<port>'
-        protocol: String,
-        dc_file_hash: String, // FIXME: Can we deserialize as hex literal?
-        version_string: String,
+        pub bind: String, // '<host>:<port>'
+        pub protocol: String,
+        pub dc_file_hash: Option<String>, // FIXME: Can we deserialize as hex literal?
+        pub version_string: String,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, PartialEq)]
     pub struct StateServer {
-        control_channel: u64,
+        pub control_channel: u64,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, PartialEq)]
     pub struct SQL {
-        host: String, // '<host>:<port>'
-        user: String,
-        pass: String,
-        database: String,
+        pub host: String, // '<host>:<port>'
+        pub user: String,
+        pub pass: String,
+        pub database: String,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, PartialEq)]
     pub struct DBServer {
-        control_channel: u64,
-        db_backend: String,
-        sql: SQL,
+        pub control_channel: u64,
+        pub db_backend: String,
+        pub sql: Option<SQL>,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, PartialEq)]
     pub struct DBSS {
-        db_channel: u64,
-        range_min: u64,
-        range_max: u64,
+        pub db_channel: u64,
+        pub range_min: u64,
+        pub range_max: u64,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, PartialEq)]
     pub struct EventLogger {
-        bind: String,   // '<host>:<port>'
-        output: String, // path, relative to root
+        pub bind: String,   // '<host>:<port>'
+        pub output: String, // path, relative to root
     }
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, PartialEq)]
     pub struct Services {
-        client_agent: ClientAgent,
-        state_server: StateServer,
-        database_server: DBServer,
-        dbss: DBSS,
-        event_logger: EventLogger,
+        pub client_agent: Option<ClientAgent>,
+        pub state_server: Option<StateServer>,
+        pub database_server: Option<DBServer>,
+        pub dbss: Option<DBSS>,
+        pub event_logger: Option<EventLogger>,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, PartialEq)]
     pub struct DonetConfig {
-        daemon: Daemon,
-        global: Global,
-        gateway: Gateway,
-        services: Services,
+        pub daemon: Daemon,
+        pub global: Global,
+        pub gateway: Gateway,
+        pub services: Services,
     }
 }

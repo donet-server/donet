@@ -26,14 +26,14 @@ pub mod service_factory {
     // All DoNet service types
     // Each implement the 'DonetService' trait,
     // with their bootstrap code to start the service.
-    struct ClientAgentService;
-    struct MessageDirectorService;
-    struct StateServerService;
-    struct DatabaseServerService;
-    struct DBSSService;
-    struct EventLoggerService;
+    pub struct ClientAgentService;
+    pub struct MessageDirectorService;
+    pub struct StateServerService;
+    pub struct DatabaseServerService;
+    pub struct DBSSService;
+    pub struct EventLoggerService;
 
-    trait DonetService {
+    pub trait DonetService {
         fn start(&self) -> Result<()>;
         fn create(&self) -> Result<Box<dyn DonetService>>;
     }
