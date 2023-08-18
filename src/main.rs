@@ -25,10 +25,10 @@ mod service_factory;
 fn main() -> std::io::Result<()> {
     use self::logger::logger;
     use config::config::*;
+    use log::{error, SetLoggerError};
     use service_factory::service_factory::*;
-    use log::SetLoggerError;
     use std::fs::File;
-    use std::io::Read;
+    use std::io::{Error, ErrorKind, Read};
 
     const VERSION_STRING: &str = "0.1.0";
     static GIT_SHA1: &str = env!("GIT_SHA1");
@@ -83,25 +83,40 @@ fn main() -> std::io::Result<()> {
             // Initialize the Client Agent
             let ca_factory: ClientAgentService = ClientAgentService {};
             let ca_service: Box<dyn DonetService> = ca_factory.create()?;
-        } else if services.state_server.is_some() {
+            ca_service.start()?;
+        }
+        if services.state_server.is_some() {
             // Initialize the State Server
             let ss_factory: StateServerService = StateServerService {};
             let ss_service: Box<dyn DonetService> = ss_factory.create()?;
-        } else if services.database_server.is_some() {
+            ss_service.start()?;
+        }
+        if services.database_server.is_some() {
             // Initialize the Database Server
             let db_factory: DatabaseServerService = DatabaseServerService {};
             let db_service: Box<dyn DonetService> = db_factory.create()?;
-        } else if services.dbss.is_some() {
+            db_service.start()?;
+        }
+        if services.dbss.is_some() {
             // Initialize the Database State Server
             let dbss_factory: DBSSService = DBSSService {};
             let dbss_service: Box<dyn DonetService> = dbss_factory.create()?;
-        } else if services.event_logger.is_some() {
+            dbss_service.start()?;
+        }
+        if services.event_logger.is_some() {
             // Initialize the Event Logger
             let el_factory: EventLoggerService = EventLoggerService {};
             let el_service: Box<dyn DonetService> = el_factory.create()?;
+            el_service.start()?;
         }
+        return Ok(());
     }
-    return Ok(());
+    // if not ok, then parsing threw an error.
+    error!("An error occurred while parsing the TOML configuration.");
+    return Err(Error::new(
+        ErrorKind::InvalidInput,
+        toml_parse.unwrap_err().message(),
+    ));
 }
 
 fn print_help_page(config_path: &str) -> () {

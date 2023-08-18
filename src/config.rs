@@ -20,25 +20,25 @@ pub mod config {
     use serde::Deserialize;
     use std::vec::Vec;
 
-    #[derive(Deserialize, PartialEq)]
+    #[derive(Deserialize, PartialEq, Debug)]
     pub struct Daemon {
         pub name: String,
         pub id: Option<u32>,
         pub log_level: Option<String>,
     }
 
-    #[derive(Deserialize, PartialEq)]
+    #[derive(Deserialize, PartialEq, Debug)]
     pub struct Global {
         pub eventlogger: String, // '<host>:<port>'
         pub dc_files: Vec<String>,
     }
 
-    #[derive(Deserialize, PartialEq)]
+    #[derive(Deserialize, PartialEq, Debug)]
     pub struct Gateway {
         pub bind: String, // '<host>:<port>'
     }
 
-    #[derive(Deserialize, PartialEq)]
+    #[derive(Deserialize, PartialEq, Debug)]
     pub struct ClientAgent {
         pub bind: String, // '<host>:<port>'
         pub protocol: String,
@@ -46,12 +46,12 @@ pub mod config {
         pub version_string: String,
     }
 
-    #[derive(Deserialize, PartialEq)]
+    #[derive(Deserialize, PartialEq, Debug)]
     pub struct StateServer {
         pub control_channel: u64,
     }
 
-    #[derive(Deserialize, PartialEq)]
+    #[derive(Deserialize, PartialEq, Debug)]
     pub struct SQL {
         pub host: String, // '<host>:<port>'
         pub user: String,
@@ -59,27 +59,27 @@ pub mod config {
         pub database: String,
     }
 
-    #[derive(Deserialize, PartialEq)]
+    #[derive(Deserialize, PartialEq, Debug)]
     pub struct DBServer {
         pub control_channel: u64,
         pub db_backend: String,
         pub sql: Option<SQL>,
     }
 
-    #[derive(Deserialize, PartialEq)]
+    #[derive(Deserialize, PartialEq, Debug)]
     pub struct DBSS {
         pub db_channel: u64,
         pub range_min: u64,
         pub range_max: u64,
     }
 
-    #[derive(Deserialize, PartialEq)]
+    #[derive(Deserialize, PartialEq, Debug)]
     pub struct EventLogger {
         pub bind: String,   // '<host>:<port>'
         pub output: String, // path, relative to root
     }
 
-    #[derive(Deserialize, PartialEq)]
+    #[derive(Deserialize, PartialEq, Debug)]
     pub struct Services {
         pub client_agent: Option<ClientAgent>,
         pub state_server: Option<StateServer>,
@@ -88,7 +88,7 @@ pub mod config {
         pub event_logger: Option<EventLogger>,
     }
 
-    #[derive(Deserialize, PartialEq)]
+    #[derive(Deserialize, PartialEq, Debug)]
     pub struct DonetConfig {
         pub daemon: Daemon,
         pub global: Global,
