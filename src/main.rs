@@ -79,6 +79,12 @@ fn main() -> std::io::Result<()> {
         let daemon_config: DonetConfig = toml_parse.unwrap();
         let services: Services = daemon_config.services;
 
+        // Initialize the daemon's message director
+        let md_factory: MessageDirectorService = MessageDirectorService {};
+        let md_service: Box<dyn DonetService> = md_factory.create()?;
+        md_service.start()?;
+
+        // Initialize other services per TOML configuration file.
         if services.client_agent.is_some() {
             // Initialize the Client Agent
             let ca_factory: ClientAgentService = ClientAgentService {};
