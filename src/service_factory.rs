@@ -23,8 +23,8 @@ mod dbserver;
 pub mod service_factory {
     use super::dbserver::dbserver::{DBCredentials, DatabaseServer};
     use crate::config::config::*;
-    use log::info;
-    use std::io::Result;
+    use log::{error, info};
+    use std::io::{Error, ErrorKind, Result};
 
     // All DoNet service types
     // Each implement the 'DonetService' trait,
@@ -80,13 +80,35 @@ pub mod service_factory {
         fn start(&self, _conf: DonetConfig) -> Result<()> {
             info!("Booting Database Server service.");
 
-            // FIXME: pull credentials from configuration file
+            // NOTE: We are unwrapping an Option without checking,
+            // as this method can only be called if 'database_server'
+            // is of a 'Some' type, which guarantees no panic scenario.
+            let db_server_conf: DBServer = _conf.services.database_server.unwrap();
+
+            // TODO: Check for db backend type once we
+            // have multiple DB backend support.
+            let sql_config: SQL;
+            let host_port: Vec<&str>;
+
+            if db_server_conf.sql.is_some() {
+                sql_config = db_server_conf.sql.unwrap().clone();
+                // NOTE: .collect() returns the values backwards?
+                // so first &str is the port, and the second is the host.
+                host_port = sql_config.host.rsplit(':').collect();
+            } else {
+                error!("Incomplete configuration for DB server service.");
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    "Missing database backend credentials.",
+                ));
+            }
+
             let creds: DBCredentials = DBCredentials {
-                host: "192.168.1.252",
-                port: 3306,
-                database: "test",
-                user: "root",
-                password: "",
+                host: host_port[1],
+                port: host_port[0].parse::<i16>().unwrap(),
+                database: sql_config.database.as_str(),
+                user: sql_config.user.as_str(),
+                password: sql_config.pass.as_str(),
             };
             let mut db: DatabaseServer = DatabaseServer::new(creds);
             let res = db.init_service();

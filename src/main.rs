@@ -84,7 +84,9 @@ fn main() -> std::io::Result<()> {
         let md_service: Box<dyn DonetService> = md_factory.create()?;
         md_service.start(daemon_config.clone())?;
 
-        // Initialize other services per TOML configuration file.
+        // FIXME: I'm using the fancy 'factories' software design pattern,
+        // but I still ended up writing repetitive code here. Improve!
+
         if services.client_agent.is_some() {
             // Initialize the Client Agent
             let ca_factory: ClientAgentService = ClientAgentService {};
