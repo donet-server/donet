@@ -18,6 +18,16 @@
 pub mod logger {
     use log::{Level, LevelFilter, Metadata, Record, SetLoggerError};
 
+    pub static _ANSI_RESET: &str = "\x1b[0m";
+    pub static _ANSI_RED: &str = "\x1b[31m";
+    pub static _ANSI_GREEN: &str = "\x1b[32m";
+    pub static _ANSI_ORANGE: &str = "\x1b[33m";
+    pub static _ANSI_YELLOW: &str = "\x1b[33;2m";
+    pub static _ANSI_BLUE: &str = "\x1b[34m";
+    pub static _ANSI_CYAN: &str = "\x1b[36m";
+    pub static _ANSI_GRAY: &str = "\x1b[37m";
+    pub static _ANSI_MAGENTA: &str = "\x1b[95;1m";
+
     pub struct DaemonLogger;
 
     impl log::Log for DaemonLogger {
@@ -27,7 +37,13 @@ pub mod logger {
 
         fn log(&self, record: &Record) {
             if self.enabled(record.metadata()) {
-                println!("[{}] :: {}", record.level(), record.args());
+                println!(
+                    "[{}{}{}] :: {}",
+                    _ANSI_MAGENTA,
+                    record.level(),
+                    _ANSI_RESET,
+                    record.args()
+                );
             }
         }
         fn flush(&self) {}
