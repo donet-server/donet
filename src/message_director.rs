@@ -15,12 +15,27 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use git_sha1::GitSHA1;
+#[path = "datagram.rs"]
+mod datagram;
+#[path = "network.rs"]
+mod network;
 
-fn main() -> std::io::Result<()> {
-    // setup for git-sha1 crate
-    GitSHA1::read()
-        .use_default("N/A (Compiled outside of Git)")
-        .set("GIT_SHA1");
-    return Ok(());
+pub mod message_director {
+    use super::network::network::TCPSocket;
+    use std::io::Result;
+
+    pub struct MessageDirector {
+        socket: TCPSocket,
+    }
+
+    impl MessageDirector {
+        pub fn new(bind_uri: &str) -> MessageDirector {
+            return MessageDirector {
+                socket: TCPSocket::connect(bind_uri),
+            };
+        }
+        pub fn init_network(&self) -> Result<()> {
+            return Ok(());
+        }
+    }
 }

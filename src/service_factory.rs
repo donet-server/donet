@@ -19,9 +19,12 @@
 mod config;
 #[path = "dbserver.rs"]
 mod dbserver;
+#[path = "message_director.rs"]
+mod message_director;
 
 pub mod service_factory {
     use super::dbserver::dbserver::{DBCredentials, DatabaseServer};
+    use super::message_director::message_director::MessageDirector;
     use crate::config::config::*;
     use log::{error, info};
     use std::io::{Error, ErrorKind, Result};
@@ -57,6 +60,16 @@ pub mod service_factory {
         // TODO: write the md lmbo. this is repetitive
         fn start(&self, _conf: DonetConfig) -> Result<()> {
             info!("Booting Message Director service.");
+
+            let gateway: Gateway = _conf.gateway;
+
+            let md: MessageDirector = MessageDirector::new(&gateway.bind.as_str());
+            let res = md.init_network();
+
+            if res.is_err() {
+                // FIXME: avoid panic; result type consistency
+                panic!("unhandled error!");
+            }
             return Ok(());
         }
 
@@ -114,7 +127,7 @@ pub mod service_factory {
             let res = db.init_service();
 
             if res.is_err() {
-                // TODO: avoid panic; result type consistency
+                // FIXME: avoid panic; result type consistency
                 panic!("unhandled. F");
             }
             return Ok(());
