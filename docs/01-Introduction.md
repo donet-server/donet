@@ -103,6 +103,8 @@ DoNet can be configured to serve as all these roles under one daemon, which is
 handy for development on your local machine. For a production environment, many instances
 of DoNet can be running on different machines and configured to serve as one service each. 
 This configuration would be in a **.toml file** that the DoNet daemon would read on startup.
+The program will look for a `daemon.toml` file by default, but you can specify a different
+file name via argument. (See `donet --help` for more information.)
 
 <br>
 
