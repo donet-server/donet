@@ -27,7 +27,7 @@ pub mod service_factory;
 pub mod types;
 
 fn main() -> std::io::Result<()> {
-    use self::logger::logger;
+    use self::logger;
     use config::*;
     use log::{error, SetLoggerError};
     use service_factory::*;
