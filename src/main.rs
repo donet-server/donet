@@ -15,18 +15,22 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#[path = "config.rs"]
-mod config;
-#[path = "logger.rs"]
-mod logger;
-#[path = "service_factory.rs"]
-mod service_factory;
+pub mod config;
+pub mod datagram;
+pub mod dbserver;
+pub mod logger;
+pub mod message_director;
+pub mod network;
+pub mod protocol;
+pub mod results;
+pub mod service_factory;
+pub mod types;
 
 fn main() -> std::io::Result<()> {
     use self::logger::logger;
-    use config::config::*;
+    use config::*;
     use log::{error, SetLoggerError};
-    use service_factory::service_factory::*;
+    use service_factory::*;
     use std::fs::File;
     use std::io::{Error, ErrorKind, Read};
 

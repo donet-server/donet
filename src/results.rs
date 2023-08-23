@@ -15,27 +15,21 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#[path = "types.rs"]
-mod type_aliases;
+use crate::types;
+use std::error::Error;
+use std::result::Result; // not to be confused with std::io::Result
 
-#[allow(dead_code)]
-pub mod results {
-    use super::type_aliases::type_aliases as types;
-    use std::error::Error;
-    use std::result::Result; // not to be confused with std::io::Result
-
-    // All possible errors that can be returned by
-    // the Datagram and DatagramIterator implementations.
-    #[derive(Debug, PartialEq)]
-    pub enum DgError {
-        DatagramOverflow,
-        DatagramIteratorEOF,
-        //FieldConstraintViolation,
-    }
-
-    pub type DgResult = Result<(), DgError>;
-    pub type DgBufferResult = Result<types::DgSize, DgError>;
-
-    // MySQL Result (mysql crate API response)
-    pub type SqlResult = Result<(), Box<dyn Error>>;
+// All possible errors that can be returned by
+// the Datagram and DatagramIterator implementations.
+#[derive(Debug, PartialEq)]
+pub enum DgError {
+    DatagramOverflow,
+    DatagramIteratorEOF,
+    //FieldConstraintViolation,
 }
+
+pub type DgResult = Result<(), DgError>;
+pub type DgBufferResult = Result<types::DgSize, DgError>;
+
+// MySQL Result (mysql crate API response)
+pub type SqlResult = Result<(), Box<dyn Error>>;

@@ -15,32 +15,29 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#[allow(dead_code)]
-pub mod type_aliases {
-    use std::mem;
+use std::mem;
 
-    // Type Definitions
-    pub type DgSize = u16;
-    pub type Channel = u64;
-    pub type DoId = u32;
-    pub type Zone = u32;
-    pub type DClassId = u16;
-    pub type FieldId = u16;
+// Type Definitions
+pub type DgSize = u16;
+pub type Channel = u64;
+pub type DoId = u32;
+pub type Zone = u32;
+pub type DClassId = u16;
+pub type FieldId = u16;
 
-    // Type Limits
-    pub const DG_SIZE_MAX: DgSize = u16::MAX;
-    pub const CHANNEL_MAX: Channel = u64::MAX;
-    pub const DOID_MAX: DoId = u32::MAX;
-    pub const ZONE_MAX: Zone = u32::MAX;
-    pub const ZONE_BITS: usize = 8 * mem::size_of::<Zone>();
+// Type Limits
+pub const DG_SIZE_MAX: DgSize = u16::MAX;
+pub const CHANNEL_MAX: Channel = u64::MAX;
+pub const DOID_MAX: DoId = u32::MAX;
+pub const ZONE_MAX: Zone = u32::MAX;
+pub const ZONE_BITS: usize = 8 * mem::size_of::<Zone>();
 
-    // DoId Constants
-    pub const INVALID_DOID: DoId = 0;
+// DoId Constants
+pub const INVALID_DOID: DoId = 0;
 
-    // Channel Constants
-    pub const INVALID_CHANNEL: Channel = 0;
-    pub const CONTROL_CHANNEL: Channel = 1;
-    pub const BCHAN_CLIENTS: Channel = 10;
-    pub const BCHAN_STATESERVERS: Channel = 12;
-    pub const BCHAN_DBSERVERS: Channel = 13;
-}
+// Channel Constants
+pub const INVALID_CHANNEL: Channel = 0;
+pub const CONTROL_CHANNEL: Channel = 1;
+pub const BCHAN_CLIENTS: Channel = 10;
+pub const BCHAN_STATESERVERS: Channel = 12;
+pub const BCHAN_DBSERVERS: Channel = 13;

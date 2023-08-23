@@ -15,27 +15,20 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#[path = "datagram.rs"]
-mod datagram;
-#[path = "network.rs"]
-mod network;
+use crate::network::TCPSocket;
+use std::io::Result;
 
-pub mod message_director {
-    use super::network::network::TCPSocket;
-    use std::io::Result;
+pub struct MessageDirector {
+    socket: TCPSocket,
+}
 
-    pub struct MessageDirector {
-        socket: TCPSocket,
+impl MessageDirector {
+    pub fn new(bind_uri: &str) -> MessageDirector {
+        return MessageDirector {
+            socket: TCPSocket::connect(bind_uri),
+        };
     }
-
-    impl MessageDirector {
-        pub fn new(bind_uri: &str) -> MessageDirector {
-            return MessageDirector {
-                socket: TCPSocket::connect(bind_uri),
-            };
-        }
-        pub fn init_network(&self) -> Result<()> {
-            return Ok(());
-        }
+    pub fn init_network(&self) -> Result<()> {
+        return Ok(());
     }
 }

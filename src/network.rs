@@ -15,30 +15,28 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-pub mod network {
-    use log::{error, info};
-    use std::io::Result;
-    use std::net::TcpListener;
+use log::{error, info};
+use std::io::Result;
+use std::net::TcpListener;
 
-    pub struct TCPSocket {
-        stream: Box<TcpListener>,
+pub struct TCPSocket {
+    stream: Box<TcpListener>,
+}
+
+impl TCPSocket {
+    pub fn connect(uri: &str) -> TCPSocket {
+        let net_resp: Result<TcpListener> = TcpListener::bind(uri);
+
+        if net_resp.is_err() {
+            error!("An error occurred when trying to open a new TCP listener.");
+            panic!("Failed to open a new TCP listener!");
+        }
+        info!("Opened new TCP listening socket at {}.", uri);
+        let new_binding: Box<TcpListener> = Box::new(net_resp.unwrap());
+
+        return TCPSocket { stream: new_binding };
     }
-
-    impl TCPSocket {
-        pub fn connect(uri: &str) -> TCPSocket {
-            let net_resp: Result<TcpListener> = TcpListener::bind(uri);
-
-            if net_resp.is_err() {
-                error!("An error occurred when trying to open a new TCP listener.");
-                panic!("Failed to open a new TCP listener!");
-            }
-            info!("Opened new TCP listening socket at {}.", uri);
-            let new_binding: Box<TcpListener> = Box::new(net_resp.unwrap());
-
-            return TCPSocket { stream: new_binding };
-        }
-        pub fn init_socket(&self) -> Result<()> {
-            return Ok(());
-        }
+    pub fn init_socket(&self) -> Result<()> {
+        return Ok(());
     }
 }
