@@ -18,13 +18,12 @@
 pub mod config;
 pub mod datagram;
 pub mod dbserver;
+pub mod globals;
 pub mod logger;
 pub mod message_director;
 pub mod network;
 pub mod protocol;
-pub mod results;
 pub mod service_factory;
-pub mod types;
 
 fn main() -> std::io::Result<()> {
     use config::*;

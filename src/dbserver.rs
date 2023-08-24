@@ -15,8 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use crate::results as res;
-use crate::types;
+use crate::globals;
 use log::{error, info};
 use mysql::prelude::*;
 use mysql::*;
@@ -34,15 +33,15 @@ pub struct DBCredentials<'a> {
 // Rust representations of SQL db tables
 #[derive(Debug, PartialEq, Eq)]
 struct Object {
-    doid: types::DoId,       // INT UNSIGNED NOT NULL PRIMARY KEY
-    dclass: types::DClassId, // SMALLINT UNSIGNED NOT NULL
+    doid: globals::DoId,       // INT UNSIGNED NOT NULL PRIMARY KEY
+    dclass: globals::DClassId, // SMALLINT UNSIGNED NOT NULL
 }
 
 #[derive(Debug, PartialEq, Eq)]
 struct DClass<'a> {
-    dclass: types::DClassId, // SMALLINT UNSIGNED NOT NULL PRIMARY KEY
-    name: &'a str,           // VARCHAR(32) NOT NULL
-    storable: bool,          // BOOLEAN NOT NULL
+    dclass: globals::DClassId, // SMALLINT UNSIGNED NOT NULL PRIMARY KEY
+    name: &'a str,             // VARCHAR(32) NOT NULL
+    storable: bool,            // BOOLEAN NOT NULL
 }
 
 // FIXME: Every dclass field that has the 'db' keyword has its
@@ -50,10 +49,10 @@ struct DClass<'a> {
 // will be able to represent all field tables.
 #[derive(Debug, PartialEq, Eq)]
 struct Field {
-    doid: types::DoId,        // INT UNSIGNED NOT NULL PRIMARY KEY
-    dclass: types::DClassId,  // SMALLINT UNSIGNED NOT NULL
-    field: types::FieldId,    // SMALLINT UNSIGNED NOT NULL
-    parameters: Vec<Vec<u8>>, // NOT NULL
+    doid: globals::DoId,       // INT UNSIGNED NOT NULL PRIMARY KEY
+    dclass: globals::DClassId, // SMALLINT UNSIGNED NOT NULL
+    field: globals::FieldId,   // SMALLINT UNSIGNED NOT NULL
+    parameters: Vec<Vec<u8>>,  // NOT NULL
 }
 
 pub struct DatabaseServer<'a> {
@@ -106,14 +105,14 @@ impl DatabaseServer<'_> {
         };
     }
 
-    pub fn init_service(&mut self) -> res::SqlResult {
+    pub fn init_service(&mut self) -> globals::SqlResult {
         self.check_database_tables()?;
         return Ok(());
     }
 
     // If the Objects, DClasses, & Fields tables do not exist in the
     // database, then we will create the required tables automatically.
-    pub fn check_database_tables(&mut self) -> res::SqlResult {
+    pub fn check_database_tables(&mut self) -> globals::SqlResult {
         self.sql_conn.query_drop(
             r"CREATE TABLE IF NOT EXISTS objects (
                                     doid INT UNSIGNED NOT NULL PRIMARY KEY,

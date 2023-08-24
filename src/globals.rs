@@ -15,7 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+use std::error::Error;
 use std::mem;
+use std::result::Result; // not to be confused with std::io::Result
 
 // Type Definitions
 pub type DgSize = u16;
@@ -41,3 +43,18 @@ pub const CONTROL_CHANNEL: Channel = 1;
 pub const BCHAN_CLIENTS: Channel = 10;
 pub const BCHAN_STATESERVERS: Channel = 12;
 pub const BCHAN_DBSERVERS: Channel = 13;
+
+// All possible errors that can be returned by
+// the Datagram and DatagramIterator implementations.
+#[derive(Debug, PartialEq)]
+pub enum DgError {
+    DatagramOverflow,
+    DatagramIteratorEOF,
+    //FieldConstraintViolation,
+}
+
+pub type DgResult = Result<(), DgError>;
+pub type DgBufferResult = Result<DgSize, DgError>;
+
+// MySQL Result (mysql crate API response)
+pub type SqlResult = Result<(), Box<dyn Error>>;
