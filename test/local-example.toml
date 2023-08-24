@@ -54,7 +54,8 @@ bind = "127.0.0.1:7199"
 
 [services.client_agent]
 bind = "127.0.0.1:6667"
-protocol = "TCP" # Underlying protocol to use below DoNet's (Options: 'TCP', 'UDP')
+# 'protocol' will be a future feature.
+#protocol = "TCP" # Underlying protocol to use below DoNet's (Options: 'TCP', 'UDP')
 # 'dc_file_hash' tells the daemon what DC hash (32-bit) to expect from the client.
 # This setting may be used if the AI / clients don't have the same DC parser as DoNet.
 #dc_file_hash = 0xABCDEF12
