@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+use chrono;
 use log::{Level, LevelFilter, Metadata, Record, SetLoggerError};
 
 pub static _ANSI_RESET: &str = "\x1b[0m";
@@ -28,6 +29,7 @@ pub static _ANSI_GRAY: &str = "\x1b[37m";
 pub static _ANSI_MAGENTA: &str = "\x1b[95;1m";
 
 pub struct DaemonLogger;
+pub static LOGGER: DaemonLogger = DaemonLogger;
 
 impl log::Log for DaemonLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
@@ -35,10 +37,20 @@ impl log::Log for DaemonLogger {
     }
 
     fn log(&self, record: &Record) {
+        let level_color: &str;
+        match record.level() {
+            Level::Info => level_color = _ANSI_MAGENTA, // themed to logo
+            Level::Debug => level_color = _ANSI_CYAN,
+            Level::Warn => level_color = _ANSI_ORANGE,
+            Level::Error => level_color = _ANSI_RED,
+            Level::Trace => level_color = _ANSI_GRAY,
+        }
         if self.enabled(record.metadata()) {
+            // TODO: Write to log file by daemon configuration
             println!(
-                "[{}{}{}] :: {}",
-                _ANSI_MAGENTA,
+                "[{}] [{}{}{}] :: {}",
+                chrono::offset::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                level_color,
                 record.level(),
                 _ANSI_RESET,
                 record.args()
@@ -47,8 +59,6 @@ impl log::Log for DaemonLogger {
     }
     fn flush(&self) {}
 }
-
-pub static LOGGER: DaemonLogger = DaemonLogger;
 
 pub fn initialize_logger() -> Result<(), SetLoggerError> {
     return log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Info));
