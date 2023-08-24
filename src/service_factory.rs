@@ -49,18 +49,26 @@ impl DonetService for ClientAgentService {
 }
 
 impl DonetService for MessageDirectorService {
-    // TODO: write the md lmbo. this is repetitive
     fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting Message Director service.");
 
-        let gateway: Gateway = _conf.gateway;
+        // Use 'MessageDirector' config repr, not *THE* MessageDirector.
+        let md_conf: crate::config::MessageDirector = _conf.message_director;
+        let mut upstream: Option<String> = None;
 
-        let md: MessageDirector = MessageDirector::new(&gateway.bind.as_str());
+        if md_conf.upstream.is_some() {
+            // This Message Director will connect to an upstream MD.
+            info!("Message Director will connect to upstream MD.");
+            let connect: String = md_conf.upstream.unwrap().clone();
+            upstream = Some(connect);
+        }
+
+        let md: MessageDirector = MessageDirector::new(&md_conf.bind.as_str(), upstream);
         let res = md.init_network();
 
         if res.is_err() {
-            // FIXME: avoid panic; result type consistency
-            panic!("unhandled error!");
+            error!("Failed to initialize the Message Director.");
+            panic!("Cannot initialize DoNet daemon without MD.");
         }
         return Ok(());
     }
@@ -119,8 +127,7 @@ impl DonetService for DatabaseServerService {
         let res = db.init_service();
 
         if res.is_err() {
-            // FIXME: avoid panic; result type consistency
-            panic!("unhandled. F");
+            error!("Failed to initialize the Database Server.");
         }
         return Ok(());
     }

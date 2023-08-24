@@ -23,7 +23,7 @@ pub struct MessageDirector {
 }
 
 impl MessageDirector {
-    pub fn new(bind_uri: &str) -> MessageDirector {
+    pub fn new(bind_uri: &str, upstream_uri: Option<String>) -> MessageDirector {
         return MessageDirector {
             socket: TCPSocket::connect(bind_uri),
         };

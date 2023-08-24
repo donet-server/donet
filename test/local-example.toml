@@ -33,8 +33,14 @@ anonymous = false
 
 # The Message Director instance that routes messages
 # to this daemon process. (its gateway to the cluster)
-[gateway]
+[message_director]
+# The 'bind' value specifies the port and address to
+# bind its listening socket to receive messages.
 bind = "127.0.0.1:7199"
+# The 'upstream' value specifies the upstream MD to
+# connect to, if this MD instance should not act as
+# the master message director of the cluster.
+#upstream = "127.0.0.1:5555"
 
 # The 'services' section describes the service(s) that 
 # this daemon should perform as. (e.g. Client Agent, State Server, etc.)

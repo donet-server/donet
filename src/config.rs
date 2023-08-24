@@ -36,8 +36,9 @@ pub struct Global {
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
-pub struct Gateway {
-    pub bind: String, // '<host>:<port>'
+pub struct MessageDirector {
+    pub bind: String,             // '<host>:<port>'
+    pub upstream: Option<String>, // '<host>:<port>'
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
@@ -94,6 +95,6 @@ pub struct Services {
 pub struct DonetConfig {
     pub daemon: Daemon,
     pub global: Global,
-    pub gateway: Gateway,
+    pub message_director: MessageDirector,
     pub services: Services,
 }
