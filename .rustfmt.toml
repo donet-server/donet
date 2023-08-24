@@ -3,3 +3,8 @@
 edition = "2021"
 max_width = 110
 newline_style = "Unix"
+hard_tabs = false
+tab_spaces = 4
+merge_derives = true
+force_explicit_abi = true
+short_array_element_width_threshold = 20
