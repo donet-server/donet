@@ -27,14 +27,13 @@ pub mod service_factory;
 pub mod types;
 
 fn main() -> std::io::Result<()> {
-    use self::logger;
     use config::*;
-    use log::{error, SetLoggerError};
+    use log::error;
     use service_factory::*;
     use std::fs::File;
     use std::io::{Error, ErrorKind, Read};
 
-    const VERSION_STRING: &str = "0.1.0";
+    static VERSION_STRING: &str = "0.1.0";
     static GIT_SHA1: &str = env!("GIT_SHA1");
     let mut config_file: &str = "daemon.toml"; // default
     let args: Vec<String> = std::env::args().collect();
@@ -66,11 +65,6 @@ fn main() -> std::io::Result<()> {
             }
         }
     }
-    // Initialize the logger utility
-    let res: Result<(), SetLoggerError> = logger::initialize_logger();
-    if res.is_err() {
-        panic!("Failed to initialize the logger utility!");
-    }
 
     // Read the daemon configuration file
     let mut conf_file: File = File::open(config_file)?;
@@ -82,6 +76,8 @@ fn main() -> std::io::Result<()> {
     if toml_parse.is_ok() {
         let daemon_config: DonetConfig = toml_parse.unwrap();
         let services: Services = daemon_config.services.clone();
+
+        logger::initialize_logger()?;
 
         // Initialize the daemon's message director
         let md_factory: MessageDirectorService = MessageDirectorService {};

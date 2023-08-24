@@ -17,6 +17,7 @@
 
 use chrono;
 use log::{Level, LevelFilter, Metadata, Record, SetLoggerError};
+use std::io::{Error, ErrorKind, Result};
 
 pub static _ANSI_RESET: &str = "\x1b[0m";
 pub static _ANSI_RED: &str = "\x1b[31m";
@@ -47,7 +48,7 @@ impl log::Log for DaemonLogger {
         }
         if self.enabled(record.metadata()) {
             // TODO: Write to log file by daemon configuration
-            println!(
+            let out_string: String = format!(
                 "[{}] [{}{}{}] :: {}",
                 chrono::offset::Local::now().format("%Y-%m-%d %H:%M:%S"),
                 level_color,
@@ -55,11 +56,21 @@ impl log::Log for DaemonLogger {
                 _ANSI_RESET,
                 record.args()
             );
+            println!("{}", out_string.as_str()); // stdout
         }
     }
     fn flush(&self) {}
 }
 
-pub fn initialize_logger() -> Result<(), SetLoggerError> {
-    return log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Info));
+pub fn initialize_logger() -> Result<()> {
+    let res: core::result::Result<(), SetLoggerError> =
+        log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Info));
+    if res.is_err() {
+        // catch result and transform into std::io error for main to handle.
+        return Err(Error::new(
+            ErrorKind::Other,
+            "Failed to initialize the logger utility!",
+        ));
+    }
+    return Ok(());
 }

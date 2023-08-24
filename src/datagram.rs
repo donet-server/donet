@@ -63,7 +63,6 @@ use crate::results::{DgBufferResult, DgError, DgResult};
 use crate::types;
 use log::error;
 use std::mem;
-use std::result::Result;
 use std::vec::Vec;
 use strum::IntoEnumIterator;
 
