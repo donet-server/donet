@@ -20,6 +20,7 @@ strum = "0.25"
 strum_macros = "0.25"
 serde = "1.0"
 log = "0.4"
+chrono = "0.4"
 toml = "0.7.6"
 mysql = "24.0"
 
