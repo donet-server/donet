@@ -17,14 +17,20 @@
 
 use log::{error, info};
 use std::io::Result;
-use std::net::TcpListener;
+use std::net::{TcpListener, TcpStream};
 
-pub struct TCPSocket {
-    stream: Box<TcpListener>,
+pub struct TCPAcceptor {
+    socket: Box<TcpListener>,
+    bind_address: String,
 }
 
-impl TCPSocket {
-    pub fn connect(uri: &str) -> TCPSocket {
+pub struct TCPConnection {
+    socket: Box<TcpStream>,
+    address: String,
+}
+
+impl TCPAcceptor {
+    pub fn bind(uri: &str) -> TCPAcceptor {
         let net_resp: Result<TcpListener> = TcpListener::bind(uri);
 
         if net_resp.is_err() {
@@ -34,9 +40,30 @@ impl TCPSocket {
         info!("Opened new TCP listening socket at {}.", uri);
         let new_binding: Box<TcpListener> = Box::new(net_resp.unwrap());
 
-        return TCPSocket { stream: new_binding };
+        return TCPAcceptor {
+            socket: new_binding,
+            bind_address: String::from(uri),
+        };
     }
-    pub fn init_socket(&self) -> Result<()> {
+    pub fn start_listening(&self) -> Result<()> {
         return Ok(());
+    }
+}
+
+impl TCPConnection {
+    pub fn connect(uri: &str) -> TCPConnection {
+        let net_resp: Result<TcpStream> = TcpStream::connect(uri);
+
+        if net_resp.is_err() {
+            error!("An error occurred when trying to open a new TCP connection.");
+            panic!("Failed to open a new TCP stream!");
+        }
+        info!("Opened new TCP connection to {}.", uri);
+        let new_socket: Box<TcpStream> = Box::new(net_resp.unwrap());
+
+        return TCPConnection {
+            socket: new_socket,
+            address: String::from(uri),
+        };
     }
 }

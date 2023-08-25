@@ -58,7 +58,6 @@ impl DonetService for MessageDirectorService {
 
         if md_conf.upstream.is_some() {
             // This Message Director will connect to an upstream MD.
-            info!("Message Director will connect to upstream MD.");
             let connect: String = md_conf.upstream.unwrap().clone();
             upstream = Some(connect);
         }
