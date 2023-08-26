@@ -1,6 +1,6 @@
 // DONET SOFTWARE
 // Copyright (c) 2023, DoNet Authors.
-
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License version 3.
 // You should have received a copy of this license along
@@ -17,6 +17,7 @@
 
 use crate::config::*;
 use crate::dbserver::{DBCredentials, DatabaseServer};
+use crate::globals;
 use crate::message_director::MessageDirector;
 use log::{error, info};
 use std::io::{Error, ErrorKind, Result};
@@ -63,7 +64,7 @@ impl DonetService for MessageDirectorService {
         }
 
         let md: MessageDirector = MessageDirector::new(&md_conf.bind.as_str(), upstream);
-        let res = md.init_network();
+        let res: std::result::Result<(), Error> = md.init_network();
 
         if res.is_err() {
             error!("Failed to initialize the Message Director.");
@@ -123,7 +124,7 @@ impl DonetService for DatabaseServerService {
             password: sql_config.pass.as_str(),
         };
         let mut db: DatabaseServer = DatabaseServer::new(creds);
-        let res = db.init_service();
+        let res: globals::SqlResult = db.init_service();
 
         if res.is_err() {
             error!("Failed to initialize the Database Server.");

@@ -1,6 +1,6 @@
 // DONET SOFTWARE
 // Copyright (c) 2023, DoNet Authors.
-
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License version 3.
 // You should have received a copy of this license along
@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+pub mod channel_map;
 pub mod config;
 pub mod datagram;
 pub mod dbserver;

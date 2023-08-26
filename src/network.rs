@@ -1,6 +1,6 @@
 // DONET SOFTWARE
 // Copyright (c) 2023, DoNet Authors.
-
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License version 3.
 // You should have received a copy of this license along
@@ -20,13 +20,13 @@ use std::io::Result;
 use std::net::{TcpListener, TcpStream};
 
 pub struct TCPAcceptor {
-    socket: Box<TcpListener>,
-    bind_address: String,
+    _socket: Box<TcpListener>,
+    _bind_address: String,
 }
 
 pub struct TCPConnection {
-    socket: Box<TcpStream>,
-    address: String,
+    _socket: Box<TcpStream>,
+    _address: String,
 }
 
 impl TCPAcceptor {
@@ -41,8 +41,8 @@ impl TCPAcceptor {
         let new_binding: Box<TcpListener> = Box::new(net_resp.unwrap());
 
         return TCPAcceptor {
-            socket: new_binding,
-            bind_address: String::from(uri),
+            _socket: new_binding,
+            _bind_address: String::from(uri),
         };
     }
     pub fn start_listening(&self) -> Result<()> {
@@ -62,8 +62,8 @@ impl TCPConnection {
         let new_socket: Box<TcpStream> = Box::new(net_resp.unwrap());
 
         return TCPConnection {
-            socket: new_socket,
-            address: String::from(uri),
+            _socket: new_socket,
+            _address: String::from(uri),
         };
     }
 }
