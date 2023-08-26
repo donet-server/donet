@@ -18,6 +18,7 @@ publish = false
 # The directory may vary depending on your distribution of Linux.
 strum = "0.25"
 strum_macros = "0.25"
+multimap = "0.9"
 serde = "1.0"
 log = "0.4"
 chrono = "0.4"

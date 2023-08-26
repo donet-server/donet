@@ -457,6 +457,7 @@ dependencies = [
  "chrono",
  "git-sha1",
  "log",
+ "multimap",
  "mysql",
  "serde",
  "strum",
@@ -894,6 +895,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7810e0be55b428ada41041c41f32c9f1a42817901b4ccf45fa3d4b6561e74c7"
 dependencies = [
  "adler",
+]
+
+[[package]]
+name = "multimap"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70db9248a93dc36a36d9a47898caa007a32755c7ad140ec64eeeb50d5a730631"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
