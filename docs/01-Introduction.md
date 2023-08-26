@@ -2,7 +2,7 @@
 
 # 01 - Introduction to DoNet
 
-DoNet is a free and open-source server software, designed for powering massive
+DoNet[^1] is a free and open-source server software, designed for powering massive
 multiplayer online games. The architecture of DoNet is focused on four main
 objectives: Network **culling**, short-term & long-term data **persistence**, 
 **security**, and **scalability**.
@@ -18,6 +18,8 @@ application) by separating it's fundamental functions into different services. I
 production environment, many instances of DoNet can be running in different machines, 
 each serving a specific role in the cluster while communicating with each other over 
 the DoNet protocol.
+
+[^1]: An acronym for 'Distributed Object Networking'.
 
 ## Overview
 
@@ -42,7 +44,9 @@ The architecture of a DoNet server cluster is made up of 6 different types of se
   clients that conform to the communication 'contract' defined in the DC file. It also checks 
   for other details, such as the clients' ownership over Distributed Objects and the visibility 
   (or location) of Distributed Objects. The Client Agent acts as the border between the untrusted 
-  clients and the internal server network's 'safe zone'.
+  clients and the internal server network's 'safe zone'[^2].
+
+[^2]: See the example diagram in this document for context.
   
 ### **[MD] - Message Director**
   
@@ -99,12 +103,18 @@ The following diagram shows an example of a DoNet cluster:
 
 <img src="./images/cluster_diagram.png" width=50% />
 
-DoNet can be configured to serve as all these roles under one daemon, which is 
+DoNet can be configured to serve as all these services under one daemon[^3], which is 
 handy for development on your local machine. For a production environment, many instances
 of DoNet can be running on different machines and configured to serve as one service each. 
 This configuration would be in a **.toml file** that the DoNet daemon would read on startup.
 The program will look for a `daemon.toml` file by default, but you can specify a different
 file name via argument. (See `donet --help` for more information.)
+
+[^3]: Note in the diagram that every service requires its own Message Director service.
+All of the services' MDs make connections to the 'upstream MD', which in this case would
+be directly to the master message director. Therefore, the DoNet daemon will always boot up
+a Message Director instance. This is why it is a required section in the TOML configuration
+file, and also why it is not included under the 'services' section.
 
 <br>
 
