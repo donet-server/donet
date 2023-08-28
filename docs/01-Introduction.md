@@ -1,23 +1,23 @@
 <img src="../logo/donet_banner.png" align="right" width="40%"/>
 
-# 01 - Introduction to DoNet
+# 01 - Introduction to Donet
 
-DoNet[^1] is a free and open-source server software, designed for powering massive
-multiplayer online games. The architecture of DoNet is focused on four main
-objectives: Network **culling**, short-term & long-term data **persistence**, 
+Donet[^1] is a free and open-source server software, designed for powering massive
+multiplayer online games. The design of Donet focuses on solving four critical
+problems: Network **culling**, short-term & long-term data **persistence**, 
 **security**, and **scalability**.
 
 The architecture of this project is inspired by the OTP (Online Theme Park) server, 
 which was developed by Disney Interactive (formerly known as Disney VR Studios) 
 and used from 2001 to 2013 to power massive multiplayer online games such as 
-Toontown Online, Pirates of the Caribbean Online, and others. DoNet is licensed 
+Toontown Online, Pirates of the Caribbean Online, and others. Donet is licensed 
 under the GNU Affero General Public License (AGPLv3).
 
-DoNet is designed to distribute the workload of operating a virtual world (or online 
+Donet is designed to distribute the workload of operating a virtual world (or online 
 application) by separating it's fundamental functions into different services. In a 
-production environment, many instances of DoNet can be running in different machines, 
+production environment, many instances of Donet can be running in different machines, 
 each serving a specific role in the cluster while communicating with each other over 
-the DoNet protocol.
+the Donet protocol.
 
 [^1]: An acronym for 'Distributed Object Networking'.
 
@@ -28,18 +28,18 @@ distributed object is created, all interested clients will automatically create 
 copy of that object. Updates to the object will automatically propagate to the copies.
 
 The distributed network is composed of several layers: The DC file (*.dc), which defines 
-the communication, or the 'contract', the DoNet cluster which handles communication between 
+the communication, or the 'contract', the Donet cluster which handles communication between 
 clients, ClientRepositories which interact and manage the Distributed Objects, 
 and the Distributed Objects themselves.
 
-The architecture of a DoNet server cluster is made up of 6 different types of services:
+The architecture of a Donet server cluster is made up of 6 different kinds of services:
 
 ### **[CA] - Client Agent**
 
   The Client Agent service manages connections with **anonymous clients** that are connecting 
   from outside of the internal server network. Clients do not directly communicate with the 
-  DoNet cluster. Instead, the Client Agent relays client messages over to the network. This 
-  component provides two of the main features in a DoNet server cluster, which is **security** 
+  Donet cluster. Instead, the Client Agent relays client messages over to the network. This 
+  component provides two of the main features in a Donet server cluster, which is **security** 
   and **network culling**. It reads the DC file(s) given to it and approves all messages from 
   clients that conform to the communication 'contract' defined in the DC file. It also checks 
   for other details, such as the clients' ownership over Distributed Objects and the visibility 
@@ -50,7 +50,7 @@ The architecture of a DoNet server cluster is made up of 6 different types of se
   
 ### **[MD] - Message Director**
   
-  The Message Director listens for messages from other services in a DoNet server cluster, 
+  The Message Director listens for messages from other services in a Donet server cluster, 
   and **routes** them to other services based on the recipients in the message headers. A 
   message is a blob of binary data sent over the network, with a maximum size of approximately 
   **64 kilobytes**. The routing is performed by means of routing identifiers called **channels**, 
@@ -61,11 +61,11 @@ The architecture of a DoNet server cluster is made up of 6 different types of se
 ### **[SS] - State Server**
   
   The State Server service is responsible of coordinating the short-term existance of Distributed 
-  Objects and their **states**. This component provides one of the main features in a DoNet server 
+  Objects and their **states**. This component provides one of the main features in a Donet server 
   cluster, which is **short-term persistance**. All Distributed Objects in a State Server exist 
   in memory and are part of a graph hierarchy called the **visibility tree**. The State Server has 
   data stored for each Distributed Object such as the class of the object, what its Distributed 
-  Object ID (DoId) is, and where it is located in the visibility tree. Other services in a DoNet 
+  Object ID (DoId) is, and where it is located in the visibility tree. Other services in a Donet 
   cluster may communicate with the State Server through a Message Director to **manipulate** and 
   **query** Distributed Objects in the State Server's visibility tree.
 
@@ -99,20 +99,20 @@ The architecture of a DoNet server cluster is made up of 6 different types of se
 
 <br>
 
-The following diagram shows an example of a DoNet cluster:
+The following diagram shows an example of a Donet cluster:
 
 <img src="./images/cluster_diagram.png" width=50% />
 
-DoNet can be configured to serve as all these services under one daemon[^3], which is 
+Donet can be configured to serve as all these services under one daemon[^3], which is 
 handy for development on your local machine. For a production environment, many instances
-of DoNet can be running on different machines and configured to serve as one service each. 
-This configuration would be in a **.toml file** that the DoNet daemon would read on startup.
+of Donet can be running on different machines and configured to serve as one service each. 
+This configuration would be in a **.toml file** that the Donet daemon would read on startup.
 The program will look for a `daemon.toml` file by default, but you can specify a different
 file name via argument. (See `donet --help` for more information.)
 
 [^3]: Note in the diagram that every service requires its own Message Director service.
 All of the services' MDs make connections to the 'upstream MD', which in this case would
-be directly to the master message director. Therefore, the DoNet daemon will always boot up
+be directly to the master message director. Therefore, the Donet daemon will always boot up
 a Message Director instance. This is why it is a required section in the TOML configuration
 file, and also why it is not included under the 'services' section.
 
@@ -121,7 +121,7 @@ file, and also why it is not included under the 'services' section.
 ## Fundamental Terms & Concepts
 
 There are many acronyms that you will find as you read the documentation. Please review the 
-list below to learn and understand the different concepts and terms used in DoNet.
+list below to learn and understand the different concepts and terms used in Donet.
 
 - **DO**
 

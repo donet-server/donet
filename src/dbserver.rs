@@ -1,5 +1,5 @@
 // DONET SOFTWARE
-// Copyright (c) 2023, DoNet Authors.
+// Copyright (c) 2023, Donet Authors.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License version 3.
@@ -21,7 +21,6 @@ use mysql::prelude::*;
 use mysql::*;
 use std::vec::Vec;
 
-// TODO: Replace with config vars once we have daemon configuration
 pub struct DBCredentials<'a> {
     pub host: &'a str,
     pub port: i16,

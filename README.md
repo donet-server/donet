@@ -1,6 +1,6 @@
 <img src="logo/donet_banner.png" align="right" width="43%"/>
 
-# DoNet
+# Donet
 
 **D**istributed **O**bject **Net**work Engine
 
@@ -8,22 +8,22 @@
 ![](https://img.shields.io/github/actions/workflow/status/donet-server/Donet/build.yml?logo=github&label=build)
 ![](https://img.shields.io/github/license/donet-server/Donet)
 
-The DoNet software project is a network engine that implements the Distributed Networking protocol, 
+The Donet software project is a network engine that implements the Distributed Networking protocol, 
 as defined in the high-level networking API of the [Panda3D](https://panda3d.org) game engine,
 which was originally developed by Disney Interactive (*formerly known as Disney VR Studios*) to connect 
 with their in-house server technology, the OTP (*Online Theme Park*) server, which was used to power 
 their massive multiplayer online games, such as Toontown Online and Pirates of the Caribbean Online, 
 from 2001 to 2013.
 
-DoNet is currently in its early stages, but it aims to be a drop-in replacement for [Astron](https://github.com/astron/astron).
+Donet is currently in its early stages, but it aims to be a drop-in replacement for [Astron](https://github.com/astron/astron).
 
 ## Software License
-The DoNet engine is released under the GNU Affero General Public License, version 3.0 (AGPL-3.0), which 
+The Donet engine is released under the GNU Affero General Public License, version 3.0 (AGPL-3.0), which 
 is a copyleft open source software license. The terms of this license are available in the 
 "[LICENSE](./LICENSE)" file.
 
 ## Getting Started
-Please read the [introduction to DoNet](./docs/01-Introduction.md) for an overview of the project 
+Please read the [introduction to Donet](./docs/01-Introduction.md) for an overview of the project 
 and how the system works.
 
 If you have any questions, feel free to join [our Discord server](https://discord.gg/T6jGjEutfy).
@@ -41,4 +41,4 @@ Resources for more info on Panda's Distributed Networking (Sources listed in chr
 
 <br>
 
-DoNet logo artwork created & designed by [Karla Valeria Rodriguez](https://github.com/karla-valeria).
+Donet logo artwork created & designed by [Karla Valeria Rodriguez](https://github.com/karla-valeria).
