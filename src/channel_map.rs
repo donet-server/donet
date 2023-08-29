@@ -17,12 +17,13 @@
 
 use crate::globals::Channel;
 use multimap::MultiMap;
+use std::ops::Range;
 use std::vec::Vec;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct ChannelSubscriber {
     pub subscribed_channels: Vec<Channel>,
-    pub subscribed_ranges: Vec<Channel>,
+    pub subscribed_ranges: Range<Channel>,
 }
 
 pub struct ChannelMap {
@@ -30,19 +31,35 @@ pub struct ChannelMap {
     // to unsafe raw pointers in Rust), but here we store clones of
     // these ChannelSubscriber structs. Not sure if we'll need to change
     // to another method where transfer of ownership is required or something.
-    subscriptions: MultiMap<Channel, ChannelSubscriber>,
-    range_subscriptions: MultiMap<Channel, Vec<ChannelSubscriber>>,
+    //
+    // UPDATE: Using & references with the 'static lifetime requirement,
+    // but this would require ChannelSubscribers to outlive static lifetime.
+    // Maybe we can change this lifetime label once we know how we allocate
+    // new ChannelSubscriber structs at the message director.
+    subscriptions: MultiMap<Channel, &'static ChannelSubscriber>,
+    range_subscriptions: MultiMap<Channel, Vec<&'static ChannelSubscriber>>,
 }
 
 trait ChannelMapInterface {
     fn new() -> ChannelMap;
-    fn subscribe_channel(&mut self, sub: &mut ChannelSubscriber, chan: Channel) -> ();
+    // Adds a single channel to the subscriber's subscribed channels map.
+    fn subscribe_channel(&mut self, sub: &'static mut ChannelSubscriber, chan: Channel) -> ();
+    // Removes the given channel from the subscribed channels map.
     fn unsubscribe_channel(&mut self, sub: &mut ChannelSubscriber, chan: Channel) -> ();
+    // Adds an object to be subscribed to a range of channels. The range is inclusive.
     fn subscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel) -> ();
+    // Performs the reverse of the subscribe_range() method.
     fn unsubscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel) -> ();
+    // Removes all channel and range subscriptions from the subscriber.
     fn unsubscribe_all(&mut self, sub: &mut ChannelSubscriber) -> ();
-    fn remove_subscriber(&mut self, sub: &mut ChannelSubscriber, chan: Channel) -> bool;
-    fn is_subscribed(&mut self, sub: &mut ChannelSubscriber, chan: Channel) -> bool;
+    // Removes the given subscriber from the multi-map for a given channel.
+    // Returns true only if:
+    // a) There are subscribers for the given channel and
+    // b) The provided subscriber was the last one for the channel, and was removed successfully.
+    fn remove_subscriber(&mut self, sub: &ChannelSubscriber, chan: Channel) -> bool;
+    // Checks if a given object has a subscription on a channel.
+    fn is_subscribed(&mut self, sub: &ChannelSubscriber, chan: Channel) -> bool;
+    // Performs the same check as is_subscribed(), but for an array of channels.
     fn are_subscribed(&mut self, subs: &mut Vec<ChannelSubscriber>, chans: &Vec<Channel>) -> ();
 }
 
@@ -53,7 +70,8 @@ impl ChannelMapInterface for ChannelMap {
             range_subscriptions: MultiMap::new(),
         };
     }
-    fn subscribe_channel(&mut self, sub: &mut ChannelSubscriber, chan: Channel) -> () {
+
+    fn subscribe_channel(&mut self, sub: &'static mut ChannelSubscriber, chan: Channel) -> () {
         if self.is_subscribed(sub, chan) {
             return;
         }
@@ -63,17 +81,53 @@ impl ChannelMapInterface for ChannelMap {
         if has_subscriptions {
             // FIXME: Implement 'on_add_channel' callback.
         }
-        self.subscriptions.insert(chan, sub.clone());
+        // We've already borrowed ChannelSubscriber (and hold a reference to it) with a
+        // guaranteed static lifetime, so we can just insert our reference into the
+        // multimap which stores ChannelSubscriber references with static lifetimes.
+        self.subscriptions.insert(chan, sub);
     }
+
     fn unsubscribe_channel(&mut self, sub: &mut ChannelSubscriber, chan: Channel) -> () {}
+
     fn subscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel) -> () {}
+
     fn unsubscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel) -> () {}
+
     fn unsubscribe_all(&mut self, sub: &mut ChannelSubscriber) -> () {}
-    fn remove_subscriber(&mut self, sub: &mut ChannelSubscriber, chan: Channel) -> bool {
+
+    fn remove_subscriber(&mut self, sub: &ChannelSubscriber, chan: Channel) -> bool {
+        let mut sub_count: usize = self.subscriptions.len();
+        if sub_count == 0 {
+            return false;
+        }
+        for (key, values) in self.subscriptions.iter_all_mut() {
+            if *key != chan {
+                continue;
+            }
+            let mut index: usize = 0;
+            let mut found: bool = false;
+            for value in values.into_iter() {
+                if *value == sub {
+                    found = true;
+                    sub_count -= 1;
+                }
+                index += 1;
+            }
+            if found {
+                // Okay so the remove method for values requires a second borrow of
+                // the vector which the compiler didn't like, so I had to work around
+                // this by using a found flag and performing the remove outside of the
+                // for loop which turns values into an iterator, this way we don't
+                // perform a second borrow. I don't know why it needs to be like this.
+                values.remove(index);
+            }
+        }
+        return sub_count == 0;
+    }
+
+    fn is_subscribed(&mut self, sub: &ChannelSubscriber, chan: Channel) -> bool {
         return false;
     }
-    fn is_subscribed(&mut self, sub: &mut ChannelSubscriber, chan: Channel) -> bool {
-        return false;
-    }
+
     fn are_subscribed(&mut self, subs: &mut Vec<ChannelSubscriber>, chans: &Vec<Channel>) -> () {}
 }
