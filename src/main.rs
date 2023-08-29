@@ -131,12 +131,12 @@ fn print_help_page(config_path: &str) -> () {
     println!(
         "Usage:    donet [options] ... [CONFIG_FILE]\n\
         \n\
-        DoNet - Distributed Object Network Engine.\n\
+        Donet - Distributed Object Network Engine.\n\
         This binary will look for a configuration file (.toml)\n\
         in the current working directory as \"{}\".\n\
         \n\
         -h, --help      Print the help page.\n\
-        -v, --version   Print DoNet binary version & build info.\n",
+        -v, --version   Print Donet binary build version & info.\n",
         config_path
     );
 }
@@ -170,10 +170,10 @@ fn print_version(version_string: &str, git_sha1: &str) -> () {
         "other"
     };
     println!(
-        "DoNet, version {} ({} {}-{})\n\
+        "Donet, version {} ({} {}-{})\n\
         Revision (Git SHA1): {}\n\n\
         Released under the AGPL-3.0 license. <https://www.gnu.org/licenses/agpl-3.0.html>\n\
-        View the source code on GitHub: https://github.com/donet-server/DoNet\n",
+        View the source code on GitHub: https://github.com/donet-server/Donet\n",
         version_string, bin_arch, bin_platform, bin_env, git_sha1
     );
 }
