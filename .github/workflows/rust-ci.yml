@@ -1,5 +1,11 @@
-name: Build Workflow
-on: [push, pull_request]
+name: Continuous Integration
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   linux:
@@ -38,7 +44,5 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Run Unit Tests
         run: cargo test
-      - name: Build DoNet debug
-        run: cargo build
-      - name: Build DoNet release
-        run: cargo build --release
+      - name: Build DoNet
+        run: cargo build --verbose
