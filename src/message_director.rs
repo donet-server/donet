@@ -15,34 +15,32 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use crate::channel_map;
+//use crate::channel_map;
 use crate::network::{TCPAcceptor, TCPConnection};
 use log::info;
 use std::io::Result;
 
 pub struct MessageDirector {
-    binding: TCPAcceptor,
-    upstream: Option<TCPConnection>,
+    _binding: TCPAcceptor,
+    _upstream: Option<TCPConnection>,
 }
 
 impl MessageDirector {
     pub fn new(bind_uri: &str, upstream_uri: Option<String>) -> MessageDirector {
-        let upstream_connection: Option<TCPConnection>;
+        let upstream_con: Option<TCPConnection> =
+            upstream_uri.map(|uri| TCPConnection::connect(uri.as_str()));
 
-        if upstream_uri.is_some() {
+        if upstream_con.is_some() {
             // This Message Director will connect to an upstream MD.
             info!("Message Director will connect to upstream MD.");
-            let unwrapped_uri: String = upstream_uri.unwrap();
-            upstream_connection = Some(TCPConnection::connect(unwrapped_uri.as_str()));
-        } else {
-            upstream_connection = None;
         }
-        return MessageDirector {
-            binding: TCPAcceptor::bind(bind_uri),
-            upstream: upstream_connection,
-        };
+
+        MessageDirector {
+            _binding: TCPAcceptor::bind(bind_uri),
+            _upstream: upstream_con,
+        }
     }
     pub fn init_network(&self) -> Result<()> {
-        return Ok(());
+        Ok(())
     }
 }

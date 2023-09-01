@@ -44,22 +44,22 @@ pub mod endianness {
 
     #[cfg(target_endian = "little")]
     pub fn swap_le_16(v: u16) -> u16 {
-        return v; // no need to swap bytes
+        v // no need to swap bytes
     }
 
     #[cfg(target_endian = "little")]
     pub fn swap_le_32(v: u32) -> u32 {
-        return v;
+        v
     }
 
     #[cfg(target_endian = "little")]
     pub fn swap_le_64(v: u64) -> u64 {
-        return v;
+        v
     }
 }
 
 use crate::globals;
-use crate::protocol::protocol;
+use crate::protocol;
 use log::error;
 use std::mem;
 use std::vec::Vec;
@@ -70,8 +70,14 @@ pub struct Datagram {
     index: usize,
 }
 
+impl Default for Datagram {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Datagram {
-    pub fn new() -> Datagram {
+    pub fn new() -> Self {
         Datagram {
             buffer: Vec::new(),
             index: 0,
@@ -86,7 +92,7 @@ impl Datagram {
             error!("Tried to add data to the datagram past its maximum size!");
             return Err(globals::DgError::DatagramOverflow);
         }
-        return Ok(());
+        Ok(())
     }
 
     // Adds an unsigned 8-bit integer to the datagram that is
@@ -98,7 +104,7 @@ impl Datagram {
         } else {
             self.add_u8(0)?;
         }
-        return Ok(());
+        Ok(())
     }
 
     // Adds an unsigned 8-bit integer value to the datagram.
@@ -106,7 +112,7 @@ impl Datagram {
         self.check_add_length(1)?;
         self.buffer.push(v);
         self.index += 1;
-        return Ok(());
+        Ok(())
     }
 
     pub fn add_u16(&mut self, mut v: u16) -> globals::DgResult {
@@ -118,7 +124,7 @@ impl Datagram {
         self.buffer.push((v & 0xff00) as u8);
         self.buffer.push(((v & 0x00ff) << 8) as u8);
         self.index += 2;
-        return Ok(());
+        Ok(())
     }
 
     pub fn add_u32(&mut self, mut v: u32) -> globals::DgResult {
@@ -129,7 +135,7 @@ impl Datagram {
         self.buffer.push(((v & 0x0000ff00) << 16) as u8);
         self.buffer.push(((v & 0x000000ff) << 24) as u8);
         self.index += 4;
-        return Ok(());
+        Ok(())
     }
 
     pub fn add_u64(&mut self, mut v: u64) -> globals::DgResult {
@@ -144,61 +150,61 @@ impl Datagram {
         self.buffer.push(((v & 0x000000000000ff00) << 48) as u8);
         self.buffer.push(((v & 0x00000000000000ff) << 56) as u8);
         self.index += 8;
-        return Ok(());
+        Ok(())
     }
 
     // signed integer aliases. same bitwise operations.
     pub fn add_i8(&mut self, v: i8) -> globals::DgResult {
-        return self.add_u8(v as u8);
+        self.add_u8(v as u8)
     }
 
     pub fn add_i16(&mut self, v: i16) -> globals::DgResult {
-        return self.add_u16(v as u16);
+        self.add_u16(v as u16)
     }
 
     pub fn add_i32(&mut self, v: i32) -> globals::DgResult {
-        return self.add_u32(v as u32);
+        self.add_u32(v as u32)
     }
 
     pub fn add_i64(&mut self, v: i64) -> globals::DgResult {
-        return self.add_u64(v as u64);
+        self.add_u64(v as u64)
     }
 
     // 32-bit IEEE 754 floating point. same bitwise operations.
     pub fn add_f32(&mut self, v: f32) -> globals::DgResult {
-        return self.add_u32(v as u32);
+        self.add_u32(v as u32)
     }
 
     // 64-bit IEEE 754 floating point. same bitwise operations.
     pub fn add_f64(&mut self, v: f64) -> globals::DgResult {
-        return self.add_u64(v as u64);
+        self.add_u64(v as u64)
     }
 
     // Adds a Datagram / Field length tag to the end of the datagram.
     pub fn add_size(&mut self, v: globals::DgSize) -> globals::DgResult {
-        return self.add_u16(v as u16);
+        self.add_u16(v)
     }
 
     // Adds a 64-bit channel ID to the end of the datagram.
     pub fn add_channel(&mut self, v: globals::Channel) -> globals::DgResult {
-        return self.add_u64(v as u64);
+        self.add_u64(v)
     }
 
     // Adds a 32-bit Distributed Object ID to the end of the datagram.
     pub fn add_doid(&mut self, v: globals::DoId) -> globals::DgResult {
-        return self.add_u32(v as u32);
+        self.add_u32(v)
     }
 
     // Adds a 32-bit zone ID to the end of the datagram.
     pub fn add_zone(&mut self, v: globals::Zone) -> globals::DgResult {
-        return self.add_u32(v as u32);
+        self.add_u32(v)
     }
 
     // Added for convenience, but also better performance
     // than adding the parent and the zone separately.
     pub fn add_location(&mut self, parent: globals::DoId, zone: globals::Zone) -> globals::DgResult {
-        self.add_u32(parent as u32)?;
-        return self.add_u32(zone as u32);
+        self.add_u32(parent)?;
+        self.add_u32(zone)
     }
 
     // Adds raw bytes to the datagram via an unsigned 8-bit integer vector.
@@ -211,7 +217,7 @@ impl Datagram {
         self.check_add_length(v.len().try_into().unwrap())?;
         self.buffer.append(&mut v);
         self.index += v.len();
-        return Ok(());
+        Ok(())
     }
 
     // Appends another datagram's binary data to this datagram.
@@ -227,7 +233,7 @@ impl Datagram {
         self.check_add_length(dg_buffer.len().try_into().unwrap())?;
         self.buffer.append(&mut dg_buffer);
         self.index += dg_buffer.len();
-        return Ok(());
+        Ok(())
     }
 
     // Adds a dclass string value to the end of the datagram.
@@ -247,7 +253,7 @@ impl Datagram {
         self.check_add_length(str_bytes.len().try_into().unwrap())?;
         self.buffer.append(str_bytes);
         self.index += v.len();
-        return Ok(());
+        Ok(())
     }
 
     // Adds a dclass blob value (binary data) to the end of the datagram.
@@ -259,7 +265,7 @@ impl Datagram {
         self.check_add_length(v.len().try_into().unwrap())?;
         self.buffer.append(&mut v);
         self.index += v.len();
-        return Ok(());
+        Ok(())
     }
 
     // Reserves an amount of bytes in the datagram buffer.
@@ -268,10 +274,10 @@ impl Datagram {
         // get start length (before push)
         let start: globals::DgSize = self.index as globals::DgSize;
         for _n in 1..bytes {
-            self.buffer.push(0 as u8);
+            self.buffer.push(0_u8);
         }
         self.index += usize::from(bytes);
-        return Ok(start);
+        Ok(start)
     }
 
     // Appends a generic header for messages that are to be routed to
@@ -296,7 +302,7 @@ impl Datagram {
         }
         self.add_channel(from)?;
         self.add_u16(msg_type)?;
-        return Ok(());
+        Ok(())
     }
 
     // Appends a control header, which is very similar to a server header,
@@ -306,11 +312,11 @@ impl Datagram {
         self.add_u8(1)?;
         self.add_channel(globals::CONTROL_CHANNEL)?;
         self.add_u16(msg_type)?;
-        return Ok(());
+        Ok(())
     }
 
     pub fn size(&mut self) -> globals::DgSize {
-        return self.buffer.len().try_into().unwrap();
+        self.buffer.len().try_into().unwrap()
     }
 
     pub fn get_data(&mut self) -> Vec<u8> {
@@ -321,7 +327,7 @@ impl Datagram {
             // dereference the borrowed 'byte'
             vec_copy.push(*byte);
         }
-        return vec_copy;
+        vec_copy
     }
 }
 
@@ -332,10 +338,10 @@ pub struct DatagramIterator {
 }
 
 impl DatagramIterator {
-    pub fn new(&self, dg: Datagram) -> DatagramIterator {
+    pub fn new(&self, dg: Datagram) -> Self {
         DatagramIterator {
             datagram: dg,
-            index: 0 as usize,
+            index: 0_usize,
         }
     }
 
@@ -346,12 +352,12 @@ impl DatagramIterator {
             error!("The DatagramIterator tried to read past the end of the buffer!");
             return Err(globals::DgError::DatagramIteratorEOF);
         }
-        return Ok(());
+        Ok(())
     }
 
     // Returns the value of `self.index` in bytes.
     pub fn tell(&mut self) -> globals::DgSize {
-        return self.index as globals::DgSize;
+        self.index as globals::DgSize
     }
 
     // Manually sets the buffer_offset position.
@@ -364,12 +370,12 @@ impl DatagramIterator {
     pub fn skip(&mut self, bytes: globals::DgSize) -> globals::DgResult {
         self.check_read_length(bytes)?;
         self.index += bytes as usize;
-        return Ok(());
+        Ok(())
     }
 
     // Returns the number of unread bytes left in the datagram
     pub fn get_remaining(&mut self) -> globals::DgSize {
-        return self.datagram.size() - self.index as globals::DgSize;
+        self.datagram.size() - self.index as globals::DgSize
     }
 
     // Reads the next number of bytes in the datagram.
@@ -379,18 +385,18 @@ impl DatagramIterator {
         let mut new_data: Vec<u8> = vec![];
         let read_end: usize = self.index + bytes as usize;
 
-        for n in self.index..read_end {
-            new_data.push(data[n]);
+        for item in data.iter().take(read_end).skip(self.index) {
+            new_data.push(*item);
         }
         self.index += bytes as usize;
-        return new_data;
+        new_data
     }
 
     pub fn read_u8(&mut self) -> u8 {
         let data: Vec<u8> = self.datagram.get_data();
         let value: u8 = data[self.index];
         self.index += 1; // bytes
-        return value;
+        value
     }
 
     pub fn read_u16(&mut self) -> u16 {
@@ -417,7 +423,7 @@ impl DatagramIterator {
         //
         let value: u16 = ((data[self.index] as u16) << 8) | data[self.index + 1] as u16;
         self.index += 1;
-        return endianness::swap_le_16(value);
+        endianness::swap_le_16(value)
     }
 
     pub fn read_u32(&mut self) -> u32 {
@@ -427,7 +433,7 @@ impl DatagramIterator {
             | ((data[self.index + 2] as u32) << 8)
             | data[self.index + 3] as u32;
         self.index += 4;
-        return endianness::swap_le_32(value);
+        endianness::swap_le_32(value)
     }
 
     pub fn read_u64(&mut self) -> u64 {
@@ -441,55 +447,55 @@ impl DatagramIterator {
             | ((data[self.index + 6] as u64) << 8)
             | data[self.index + 7] as u64;
         self.index += 8;
-        return endianness::swap_le_64(value);
+        endianness::swap_le_64(value)
     }
 
     // Signed integer aliases, same read operation.
     pub fn read_i8(&mut self) -> i8 {
-        return self.read_u8() as i8;
+        self.read_u8() as i8
     }
 
     pub fn read_i16(&mut self) -> i16 {
-        return self.read_u16() as i16;
+        self.read_u16() as i16
     }
 
     pub fn read_i32(&mut self) -> i32 {
-        return self.read_u32() as i32;
+        self.read_u32() as i32
     }
 
     pub fn read_i64(&mut self) -> i64 {
-        return self.read_u64() as i64;
+        self.read_u64() as i64
     }
 
     // 32-bit IEEE 754 floating point in native endianness.
     pub fn read_f32(&mut self) -> f32 {
-        return self.read_u32() as f32;
+        self.read_u32() as f32
     }
 
     // 64-bit IEEE 754 floating point in native endianness.
     pub fn read_f64(&mut self) -> f64 {
-        return self.read_u64() as f64;
+        self.read_u64() as f64
     }
 
     pub fn read_bool(&mut self) -> bool {
         let data: u8 = self.read_u8();
-        return if data == 1 { true } else { false };
+        data == 1
     }
 
     pub fn read_size(&mut self) -> globals::DgSize {
-        return self.read_u16() as globals::DgSize;
+        self.read_u16() as globals::DgSize
     }
 
     pub fn read_channel(&mut self) -> globals::Channel {
-        return self.read_u64() as globals::Channel;
+        self.read_u64() as globals::Channel
     }
 
     pub fn read_doid(&mut self) -> globals::DoId {
-        return self.read_u32() as globals::DoId;
+        self.read_u32() as globals::DoId
     }
 
     pub fn read_zone(&mut self) -> globals::Zone {
-        return self.read_u32() as globals::Zone;
+        self.read_u32() as globals::Zone
     }
 
     // Get the recipient count in a datagram message.
@@ -503,7 +509,7 @@ impl DatagramIterator {
         let start_index: usize = self.index;
         let value: u8 = self.read_u8();
         self.index = start_index;
-        return value;
+        value
     }
 
     // Returns the datagram's message type. Does not advance the index.

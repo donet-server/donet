@@ -71,42 +71,47 @@ impl DatabaseServer<'_> {
 
         info!("Connecting to SQL database backend with URL: {}", url_str);
         let p_res: Result<Pool, Error> = Pool::new(url_str);
+
+        // FIXME: Clippy recommends bad code, so we're ignoring, but we need to fix later.
+        #[allow(clippy::needless_late_init)]
         let pool: Pool;
 
-        if p_res.is_err() {
+        if let Ok(res_ok) = p_res {
+            pool = res_ok;
+        } else {
             // FIXME: I cannot find a solution to returning this error. Since this is
             // the constructor, I can only return a `DatabaseServer` struct, meaning I
             // can't pass the error over to whoever is calling this method. So if issues
             // occur with establishing the conn, the service will simply panic and halt.
             error!("Failed to create SQL conn pool: {}", p_res.unwrap_err());
             panic!("An error occurred while connecting to the SQL database.");
-        } else {
-            pool = p_res.unwrap();
         }
 
         let c_res: Result<PooledConn, Error> = pool.get_conn();
+
+        #[allow(clippy::needless_late_init)]
         let conn: PooledConn;
 
-        if c_res.is_err() {
+        if let Ok(res_ok) = c_res {
+            conn = res_ok;
+        } else {
             error!(
                 "Failed to get SQL conn from pooled connection: {}",
                 c_res.unwrap_err()
             );
             panic!("An error occurred while connecting to the SQL database.");
-        } else {
-            conn = c_res.unwrap();
         }
 
-        return DatabaseServer {
+        DatabaseServer {
             _sql_pool: pool,
             sql_conn: conn,
             _credentials: creds,
-        };
+        }
     }
 
     pub fn init_service(&mut self) -> globals::SqlResult {
         self.check_database_tables()?;
-        return Ok(());
+        Ok(())
     }
 
     // If the Objects, DClasses, & Fields tables do not exist in the
@@ -126,13 +131,13 @@ impl DatabaseServer<'_> {
                                     storable BOOLEAN NOT NULL
                                 );",
         )?;
-        return Ok(());
+        Ok(())
     }
 }
 
 // DBServer Unit Testing
-#[cfg(test)]
-mod tests {
-    #[allow(unused_imports)] // FIXME: remove once we write tests
-    use super::*;
-}
+//#[cfg(test)]
+//mod tests {
+//    #[allow(unused_imports)] // FIXME: remove once we write tests
+//    use super::*;
+//}

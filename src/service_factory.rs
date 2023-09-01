@@ -41,11 +41,11 @@ impl DonetService for ClientAgentService {
     // TODO: implement client agent xd
     fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting Client Agent service.");
-        return Ok(());
+        Ok(())
     }
 
     fn create(&self) -> Result<Box<dyn DonetService>> {
-        return Ok(Box::new(ClientAgentService));
+        Ok(Box::new(ClientAgentService))
     }
 }
 
@@ -59,33 +59,33 @@ impl DonetService for MessageDirectorService {
 
         if md_conf.upstream.is_some() {
             // This Message Director will connect to an upstream MD.
-            let connect: String = md_conf.upstream.unwrap().clone();
+            let connect: String = md_conf.upstream.unwrap();
             upstream = Some(connect);
         }
 
-        let md: MessageDirector = MessageDirector::new(&md_conf.bind.as_str(), upstream);
+        let md: MessageDirector = MessageDirector::new(md_conf.bind.as_str(), upstream);
         let res: std::result::Result<(), Error> = md.init_network();
 
         if res.is_err() {
             error!("Failed to initialize the Message Director.");
             panic!("Cannot initialize DoNet daemon without MD.");
         }
-        return Ok(());
+        Ok(())
     }
 
     fn create(&self) -> Result<Box<dyn DonetService>> {
-        return Ok(Box::new(MessageDirectorService));
+        Ok(Box::new(MessageDirectorService))
     }
 }
 
 impl DonetService for StateServerService {
     fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting State Server service.");
-        return Ok(());
+        Ok(())
     }
 
     fn create(&self) -> Result<Box<dyn DonetService>> {
-        return Ok(Box::new(StateServerService));
+        Ok(Box::new(StateServerService))
     }
 }
 
@@ -104,7 +104,7 @@ impl DonetService for DatabaseServerService {
         let host_port: Vec<&str>;
 
         if db_server_conf.sql.is_some() {
-            sql_config = db_server_conf.sql.unwrap().clone();
+            sql_config = db_server_conf.sql.unwrap();
             // NOTE: .collect() returns the values backwards?
             // so first &str is the port, and the second is the host.
             host_port = sql_config.host.rsplit(':').collect();
@@ -129,32 +129,32 @@ impl DonetService for DatabaseServerService {
         if res.is_err() {
             error!("Failed to initialize the Database Server.");
         }
-        return Ok(());
+        Ok(())
     }
 
     fn create(&self) -> Result<Box<dyn DonetService>> {
-        return Ok(Box::new(DatabaseServerService));
+        Ok(Box::new(DatabaseServerService))
     }
 }
 
 impl DonetService for DBSSService {
     fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting DBSS Service.");
-        return Ok(());
+        Ok(())
     }
 
     fn create(&self) -> Result<Box<dyn DonetService>> {
-        return Ok(Box::new(DBSSService));
+        Ok(Box::new(DBSSService))
     }
 }
 
 impl DonetService for EventLoggerService {
     fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting Event Logger Service.");
-        return Ok(());
+        Ok(())
     }
 
     fn create(&self) -> Result<Box<dyn DonetService>> {
-        return Ok(Box::new(EventLoggerService));
+        Ok(Box::new(EventLoggerService))
     }
 }

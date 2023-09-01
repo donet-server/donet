@@ -41,7 +41,7 @@ pub struct ChannelMap {
 }
 
 trait ChannelMapInterface {
-    fn new() -> ChannelMap;
+    fn new() -> Self;
     // Adds a single channel to the subscriber's subscribed channels map.
     fn subscribe_channel(&mut self, sub: &'static mut ChannelSubscriber, chan: Channel) -> ();
     // Removes the given channel from the subscribed channels map.
@@ -60,15 +60,15 @@ trait ChannelMapInterface {
     // Checks if a given object has a subscription on a channel.
     fn is_subscribed(&mut self, sub: &ChannelSubscriber, chan: Channel) -> bool;
     // Performs the same check as is_subscribed(), but for an array of channels.
-    fn are_subscribed(&mut self, subs: &mut Vec<ChannelSubscriber>, chans: &Vec<Channel>) -> ();
+    fn are_subscribed(&mut self, subs: &mut Vec<ChannelSubscriber>, chans: &[Channel]) -> ();
 }
 
 impl ChannelMapInterface for ChannelMap {
-    fn new() -> ChannelMap {
-        return ChannelMap {
+    fn new() -> Self {
+        ChannelMap {
             subscriptions: MultiMap::new(),
             range_subscriptions: MultiMap::new(),
-        };
+        }
     }
 
     fn subscribe_channel(&mut self, sub: &'static mut ChannelSubscriber, chan: Channel) -> () {
@@ -76,7 +76,7 @@ impl ChannelMapInterface for ChannelMap {
             return;
         }
         sub.subscribed_channels.push(chan);
-        let has_subscriptions: bool = sub.subscribed_channels.len() != 0;
+        let has_subscriptions: bool = !sub.subscribed_channels.is_empty();
 
         if has_subscriptions {
             // FIXME: Implement 'on_add_channel' callback.
@@ -106,7 +106,7 @@ impl ChannelMapInterface for ChannelMap {
             }
             let mut index: usize = 0;
             let mut found: bool = false;
-            for value in values.into_iter() {
+            for value in values.iter_mut() {
                 if *value == sub {
                     found = true;
                     sub_count -= 1;
@@ -122,12 +122,18 @@ impl ChannelMapInterface for ChannelMap {
                 values.remove(index);
             }
         }
-        return sub_count == 0;
+        sub_count == 0
     }
 
     fn is_subscribed(&mut self, sub: &ChannelSubscriber, chan: Channel) -> bool {
-        return false;
+        if sub.subscribed_channels.contains(&chan) {
+            return true;
+        }
+        if sub.subscribed_ranges.contains(&chan) {
+            return true;
+        }
+        false
     }
 
-    fn are_subscribed(&mut self, subs: &mut Vec<ChannelSubscriber>, chans: &Vec<Channel>) -> () {}
+    fn are_subscribed(&mut self, subs: &mut Vec<ChannelSubscriber>, chans: &[Channel]) -> () {}
 }

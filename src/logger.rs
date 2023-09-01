@@ -38,14 +38,13 @@ impl log::Log for DaemonLogger {
     }
 
     fn log(&self, record: &Record) {
-        let level_color: &str;
-        match record.level() {
-            Level::Info => level_color = _ANSI_MAGENTA, // themed to logo
-            Level::Debug => level_color = _ANSI_CYAN,
-            Level::Warn => level_color = _ANSI_ORANGE,
-            Level::Error => level_color = _ANSI_RED,
-            Level::Trace => level_color = _ANSI_GRAY,
-        }
+        let level_color: &str = match record.level() {
+            Level::Info => _ANSI_MAGENTA, // themed to logo
+            Level::Debug => _ANSI_CYAN,
+            Level::Warn => _ANSI_ORANGE,
+            Level::Error => _ANSI_RED,
+            Level::Trace => _ANSI_GRAY,
+        };
         if self.enabled(record.metadata()) {
             // TODO: Write to log file by daemon configuration
             let out_string: String = format!(
@@ -72,5 +71,5 @@ pub fn initialize_logger() -> Result<()> {
             "Failed to initialize the logger utility!",
         ));
     }
-    return Ok(());
+    Ok(())
 }

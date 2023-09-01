@@ -40,13 +40,13 @@ impl TCPAcceptor {
         info!("Opened new TCP listening socket at {}.", uri);
         let new_binding: Box<TcpListener> = Box::new(net_resp.unwrap());
 
-        return TCPAcceptor {
+        TCPAcceptor {
             _socket: new_binding,
             _bind_address: String::from(uri),
-        };
+        }
     }
     pub fn start_listening(&self) -> Result<()> {
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -61,9 +61,9 @@ impl TCPConnection {
         info!("Opened new TCP connection to {}.", uri);
         let new_socket: Box<TcpStream> = Box::new(net_resp.unwrap());
 
-        return TCPConnection {
+        TCPConnection {
             _socket: new_socket,
             _address: String::from(uri),
-        };
+        }
     }
 }

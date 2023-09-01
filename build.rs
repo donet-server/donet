@@ -22,5 +22,5 @@ fn main() -> std::io::Result<()> {
     GitSHA1::read()
         .use_default("N/A (Compiled outside of Git)")
         .set("GIT_SHA1");
-    return Ok(());
+    Ok(())
 }

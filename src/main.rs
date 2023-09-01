@@ -45,7 +45,7 @@ fn main() -> std::io::Result<()> {
                 index += 1; // skip binary name
                 continue;
             }
-            if argument.starts_with("-") {
+            if argument.starts_with('-') {
                 if argument == "-h" || argument == "--help" {
                     print_help_page(config_file);
                     return Ok(());
@@ -73,48 +73,55 @@ fn main() -> std::io::Result<()> {
 
     let toml_parse: Result<DonetConfig, toml::de::Error> = toml::from_str(contents.as_str());
 
-    if toml_parse.is_ok() {
-        let daemon_config: DonetConfig = toml_parse.unwrap();
+    if let Ok(daemon_config) = toml_parse {
+        #[allow(clippy::redundant_clone)]
         let services: Services = daemon_config.services.clone();
-
         logger::initialize_logger()?;
 
         // Initialize the daemon's message director
         let md_factory: MessageDirectorService = MessageDirectorService {};
         let md_service: Box<dyn DonetService> = md_factory.create()?;
+        #[allow(clippy::redundant_clone)]
         md_service.start(daemon_config.clone())?;
 
         // FIXME: I'm using the fancy 'factories' software design pattern,
         // but I still ended up writing repetitive code here. Improve!
+        // FIXME: clippy doesn't like redundant clones, but they're needed.
+        // This is probably bad code but it works. Will fix later.
 
         if services.client_agent.is_some() {
             // Initialize the Client Agent
             let ca_factory: ClientAgentService = ClientAgentService {};
             let ca_service: Box<dyn DonetService> = ca_factory.create()?;
+            #[allow(clippy::redundant_clone)]
             ca_service.start(daemon_config.clone())?;
         }
         if services.state_server.is_some() {
             // Initialize the State Server
             let ss_factory: StateServerService = StateServerService {};
             let ss_service: Box<dyn DonetService> = ss_factory.create()?;
+            #[allow(clippy::redundant_clone)]
             ss_service.start(daemon_config.clone())?;
         }
         if services.database_server.is_some() {
             // Initialize the Database Server
             let db_factory: DatabaseServerService = DatabaseServerService {};
             let db_service: Box<dyn DonetService> = db_factory.create()?;
+            #[allow(clippy::redundant_clone)]
             db_service.start(daemon_config.clone())?;
         }
         if services.dbss.is_some() {
             // Initialize the Database State Server
             let dbss_factory: DBSSService = DBSSService {};
             let dbss_service: Box<dyn DonetService> = dbss_factory.create()?;
+            #[allow(clippy::redundant_clone)]
             dbss_service.start(daemon_config.clone())?;
         }
         if services.event_logger.is_some() {
             // Initialize the Event Logger
             let el_factory: EventLoggerService = EventLoggerService {};
             let el_service: Box<dyn DonetService> = el_factory.create()?;
+            #[allow(clippy::redundant_clone)]
             el_service.start(daemon_config.clone())?;
         }
         return Ok(());
@@ -127,7 +134,7 @@ fn main() -> std::io::Result<()> {
     ));
 }
 
-fn print_help_page(config_path: &str) -> () {
+fn print_help_page(config_path: &str) {
     println!(
         "Usage:    donet [options] ... [CONFIG_FILE]\n\
         \n\
@@ -141,7 +148,7 @@ fn print_help_page(config_path: &str) -> () {
     );
 }
 
-fn print_version(version_string: &str, git_sha1: &str) -> () {
+fn print_version(version_string: &str, git_sha1: &str) {
     let bin_arch: &str = if cfg!(target_arch = "x86") {
         "x86"
     } else if cfg!(target_arch = "x86_64") {
