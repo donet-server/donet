@@ -42,7 +42,9 @@ jobs:
         run: rustc --version
       - name: Verify Rust code format
         run: cargo fmt --all -- --check
+      - name: Rust code linting
+        run: cargo clippy
       - name: Run Unit Tests
         run: cargo test
-      - name: Build DoNet
+      - name: Build Donet source
         run: cargo build --verbose
