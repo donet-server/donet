@@ -60,6 +60,11 @@ bind = "127.0.0.1:6667"
 # This setting may be used if the AI / clients don't have the same DC parser as DoNet.
 #dc_file_hash = 0xABCDEF12
 version_string = "v1.0.0"
+# Filtering of object fields with string parameters
+# Can be bypassed by defining a field with the 'bypass' keyword.
+[services.client_agent.filtering]
+mode = "blacklist" # modes: 'whitelist', 'blacklist'. Default: 'blacklist'
+file = "bad_words.txt"
 
 [services.state_server]
 control_channel = 102000

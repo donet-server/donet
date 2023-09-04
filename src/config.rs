@@ -42,11 +42,18 @@ pub struct MessageDirector {
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
+pub struct Filtering {
+    pub mode: String, // 'blacklist', 'whitelist'
+    pub file: String, // <file_path>
+}
+
+#[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct ClientAgent {
     pub bind: String, // '<host>:<port>'
     //pub protocol: String,
     pub dc_file_hash: Option<String>, // FIXME: Can we deserialize as hex literal?
     pub version_string: String,
+    pub filtering: Filtering,
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
