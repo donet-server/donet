@@ -43,15 +43,15 @@ pub struct ChannelMap {
 trait ChannelMapInterface {
     fn new() -> Self;
     // Adds a single channel to the subscriber's subscribed channels map.
-    fn subscribe_channel(&mut self, sub: &'static mut ChannelSubscriber, chan: Channel) -> ();
+    fn subscribe_channel(&mut self, sub: &'static mut ChannelSubscriber, chan: Channel);
     // Removes the given channel from the subscribed channels map.
-    fn unsubscribe_channel(&mut self, sub: &mut ChannelSubscriber, chan: Channel) -> ();
+    fn unsubscribe_channel(&mut self, sub: &mut ChannelSubscriber, chan: Channel);
     // Adds an object to be subscribed to a range of channels. The range is inclusive.
-    fn subscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel) -> ();
+    fn subscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel);
     // Performs the reverse of the subscribe_range() method.
-    fn unsubscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel) -> ();
+    fn unsubscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel);
     // Removes all channel and range subscriptions from the subscriber.
-    fn unsubscribe_all(&mut self, sub: &mut ChannelSubscriber) -> ();
+    fn unsubscribe_all(&mut self, sub: &mut ChannelSubscriber);
     // Removes the given subscriber from the multi-map for a given channel.
     // Returns true only if:
     // a) There are subscribers for the given channel and
@@ -60,7 +60,7 @@ trait ChannelMapInterface {
     // Checks if a given object has a subscription on a channel.
     fn is_subscribed(&mut self, sub: &ChannelSubscriber, chan: Channel) -> bool;
     // Performs the same check as is_subscribed(), but for an array of channels.
-    fn are_subscribed(&mut self, subs: &mut Vec<ChannelSubscriber>, chans: &[Channel]) -> ();
+    fn are_subscribed(&mut self, subs: &mut Vec<ChannelSubscriber>, chans: &[Channel]);
 }
 
 impl ChannelMapInterface for ChannelMap {
@@ -71,7 +71,7 @@ impl ChannelMapInterface for ChannelMap {
         }
     }
 
-    fn subscribe_channel(&mut self, sub: &'static mut ChannelSubscriber, chan: Channel) -> () {
+    fn subscribe_channel(&mut self, sub: &'static mut ChannelSubscriber, chan: Channel) {
         if self.is_subscribed(sub, chan) {
             return;
         }
@@ -87,13 +87,26 @@ impl ChannelMapInterface for ChannelMap {
         self.subscriptions.insert(chan, sub);
     }
 
-    fn unsubscribe_channel(&mut self, sub: &mut ChannelSubscriber, chan: Channel) -> () {}
+    fn unsubscribe_channel(&mut self, sub: &mut ChannelSubscriber, chan: Channel) {
+        if self.is_subscribed(sub, chan) {
+            return;
+        }
+        let mut index: usize = 0;
+        for subscription in &sub.subscribed_channels {
+            if chan != *subscription {
+                index += 1;
+                continue;
+            }
+            break;
+        }
+        sub.subscribed_channels.swap_remove(index);
+    }
 
-    fn subscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel) -> () {}
+    fn subscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel) {}
 
-    fn unsubscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel) -> () {}
+    fn unsubscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel) {}
 
-    fn unsubscribe_all(&mut self, sub: &mut ChannelSubscriber) -> () {}
+    fn unsubscribe_all(&mut self, sub: &mut ChannelSubscriber) {}
 
     fn remove_subscriber(&mut self, sub: &ChannelSubscriber, chan: Channel) -> bool {
         let mut sub_count: usize = self.subscriptions.len();
@@ -119,7 +132,7 @@ impl ChannelMapInterface for ChannelMap {
                 // this by using a found flag and performing the remove outside of the
                 // for loop which turns values into an iterator, this way we don't
                 // perform a second borrow. I don't know why it needs to be like this.
-                values.remove(index);
+                values.swap_remove(index);
             }
         }
         sub_count == 0
@@ -135,5 +148,5 @@ impl ChannelMapInterface for ChannelMap {
         false
     }
 
-    fn are_subscribed(&mut self, subs: &mut Vec<ChannelSubscriber>, chans: &[Channel]) -> () {}
+    fn are_subscribed(&mut self, subs: &mut Vec<ChannelSubscriber>, chans: &[Channel]) {}
 }
