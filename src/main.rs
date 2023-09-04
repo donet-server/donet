@@ -76,51 +76,66 @@ fn main() -> std::io::Result<()> {
     if let Ok(daemon_config) = toml_parse {
         #[allow(clippy::redundant_clone)]
         let services: Services = daemon_config.services.clone();
+
         logger::initialize_logger()?;
 
-        // Initialize the daemon's message director
-        let md_factory: MessageDirectorService = MessageDirectorService {};
-        let md_service: Box<dyn DonetService> = md_factory.create()?;
-        #[allow(clippy::redundant_clone)]
-        md_service.start(daemon_config.clone())?;
+        let want_client_agent: bool = services.client_agent.is_some();
+        let want_state_server: bool = services.state_server.is_some();
+        let want_database_server: bool = services.database_server.is_some();
+        let want_dbss: bool = services.dbss.is_some();
+        let want_event_logger: bool = services.event_logger.is_some();
+
+        // Initialize the daemon's message director (unless we are just an EL)
+        if want_client_agent || want_state_server || want_database_server || want_dbss {
+            let md_factory: MessageDirectorService = MessageDirectorService {};
+            let md_service: Box<dyn DonetService> = md_factory.create()?;
+
+            #[allow(clippy::redundant_clone)]
+            md_service.start(daemon_config.clone())?;
+        }
 
         // FIXME: I'm using the fancy 'factories' software design pattern,
         // but I still ended up writing repetitive code here. Improve!
         // FIXME: clippy doesn't like redundant clones, but they're needed.
         // This is probably bad code but it works. Will fix later.
 
-        if services.client_agent.is_some() {
+        if want_client_agent {
             // Initialize the Client Agent
             let ca_factory: ClientAgentService = ClientAgentService {};
             let ca_service: Box<dyn DonetService> = ca_factory.create()?;
+
             #[allow(clippy::redundant_clone)]
             ca_service.start(daemon_config.clone())?;
         }
-        if services.state_server.is_some() {
+        if want_state_server {
             // Initialize the State Server
             let ss_factory: StateServerService = StateServerService {};
             let ss_service: Box<dyn DonetService> = ss_factory.create()?;
+
             #[allow(clippy::redundant_clone)]
             ss_service.start(daemon_config.clone())?;
         }
-        if services.database_server.is_some() {
+        if want_database_server {
             // Initialize the Database Server
             let db_factory: DatabaseServerService = DatabaseServerService {};
             let db_service: Box<dyn DonetService> = db_factory.create()?;
+
             #[allow(clippy::redundant_clone)]
             db_service.start(daemon_config.clone())?;
         }
-        if services.dbss.is_some() {
+        if want_dbss {
             // Initialize the Database State Server
             let dbss_factory: DBSSService = DBSSService {};
             let dbss_service: Box<dyn DonetService> = dbss_factory.create()?;
+
             #[allow(clippy::redundant_clone)]
             dbss_service.start(daemon_config.clone())?;
         }
-        if services.event_logger.is_some() {
+        if want_event_logger {
             // Initialize the Event Logger
             let el_factory: EventLoggerService = EventLoggerService {};
             let el_service: Box<dyn DonetService> = el_factory.create()?;
+
             #[allow(clippy::redundant_clone)]
             el_service.start(daemon_config.clone())?;
         }
@@ -128,10 +143,10 @@ fn main() -> std::io::Result<()> {
     }
     // if not ok, then parsing threw an error.
     error!("An error occurred while parsing the TOML configuration.");
-    return Err(Error::new(
+    Err(Error::new(
         ErrorKind::InvalidInput,
         toml_parse.unwrap_err().message(),
-    ));
+    ))
 }
 
 fn print_help_page(config_path: &str) {

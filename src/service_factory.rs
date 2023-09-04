@@ -53,14 +53,20 @@ impl DonetService for MessageDirectorService {
     fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting Message Director service.");
 
+        let md_conf: crate::config::MessageDirector;
+
         // Use 'MessageDirector' config repr, not *THE* MessageDirector.
-        let md_conf: crate::config::MessageDirector = _conf.message_director;
+        if let Some(md_some) = _conf.message_director {
+            md_conf = md_some;
+        } else {
+            error!("Missing required Message Director configuration.");
+            panic!("Cannot initialize Donet daemon without MD.");
+        }
         let mut upstream: Option<String> = None;
 
-        if md_conf.upstream.is_some() {
+        if let Some(upstream_some) = md_conf.upstream {
             // This Message Director will connect to an upstream MD.
-            let connect: String = md_conf.upstream.unwrap();
-            upstream = Some(connect);
+            upstream = Some(upstream_some);
         }
 
         let md: MessageDirector = MessageDirector::new(md_conf.bind.as_str(), upstream);
@@ -68,7 +74,7 @@ impl DonetService for MessageDirectorService {
 
         if res.is_err() {
             error!("Failed to initialize the Message Director.");
-            panic!("Cannot initialize DoNet daemon without MD.");
+            panic!("Cannot initialize Donet daemon without MD.");
         }
         Ok(())
     }

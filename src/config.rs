@@ -102,6 +102,7 @@ pub struct Services {
 pub struct DonetConfig {
     pub daemon: Daemon,
     pub global: Global,
-    pub message_director: MessageDirector,
+    // MD required by every service but event logger.
+    pub message_director: Option<MessageDirector>,
     pub services: Services,
 }

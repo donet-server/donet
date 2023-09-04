@@ -361,7 +361,7 @@ impl DatagramIterator {
     }
 
     // Manually sets the buffer_offset position.
-    pub fn seek(&mut self, to: globals::DgSize) -> () {
+    pub fn seek(&mut self, to: globals::DgSize) {
         self.index = to as usize;
     }
 
