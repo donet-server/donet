@@ -1,5 +1,5 @@
 from astron.object_repository import DistributedObject
-from globals import *
+from example_globals import *
 import numpy as np
 import random
 

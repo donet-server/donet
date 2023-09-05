@@ -1,7 +1,7 @@
 from astron.object_repository import ClientRepository
 from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
-from globals import *
+from example_globals import *
 import sys
 
 

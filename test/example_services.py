@@ -1,6 +1,6 @@
 from astron.object_repository import InterestInternalRepository
 from time import sleep
-from globals import *
+from example_globals import *
 
 
 class Services:

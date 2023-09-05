@@ -1,4 +1,4 @@
-VERSION_STRING = 'libastron Example v1.0'
+VERSION_STRING = 'Donet Example v1.0'
 DC_FILE = 'example.dc'
 AI_FRAME_RATE = 30.0
 AI_TASKS = []
@@ -17,6 +17,6 @@ RootID = 30000
 # Root Zones
 LOGIN_ZONE = 0
 WORLD_ZONE = 1
-# TODO: Temp; libastron.python can't allocate random doIDs
+# TODO: Temp; libastron.python can't allocate unique doIDs
 LoginManagerId = 1562641
 DistributedWorldId = 1562642

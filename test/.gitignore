@@ -1,3 +1,5 @@
 # Python artifacts
 *.pyc
-
+# Python virtual environment
+venv/
+.venv/
