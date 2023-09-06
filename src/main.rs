@@ -31,12 +31,18 @@ fn main() -> std::io::Result<()> {
     use log::error;
     use service_factory::*;
     use std::fs::File;
+    use std::future::Future;
     use std::io::{Error, ErrorKind, Read};
+    use tokio::runtime::Runtime;
+
+    // Hack to reassure the compiler the result type of a future.
+    fn set_future_return_type<T, F: Future<Output = T>>(_arg: &F) {}
 
     static VERSION_STRING: &str = "0.1.0";
     static GIT_SHA1: &str = env!("GIT_SHA1");
     let mut config_file: &str = "daemon.toml"; // default
     let args: Vec<String> = std::env::args().collect();
+    let tokio_rt: Runtime = Runtime::new()?;
 
     if args.len() > 1 {
         let mut index: usize = 0;
@@ -73,9 +79,25 @@ fn main() -> std::io::Result<()> {
 
     let toml_parse: Result<DonetConfig, toml::de::Error> = toml::from_str(contents.as_str());
 
-    if let Ok(daemon_config) = toml_parse {
+    if let Err(toml_error) = toml_parse {
+        error!("An error occurred while parsing the TOML configuration.");
+        return Err(Error::new(ErrorKind::InvalidInput, toml_error.message()));
+    }
+    let daemon_config: DonetConfig = toml_parse.unwrap();
+
+    let daemon_init = async move {
+        // FIXME: clippy doesn't like redundant clones, but they're needed.
+        // This is probably bad code but it works. Will fix later.
         #[allow(clippy::redundant_clone)]
         let services: Services = daemon_config.services.clone();
+
+        // Smart pointers to new service instances on heap
+        let ca_service: Box<dyn DonetService>;
+        let md_service: Box<dyn DonetService>;
+        let ss_service: Box<dyn DonetService>;
+        let db_service: Box<dyn DonetService>;
+        let dbss_service: Box<dyn DonetService>;
+        let el_service: Box<dyn DonetService>;
 
         logger::initialize_logger()?;
 
@@ -86,15 +108,10 @@ fn main() -> std::io::Result<()> {
         let want_dbss: bool = services.dbss.is_some();
         let want_event_logger: bool = services.event_logger.is_some();
 
-        // FIXME: I'm using the fancy 'factories' software design pattern,
-        // but I still ended up writing repetitive code here. Improve!
-        // FIXME: clippy doesn't like redundant clones, but they're needed.
-        // This is probably bad code but it works. Will fix later.
-
         if want_client_agent {
             // Initialize the Client Agent
             let ca_factory: ClientAgentService = ClientAgentService {};
-            let ca_service: Box<dyn DonetService> = ca_factory.create()?;
+            ca_service = ca_factory.create()?;
 
             #[allow(clippy::redundant_clone)]
             ca_service.start(daemon_config.clone())?;
@@ -102,7 +119,7 @@ fn main() -> std::io::Result<()> {
         if want_message_director {
             // Initialize the Message Director
             let md_factory: MessageDirectorService = MessageDirectorService {};
-            let md_service: Box<dyn DonetService> = md_factory.create()?;
+            md_service = md_factory.create()?;
 
             #[allow(clippy::redundant_clone)]
             md_service.start(daemon_config.clone())?;
@@ -110,7 +127,7 @@ fn main() -> std::io::Result<()> {
         if want_state_server {
             // Initialize the State Server
             let ss_factory: StateServerService = StateServerService {};
-            let ss_service: Box<dyn DonetService> = ss_factory.create()?;
+            ss_service = ss_factory.create()?;
 
             #[allow(clippy::redundant_clone)]
             ss_service.start(daemon_config.clone())?;
@@ -118,7 +135,7 @@ fn main() -> std::io::Result<()> {
         if want_database_server {
             // Initialize the Database Server
             let db_factory: DatabaseServerService = DatabaseServerService {};
-            let db_service: Box<dyn DonetService> = db_factory.create()?;
+            db_service = db_factory.create()?;
 
             #[allow(clippy::redundant_clone)]
             db_service.start(daemon_config.clone())?;
@@ -126,7 +143,7 @@ fn main() -> std::io::Result<()> {
         if want_dbss {
             // Initialize the Database State Server
             let dbss_factory: DBSSService = DBSSService {};
-            let dbss_service: Box<dyn DonetService> = dbss_factory.create()?;
+            dbss_service = dbss_factory.create()?;
 
             #[allow(clippy::redundant_clone)]
             dbss_service.start(daemon_config.clone())?;
@@ -134,19 +151,17 @@ fn main() -> std::io::Result<()> {
         if want_event_logger {
             // Initialize the Event Logger
             let el_factory: EventLoggerService = EventLoggerService {};
-            let el_service: Box<dyn DonetService> = el_factory.create()?;
+            el_service = el_factory.create()?;
 
             #[allow(clippy::redundant_clone)]
             el_service.start(daemon_config.clone())?;
         }
-        return Ok(());
-    }
-    // if not ok, then parsing threw an error.
-    error!("An error occurred while parsing the TOML configuration.");
-    Err(Error::new(
-        ErrorKind::InvalidInput,
-        toml_parse.unwrap_err().message(),
-    ))
+        Ok(())
+    };
+    // Hack to reassure the compiler that I wan't to return an IO result.
+    set_future_return_type::<std::io::Result<()>, _>(&daemon_init);
+    // Start Tokio, return `daemon_init` result.
+    tokio_rt.block_on(daemon_init)
 }
 
 fn print_help_page(config_path: &str) {
