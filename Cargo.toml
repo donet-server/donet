@@ -16,7 +16,7 @@ publish = false
 # where it can find the OpenSSL include & library files.
 # Please prefix your cargo build command with: `OPENSSL_DIR=/usr/`
 # The directory may vary depending on your distribution of Linux.
-tokio = "1.32"
+tokio = { version = "1", features = ["full"] }
 serde = "1.0"
 log = "0.4"
 toml = "0.7.6"
@@ -28,4 +28,3 @@ mysql = "24.0"
 
 [build-dependencies]
 git-sha1 = "1.1"
-
