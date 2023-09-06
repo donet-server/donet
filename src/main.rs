@@ -80,19 +80,11 @@ fn main() -> std::io::Result<()> {
         logger::initialize_logger()?;
 
         let want_client_agent: bool = services.client_agent.is_some();
+        let want_message_director: bool = services.message_director.is_some();
         let want_state_server: bool = services.state_server.is_some();
         let want_database_server: bool = services.database_server.is_some();
         let want_dbss: bool = services.dbss.is_some();
         let want_event_logger: bool = services.event_logger.is_some();
-
-        // Initialize the daemon's message director (unless we are just an EL)
-        if want_client_agent || want_state_server || want_database_server || want_dbss {
-            let md_factory: MessageDirectorService = MessageDirectorService {};
-            let md_service: Box<dyn DonetService> = md_factory.create()?;
-
-            #[allow(clippy::redundant_clone)]
-            md_service.start(daemon_config.clone())?;
-        }
 
         // FIXME: I'm using the fancy 'factories' software design pattern,
         // but I still ended up writing repetitive code here. Improve!
@@ -106,6 +98,14 @@ fn main() -> std::io::Result<()> {
 
             #[allow(clippy::redundant_clone)]
             ca_service.start(daemon_config.clone())?;
+        }
+        if want_message_director {
+            // Initialize the Message Director
+            let md_factory: MessageDirectorService = MessageDirectorService {};
+            let md_service: Box<dyn DonetService> = md_factory.create()?;
+
+            #[allow(clippy::redundant_clone)]
+            md_service.start(daemon_config.clone())?;
         }
         if want_state_server {
             // Initialize the State Server

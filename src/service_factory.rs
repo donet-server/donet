@@ -56,7 +56,7 @@ impl DonetService for MessageDirectorService {
         let md_conf: crate::config::MessageDirector;
 
         // Use 'MessageDirector' config repr, not *THE* MessageDirector.
-        if let Some(md_some) = _conf.message_director {
+        if let Some(md_some) = _conf.services.message_director {
             md_conf = md_some;
         } else {
             error!("Missing required Message Director configuration.");

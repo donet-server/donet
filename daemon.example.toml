@@ -1,7 +1,10 @@
 # The 'daemon' section describes identification 
 # information which can be queried from an MD instance.
+#
+# For this example, this single daemon will perform the
+# role of all services in a cluster.
 [daemon]
-name = "Master Message Director"
+name = "Donet Cluster"
 #id = 3 # default: automatically assigned
 log_level = "info" # default: "info"
 
@@ -11,42 +14,12 @@ log_level = "info" # default: "info"
 eventlogger = "127.0.0.1:9090"
 dc_files = ["main.dc", "game.dc"]
 
-
-# The 'DOGs' section describes the existence of
-# Distributed Object Globals, which are objects 
-# that are globally known by all AI and Clients
-# and are accessible to anonymous clients.
-[[dogs]]
-id = 1000
-dclass = "LoginManager"
-# The 'anonymous' value specifies whether a DOG
-# can be accessed through by an unauthenticated client.
-anonymous = true # default: false
-
-# Note that this section (and the one above) uses
-# double brackets '[[dogs]]', as these are entries
-# of the 'dogs' section.
-[[dogs]]
-id = 2000
-dclass = "ScratchCardManager"
-anonymous = false
-
-# The Message Director instance that routes messages
-# to this daemon process. (its gateway to the cluster)
-[message_director]
-# The 'bind' value specifies the port and address to
-# bind its listening socket to receive messages.
-bind = "127.0.0.1:7199"
-# The 'upstream' value specifies the upstream MD to
-# connect to, if this MD instance should not act as
-# the master message director of the cluster.
-#upstream = "127.0.0.1:5555"
-
 # The 'services' section describes the service(s) that 
 # this daemon should perform as. (e.g. Client Agent, State Server, etc.)
 #
 #    Valid Services:
 #        - 'services.client_agent'
+#        - 'services.message_director'
 #        - 'services.state_server'
 #        - 'services.dbss'
 #        - 'services.database_server'
@@ -65,6 +38,15 @@ version_string = "v1.0.0"
 [services.client_agent.filtering]
 mode = "blacklist" # modes: 'whitelist', 'blacklist'. Default: 'blacklist'
 file = "bad_words.txt"
+
+[message_director]
+# The 'bind' value specifies the port and address to
+# bind its listening socket to receive messages.
+bind = "127.0.0.1:7199"
+# The 'upstream' value specifies the upstream MD to
+# connect to, if this MD instance should not act as
+# the master message director of the cluster.
+#upstream = "127.0.0.1:5555"
 
 [services.state_server]
 control_channel = 102000

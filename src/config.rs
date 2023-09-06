@@ -36,12 +36,6 @@ pub struct Global {
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
-pub struct MessageDirector {
-    pub bind: String,             // '<host>:<port>'
-    pub upstream: Option<String>, // '<host>:<port>'
-}
-
-#[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct Filtering {
     pub mode: String, // 'blacklist', 'whitelist'
     pub file: String, // <file_path>
@@ -54,6 +48,12 @@ pub struct ClientAgent {
     pub dc_file_hash: Option<String>, // FIXME: Can we deserialize as hex literal?
     pub version_string: String,
     pub filtering: Filtering,
+}
+
+#[derive(Deserialize, PartialEq, Debug, Clone)]
+pub struct MessageDirector {
+    pub bind: String,             // '<host>:<port>'
+    pub upstream: Option<String>, // '<host>:<port>'
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
@@ -92,6 +92,7 @@ pub struct EventLogger {
 #[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct Services {
     pub client_agent: Option<ClientAgent>,
+    pub message_director: Option<MessageDirector>,
     pub state_server: Option<StateServer>,
     pub database_server: Option<DBServer>,
     pub dbss: Option<DBSS>,
@@ -102,7 +103,5 @@ pub struct Services {
 pub struct DonetConfig {
     pub daemon: Daemon,
     pub global: Global,
-    // MD required by every service but event logger.
-    pub message_director: Option<MessageDirector>,
     pub services: Services,
 }
