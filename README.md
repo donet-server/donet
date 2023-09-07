@@ -8,7 +8,7 @@
 ![](https://img.shields.io/github/actions/workflow/status/donet-server/Donet/rust-ci.yml?logo=github&label=CI)
 ![](https://img.shields.io/github/license/donet-server/Donet)
 
-The Donet software project is a network engine that implements the Distributed Networking protocol, 
+Donet is a free and open source network engine designed after the Distributed Networking protocol, 
 as defined in the high-level networking API of the [Panda3D](https://panda3d.org) game engine,
 which was originally developed by Disney Interactive (*formerly known as Disney VR Studios*) to connect 
 with their in-house server technology, the OTP (*Online Theme Park*) server, which was used to power 
@@ -24,9 +24,9 @@ is a copyleft open source software license. The terms of this license are availa
 
 ## Getting Started
 Please read the [introduction to Donet](./docs/01-Introduction.md) for an overview of the project 
-and how the system works.
+and how the engine works.
 
-If you have any questions, feel free to join [our Discord server](https://discord.gg/T6jGjEutfy).
+If you have any questions, feel free to join [our community Discord server](https://discord.gg/T6jGjEutfy).
 
 ### Distributed Networking architecture resources
 
@@ -41,4 +41,4 @@ Resources for more info on Panda's Distributed Networking (Sources listed in chr
 
 <br>
 
-Donet logo artwork created & designed by [Karla Valeria Rodriguez](https://github.com/karla-valeria).
+Donet logo artwork created & designed by [Karla Valeria Rodriguez](https://github.com/karla-valeria). 🍩
