@@ -29,3 +29,10 @@ chrono = { version = "0.4" }
 
 [build-dependencies]
 git-sha1 = { version = "1.1" }
+
+[profile.release]
+codegen-units = 1 # Won't affect GH workflow times
+panic = "abort" # Remove unwind code on release
+opt-level = 3
+lto = true
+strip = true
