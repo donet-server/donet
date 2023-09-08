@@ -1,8 +1,8 @@
-<img src="logo/donet_banner.png" align="right" width="43%"/>
+<img src="logo/donet_banner.png" align="right" width="50%"/>
 
 # Donet
 
-**D**istributed **O**bject **Net**work Engine
+_**D**istributed **O**bject **Net**work Engine_
 
 ![](https://img.shields.io/discord/1066973060357443644?color=blue&label=Discord&logo=discord&logoColor=white)
 ![](https://img.shields.io/github/actions/workflow/status/donet-server/Donet/rust-ci.yml?logo=github&label=CI)
