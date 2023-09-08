@@ -92,12 +92,12 @@ fn main() -> std::io::Result<()> {
         let services: Services = daemon_config.services.clone();
 
         // Smart pointers to new service instances on heap
-        let ca_service: Box<dyn DonetService>;
-        let md_service: Box<dyn DonetService>;
-        let ss_service: Box<dyn DonetService>;
-        let db_service: Box<dyn DonetService>;
-        let dbss_service: Box<dyn DonetService>;
-        let el_service: Box<dyn DonetService>;
+        let ca_service: Box<ClientAgentService>;
+        let md_service: Box<MessageDirectorService>;
+        let ss_service: Box<StateServerService>;
+        let db_service: Box<DatabaseServerService>;
+        let dbss_service: Box<DBSSService>;
+        let el_service: Box<EventLoggerService>;
 
         logger::initialize_logger()?;
 
@@ -114,7 +114,7 @@ fn main() -> std::io::Result<()> {
             ca_service = ca_factory.create()?;
 
             #[allow(clippy::redundant_clone)]
-            ca_service.start(daemon_config.clone())?;
+            ca_service.start(daemon_config.clone()).await?;
         }
         if want_message_director {
             // Initialize the Message Director
@@ -122,7 +122,7 @@ fn main() -> std::io::Result<()> {
             md_service = md_factory.create()?;
 
             #[allow(clippy::redundant_clone)]
-            md_service.start(daemon_config.clone())?;
+            md_service.start(daemon_config.clone()).await?;
         }
         if want_state_server {
             // Initialize the State Server
@@ -130,7 +130,7 @@ fn main() -> std::io::Result<()> {
             ss_service = ss_factory.create()?;
 
             #[allow(clippy::redundant_clone)]
-            ss_service.start(daemon_config.clone())?;
+            ss_service.start(daemon_config.clone()).await?;
         }
         if want_database_server {
             // Initialize the Database Server
@@ -138,7 +138,7 @@ fn main() -> std::io::Result<()> {
             db_service = db_factory.create()?;
 
             #[allow(clippy::redundant_clone)]
-            db_service.start(daemon_config.clone())?;
+            db_service.start(daemon_config.clone()).await?;
         }
         if want_dbss {
             // Initialize the Database State Server
@@ -146,7 +146,7 @@ fn main() -> std::io::Result<()> {
             dbss_service = dbss_factory.create()?;
 
             #[allow(clippy::redundant_clone)]
-            dbss_service.start(daemon_config.clone())?;
+            dbss_service.start(daemon_config.clone()).await?;
         }
         if want_event_logger {
             // Initialize the Event Logger
@@ -154,13 +154,13 @@ fn main() -> std::io::Result<()> {
             el_service = el_factory.create()?;
 
             #[allow(clippy::redundant_clone)]
-            el_service.start(daemon_config.clone())?;
+            el_service.start(daemon_config.clone()).await?;
         }
         Ok(())
     };
     // Hack to reassure the compiler that I wan't to return an IO result.
     set_future_return_type::<std::io::Result<()>, _>(&daemon_init);
-    // Start Tokio, return `daemon_init` result.
+    // Start using Tokio, return `daemon_init` result.
     tokio_rt.block_on(daemon_init)
 }
 

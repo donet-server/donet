@@ -23,8 +23,7 @@ use log::{error, info};
 use std::io::{Error, ErrorKind, Result};
 
 // All DoNet service types
-// Each implement the 'DonetService' trait,
-// with their bootstrap code to start the service.
+// Each implement bootstrap code to start a service.
 pub struct ClientAgentService;
 pub struct MessageDirectorService;
 pub struct StateServerService;
@@ -32,25 +31,27 @@ pub struct DatabaseServerService;
 pub struct DBSSService;
 pub struct EventLoggerService;
 
-pub trait DonetService {
-    fn start(&self, _conf: DonetConfig) -> Result<()>;
-    fn create(&self) -> Result<Box<dyn DonetService>>;
-}
+//pub trait DonetService {
+//    fn start(&self, _conf: DonetConfig) -> Result<()>;
+//    fn create(&self) -> Result<Box<dyn DonetService>>;
+//}
+// NOTE: Removed above due to async not allowed in traits.
+//       Hoping to add back on a future rust release?
 
-impl DonetService for ClientAgentService {
+impl ClientAgentService {
     // TODO: implement client agent xd
-    fn start(&self, _conf: DonetConfig) -> Result<()> {
+    pub async fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting Client Agent service.");
         Ok(())
     }
 
-    fn create(&self) -> Result<Box<dyn DonetService>> {
+    pub fn create(&self) -> Result<Box<ClientAgentService>> {
         Ok(Box::new(ClientAgentService))
     }
 }
 
-impl DonetService for MessageDirectorService {
-    fn start(&self, _conf: DonetConfig) -> Result<()> {
+impl MessageDirectorService {
+    pub async fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting Message Director service.");
 
         let md_conf: crate::config::MessageDirector;
@@ -69,34 +70,36 @@ impl DonetService for MessageDirectorService {
             upstream = Some(upstream_some);
         }
 
-        let md: MessageDirector = MessageDirector::new(md_conf.bind.as_str(), upstream);
-        let res: std::result::Result<(), Error> = md.init_network();
+        let md: MessageDirector = MessageDirector::new(md_conf.bind.as_str(), upstream).await?;
 
-        if res.is_err() {
-            error!("Failed to initialize the Message Director.");
-            panic!("Cannot initialize Donet daemon without MD.");
+        if let Err(md_init_err) = md.init_network() {
+            error!(
+                "Failed to initialize Message Director. Daemon cannot start.\n{}",
+                md_init_err
+            );
+            return Err(md_init_err);
         }
         Ok(())
     }
 
-    fn create(&self) -> Result<Box<dyn DonetService>> {
+    pub fn create(&self) -> Result<Box<MessageDirectorService>> {
         Ok(Box::new(MessageDirectorService))
     }
 }
 
-impl DonetService for StateServerService {
-    fn start(&self, _conf: DonetConfig) -> Result<()> {
+impl StateServerService {
+    pub async fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting State Server service.");
         Ok(())
     }
 
-    fn create(&self) -> Result<Box<dyn DonetService>> {
+    pub fn create(&self) -> Result<Box<StateServerService>> {
         Ok(Box::new(StateServerService))
     }
 }
 
-impl DonetService for DatabaseServerService {
-    fn start(&self, _conf: DonetConfig) -> Result<()> {
+impl DatabaseServerService {
+    pub async fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting Database Server service.");
 
         // NOTE: We are unwrapping an Option without checking,
@@ -138,29 +141,29 @@ impl DonetService for DatabaseServerService {
         Ok(())
     }
 
-    fn create(&self) -> Result<Box<dyn DonetService>> {
+    pub fn create(&self) -> Result<Box<DatabaseServerService>> {
         Ok(Box::new(DatabaseServerService))
     }
 }
 
-impl DonetService for DBSSService {
-    fn start(&self, _conf: DonetConfig) -> Result<()> {
-        info!("Booting DBSS Service.");
+impl DBSSService {
+    pub async fn start(&self, _conf: DonetConfig) -> Result<()> {
+        info!("Booting DBSS service.");
         Ok(())
     }
 
-    fn create(&self) -> Result<Box<dyn DonetService>> {
+    pub fn create(&self) -> Result<Box<DBSSService>> {
         Ok(Box::new(DBSSService))
     }
 }
 
-impl DonetService for EventLoggerService {
-    fn start(&self, _conf: DonetConfig) -> Result<()> {
-        info!("Booting Event Logger Service.");
+impl EventLoggerService {
+    pub async fn start(&self, _conf: DonetConfig) -> Result<()> {
+        info!("Booting Event Logger service.");
         Ok(())
     }
 
-    fn create(&self) -> Result<Box<dyn DonetService>> {
+    pub fn create(&self) -> Result<Box<EventLoggerService>> {
         Ok(Box::new(EventLoggerService))
     }
 }

@@ -15,9 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use log::{error, info};
+use log::info;
 use std::io::Result;
-use std::net::{TcpListener, TcpStream};
+use tokio::net::{TcpListener, TcpStream};
 
 pub struct TCPAcceptor {
     _socket: Box<TcpListener>,
@@ -30,40 +30,33 @@ pub struct TCPConnection {
 }
 
 impl TCPAcceptor {
-    pub fn bind(uri: &str) -> TCPAcceptor {
-        let net_resp: Result<TcpListener> = TcpListener::bind(uri);
+    pub async fn bind(uri: &str) -> Result<TCPAcceptor> {
+        let net_resp: TcpListener = TcpListener::bind(uri).await?;
 
-        if net_resp.is_err() {
-            error!("An error occurred when trying to open a new TCP listener.");
-            panic!("Failed to open a new TCP listener!");
-        }
         info!("Opened new TCP listening socket at {}.", uri);
-        let new_binding: Box<TcpListener> = Box::new(net_resp.unwrap());
+        let new_binding: Box<TcpListener> = Box::new(net_resp);
 
-        TCPAcceptor {
+        Ok(TCPAcceptor {
             _socket: new_binding,
             _bind_address: String::from(uri),
-        }
+        })
     }
+
     pub fn start_listening(&self) -> Result<()> {
         Ok(())
     }
 }
 
 impl TCPConnection {
-    pub fn connect(uri: &str) -> TCPConnection {
-        let net_resp: Result<TcpStream> = TcpStream::connect(uri);
+    pub async fn connect(uri: &str) -> Result<TCPConnection> {
+        let net_resp: TcpStream = TcpStream::connect(uri).await?;
 
-        if net_resp.is_err() {
-            error!("An error occurred when trying to open a new TCP connection.");
-            panic!("Failed to open a new TCP stream!");
-        }
         info!("Opened new TCP connection to {}.", uri);
-        let new_socket: Box<TcpStream> = Box::new(net_resp.unwrap());
+        let new_socket: Box<TcpStream> = Box::new(net_resp);
 
-        TCPConnection {
+        Ok(TCPConnection {
             _socket: new_socket,
             _address: String::from(uri),
-        }
+        })
     }
 }

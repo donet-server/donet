@@ -26,19 +26,18 @@ pub struct MessageDirector {
 }
 
 impl MessageDirector {
-    pub fn new(bind_uri: &str, upstream_uri: Option<String>) -> MessageDirector {
-        let upstream_con: Option<TCPConnection> =
-            upstream_uri.map(|uri| TCPConnection::connect(uri.as_str()));
+    pub async fn new(bind_uri: &str, upstream_uri: Option<String>) -> Result<MessageDirector> {
+        let mut upstream_con: Option<TCPConnection> = None;
 
-        if upstream_con.is_some() {
-            // This Message Director will connect to an upstream MD.
+        if let Some(u_uri) = upstream_uri {
             info!("Message Director will connect to upstream MD.");
+            upstream_con = Some(TCPConnection::connect(u_uri.as_str()).await?);
         }
 
-        MessageDirector {
-            _binding: TCPAcceptor::bind(bind_uri),
+        Ok(MessageDirector {
+            _binding: TCPAcceptor::bind(bind_uri).await?,
             _upstream: upstream_con,
-        }
+        })
     }
     pub fn init_network(&self) -> Result<()> {
         Ok(())

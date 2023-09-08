@@ -37,7 +37,7 @@ pub struct ChannelMap {
     // Maybe we can change this lifetime label once we know how we allocate
     // new ChannelSubscriber structs at the message director.
     subscriptions: MultiMap<Channel, &'static ChannelSubscriber>,
-    range_subscriptions: MultiMap<Channel, Vec<&'static ChannelSubscriber>>,
+    _range_subscriptions: MultiMap<Channel, Vec<&'static ChannelSubscriber>>,
 }
 
 trait ChannelMapInterface {
@@ -47,11 +47,11 @@ trait ChannelMapInterface {
     // Removes the given channel from the subscribed channels map.
     fn unsubscribe_channel(&mut self, sub: &mut ChannelSubscriber, chan: Channel);
     // Adds an object to be subscribed to a range of channels. The range is inclusive.
-    fn subscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel);
+    fn subscribe_range(&mut self, _sub: &mut ChannelSubscriber, _min: Channel, _max: Channel);
     // Performs the reverse of the subscribe_range() method.
-    fn unsubscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel);
+    fn unsubscribe_range(&mut self, _sub: &mut ChannelSubscriber, _min: Channel, _max: Channel);
     // Removes all channel and range subscriptions from the subscriber.
-    fn unsubscribe_all(&mut self, sub: &mut ChannelSubscriber);
+    fn unsubscribe_all(&mut self, _sub: &mut ChannelSubscriber);
     // Removes the given subscriber from the multi-map for a given channel.
     // Returns true only if:
     // a) There are subscribers for the given channel and
@@ -60,14 +60,14 @@ trait ChannelMapInterface {
     // Checks if a given object has a subscription on a channel.
     fn is_subscribed(&mut self, sub: &ChannelSubscriber, chan: Channel) -> bool;
     // Performs the same check as is_subscribed(), but for an array of channels.
-    fn are_subscribed(&mut self, subs: &mut Vec<ChannelSubscriber>, chans: &[Channel]);
+    fn are_subscribed(&mut self, _subs: &mut Vec<ChannelSubscriber>, _chans: &[Channel]);
 }
 
 impl ChannelMapInterface for ChannelMap {
     fn new() -> Self {
         ChannelMap {
             subscriptions: MultiMap::new(),
-            range_subscriptions: MultiMap::new(),
+            _range_subscriptions: MultiMap::new(),
         }
     }
 
@@ -102,11 +102,11 @@ impl ChannelMapInterface for ChannelMap {
         sub.subscribed_channels.swap_remove(index);
     }
 
-    fn subscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel) {}
+    fn subscribe_range(&mut self, _sub: &mut ChannelSubscriber, _min: Channel, _max: Channel) {}
 
-    fn unsubscribe_range(&mut self, sub: &mut ChannelSubscriber, min: Channel, max: Channel) {}
+    fn unsubscribe_range(&mut self, _sub: &mut ChannelSubscriber, _min: Channel, _max: Channel) {}
 
-    fn unsubscribe_all(&mut self, sub: &mut ChannelSubscriber) {}
+    fn unsubscribe_all(&mut self, _sub: &mut ChannelSubscriber) {}
 
     fn remove_subscriber(&mut self, sub: &ChannelSubscriber, chan: Channel) -> bool {
         let mut sub_count: usize = self.subscriptions.len();
@@ -148,5 +148,5 @@ impl ChannelMapInterface for ChannelMap {
         false
     }
 
-    fn are_subscribed(&mut self, subs: &mut Vec<ChannelSubscriber>, chans: &[Channel]) {}
+    fn are_subscribed(&mut self, _subs: &mut Vec<ChannelSubscriber>, _chans: &[Channel]) {}
 }
