@@ -33,7 +33,7 @@ fn main() -> std::io::Result<()> {
     use std::fs::File;
     use std::future::Future;
     use std::io::{Error, ErrorKind, Read};
-    use tokio::runtime::Runtime;
+    use tokio::runtime::{Builder, Runtime};
 
     // Hack to reassure the compiler the result type of a future.
     fn set_future_return_type<T, F: Future<Output = T>>(_arg: &F) {}
@@ -42,7 +42,10 @@ fn main() -> std::io::Result<()> {
     static GIT_SHA1: &str = env!("GIT_SHA1");
     let mut config_file: &str = "daemon.toml"; // default
     let args: Vec<String> = std::env::args().collect();
-    let tokio_rt: Runtime = Runtime::new()?;
+    let tokio_rt: Runtime = Builder::new_multi_thread()
+        .enable_io()
+        .thread_stack_size(2 * 1024 * 1024) // default: 2MB
+        .build()?;
 
     if args.len() > 1 {
         let mut index: usize = 0;
