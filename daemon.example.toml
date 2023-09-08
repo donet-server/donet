@@ -39,7 +39,7 @@ version_string = "v1.0.0"
 mode = "blacklist" # modes: 'whitelist', 'blacklist'. Default: 'blacklist'
 file = "bad_words.txt"
 
-[message_director]
+[services.message_director]
 # The 'bind' value specifies the port and address to
 # bind its listening socket to receive messages.
 bind = "127.0.0.1:7199"
