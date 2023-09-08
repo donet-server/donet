@@ -48,10 +48,9 @@ fn main() -> std::io::Result<()> {
         .build()?;
 
     if args.len() > 1 {
-        let mut index: usize = 0;
-        for argument in &args {
+        for index in 0..args.len() {
+            let argument = args.get(index).unwrap();
             if index == 0 {
-                index += 1; // skip binary name
                 continue;
             }
             if argument.starts_with('-') {
@@ -161,7 +160,7 @@ fn main() -> std::io::Result<()> {
         }
         Ok(())
     };
-    // Hack to reassure the compiler that I wan't to return an IO result.
+    // Hack to reassure the compiler that I want to return an IO result.
     set_future_return_type::<std::io::Result<()>, _>(&daemon_init);
     // Start using Tokio, return `daemon_init` result.
     tokio_rt.block_on(daemon_init)
@@ -181,39 +180,29 @@ fn print_help_page(config_path: &str) {
     );
 }
 
+#[rustfmt::skip]
 fn print_version(version_string: &str, git_sha1: &str) {
-    let bin_arch: &str = if cfg!(target_arch = "x86") {
-        "x86"
-    } else if cfg!(target_arch = "x86_64") {
-        "x86_64"
-    } else if cfg!(target_arch = "aarch64") {
-        "aarch64"
-    } else {
-        "unknown" // aka not supported
-    };
-    let bin_platform: &str = if cfg!(target_os = "linux") {
-        "linux"
-    } else if cfg!(target_os = "windows") {
-        "windows"
-    } else if cfg!(target_os = "macos") {
-        "macos"
-    } else if cfg!(target_os = "freebsd") {
-        "freebsd"
-    } else {
-        "unknown" // aka not supported
-    };
-    let bin_env: &str = if cfg!(target_env = "gnu") {
-        "gnu"
-    } else if cfg!(target_env = "msvc") {
-        "msvc"
-    } else {
-        "other"
-    };
+    let bin_arch: &str = if cfg!(target_arch = "x86") { "x86" }
+    else if cfg!(target_arch = "x86_64") { "x86_64" }
+    else if cfg!(target_arch = "aarch64") { "aarch64" }
+    else { "unknown" };
+
+    let bin_platform: &str = if cfg!(target_os = "linux") { "linux" }
+    else if cfg!(target_os = "windows") { "windows" }
+    else if cfg!(target_os = "macos") { "macos" }
+    else if cfg!(target_os = "freebsd") { "freebsd" }
+    else { "unknown" };
+
+    let bin_env: &str = if cfg!(target_env = "gnu") { "gnu" }
+    else if cfg!(target_env = "msvc") { "msvc" }
+    else { "other" };
+
     println!(
-        "Donet, version {} ({} {}-{})\n\
+        "{}Donet{}, version {} ({} {}-{})\n\
         Revision (Git SHA1): {}\n\n\
         Released under the AGPL-3.0 license. <https://www.gnu.org/licenses/agpl-3.0.html>\n\
         View the source code on GitHub: https://github.com/donet-server/Donet\n",
+        logger::_ANSI_MAGENTA, logger::_ANSI_RESET,
         version_string, bin_arch, bin_platform, bin_env, git_sha1
     );
 }
