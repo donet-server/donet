@@ -1,7 +1,6 @@
 p_donet_internal = Proto ("donet_internal", "DoNet Internal Protocol (MD)")
 p_donet_client = Proto ("donet_client", "DoNet Client Protocol (CA)")
 
--- TODO: check lectures / documents for the original MD/CA port #s?
 donet_md_port = 7199
 donet_ca_port = 6667
 
