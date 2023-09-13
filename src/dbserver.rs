@@ -69,7 +69,13 @@ impl DatabaseServer<'_> {
         );
         let url_str: &str = url.as_str(); // can't do `as_str()` in line above, due to lifetime
 
-        info!("Connecting to SQL database backend with URL: {}", url_str);
+        info!(
+            "Connecting to SQL database backend with URL: {}",
+            format!(
+                "mysql://{}:****@{}:{}/{}",
+                creds.user, creds.host, port_str, creds.database
+            )
+        );
         let p_res: Result<Pool, Error> = Pool::new(url_str);
 
         // FIXME: Clippy recommends bad code, so we're ignoring, but we need to fix later.
