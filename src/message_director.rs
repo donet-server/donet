@@ -17,11 +17,13 @@
 
 //use crate::channel_map;
 use crate::network::{TCPAcceptor, TCPConnection};
-use log::info;
+use log::{error, info};
 use std::io::Result;
+use tokio::net::TcpStream;
+//use core::net::SocketAddr // nightly feature atm
 
 pub struct MessageDirector {
-    _binding: TCPAcceptor,
+    binding: TCPAcceptor,
     _upstream: Option<TCPConnection>,
 }
 
@@ -35,11 +37,26 @@ impl MessageDirector {
         }
 
         Ok(MessageDirector {
-            _binding: TCPAcceptor::bind(bind_uri).await?,
+            binding: TCPAcceptor::bind(bind_uri).await?,
             _upstream: upstream_con,
         })
     }
-    pub fn init_network(&self) -> Result<()> {
+
+    pub async fn init_network(&self) -> Result<()> {
+        loop {
+            match self.binding.listener.accept().await {
+                Ok((socket, address)) => {
+                    info!("Received incoming connection from {:?}.", address);
+                    self.handle_datagram(&socket).await?;
+                    // TODO: Pass address (core::net::SocketAddr) to handle_datagram()
+                    // once core::net is out of nightly and in stable rust. #108443
+                }
+                Err(socket_err) => error!("Failed to get client: {:?}", socket_err),
+            }
+        }
+    }
+
+    pub async fn handle_datagram(&self, _socket: &TcpStream) -> Result<()> {
         Ok(())
     }
 }

@@ -33,12 +33,13 @@ fn main() -> std::io::Result<()> {
     use std::fs::File;
     use std::io::{Error, ErrorKind, Read};
     use tokio::runtime::{Builder, Runtime};
+    use tokio::task::JoinHandle;
 
     static VERSION_STRING: &str = "0.1.0";
     static GIT_SHA1: &str = env!("GIT_SHA1");
     let mut config_file: &str = "daemon.toml"; // default
     let args: Vec<String> = std::env::args().collect();
-    let tokio_rt: Runtime = Builder::new_multi_thread()
+    let tokio_runtime: Runtime = Builder::new_multi_thread()
         .enable_io()
         .thread_stack_size(2 * 1024 * 1024) // default: 2MB
         .build()?;
@@ -83,7 +84,7 @@ fn main() -> std::io::Result<()> {
     }
     let daemon_config: DonetConfig = toml_parse.unwrap();
 
-    let daemon_init = async move {
+    let daemon_main = async move {
         // FIXME: clippy doesn't like redundant clones, but they're needed.
         // This is probably bad code but it works. Will fix later.
         #[allow(clippy::redundant_clone)]
@@ -96,6 +97,9 @@ fn main() -> std::io::Result<()> {
         let db_service: Box<DatabaseServerService>;
         let dbss_service: Box<DBSSService>;
         let el_service: Box<EventLoggerService>;
+
+        // Tokio join handles for spawned tasks of services started.
+        let mut service_handles: Vec<JoinHandle<std::io::Result<()>>> = Vec::new();
 
         logger::initialize_logger()?;
 
@@ -120,7 +124,7 @@ fn main() -> std::io::Result<()> {
             md_service = md_factory.create()?;
 
             #[allow(clippy::redundant_clone)]
-            md_service.start(daemon_config.clone()).await?;
+            service_handles.push(md_service.start(daemon_config.clone()).await?);
         }
         if want_state_server {
             // Initialize the State Server
@@ -154,12 +158,17 @@ fn main() -> std::io::Result<()> {
             #[allow(clippy::redundant_clone)]
             el_service.start(daemon_config.clone()).await?;
         }
-        Ok(())
+
+        loop {
+            // TODO: Iterate through services' join handles
+            // and abort them once an interrupt signal is received.
+        }
     };
     // Hack to reassure the compiler that I want to return an IO result.
-    globals::set_future_return_type::<std::io::Result<()>, _>(&daemon_init);
-    // Start using Tokio, return `daemon_init` result.
-    tokio_rt.block_on(daemon_init)
+    globals::set_future_return_type::<std::io::Result<()>, _>(&daemon_main);
+
+    // Start using Tokio, return `daemon_main` result.
+    tokio_runtime.block_on(daemon_main)
 }
 
 fn print_help_page(config_path: &str) {

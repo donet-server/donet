@@ -21,6 +21,7 @@ use crate::globals;
 use crate::message_director::MessageDirector;
 use log::{error, info};
 use std::io::{Error, ErrorKind, Result};
+use tokio::task::JoinHandle;
 
 // All DoNet service types
 // Each implement bootstrap code to start a service.
@@ -51,13 +52,13 @@ impl ClientAgentService {
 }
 
 impl MessageDirectorService {
-    pub async fn start(&self, _conf: DonetConfig) -> Result<()> {
+    pub async fn start(&self, conf: DonetConfig) -> Result<JoinHandle<Result<()>>> {
         info!("Booting Message Director service.");
 
+        // Use 'MessageDirector' config repr, not *THE* MessageDirector.
         let md_conf: crate::config::MessageDirector;
 
-        // Use 'MessageDirector' config repr, not *THE* MessageDirector.
-        if let Some(md_some) = _conf.services.message_director {
+        if let Some(md_some) = conf.services.message_director {
             md_conf = md_some;
         } else {
             error!("Missing required Message Director configuration.");
@@ -72,14 +73,10 @@ impl MessageDirectorService {
 
         let md: MessageDirector = MessageDirector::new(md_conf.bind.as_str(), upstream).await?;
 
-        if let Err(md_init_err) = md.init_network() {
-            error!(
-                "Failed to initialize Message Director. Daemon cannot start.\n{}",
-                md_init_err
-            );
-            return Err(md_init_err);
-        }
-        Ok(())
+        let md_loop = async move { md.init_network().await };
+        globals::set_future_return_type::<Result<()>, _>(&md_loop);
+
+        Ok(tokio::task::spawn(md_loop))
     }
 
     pub fn create(&self) -> Result<Box<MessageDirectorService>> {

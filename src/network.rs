@@ -20,8 +20,8 @@ use std::io::Result;
 use tokio::net::{TcpListener, TcpStream};
 
 pub struct TCPAcceptor {
-    _socket: Box<TcpListener>,
-    _bind_address: String,
+    pub listener: Box<TcpListener>,
+    pub _bind_address: String,
 }
 
 pub struct TCPConnection {
@@ -37,13 +37,9 @@ impl TCPAcceptor {
         let new_binding: Box<TcpListener> = Box::new(net_resp);
 
         Ok(TCPAcceptor {
-            _socket: new_binding,
+            listener: new_binding,
             _bind_address: String::from(uri),
         })
-    }
-
-    pub fn start_listening(&self) -> Result<()> {
-        Ok(())
     }
 }
 
