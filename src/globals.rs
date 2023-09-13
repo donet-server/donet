@@ -16,6 +16,7 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 use std::error::Error;
+use std::future::Future;
 use std::mem;
 use std::result::Result; // not to be confused with std::io::Result
 
@@ -58,3 +59,6 @@ pub type DgBufferResult = Result<DgSize, DgError>;
 
 // MySQL Result (mysql crate API response)
 pub type SqlResult = Result<(), Box<dyn Error>>;
+
+// Hack to reassure the compiler the result type of a future.
+pub fn set_future_return_type<T, F: Future<Output = T>>(_arg: &F) {}

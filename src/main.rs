@@ -31,12 +31,8 @@ fn main() -> std::io::Result<()> {
     use log::error;
     use service_factory::*;
     use std::fs::File;
-    use std::future::Future;
     use std::io::{Error, ErrorKind, Read};
     use tokio::runtime::{Builder, Runtime};
-
-    // Hack to reassure the compiler the result type of a future.
-    fn set_future_return_type<T, F: Future<Output = T>>(_arg: &F) {}
 
     static VERSION_STRING: &str = "0.1.0";
     static GIT_SHA1: &str = env!("GIT_SHA1");
@@ -161,7 +157,7 @@ fn main() -> std::io::Result<()> {
         Ok(())
     };
     // Hack to reassure the compiler that I want to return an IO result.
-    set_future_return_type::<std::io::Result<()>, _>(&daemon_init);
+    globals::set_future_return_type::<std::io::Result<()>, _>(&daemon_init);
     // Start using Tokio, return `daemon_init` result.
     tokio_rt.block_on(daemon_init)
 }
