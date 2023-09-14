@@ -23,7 +23,6 @@ pub mod globals;
 pub mod logger;
 pub mod message_director;
 pub mod network;
-pub mod protocol;
 pub mod service_factory;
 
 fn main() -> std::io::Result<()> {

@@ -59,7 +59,6 @@ pub mod endianness {
 }
 
 use crate::globals;
-use crate::protocol;
 use log::error;
 use std::mem;
 use std::vec::Vec;
@@ -515,7 +514,7 @@ impl DatagramIterator {
     // Returns the datagram's message type. Does not advance the index.
     // Useful for if index needs to be saved or if next field isn't msg type.
     // If iterating through a fresh datagram, use read_u16.
-    pub fn read_msg_type(&mut self) -> protocol::Message {
+    pub fn read_msg_type(&mut self) -> globals::Protocol {
         let start_index: usize = self.index;
 
         self.index = 1
@@ -525,7 +524,7 @@ impl DatagramIterator {
         let msg_type: u16 = self.read_u16(); // read message type
         self.index = start_index; // do not advance dgi index
 
-        for message in protocol::Message::iter() {
+        for message in globals::Protocol::iter() {
             let msg_id: u16 = message as u16;
             if msg_type == msg_id {
                 return message;
