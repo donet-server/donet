@@ -9,24 +9,37 @@ on:
 
 jobs:
   linux:
-    name: ubuntu-latest
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
-    env:
-      DEBIAN_FRONTEND: "noninteractive"
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
         containers: [
           "rustlang/rust:nightly"
         ]
-    runs-on: ubuntu-latest
     container: ${{ matrix.containers }}
     steps:
       - name: Git Checkout
         uses: actions/checkout@v3
-      - name: Install Rust components
-        run: |
-          rustup component add rustfmt
-          rustup component add clippy
+      - name: Set up Rust nightly
+        id: toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+      - name: Cache cargo build
+        uses: actions/cache@v3
+        env:
+          cache-name: cargo-build-target
+        with:
+          path: target
+          # key needs to contain rustc_hash so new nightly versions do fresh builds
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ steps.toolchain.outputs.rustc_hash }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ env.cache-name }}-${{ steps.toolchain.outputs.rustc_hash }}-
       - name: Update System Packages
         run: |
           # Update package lists
