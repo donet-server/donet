@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: Build
 on:
   push:
     branches:
@@ -9,25 +9,14 @@ on:
 
 jobs:
   linux:
-    name: Ubuntu
+    name: ubuntu-latest
     timeout-minutes: 20
     env:
       DEBIAN_FRONTEND: "noninteractive"
-      # NOTE: RUSTC_BOOTSTRAP is being used to
-      # use the proc_macro_span nightly feature,
-      # which is required by plex which is only
-      # used for lexing and parsing the DC file.
-      # Everything else is using stable rust.
-      RUSTC_BOOTSTRAP: 1
     strategy:
       matrix:
         containers: [
-          "rust:1.67.0",
-          "rust:1.68.0",
-          "rust:1.69.0",
-          "rust:1.70.0",
-          "rust:1.71.0",
-          "rust:latest"
+          "rustlang/rust:nightly"
         ]
     runs-on: ubuntu-latest
     container: ${{ matrix.containers }}
