@@ -13,6 +13,7 @@ jobs:
     timeout-minutes: 20
     env:
       DEBIAN_FRONTEND: "noninteractive"
+      RUSTC_BOOTSTRAP: 1
     strategy:
       matrix:
         containers: [
