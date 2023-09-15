@@ -16,10 +16,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
-        containers: [
-          "rustlang/rust:nightly"
-        ]
-    container: ${{ matrix.containers }}
     steps:
       - name: Git Checkout
         uses: actions/checkout@v3
