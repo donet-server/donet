@@ -19,6 +19,7 @@ pub mod channel_map;
 pub mod config;
 pub mod datagram;
 pub mod dbserver;
+pub mod dcparser;
 pub mod globals;
 pub mod logger;
 pub mod message_director;
