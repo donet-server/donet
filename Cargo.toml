@@ -26,6 +26,7 @@ strum_macros = { version = "0.25" }
 toml = { version = "0.7" }
 multimap = { version = "0.9" }
 chrono = { version = "0.4" }
+plex = { version = "0.2" }
 
 [build-dependencies]
 git-sha1 = { version = "1.1" }
