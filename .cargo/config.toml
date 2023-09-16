@@ -1,5 +1,7 @@
 [build]
 jobs = 2
 rustc = "rustc"
-target = ["x86_64-unknown-linux-gnu"]
+target-dir = "target"
 
+[cargo-new]
+vcs = "git"
