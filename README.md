@@ -5,8 +5,8 @@
 _**D**istributed **O**bject **Net**work Engine_
 
 ![](https://img.shields.io/discord/1066973060357443644?color=blue&label=Discord&logo=discord&logoColor=white)
-![](https://img.shields.io/github/actions/workflow/status/donet-server/Donet/rust-ci.yml?logo=github&label=CI)
-![](https://img.shields.io/github/license/donet-server/Donet)
+![](https://img.shields.io/github/actions/workflow/status/donet-server/donet/build.yml?logo=github&label=Build)
+![](https://img.shields.io/github/license/donet-server/donet)
 
 Donet is a free and open source network engine designed after the Distributed Networking protocol, 
 as defined in the high-level networking API of the [Panda3D](https://panda3d.org) game engine,
@@ -17,16 +17,16 @@ from 2001 to 2013.
 
 Donet is currently in its early stages, but it aims to be a drop-in replacement for [Astron](https://github.com/astron/astron).
 
-## Software License
-The Donet engine is released under the GNU Affero General Public License, version 3.0 (AGPL-3.0), which 
-is a copyleft open source software license. The terms of this license are available in the 
-"[LICENSE](./LICENSE)" file.
-
 ## Getting Started
 Please read the [introduction to Donet](./docs/01-Introduction.md) for an overview of the project 
 and how the engine works.
 
 If you have any questions, feel free to join [our community Discord server](https://discord.gg/T6jGjEutfy).
+
+## Software License
+The Donet engine is released under the GNU Affero General Public License, version 3.0 (AGPL-3.0), which 
+is a copyleft open source software license. The terms of this license are available in the 
+"[LICENSE](./LICENSE)" file.
 
 ### Distributed Networking architecture resources
 
