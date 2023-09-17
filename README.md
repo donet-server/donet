@@ -6,7 +6,7 @@ _**D**istributed **O**bject **Net**work Engine_
 
 ![](https://img.shields.io/discord/1066973060357443644?color=blue&label=Discord&logo=discord&logoColor=white)
 ![](https://img.shields.io/github/actions/workflow/status/donet-server/donet/build.yml?logo=github&label=Build)
-![](https://img.shields.io/github/license/donet-server/donet)
+[![Coverage Status](https://codecov.io/gh/donet-server/donet/branch/master/graph/badge.svg)](https://codecov.io/gh/donet-server/donet)
 
 Donet is a free and open source network engine designed after the Distributed Networking protocol, 
 as defined in the high-level networking API of the [Panda3D](https://panda3d.org) game engine,
