@@ -109,13 +109,25 @@ lexer! {
     r#"/[*](~(.*[*]/.*))[*]/"# => (DCToken::Comment, text),
     r#"\n"# => (DCToken::Newline, text),
 
+    r#"\\(x[0-9a-fA-F]+|.)"# => (DCToken::EscapeCharacter(text.to_owned()), text),
+
     r#"%"# => (DCToken::Modulus, text),
     r#"\*"# => (DCToken::Multiplication, text),
     r#"\+"# => (DCToken::Addition, text),
     r#"-"# => (DCToken::Subtraction, text),
     r#"/"# => (DCToken::Division, text),
+
     r#"[\(\)\{\}\[\],;=: %\*\+\-\/]"# => (DCToken::Delimiter(text.to_owned()), text),
 
+    r#"[1-9]+[0-9]"# => (DCToken::DecimalLiteral(match text.parse::<i64>() {
+        Ok(n) => { n },
+        Err(err) => {
+            error!("Found DecimalLiteral token, but failed to parse as i64.\n\n{}", err);
+            panic!("The DC lexer encountered an issue and could not continue.");
+        },
+    }), text),
+
+    r#"dclass|struct|keyword"# => (DCToken::Keyword(text.to_owned()), text),
     r#"[a-zA-Z_][a-zA-Z0-9_]*"# => (DCToken::Identifier(text.to_owned()), text),
 }
 
