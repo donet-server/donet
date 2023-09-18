@@ -34,17 +34,15 @@ pub enum DCToken {
     BinaryLiteral(String), // "0" ( "b" | "B" ) BinDigit { BinDigit }
 
     // IntegerLiteral ::= DecimalLiteral | OctalLiteral | HexLiteral | BinaryLiteral
-    // NumberLiteral ::= IntegerLiteral | FloatLiteral
+    // NumberLiteral  ::= IntegerLiteral | FloatLiteral
+    // decimals       ::= DecDigit { DecDigit }
 
     // Floats
     FloatLiteral(f64), // decimals "." [ decimals ] | "." [ decimals ]
 
-    // decimals ::= DecDigit { DecDigit }
-
     // Text Literals
     CharacterLiteral(char),
     StringLiteral(String),
-    StringCharacter(String),
     // nonSingleQuote  ::= <any printable character except "'" or newline>
     // nonDoubleQuote  ::= <any printable character except `"` or newline>
     EscapeCharacter(String), // "\" ( <any character> | "x" hexDigit { hexDigit } )
@@ -62,16 +60,6 @@ pub enum DCToken {
 
     Identifier(String), // Letter { Letter | DecDigit }
     Keyword(String),    // "dclass" | "struct" | "keyword"
-
-    // The following identifiers are reserved for datatypes
-    // and may not be used as identifiers.
-    //
-    // dataType  ::= charType | intType | floatType | sizedType
-    // charType  ::= "char"
-    // intType   ::= "int8" | "int16" | "int32" | "int64"
-    //               | "uint8" | "uint16" | "uint32" | "uint64"
-    // floatType ::= "float64"
-    // sizedType ::= "string" | "blob"
 
     // Operators
     Modulus,        // "%"
@@ -139,6 +127,21 @@ lexer! {
     r#"0[0-7]+"# => (DCToken::OctalLiteral(text.to_owned()), text),
     r#"0[xX][0-9a-fA-F]+"# => (DCToken::HexLiteral(text.to_owned()), text),
     r#"0[bB][0-1]+"# => (DCToken::BinaryLiteral(text.to_owned()), text),
+
+    r#"([0-9]?)+\.[0-9]+"# => (DCToken::FloatLiteral(match text.parse::<f64>() {
+        Ok(f) => { f },
+        Err(err) => {
+            error!("Found FloatLiteral token, but failed to parse as f64.\n\n{}", err);
+            panic!("The DC lexer encountered an issue and could not continue.");
+        }
+    }), text),
+
+    r#"\'.\'"# => (
+        #[allow(clippy::iter_nth_zero)]
+        DCToken::CharacterLiteral(text.chars().nth(0).unwrap()),
+        text
+    ),
+    r#"\".+\""# => (DCToken::StringLiteral(text.to_owned()), text),
 
     r#"char"# => (DCToken::CharType, text),
     r#"[u]?(int8|int16|int32|int64)"# => (DCToken::IntType(text.to_owned()), text),
