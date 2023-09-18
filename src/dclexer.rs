@@ -28,12 +28,12 @@ pub enum DCToken {
     // BinDigit ::= "0" | "1"
 
     // Integers
-    IntegerLiteral(i64), // DecimalLiteral | OctalLiteral | HexLiteral | BinaryLiteral
-    DecimalLiteral(i64), // ( "1" … "9" ) { DecDigit }
-    OctalLiteral(i64),   // "0" { OctDigit }
-    HexLiteral(i64),     // "0" ( "x" | "X" ) HexDigit { HexDigit }
-    BinaryLiteral(i64),  // "0" ( "b" | "B" ) BinDigit { BinDigit }
+    DecimalLiteral(i64),   // ( "1" … "9" ) { DecDigit }
+    OctalLiteral(String),  // "0" { OctDigit }
+    HexLiteral(String),    // "0" ( "x" | "X" ) HexDigit { HexDigit }
+    BinaryLiteral(String), // "0" ( "b" | "B" ) BinDigit { BinDigit }
 
+    // IntegerLiteral ::= DecimalLiteral | OctalLiteral | HexLiteral | BinaryLiteral
     // NumberLiteral ::= IntegerLiteral | FloatLiteral
 
     // Floats
@@ -69,11 +69,20 @@ pub enum DCToken {
     Subtraction,    // "-"
     Division,       // "/"
 
-    Delimiter(String), // "(" | ")" | "{" | "}" | "[" | "]" | "," | ";" | "=" | ":"
-                        // | <spaces or tabs> | operator
-    Whitespace,        // " " | tab | carriage-return | newline
-    Comment,           // Not a DC token; Ignored. Satisfies lexer match.
-    Newline,           // Not a DC token; Used by lexer iterator to keep track of line #.
+    // Delimiters
+    OpenParenthesis,  // "("
+    CloseParenthesis, // ")"
+    OpenBraces,       // "{"
+    CloseBraces,      // "}"
+    OpenBrackets,     // "["
+    CloseBrackets,    // "]"
+    Comma,            // ","
+    Semicolon,        // ";"
+    Equals,           // "="
+    Colon,            // ":"
+    Whitespace,       // " " | tab | carriage-return | newline
+    Comment,          // Not a DC token; Ignored. Satisfies lexer match.
+    Newline,          // Not a DC token; Used by lexer iterator to keep track of line #.
 }
 
 pub enum DCKeyword {
@@ -109,6 +118,20 @@ lexer! {
     r#"/[*](~(.*[*]/.*))[*]/"# => (DCToken::Comment, text),
     r#"\n"# => (DCToken::Newline, text),
 
+    r#"[1-9]+[0-9]"# => (DCToken::DecimalLiteral(match text.parse::<i64>() {
+        Ok(n) => { n },
+        Err(err) => {
+            error!("Found DecimalLiteral token, but failed to parse as i64.\n\n{}", err);
+            panic!("The DC lexer encountered an issue and could not continue.");
+        },
+    }), text),
+    r#"0[0-7]+"# => (DCToken::OctalLiteral(text.to_owned()), text),
+    r#"0[xX][0-9a-fA-F]+"# => (DCToken::HexLiteral(text.to_owned()), text),
+    r#"0[bB][0-1]+"# => (DCToken::BinaryLiteral(text.to_owned()), text),
+
+    r#"dclass|struct|keyword"# => (DCToken::Keyword(text.to_owned()), text),
+    r#"[a-zA-Z_][a-zA-Z0-9_]*"# => (DCToken::Identifier(text.to_owned()), text),
+
     r#"\\(x[0-9a-fA-F]+|.)"# => (DCToken::EscapeCharacter(text.to_owned()), text),
 
     r#"%"# => (DCToken::Modulus, text),
@@ -117,18 +140,16 @@ lexer! {
     r#"-"# => (DCToken::Subtraction, text),
     r#"/"# => (DCToken::Division, text),
 
-    r#"[\(\)\{\}\[\],;=: %\*\+\-\/]"# => (DCToken::Delimiter(text.to_owned()), text),
-
-    r#"[1-9]+[0-9]"# => (DCToken::DecimalLiteral(match text.parse::<i64>() {
-        Ok(n) => { n },
-        Err(err) => {
-            error!("Found DecimalLiteral token, but failed to parse as i64.\n\n{}", err);
-            panic!("The DC lexer encountered an issue and could not continue.");
-        },
-    }), text),
-
-    r#"dclass|struct|keyword"# => (DCToken::Keyword(text.to_owned()), text),
-    r#"[a-zA-Z_][a-zA-Z0-9_]*"# => (DCToken::Identifier(text.to_owned()), text),
+    r#"\("# => (DCToken::OpenParenthesis, text),
+    r#"\)"# => (DCToken::CloseParenthesis, text),
+    r#"\{"# => (DCToken::OpenBraces, text),
+    r#"\}"# => (DCToken::CloseBraces, text),
+    r#"\["# => (DCToken::OpenBrackets, text),
+    r#"\]"# => (DCToken::CloseBrackets, text),
+    r#"\,"# => (DCToken::Comma, text),
+    r#"\;"# => (DCToken::Semicolon, text),
+    r#"\="# => (DCToken::Equals, text),
+    r#"\:"# => (DCToken::Colon, text),
 }
 
 pub struct Lexer<'a> {
@@ -201,3 +222,9 @@ impl<'a> Iterator for Lexer<'a> {
         }
     }
 }
+
+// Unit Testing
+//#[cfg(test)]
+//mod tests {
+//
+//}
