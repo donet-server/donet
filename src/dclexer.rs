@@ -19,7 +19,7 @@ use log::error;
 use plex::lexer;
 
 #[rustfmt::skip]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum DCToken {
     // Letter   ::= "A" ... "z"
     // DecDigit ::= "0" ... "9"
@@ -223,7 +223,7 @@ impl<'a> Iterator for Lexer<'a> {
                     self.line += 1;
                     continue;
                 }
-                (DCToken::Identifier(id_string), _) => {
+                (DCToken::Identifier(id_string), span) => {
                     // All identifier tokens cannot be equal to any reserved identifiers.
                     for reserved in RESERVED_IDENTIFIERS.into_iter() {
                         if id_string == reserved {
@@ -234,6 +234,10 @@ impl<'a> Iterator for Lexer<'a> {
                             panic!("The DC lexer encountered an issue and could not continue.");
                         }
                     }
+                    return Some((
+                        DCToken::Identifier(id_string),
+                        span_in(span, self.original, self.line),
+                    ));
                 }
                 (tok, span) => {
                     return Some((tok, span_in(span, self.original, self.line)));
@@ -244,7 +248,22 @@ impl<'a> Iterator for Lexer<'a> {
 }
 
 // Unit Testing
-//#[cfg(test)]
-//mod tests {
-//
-//}
+#[cfg(test)]
+mod tests {
+    use super::{DCToken, Lexer};
+
+    #[test]
+    fn dc_keyword_test() {
+        let test_string: String = String::from("keyword test;");
+        let target = [
+            DCToken::Keyword(String::from("keyword")),
+            DCToken::Identifier(String::from("test")),
+            DCToken::Semicolon,
+        ];
+        let lexer = Lexer::new(&test_string).inspect(|tok| eprintln!("tok: {:?}", tok));
+
+        for (i, (token, _span)) in lexer.enumerate() {
+            assert_eq!(token, target[i]);
+        }
+    }
+}
