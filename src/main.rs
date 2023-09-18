@@ -19,7 +19,7 @@ pub mod channel_map;
 pub mod config;
 pub mod datagram;
 pub mod dbserver;
-pub mod dcparser;
+pub mod dclexer;
 pub mod globals;
 pub mod logger;
 pub mod message_director;
@@ -70,6 +70,8 @@ fn main() -> std::io::Result<()> {
             }
         }
     }
+    // Init logger utility
+    logger::initialize_logger()?;
 
     // Read the daemon configuration file
     let mut conf_file: File = File::open(config_file)?;
@@ -100,8 +102,6 @@ fn main() -> std::io::Result<()> {
 
         // Tokio join handles for spawned tasks of services started.
         let mut service_handles: Vec<JoinHandle<std::io::Result<()>>> = Vec::new();
-
-        logger::initialize_logger()?;
 
         let want_client_agent: bool = services.client_agent.is_some();
         let want_message_director: bool = services.message_director.is_some();
