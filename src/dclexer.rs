@@ -49,6 +49,17 @@ pub enum DCToken {
     // nonDoubleQuote  ::= <any printable character except `"` or newline>
     EscapeCharacter(String), // "\" ( <any character> | "x" hexDigit { hexDigit } )
 
+    // Data Types
+    CharType,           // "char"
+    IntType(String),    // "int8" | "int16" | "int32" | "int64"
+                        // | "uint8" | "uint16" | "uint32" | "uint64"
+    FloatType,          // "float64"
+    StringType,         // "string"
+    BlobType,           // "blob"
+    // NOTE: Astron DC specification defines both string and blob type under
+    // one 'SizedType' lexical token. We match them as separate tokens so that
+    // when DB tables are created for objects they can use the corresponding SQL types.
+
     Identifier(String), // Letter { Letter | DecDigit }
     Keyword(String),    // "dclass" | "struct" | "keyword"
 
@@ -129,6 +140,12 @@ lexer! {
     r#"0[xX][0-9a-fA-F]+"# => (DCToken::HexLiteral(text.to_owned()), text),
     r#"0[bB][0-1]+"# => (DCToken::BinaryLiteral(text.to_owned()), text),
 
+    r#"char"# => (DCToken::CharType, text),
+    r#"[u]?(int8|int16|int32|int64)"# => (DCToken::IntType(text.to_owned()), text),
+    r#"float64"# => (DCToken::FloatType, text),
+    r#"string"# => (DCToken::StringType, text),
+    r#"blob"# => (DCToken::BlobType, text),
+
     r#"dclass|struct|keyword"# => (DCToken::Keyword(text.to_owned()), text),
     r#"[a-zA-Z_][a-zA-Z0-9_]*"# => (DCToken::Identifier(text.to_owned()), text),
 
@@ -208,8 +225,8 @@ impl<'a> Iterator for Lexer<'a> {
                     for reserved in RESERVED_IDENTIFIERS.into_iter() {
                         if id_string == reserved {
                             error!(
-                                "Cannot use '{}' as an identifier, as it is a reserved identifier!",
-                                reserved
+                                "Line {}: Invalid identifier: '{}' is a reserved identifier!",
+                                self.line, reserved
                             );
                             panic!("The DC lexer encountered an issue and could not continue.");
                         }
