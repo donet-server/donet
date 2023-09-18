@@ -97,16 +97,6 @@ pub enum DCKeyword {
     Bypass,    // bypass
 }
 
-#[rustfmt::skip]
-pub static RESERVED_IDENTIFIERS: [&str; 16] = [
-    "charType", "intType", "floatType", "sizedType",
-    "char",
-    "int8", "int16", "int32", "int64",
-    "uint8", "uint16", "uint32", "uint64",
-    "float64",
-    "string", "blob",
-];
-
 lexer! {
     fn next_token(text: 'a) -> (DCToken, &'a str);
 
@@ -222,22 +212,6 @@ impl<'a> Iterator for Lexer<'a> {
                 (DCToken::Newline, _) => {
                     self.line += 1;
                     continue;
-                }
-                (DCToken::Identifier(id_string), span) => {
-                    // All identifier tokens cannot be equal to any reserved identifiers.
-                    for reserved in RESERVED_IDENTIFIERS.into_iter() {
-                        if id_string == reserved {
-                            error!(
-                                "Line {}: Invalid identifier: '{}' is a reserved identifier!",
-                                self.line, reserved
-                            );
-                            panic!("The DC lexer encountered an issue and could not continue.");
-                        }
-                    }
-                    return Some((
-                        DCToken::Identifier(id_string),
-                        span_in(span, self.original, self.line),
-                    ));
                 }
                 (tok, span) => {
                     return Some((tok, span_in(span, self.original, self.line)));
