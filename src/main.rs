@@ -45,8 +45,8 @@ fn main() -> std::io::Result<()> {
         .build()?;
 
     if args.len() > 1 {
-        for index in 0..args.len() {
-            let argument = args.get(index).unwrap();
+        for item in args.iter().enumerate() {
+            let (index, argument): (usize, &String) = item;
             if index == 0 {
                 continue;
             }
