@@ -62,6 +62,7 @@ pub type DgBufferResult = Result<DgSize, DgError>;
 pub type SqlResult = Result<(), Box<dyn Error>>;
 
 // Hack to reassure the compiler the result type of a future.
+#[coverage(off)]
 pub fn set_future_return_type<T, F: Future<Output = T>>(_arg: &F) {}
 
 #[repr(u16)] // 16-bit alignment

@@ -15,6 +15,11 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+// Feature to ignore certain code from code coverage report.
+// `#[coverage(off)]` is being stabilized very soon.
+// https://github.com/rust-lang/rust/issues/84605
+#![feature(coverage_attribute)]
+
 pub mod channel_map;
 pub mod config;
 pub mod datagram;
