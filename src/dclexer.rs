@@ -100,7 +100,7 @@ pub enum DCKeyword {
 lexer! {
     fn next_token(text: 'a) -> (DCToken, &'a str);
 
-    r#"[ \t\r\n]+"# => (DCToken::Whitespace, text),
+    r#"[ \t\r]+"# => (DCToken::Whitespace, text),
     // C++-style comments '// ...'
     r#"//[^\n]*"# => (DCToken::Comment, text),
     // C-style comments '/* ... */'; cannot contain '*/'
@@ -232,7 +232,7 @@ mod unit_testing {
     // Utility for unit testing lexer. Gives the test_string to the lexer
     // and compares the lexer results with the target_tokens vector given.
     fn lexer_test_for_target(test_string: &str, target_tokens: Vec<DCToken>) {
-        let lexer = Lexer::new(&test_string).inspect(|tok| eprintln!("tok: {:?}", tok));
+        let lexer = Lexer::new(&test_string).inspect(|tok| eprintln!("token: {:?}", tok));
         let mut token_quota_reached: bool = false;
 
         for (i, (token, _span)) in lexer.enumerate() {
@@ -254,7 +254,7 @@ mod unit_testing {
             /* multiline comment*/\n\
             \n    \n",
         );
-        let lexer = Lexer::new(&test_string).inspect(|tok| eprintln!("tok: {:?}", tok));
+        let lexer = Lexer::new(&test_string).inspect(|tok| eprintln!("token: {:?}", tok));
 
         for (_token, _span) in lexer {
             panic!("No tokens should have been returned by the lexer!");
@@ -309,10 +309,23 @@ mod unit_testing {
     #[should_panic]
     fn unexpected_token_test() {
         let test_string: String = String::from("uint8 invalid_literal = 09;");
-        let lexer = Lexer::new(&test_string).inspect(|tok| eprintln!("tok: {:?}", tok));
+        let lexer = Lexer::new(&test_string).inspect(|tok| eprintln!("token: {:?}", tok));
 
         for (_, (_token, _span)) in lexer.enumerate() {
             // iterate through lexer tokens until we get a panic
+        }
+    }
+
+    #[test]
+    fn register_newline() {
+        let test_string: String = String::from("keyword\nkeyword\nkeyword");
+        let lexer = Lexer::new(&test_string).inspect(|tok| eprintln!("token: {:?}", tok));
+
+        for (i, (_, span)) in lexer.enumerate() {
+            // We use one token every line, so our line # should match our index.
+            if span.line != i + 1 {
+                panic!("Lexer failed to register a new line!");
+            }
         }
     }
 }
