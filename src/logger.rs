@@ -26,8 +26,8 @@ pub static _ANSI_ORANGE: &str = "\x1b[33m";
 pub static _ANSI_YELLOW: &str = "\x1b[33;2m";
 pub static _ANSI_BLUE: &str = "\x1b[34m";
 pub static _ANSI_CYAN: &str = "\x1b[36m";
-pub static _ANSI_GRAY: &str = "\x1b[37m";
-pub static _ANSI_MAGENTA: &str = "\x1b[95;1m";
+pub static _ANSI_GRAY: &str = "\x1b[37;2m";
+pub static _ANSI_MAGENTA: &str = "\x1b[95m";
 
 pub struct DaemonLogger;
 pub static LOGGER: DaemonLogger = DaemonLogger;
@@ -48,11 +48,14 @@ impl log::Log for DaemonLogger {
         if self.enabled(record.metadata()) {
             // TODO: Write to log file by daemon configuration
             let out_string: String = format!(
-                "[{}] [{}{}{}] :: {}",
+                "{}[{}]{} {}{}:{} {}: {}",
+                _ANSI_GRAY,
                 chrono::offset::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                _ANSI_RESET,
                 level_color,
                 record.level(),
                 _ANSI_RESET,
+                record.target(),
                 record.args()
             );
             println!("{}", out_string.as_str()); // stdout
@@ -72,4 +75,24 @@ pub fn initialize_logger() -> Result<()> {
         ));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod unit_testing {
+    use super::initialize_logger;
+    use log::{debug, error, info, trace, warn};
+    use std::io::Result;
+
+    #[test]
+    fn logger_integrity() {
+        let res: Result<()> = initialize_logger();
+        if res.is_err() {
+            panic!("{}", res.unwrap_err());
+        }
+        error!("This macro should not panic.");
+        info!("This macro should not panic.");
+        debug!("This macro should not panic.");
+        warn!("This macro should not panic.");
+        trace!("This macro should not panic.");
+    }
 }
