@@ -535,9 +535,8 @@ impl DatagramIterator {
     }
 }
 
-// Unit Testing
 #[cfg(test)]
-mod tests {
+mod unit_testing {
     use super::endianness;
     use crate::datagram;
     use crate::globals;

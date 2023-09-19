@@ -107,7 +107,7 @@ lexer! {
     r#"/[*](~(.*[*]/.*))[*]/"# => (DCToken::Comment, text),
     r#"\n"# => (DCToken::Newline, text),
 
-    r#"[1-9]+[0-9]"# => (DCToken::DecimalLiteral(match text.parse::<i64>() {
+    r#"[1-9]+[0-9]?+"# => (DCToken::DecimalLiteral(match text.parse::<i64>() {
         Ok(n) => { n },
         Err(err) => {
             error!("Found DecimalLiteral token, but failed to parse as i64.\n\n{}", err);
@@ -160,6 +160,10 @@ lexer! {
     r#"\;"# => (DCToken::Semicolon, text),
     r#"\="# => (DCToken::Equals, text),
     r#"\:"# => (DCToken::Colon, text),
+    r#"."# => {
+        error!("Found unexpected token: {}", text);
+        panic!("The DC lexer encountered an issue and could not continue.");
+    }
 }
 
 pub struct Lexer<'a> {
@@ -221,23 +225,94 @@ impl<'a> Iterator for Lexer<'a> {
     }
 }
 
-// Unit Testing
 #[cfg(test)]
-mod tests {
+mod unit_testing {
     use super::{DCToken, Lexer};
 
+    // Utility for unit testing lexer. Gives the test_string to the lexer
+    // and compares the lexer results with the target_tokens vector given.
+    fn lexer_test_for_target(test_string: &str, target_tokens: Vec<DCToken>) {
+        let lexer = Lexer::new(&test_string).inspect(|tok| eprintln!("tok: {:?}", tok));
+        let mut token_quota_reached: bool = false;
+
+        for (i, (token, _span)) in lexer.enumerate() {
+            if i >= (target_tokens.len() - 1) {
+                token_quota_reached = true;
+            }
+            assert_eq!(token, *target_tokens.get(i).unwrap());
+        }
+        if !token_quota_reached {
+            panic!("Did not receive all the expected tokens!");
+        }
+    }
+
     #[test]
-    fn dc_keyword_test() {
-        let test_string: String = String::from("keyword test;");
-        let target = [
+    fn ignored_tokens_test() {
+        // Covers Whitespace, Comment (C and C++ style), and Newline
+        let test_string: String = String::from(
+            "// Single line comment\n\
+            /* multiline comment*/\n\
+            \n    \n",
+        );
+        let lexer = Lexer::new(&test_string).inspect(|tok| eprintln!("tok: {:?}", tok));
+
+        for (_token, _span) in lexer {
+            panic!("No tokens should have been returned by the lexer!");
+        }
+    }
+
+    #[test]
+    fn keyword_definition_test() {
+        let target: Vec<DCToken> = vec![
             DCToken::Keyword(String::from("keyword")),
             DCToken::Identifier(String::from("test")),
             DCToken::Semicolon,
         ];
+        lexer_test_for_target("keyword test;", target);
+    }
+
+    #[test]
+    fn number_literals() {
+        let target: Vec<DCToken> = vec![
+            // Decimal Literals
+            DCToken::DecimalLiteral(1),
+            DCToken::DecimalLiteral(9),
+            DCToken::DecimalLiteral(10),
+            DCToken::DecimalLiteral(2010),
+            // Octal Literals
+            DCToken::OctalLiteral(String::from("01")),
+            DCToken::OctalLiteral(String::from("07")),
+            DCToken::OctalLiteral(String::from("07472")),
+            // Hex Literals
+            DCToken::HexLiteral(String::from("0xa")),
+            DCToken::HexLiteral(String::from("0xA")),
+            DCToken::HexLiteral(String::from("0Xa")),
+            DCToken::HexLiteral(String::from("0XA")),
+            DCToken::HexLiteral(String::from("0x123456789abcdef")),
+            // Binary literals
+            DCToken::BinaryLiteral(String::from("0b1")),
+            DCToken::BinaryLiteral(String::from("0B1")),
+            DCToken::BinaryLiteral(String::from("0b0")),
+            DCToken::BinaryLiteral(String::from("0b010")),
+            DCToken::BinaryLiteral(String::from("0b101110")),
+        ];
+        lexer_test_for_target(
+            "1 9 10 2010 \
+            01 07 07472 \
+            0xa 0xA 0Xa 0XA 0x123456789abcdef \
+            0b1 0B1 0b0 0b010 0b101110",
+            target,
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn unexpected_token_test() {
+        let test_string: String = String::from("uint8 invalid_literal = 09;");
         let lexer = Lexer::new(&test_string).inspect(|tok| eprintln!("tok: {:?}", tok));
 
-        for (i, (token, _span)) in lexer.enumerate() {
-            assert_eq!(token, target[i]);
+        for (_, (_token, _span)) in lexer.enumerate() {
+            // iterate through lexer tokens until we get a panic
         }
     }
 }
