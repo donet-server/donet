@@ -126,12 +126,10 @@ lexer! {
         }
     }), text),
 
-    r#"\'.\'"# => (
-        #[allow(clippy::iter_nth_zero)]
-        DCToken::CharacterLiteral(text.chars().nth(0).unwrap()),
-        text
-    ),
-    r#"\".+\""# => (DCToken::StringLiteral(text.to_owned()), text),
+    // Rust doesn't support lookahead/lookbehind regex, so for character literals
+    // we match the entire ''x'' and extract the second (nth(1)) character.
+    r#"'.'"# => (DCToken::CharacterLiteral(text.chars().nth(1).unwrap()), text),
+    r#"\"[^\"]+\""# => (DCToken::StringLiteral(text.to_owned().replace('\"', "")), text),
 
     r#"char"# => (DCToken::CharType, text),
     r#"[u]?(int8|int16|int32|int64)"# => (DCToken::IntType(text.to_owned()), text),
@@ -239,6 +237,9 @@ mod unit_testing {
             if i >= (target_tokens.len() - 1) {
                 token_quota_reached = true;
             }
+            if i > (target_tokens.len() - 1) {
+                panic!("Lexer returned more tokens than expected!");
+            }
             assert_eq!(token, *target_tokens.get(i).unwrap());
         }
         if !token_quota_reached {
@@ -289,20 +290,98 @@ mod unit_testing {
             DCToken::HexLiteral(String::from("0Xa")),
             DCToken::HexLiteral(String::from("0XA")),
             DCToken::HexLiteral(String::from("0x123456789abcdef")),
-            // Binary literals
+            // Binary Literals
             DCToken::BinaryLiteral(String::from("0b1")),
             DCToken::BinaryLiteral(String::from("0B1")),
             DCToken::BinaryLiteral(String::from("0b0")),
             DCToken::BinaryLiteral(String::from("0b010")),
             DCToken::BinaryLiteral(String::from("0b101110")),
+            // Float Literal
+            DCToken::FloatLiteral(0.0),
+            DCToken::FloatLiteral(9.0),
+            DCToken::FloatLiteral(0.0),
+            DCToken::FloatLiteral(0.9),
+            DCToken::FloatLiteral(1.23456789),
         ];
         lexer_test_for_target(
             "1 9 10 2010 \
             01 07 07472 \
             0xa 0xA 0Xa 0XA 0x123456789abcdef \
-            0b1 0B1 0b0 0b010 0b101110",
+            0b1 0B1 0b0 0b010 0b101110 \
+            0.0 9.0 .0 .9 1.23456789",
             target,
         );
+    }
+
+    #[test]
+    fn text_literals() {
+        let target: Vec<DCToken> = vec![
+            // Character Literals
+            DCToken::CharacterLiteral('a'),
+            DCToken::CharacterLiteral('1'),
+            DCToken::CharacterLiteral('*'),
+            // String Literals
+            DCToken::StringLiteral(String::from("x")),
+            DCToken::StringLiteral(String::from("foo")),
+            DCToken::StringLiteral(String::from("*")),
+            // Escape Characters
+            DCToken::EscapeCharacter(String::from("\\n")),
+            DCToken::EscapeCharacter(String::from("\\t")),
+            DCToken::EscapeCharacter(String::from("\\xa19")),
+        ];
+        lexer_test_for_target(
+            "'a' '1' '*' \
+            \"x\" \"foo\" \"*\" \
+            \\n \\t \\xa19",
+            target,
+        );
+    }
+
+    #[test]
+    fn data_types() {
+        let target: Vec<DCToken> = vec![
+            DCToken::CharType,
+            DCToken::IntType(String::from("int8")),
+            DCToken::IntType(String::from("int16")),
+            DCToken::IntType(String::from("int32")),
+            DCToken::IntType(String::from("int64")),
+            DCToken::IntType(String::from("uint8")),
+            DCToken::IntType(String::from("uint16")),
+            DCToken::IntType(String::from("uint32")),
+            DCToken::IntType(String::from("uint64")),
+            DCToken::FloatType,
+            DCToken::StringType,
+            DCToken::BlobType,
+        ];
+        lexer_test_for_target(
+            "char \
+            int8 int16 int32 int64 \
+            uint8 uint16 uint32 uint64 \
+            float64 string blob",
+            target,
+        );
+    }
+
+    #[test]
+    fn operators_and_delimiters() {
+        let target: Vec<DCToken> = vec![
+            // Operators
+            DCToken::Modulus,
+            DCToken::Multiplication,
+            DCToken::Addition,
+            DCToken::Subtraction,
+            DCToken::Division,
+            // Delimiters
+            DCToken::OpenParenthesis,
+            DCToken::CloseParenthesis,
+            DCToken::OpenBraces,
+            DCToken::CloseBraces,
+            DCToken::OpenBrackets,
+            DCToken::CloseBrackets,
+            DCToken::Comma,
+            DCToken::Colon,
+        ];
+        lexer_test_for_target("%*+-/(){}[],:", target);
     }
 
     #[test]
