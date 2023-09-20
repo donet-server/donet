@@ -586,8 +586,23 @@ mod unit_testing {
 
     // ----------- Datagram ------------ //
     #[test]
-    fn datagram_overflow_test() -> () {
-        let mut dg: datagram::Datagram = datagram::Datagram::new();
+    fn dg_add_boolean() {
+        let mut dg: datagram::Datagram = datagram::Datagram::default();
+        let mut res: globals::DgResult = dg.add_bool(true);
+        match res {
+            Ok(_) => {}
+            Err(err) => panic!("add_bool(true) error: {:?}", err),
+        }
+        res = dg.add_bool(false);
+        match res {
+            Ok(_) => {}
+            Err(err) => panic!("add_bool(false) error: {:?}", err),
+        }
+    }
+
+    #[test]
+    fn datagram_overflow_test() {
+        let mut dg: datagram::Datagram = datagram::Datagram::default();
         let res_1: globals::DgBufferResult = dg.add_buffer(globals::DG_SIZE_MAX);
 
         assert!(!res_1.is_err(), "Could not append 2^16 bytes to datagram buffer.");
