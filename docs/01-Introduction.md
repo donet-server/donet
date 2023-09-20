@@ -3,9 +3,9 @@
 # 01 - Introduction to Donet
 
 Donet[^1] is a free and open-source server software, designed for powering massive
-multiplayer online games. The design of Donet focuses on solving four critical
-problems: Network **culling**, short-term & long-term data **persistence**, 
-**security**, and **scalability**.
+multiplayer online games. The design of Donet focuses on solving five critical
+problems: Network **culling**, data **persistence**, **security**, 
+**reliability**, and **scalability**.
 
 The architecture of this project is inspired by the OTP (Online Theme Park) server, 
 which was developed by Disney Interactive (formerly known as Disney VR Studios) 
