@@ -62,7 +62,6 @@ pub type DgBufferResult = Result<DgSize, DgError>;
 pub type SqlResult = Result<(), Box<dyn Error>>;
 
 // Hack to reassure the compiler the result type of a future.
-#[coverage(off)]
 pub fn set_future_return_type<T, F: Future<Output = T>>(_arg: &F) {}
 
 #[repr(u16)] // 16-bit alignment
@@ -197,4 +196,21 @@ pub enum Protocol {
     MDRemoveRange = 9003,
     MDAddPostRemove = 9010,
     MDClearPostRemoves = 9011,
+}
+
+#[cfg(test)]
+mod unit_testing {
+    use super::set_future_return_type;
+    use std::io::Result;
+
+    #[test]
+    fn test_future_return_type_util() {
+        let test_future = async move {
+            println!("async!");
+            Ok(())
+        };
+        // Just make sure it doesn't panic or anything goofy.
+        // Need this test to have test coverage on this file.
+        set_future_return_type::<Result<()>, _>(&test_future);
+    }
 }
