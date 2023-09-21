@@ -59,14 +59,15 @@ pub enum DCToken {
     // when DB tables are created for objects they can use the corresponding SQL types.
 
     Identifier(String), // Letter { Letter | DecDigit }
-    Keyword(String),    // "dclass" | "struct" | "keyword"
+    Filename(String),   // Letter { Letter | DecDigit | "_" | "-" } "." ( "py" | "ts" )
+    Keyword(String),    // "dclass" | "struct" | "keyword" | "from" | "import" | "typedef"
 
     // Operators
-    Modulus,        // "%"
-    Multiplication, // "*"
-    Addition,       // "+"
-    Subtraction,    // "-"
-    Division,       // "/"
+    Percent,      // "%"
+    Star,         // "*"
+    Plus,         // "+"
+    Hyphen,       // "-"
+    ForwardSlash, // "/"
 
     // Delimiters
     OpenParenthesis,  // "("
@@ -137,16 +138,17 @@ lexer! {
     r#"string"# => (DCToken::StringType, text),
     r#"blob"# => (DCToken::BlobType, text),
 
-    r#"dclass|struct|keyword"# => (DCToken::Keyword(text.to_owned()), text),
+    r#"dclass|struct|keyword|typedef|from|import"# => (DCToken::Keyword(text.to_owned()), text),
     r#"[a-zA-Z_][a-zA-Z0-9_]*"# => (DCToken::Identifier(text.to_owned()), text),
+    r#"[a-zA-Z_][a-zA-Z0-9_\-]+.(py|ts)"# => (DCToken::Filename(text.to_owned()), text),
 
     r#"\\(x[0-9a-fA-F]+|.)"# => (DCToken::EscapeCharacter(text.to_owned()), text),
 
-    r#"%"# => (DCToken::Modulus, text),
-    r#"\*"# => (DCToken::Multiplication, text),
-    r#"\+"# => (DCToken::Addition, text),
-    r#"-"# => (DCToken::Subtraction, text),
-    r#"/"# => (DCToken::Division, text),
+    r#"%"# => (DCToken::Percent, text),
+    r#"\*"# => (DCToken::Star, text),
+    r#"\+"# => (DCToken::Plus, text),
+    r#"-"# => (DCToken::Hyphen, text),
+    r#"/"# => (DCToken::ForwardSlash, text),
 
     r#"\("# => (DCToken::OpenParenthesis, text),
     r#"\)"# => (DCToken::CloseParenthesis, text),
@@ -273,6 +275,25 @@ mod unit_testing {
     }
 
     #[test]
+    fn dclass_import_statement() {
+        // We will not be making use of import statements, as it is
+        // a client thing (both client and AI do this), but we still want
+        // their DC files to pass our lexer / parser without issues.
+        let target: Vec<DCToken> = vec![
+            DCToken::Keyword(String::from("import")),
+            DCToken::Identifier(String::from("DistributedDonut")),
+            DCToken::ForwardSlash,
+            DCToken::Identifier(String::from("AI")),
+            DCToken::ForwardSlash,
+            DCToken::Identifier(String::from("OV")),
+            DCToken::Keyword(String::from("from")),
+            DCToken::Filename(String::from("my_views.py")),
+            DCToken::Semicolon,
+        ];
+        lexer_test_for_target("import DistributedDonut/AI/OV from my_views.py;", target);
+    }
+
+    #[test]
     fn number_literals() {
         let target: Vec<DCToken> = vec![
             // Decimal Literals
@@ -366,11 +387,11 @@ mod unit_testing {
     fn operators_and_delimiters() {
         let target: Vec<DCToken> = vec![
             // Operators
-            DCToken::Modulus,
-            DCToken::Multiplication,
-            DCToken::Addition,
-            DCToken::Subtraction,
-            DCToken::Division,
+            DCToken::Percent,
+            DCToken::Star,
+            DCToken::Plus,
+            DCToken::Hyphen,
+            DCToken::ForwardSlash,
             // Delimiters
             DCToken::OpenParenthesis,
             DCToken::CloseParenthesis,
