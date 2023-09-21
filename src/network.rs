@@ -21,12 +21,12 @@ use tokio::net::{TcpListener, TcpStream};
 
 pub struct TCPAcceptor {
     pub listener: Box<TcpListener>,
-    pub _bind_address: String,
+    pub bind_address: String,
 }
 
 pub struct TCPConnection {
-    _socket: Box<TcpStream>,
-    _address: String,
+    pub _socket: Box<TcpStream>,
+    pub address: String,
 }
 
 impl TCPAcceptor {
@@ -38,7 +38,7 @@ impl TCPAcceptor {
 
         Ok(TCPAcceptor {
             listener: new_binding,
-            _bind_address: String::from(uri),
+            bind_address: String::from(uri),
         })
     }
 }
@@ -52,7 +52,39 @@ impl TCPConnection {
 
         Ok(TCPConnection {
             _socket: new_socket,
-            _address: String::from(uri),
+            address: String::from(uri),
         })
+    }
+}
+
+#[cfg(test)]
+mod unit_testing {
+    use super::{TCPAcceptor, TCPConnection};
+
+    #[tokio::test]
+    async fn async_tcp_listener() {
+        let bind_address: String = String::from("127.0.0.1:7199");
+        let res: Result<TCPAcceptor, _> = TCPAcceptor::bind(&bind_address).await;
+
+        match res {
+            Ok(binding) => {
+                assert_eq!(binding.bind_address, bind_address);
+            }
+            Err(err) => panic!("TCPAcceptor failed to bind: {:?}", err),
+        }
+    }
+
+    #[tokio::test]
+    async fn async_tcp_connection() {
+        // This should make a TCP connection with the listener created above.
+        let dst_address: String = String::from("127.0.0.1:7199");
+        let res: Result<TCPConnection, _> = TCPConnection::connect(&dst_address).await;
+
+        match res {
+            Ok(binding) => {
+                assert_eq!(binding.address, dst_address);
+            }
+            Err(err) => panic!("TCPConnection failed to establish: {:?}", err),
+        }
     }
 }
