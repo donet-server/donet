@@ -76,8 +76,22 @@ mod unit_testing {
 
     #[tokio::test]
     async fn async_tcp_connection() {
+        let bind_address: String = String::from("127.0.0.1:6667");
+        let bind_res: Result<TCPAcceptor, _> = TCPAcceptor::bind(&bind_address).await;
+
+        match bind_res {
+            Ok(listener) => {
+                tokio::spawn(async move {
+                    loop {
+                        let _ = listener.listener.accept().await;
+                    }
+                });
+            }
+            Err(err) => panic!("Failed to set up listener for test: {:?}", err),
+        }
+
         // This should make a TCP connection with the listener created above.
-        let dst_address: String = String::from("127.0.0.1:7199");
+        let dst_address: String = String::from("127.0.0.1:6667");
         let res: Result<TCPConnection, _> = TCPConnection::connect(&dst_address).await;
 
         match res {
