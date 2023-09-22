@@ -21,6 +21,7 @@ pub mod config;
 pub mod datagram;
 pub mod dbserver;
 pub mod dclexer;
+pub mod dcparser;
 pub mod globals;
 pub mod logger;
 pub mod message_director;
