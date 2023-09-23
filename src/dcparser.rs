@@ -34,7 +34,7 @@ mod ast {
     #[derive(Debug)]
     pub struct TypeDecl {
         pub span: Span,
-        pub decl: TypeDecl_,
+        pub node: TypeDecl_,
     }
 
     #[derive(Debug)]
@@ -45,25 +45,39 @@ mod ast {
     }
 
     #[derive(Debug)]
-    pub enum KeywordType {
+    pub struct KeywordType {
+        pub span: Span,
+        pub node: KeywordType_,
+    }
+
+    #[derive(Debug)]
+    pub enum KeywordType_ {
         KeywordType(IdentifierString),
         KeywordList(Vec<IdentifierString>),
     }
 
     #[derive(Debug)]
     pub struct StructType {
+        pub span: Span,
         pub identifier: IdentifierString,
         pub parameters: Vec<Parameter>,
     }
 
     #[derive(Debug)]
     pub struct DistributedClassType {
+        pub span: Span,
         pub identifier: IdentifierString,
         pub field_declarations: Vec<FieldDecl>,
     }
 
     #[derive(Debug)]
-    pub enum FieldDecl {
+    pub struct FieldDecl {
+        pub span: Span,
+        pub node: FieldDecl_,
+    }
+
+    #[derive(Debug)]
+    pub enum FieldDecl_ {
         MolecularField(MolecularField),
         AtomicField(AtomicField),
         ParameterField(ParameterField),
@@ -205,20 +219,23 @@ parser! {
     type_decl: ast::TypeDecl {
         keyword_type[k] => ast::TypeDecl {
             span: span!(),
-            decl: ast::TypeDecl_::KeywordType(k),
+            node: ast::TypeDecl_::KeywordType(k),
         },
         struct_type[s] => ast::TypeDecl {
             span: span!(),
-            decl: ast::TypeDecl_::StructType(s),
+            node: ast::TypeDecl_::StructType(s),
         },
         distributed_class_type[dc] => ast::TypeDecl {
             span: span!(),
-            decl: ast::TypeDecl_::DistributedClassType(dc),
+            node: ast::TypeDecl_::DistributedClassType(dc),
         },
     }
 
     keyword_type: ast::KeywordType {
-
+        KeywordType Identifier(id) Semicolon => ast::KeywordType {
+            span: span!(),
+            node: ast::KeywordType_::KeywordType(id),
+        }
     }
 
     struct_type: ast::StructType {

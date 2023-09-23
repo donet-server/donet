@@ -60,7 +60,14 @@ pub enum DCToken {
 
     Identifier(String), // Letter { Letter | DecDigit }
     Filename(String),   // Letter { Letter | DecDigit | "_" | "-" } "." ( "py" | "ts" )
-    Keyword(String),    // "dclass" | "struct" | "keyword" | "from" | "import" | "typedef"
+
+    // Keywords
+    DClassType,     // "dclass"
+    StructType,     // "struct"
+    KeywordType,    // "keyword"
+    From,           // "from"
+    Import,         // "import"
+    TypeDefinition, // "typedef"
 
     // Operators
     Percent,      // "%"
@@ -138,7 +145,13 @@ lexer! {
     r#"string"# => (DCToken::StringType, text),
     r#"blob"# => (DCToken::BlobType, text),
 
-    r#"dclass|struct|keyword|typedef|from|import"# => (DCToken::Keyword(text.to_owned()), text),
+    r#"dclass"# => (DCToken::DClassType, text),
+    r#"struct"# => (DCToken::StructType, text),
+    r#"keyword"# => (DCToken::KeywordType, text),
+    r#"from"# => (DCToken::From, text),
+    r#"import"# => (DCToken::Import, text),
+    r#"typedef"# => (DCToken::TypeDefinition, text),
+
     r#"[a-zA-Z_][a-zA-Z0-9_]*"# => (DCToken::Identifier(text.to_owned()), text),
     r#"[a-zA-Z_][a-zA-Z0-9_\-]+.(py|ts)"# => (DCToken::Filename(text.to_owned()), text),
 
@@ -161,7 +174,7 @@ lexer! {
     r#"\="# => (DCToken::Equals, text),
     r#"\:"# => (DCToken::Colon, text),
     r#"."# => {
-        error!("Found unexpected token: {}", text);
+        error!("Found unexpected character: {}", text);
         panic!("The DC lexer encountered an issue and could not continue.");
     }
 }
@@ -267,7 +280,7 @@ mod unit_testing {
     #[test]
     fn keyword_definition_test() {
         let target: Vec<DCToken> = vec![
-            DCToken::Keyword(String::from("keyword")),
+            DCToken::KeywordType,
             DCToken::Identifier(String::from("test")),
             DCToken::Semicolon,
         ];
@@ -280,13 +293,13 @@ mod unit_testing {
         // a client thing (both client and AI do this), but we still want
         // their DC files to pass our lexer / parser without issues.
         let target: Vec<DCToken> = vec![
-            DCToken::Keyword(String::from("import")),
+            DCToken::Import,
             DCToken::Identifier(String::from("DistributedDonut")),
             DCToken::ForwardSlash,
             DCToken::Identifier(String::from("AI")),
             DCToken::ForwardSlash,
             DCToken::Identifier(String::from("OV")),
-            DCToken::Keyword(String::from("from")),
+            DCToken::From,
             DCToken::Filename(String::from("my_views.py")),
             DCToken::Semicolon,
         ];
