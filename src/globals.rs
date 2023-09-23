@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+use crate::dclexer::{DCToken, Span};
 use std::error::Error;
 use std::future::Future;
 use std::mem;
@@ -45,6 +46,9 @@ pub const CONTROL_CHANNEL: Channel = 1;
 pub const BCHAN_CLIENTS: Channel = 10;
 pub const BCHAN_STATESERVERS: Channel = 12;
 pub const BCHAN_DBSERVERS: Channel = 13;
+
+// Error type returned by DC parser
+pub type ParseError = (Option<(DCToken, Span)>, &'static str);
 
 // All possible errors that can be returned by
 // the Datagram and DatagramIterator implementations.

@@ -19,143 +19,221 @@ use crate::dclexer::DCToken::*;
 use crate::dclexer::{DCToken, Span};
 use plex::parser;
 
-#[derive(Debug)]
-pub struct DCFile {
-    pub statements: Vec<Expr>,
+mod ast {
+    // In this module we store all the structures and enums
+    // that make up the final generated abstract syntax tree.
+    use super::{DCToken, Span};
+    use std::ops::Range;
+    pub type IdentifierString = String; // type alias
+
+    #[derive(Debug)]
+    pub struct DCFile {
+        pub type_decl: Vec<TypeDecl>,
+    }
+
+    #[derive(Debug)]
+    pub struct TypeDecl {
+        pub span: Span,
+        pub decl: TypeDecl_,
+    }
+
+    #[derive(Debug)]
+    pub enum TypeDecl_ {
+        KeywordType(KeywordType),
+        StructType(StructType),
+        DistributedClassType(DistributedClassType),
+    }
+
+    #[derive(Debug)]
+    pub enum KeywordType {
+        KeywordType(IdentifierString),
+        KeywordList(Vec<IdentifierString>),
+    }
+
+    #[derive(Debug)]
+    pub struct StructType {
+        pub identifier: IdentifierString,
+        pub parameters: Vec<Parameter>,
+    }
+
+    #[derive(Debug)]
+    pub struct DistributedClassType {
+        pub identifier: IdentifierString,
+        pub field_declarations: Vec<FieldDecl>,
+    }
+
+    #[derive(Debug)]
+    pub enum FieldDecl {
+        MolecularField(MolecularField),
+        AtomicField(AtomicField),
+        ParameterField(ParameterField),
+    }
+
+    #[derive(Debug)]
+    pub struct MolecularField {
+        pub identifier: IdentifierString,
+        pub field_type: FieldType,
+    }
+
+    #[derive(Debug)]
+    pub enum FieldType {
+        Atomic(AtomicField),
+        Parameter(ParameterField),
+    }
+
+    #[derive(Debug)]
+    pub struct AtomicField {
+        pub identifier: IdentifierString,
+        pub parameters: Vec<Parameter>,
+        pub keyword_list: Option<KeywordType>,
+    }
+
+    #[derive(Debug)]
+    pub struct ParameterField {
+        pub parameter: Parameter,
+        pub keyword_list: Option<KeywordType>,
+    }
+
+    #[derive(Debug)]
+    pub enum Parameter {
+        Char(CharParameter),
+        Int(IntParameter),
+        Float(FloatParameter),
+        Sized(SizedParameter),
+        Struct(StructParameter),
+        Array(ArrayParameter),
+    }
+
+    #[derive(Debug)]
+    pub struct CharParameter {
+        pub char_type: Option<IdentifierString>,
+        pub char_literal: Option<char>,
+    }
+
+    #[derive(Debug)]
+    pub struct IntParameter {
+        pub identifier: Option<IdentifierString>,
+        pub int_type: Option<IdentifierString>,
+        pub int_range: Option<Range<i64>>,
+        pub int_transform: Option<IntTransform>,
+        pub int_constant: Option<i64>,
+    }
+
+    #[derive(Debug)]
+    pub struct FloatParameter {
+        pub identifier: Option<IdentifierString>,
+        pub float_type: Option<IdentifierString>,
+        pub float_range: Option<Range<f64>>,
+        pub float_transform: Option<FloatTransform>,
+        pub float_constant: Option<f64>,
+    }
+
+    #[derive(Debug)]
+    pub struct SizedParameter {
+        pub sized_type: Option<IdentifierString>,
+        pub size_constraint: Option<i64>,
+        pub identifier: Option<IdentifierString>,
+        pub string_literal: Option<String>,
+    }
+
+    #[derive(Debug)]
+    pub struct StructParameter {
+        pub identifier1: IdentifierString,
+        pub identifier2: Option<IdentifierString>,
+    }
+
+    #[derive(Debug)]
+    pub struct ArrayParameter {
+        pub data_type: DataType,
+        pub identifier: Option<IdentifierString>,
+        pub array_range: Range<i64>,
+    }
+
+    #[derive(Debug)]
+    pub enum DataType {
+        BaseType(BaseType),
+        Identifier(IdentifierString),
+    }
+
+    #[rustfmt::skip]
+    #[derive(Debug)]
+    pub enum BaseType {
+        CharType, IntType, FloatType,
+        StringType, BlobType, StructType,
+    }
+
+    #[derive(Debug)]
+    pub enum IntTransform {
+        OperatorIntLiteral { operator: DCToken, int_literal: i32 },
+        ParenthesizedIntTransform(Box<IntTransform>),
+    }
+
+    #[derive(Debug)]
+    pub enum FloatTransform {
+        OperatorFloatLiteral { operator: DCToken, float_literal: f32 },
+        ParenthesizedFloatTransform(Box<FloatTransform>),
+    }
 }
 
-#[derive(Debug)]
-pub struct Expr {
-    pub span: Span,
-    pub node: Expr_,
-}
-
-#[derive(Debug)]
-pub enum Expr_ {
-    Add(Box<Expr>, Box<Expr>),
-    Sub(Box<Expr>, Box<Expr>),
-    Mul(Box<Expr>, Box<Expr>),
-    Div(Box<Expr>, Box<Expr>),
-    Var(String),
-    Assign(String, Box<Expr>),
-    Print(Box<Expr>),
-    Literal(i64),
-}
-
-// DCFile ::= TypeDecl { TypeDecl }
-// TypeDecl ::= KeywordType | StructType | ClassType
-//
-// Keywords
-//
-// KeywordType ::= "keyword" identifier
-// KeywordList ::= identifier { "," identifier }
-//
-// StructType ::= "struct" identifier "{" Parameter ";" { Parameter ";" } "}" ";"
-//
-// ClassType ::= "dclass" identifier "{" { FieldDecl ";" } "}" ";"
-//
-// FieldDecl ::= MolecularField | AtomicField | ParameterField
-//
-// MolecularField ::= identifier ":" ( AtomicField | ParameterField )
-//                                   { "," ( AtomicField | ParameterField ) }
-// AtomicField    ::= identifier "(" Parameter { "," Parameter } ")" [ KeywordList ]
-// ParameterField ::= Parameter [ KeywordList ]
-//
-// Parameter ::= CharParameter | IntParameter | FloatParameter | SizedParameter
-//               | StructParameter | ArrayParameter
-//
-// CharParameter ::= charType [ identifier ] [ "=" charLiteral ]
-//
-// IntParameter ::= intType [ IntRange ] [ IntTransform ] [ identifier ] [ "=" IntConstant ]
-// IntConstant  ::= intLiteral | "{" intLiteral IntTransform "}"
-// IntTransform ::= operator intLiteral { IntTransform } | "(" IntTransform ")"
-// IntRange     ::= "(" intLiteral "-" intLiteral ")"
-//
-// FloatParameter ::= floatType [ FloatRange ] [ FloatTransform ] [ identifier ] [ "=" FloatConstant ]
-// FloatConstant  ::= numLiteral | "{" numLiteral FloatTransform "}"
-// FloatTransform ::= operator numLiteral { FloatTransform } | "(" FloatTransform ")"
-// FloatRange     ::= "(" floatLiteral "-" floatLiteral ")"
-//
-// SizedParameter ::= sizedType [ SizeConstraint ] [ identifier ] [ "=" stringLiteral ]
-// SizeConstraint ::= "(" intLiteral ")"
-//
-// StructParameter ::= identifier [ identifier ]
-//
-// ArrayParameter ::= ( dataType | identifier ) [ identifier ] ArrayRange
-// ArrayRange     ::= "[" [ intLiteral [ "-" intLiteral ] ] "]"
-
+// Plex macro to start defining our grammar
 parser! {
     fn parse_(DCToken, Span);
 
-    // combine two spans
+    // Instruct parser how to combine two spans
     (a, b) {
         Span {
             min: a.min,
             max: b.max,
-            line: a.line,
+            line: a.line, // only keep a's line number
         }
     }
 
-    program: DCFile {
-        statements[s] => DCFile { statements: s }
+    // DC File (root production of the grammar)
+    dc_file: ast::DCFile {
+        type_declarations[s] => ast::DCFile { type_decl: s }
     }
 
-    statements: Vec<Expr> {
+    // Collect all our Type Declarations into a vector for the DCFile.
+    type_declarations: Vec<ast::TypeDecl> {
         => vec![],
-        statements[mut st] assign[e] Semicolon => {
-            st.push(e);
-            st
+        type_declarations[mut td_vec] type_decl[next_td] Semicolon => {
+            td_vec.push(next_td);
+            td_vec
         }
     }
 
-    assign: Expr {
-        Identifier(var) Equals assign[rhs] => Expr {
+    type_decl: ast::TypeDecl {
+        keyword_type[k] => ast::TypeDecl {
             span: span!(),
-            node: Expr_::Assign(var, Box::new(rhs)),
+            decl: ast::TypeDecl_::KeywordType(k),
         },
-        term[t] => t,
+        struct_type[s] => ast::TypeDecl {
+            span: span!(),
+            decl: ast::TypeDecl_::StructType(s),
+        },
+        distributed_class_type[dc] => ast::TypeDecl {
+            span: span!(),
+            decl: ast::TypeDecl_::DistributedClassType(dc),
+        },
     }
 
-    term: Expr {
-        term[lhs] Plus fact[rhs] => Expr {
-            span: span!(),
-            node: Expr_::Add(Box::new(lhs), Box::new(rhs)),
-        },
-        term[lhs] Hyphen fact[rhs] => Expr {
-            span: span!(),
-            node: Expr_::Sub(Box::new(lhs), Box::new(rhs)),
-        },
-        fact[x] => x
+    keyword_type: ast::KeywordType {
+
     }
 
-    fact: Expr {
-        fact[lhs] Star atom[rhs] => Expr {
-            span: span!(),
-            node: Expr_::Mul(Box::new(lhs), Box::new(rhs)),
-        },
-        fact[lhs] ForwardSlash atom[rhs] => Expr {
-            span: span!(),
-            node: Expr_::Div(Box::new(lhs), Box::new(rhs)),
-        },
-        atom[x] => x
+    struct_type: ast::StructType {
+
     }
 
-    atom: Expr {
-        // round brackets to destructure tokens
-        Identifier(i) => Expr {
-            span: span!(),
-            node: Expr_::Var(i),
-        },
-        DecimalLiteral(i) => Expr {
-            span: span!(),
-            node: Expr_::Literal(i),
-        },
-        OpenParenthesis assign[a] CloseParenthesis => a
+    distributed_class_type: ast::DistributedClassType {
+
     }
+
 }
 
+// This is the interface to our parser; Provides an iterator.
 pub fn parse<I: Iterator<Item = (DCToken, Span)>>(
     i: I,
-) -> Result<DCFile, (Option<(DCToken, Span)>, &'static str)> {
+) -> Result<ast::DCFile, (Option<(DCToken, Span)>, &'static str)> {
     parse_(i)
 }

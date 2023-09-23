@@ -95,9 +95,9 @@ pub enum DCKeyword {
     Broadcast, // broadcast
     OwnSend,   // ownsend
     ClSend,    // clsend
-    Bypass,    // bypass
 }
 
+// Plex macro to start defining our lexer regex rules.
 lexer! {
     fn next_token(text: 'a) -> (DCToken, &'a str);
 
