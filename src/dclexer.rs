@@ -58,8 +58,11 @@ pub enum DCToken {
     // one 'SizedType' lexical token. We match them as separate tokens so that
     // when DB tables are created for objects they can use the corresponding SQL types.
 
-    Identifier(String), // Letter { Letter | DecDigit }
-    Filename(String),   // Letter { Letter | DecDigit | "_" | "-" } "." ( "py" | "ts" )
+    Identifier(String), // ( Letter | "_" ) { Letter | DecDigit | "_" }
+    Module(String),   // ( Letter | "_" ) { Letter | DecDigit | "_" | "-" }
+    // NOTE: Module names in import statements may be matched as Indentifiers, and
+    // not Module tokens. We have the module token to accept Python module names with
+    // a '-' hyphen character. The parser will check for either token in import statements.
 
     // Keywords
     DClassType,     // "dclass"
@@ -75,6 +78,7 @@ pub enum DCToken {
     Plus,         // "+"
     Hyphen,       // "-"
     ForwardSlash, // "/"
+    Period,       // "."
 
     // Delimiters
     OpenParenthesis,  // "("
@@ -88,20 +92,9 @@ pub enum DCToken {
     Equals,           // "="
     Colon,            // ":"
     Whitespace,       // " " | tab | carriage-return | newline
+
     Comment,          // Not a DC token; Ignored. Satisfies lexer match.
     Newline,          // Not a DC token; Used by lexer iterator to keep track of line #.
-}
-
-pub enum DCKeyword {
-    RAM,       // ram
-    Required,  // required
-    DB,        // db
-    AIRecv,    // airecv
-    OwnRecv,   // ownrecv
-    ClRecv,    // clrecv
-    Broadcast, // broadcast
-    OwnSend,   // ownsend
-    ClSend,    // clsend
 }
 
 // Plex macro to start defining our lexer regex rules.
@@ -153,7 +146,7 @@ lexer! {
     r#"typedef"# => (DCToken::TypeDefinition, text),
 
     r#"[a-zA-Z_][a-zA-Z0-9_]*"# => (DCToken::Identifier(text.to_owned()), text),
-    r#"[a-zA-Z_][a-zA-Z0-9_\-]+.(py|ts)"# => (DCToken::Filename(text.to_owned()), text),
+    r#"[a-zA-Z_][a-zA-Z0-9_\-]*"# => (DCToken::Module(text.to_owned()), text),
 
     r#"\\(x[0-9a-fA-F]+|.)"# => (DCToken::EscapeCharacter(text.to_owned()), text),
 
@@ -162,6 +155,7 @@ lexer! {
     r#"\+"# => (DCToken::Plus, text),
     r#"-"# => (DCToken::Hyphen, text),
     r#"/"# => (DCToken::ForwardSlash, text),
+    r#"\."# => (DCToken::Period, text),
 
     r#"\("# => (DCToken::OpenParenthesis, text),
     r#"\)"# => (DCToken::CloseParenthesis, text),
@@ -293,17 +287,18 @@ mod unit_testing {
         // a client thing (both client and AI do this), but we still want
         // their DC files to pass our lexer / parser without issues.
         let target: Vec<DCToken> = vec![
+            DCToken::From,
+            DCToken::Module(String::from("my-views")),
+            DCToken::Period,
+            DCToken::Identifier(String::from("Donut")),
             DCToken::Import,
             DCToken::Identifier(String::from("DistributedDonut")),
             DCToken::ForwardSlash,
             DCToken::Identifier(String::from("AI")),
             DCToken::ForwardSlash,
             DCToken::Identifier(String::from("OV")),
-            DCToken::From,
-            DCToken::Filename(String::from("my_views.py")),
-            DCToken::Semicolon,
         ];
-        lexer_test_for_target("import DistributedDonut/AI/OV from my_views.py;", target);
+        lexer_test_for_target("from my-views.Donut import DistributedDonut/AI/OV", target);
     }
 
     #[test]

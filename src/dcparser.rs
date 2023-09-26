@@ -81,7 +81,7 @@ mod ast {
     #[derive(Debug)]
     pub struct DCImport {
         pub span: Span,
-        pub module: String, // python module / filename
+        pub module: Vec<String>, // python filename, or module(s)
         pub class: IdentifierString,
         pub views: Vec<String>, // AI, UD, OV ...
     }
@@ -281,11 +281,25 @@ parser! {
 
     }
 
+    // NOTE: Module names may be lexed as identifiers or module tokens.
+    // We make sure to pick up either token after the 'from' keyword.
     dc_import: ast::DCImport {
-        From Filename(module) Import Identifier(class) import_views[ivs] => ast::DCImport {
+        From Module(module) Import Identifier(class) import_views[ivs] => ast::DCImport {
             span: span!(),
             class: class,
-            module: module,
+            module: vec![module],
+            views: ivs,
+        },
+        From Identifier(module) Import Identifier(class) import_views[ivs] => ast::DCImport {
+            span: span!(),
+            class: class,
+            module: vec![module],
+            views: ivs,
+        },
+        From nested_modules[nm] Import Identifier(class) import_views[ivs] => ast::DCImport {
+            span: span!(),
+            class: class,
+            module: nm,
             views: ivs,
         }
     }
@@ -333,19 +347,29 @@ parser! {
         },
     }
 
+    // Bundles module names in 'from' statements, e.g. "myviews.Donut".
+    // NOTE: Module names may be lexed as identifiers or module tokens.
+    nested_modules: Vec<String> {
+        => vec![],
+        nested_modules[mut nm] Period Module(module) => {
+            nm.push(module);
+            nm
+        },
+        nested_modules[mut nm] Period Identifier(module) => {
+            nm.push(module);
+            nm
+        }
+    }
+
     // Bundle up all views of a dclass to be imported into a vector
     // of strings, each corresponding to a view suffix. (AI, UD, OV..)
     import_views: Vec<String> {
         => vec![],
-        import_views[mut ivs] import_view[iv] => {
-            ivs.push(iv);
+        // Matches '/AI' '/OV' from, example, "DistributedDonut/AI/OV"
+        import_views[mut ivs] ForwardSlash Identifier(view_suffix) => {
+            ivs.push(view_suffix);
             ivs
         }
-    }
-
-    // Matches '/AI' '/OV' from, example, "DistributedDonut/AI/OV"
-    import_view: String {
-        ForwardSlash Identifier(view_suffix) => view_suffix
     }
 
     // The 'parameters' grammar is made up of the current parameters
