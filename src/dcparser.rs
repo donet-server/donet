@@ -15,6 +15,12 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+// The following suppress linting warnings, which are okay to ignore
+// as they go off in the parser grammar definitions, which we are writing
+// just as the plex crate readme says we should, so everything is okay.
+#![allow(clippy::type_complexity, clippy::redundant_field_names, clippy::ptr_arg)]
+#![allow(clippy::redundant_closure_call, clippy::enum_variant_names)]
+
 use crate::dclexer::DCToken::*;
 use crate::dclexer::{DCToken, Span};
 use plex::parser;
@@ -42,6 +48,8 @@ mod ast {
         KeywordType(KeywordType),
         StructType(StructType),
         DistributedClassType(DistributedClassType),
+        DCImport(DCImport),
+        TypeDefinition(TypeDefinition),
     }
 
     #[derive(Debug)]
@@ -60,7 +68,7 @@ mod ast {
     pub struct StructType {
         pub span: Span,
         pub identifier: IdentifierString,
-        pub parameters: Vec<Parameter>,
+        pub parameters: Vec<ParameterField>,
     }
 
     #[derive(Debug)]
@@ -68,6 +76,21 @@ mod ast {
         pub span: Span,
         pub identifier: IdentifierString,
         pub field_declarations: Vec<FieldDecl>,
+    }
+
+    #[derive(Debug)]
+    pub struct DCImport {
+        pub span: Span,
+        pub module: String, // python module / filename
+        pub class: IdentifierString,
+        pub views: Vec<String>, // AI, UD, OV ...
+    }
+
+    #[derive(Debug)]
+    pub struct TypeDefinition {
+        pub span: Span,
+        pub dc_type: DataType,
+        pub alias: IdentifierString,
     }
 
     #[derive(Debug)]
@@ -164,9 +187,9 @@ mod ast {
     }
 
     #[derive(Debug)]
-    pub enum DataType {
-        BaseType(BaseType),
-        Identifier(IdentifierString),
+    pub struct DataType {
+        pub base_type: BaseType,
+        pub identifier: Option<String>, // used for IntType (unsigned/signed + bits)
     }
 
     #[rustfmt::skip]
@@ -215,7 +238,6 @@ parser! {
             td_vec
         }
     }
-
     type_decl: ast::TypeDecl {
         keyword_type[k] => ast::TypeDecl {
             span: span!(),
@@ -229,6 +251,14 @@ parser! {
             span: span!(),
             node: ast::TypeDecl_::DistributedClassType(dc),
         },
+        dc_import[dci] => ast::TypeDecl {
+            span: span!(),
+            node: ast::TypeDecl_::DCImport(dci),
+        },
+        type_definition[td] => ast::TypeDecl {
+            span: span!(),
+            node: ast::TypeDecl_::TypeDefinition(td),
+        },
     }
 
     keyword_type: ast::KeywordType {
@@ -239,10 +269,97 @@ parser! {
     }
 
     struct_type: ast::StructType {
-
+        StructType Identifier(id) OpenBraces parameters[ps]
+        CloseBraces Semicolon => ast::StructType {
+            span: span!(),
+            identifier: id,
+            parameters: ps,
+        }
     }
 
     distributed_class_type: ast::DistributedClassType {
+
+    }
+
+    dc_import: ast::DCImport {
+        From Filename(module) Import Identifier(class) import_views[ivs] => ast::DCImport {
+            span: span!(),
+            class: class,
+            module: module,
+            views: ivs,
+        }
+    }
+
+    type_definition: ast::TypeDefinition {
+        TypeDefinition CharType Identifier(alias) Semicolon => ast::TypeDefinition {
+            span: span!(),
+            dc_type: ast::DataType {
+                base_type: ast::BaseType::CharType,
+                identifier: None,
+            },
+            alias: alias,
+        },
+        TypeDefinition IntType(int_id) Identifier(alias) Semicolon => ast::TypeDefinition {
+            span: span!(),
+            dc_type: ast::DataType {
+                base_type: ast::BaseType::IntType,
+                identifier: Some(int_id), // unsigned/signed + bits
+            },
+            alias: alias,
+        },
+        TypeDefinition FloatType Identifier(alias) Semicolon => ast::TypeDefinition {
+            span: span!(),
+            dc_type: ast::DataType {
+                base_type: ast::BaseType::FloatType,
+                identifier: None,
+            },
+            alias: alias,
+        },
+        TypeDefinition StringType Identifier(alias) Semicolon => ast::TypeDefinition {
+            span: span!(),
+            dc_type: ast::DataType {
+                base_type: ast::BaseType::StringType,
+                identifier: None,
+            },
+            alias: alias,
+        },
+        TypeDefinition BlobType Identifier(alias) Semicolon => ast::TypeDefinition {
+            span: span!(),
+            dc_type: ast::DataType {
+                base_type: ast::BaseType::BlobType,
+                identifier: None,
+            },
+            alias: alias,
+        },
+    }
+
+    // Bundle up all views of a dclass to be imported into a vector
+    // of strings, each corresponding to a view suffix. (AI, UD, OV..)
+    import_views: Vec<String> {
+        => vec![],
+        import_views[mut ivs] import_view[iv] => {
+            ivs.push(iv);
+            ivs
+        }
+    }
+
+    // Matches '/AI' '/OV' from, example, "DistributedDonut/AI/OV"
+    import_view: String {
+        ForwardSlash Identifier(view_suffix) => view_suffix
+    }
+
+    // The 'parameters' grammar is made up of the current parameters
+    // plus a new parameter following, and returns a vector of all
+    // parameters parsed so far. This bundles them all up for other grammar.
+    parameters: Vec<ast::ParameterField> {
+        => vec![],
+        parameters[mut ps] parameter[p] => {
+            ps.push(p);
+            ps
+        }
+    }
+
+    parameter: ast::ParameterField {
 
     }
 
@@ -253,4 +370,9 @@ pub fn parse<I: Iterator<Item = (DCToken, Span)>>(
     i: I,
 ) -> Result<ast::DCFile, (Option<(DCToken, Span)>, &'static str)> {
     parse_(i)
+}
+
+#[cfg(test)]
+mod unit_testing {
+    //use super::*;
 }
