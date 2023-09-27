@@ -82,8 +82,9 @@ mod ast {
     pub struct DCImport {
         pub span: Span,
         pub module: Vec<String>, // python filename, or module(s)
+        pub module_views: Vec<String>,
         pub class: IdentifierString,
-        pub views: Vec<String>, // AI, UD, OV ...
+        pub class_views: Vec<String>, // AI, UD, OV ...
     }
 
     #[derive(Debug)]
@@ -227,13 +228,13 @@ parser! {
 
     // DC File (root production of the grammar)
     dc_file: ast::DCFile {
-        type_declarations[s] => ast::DCFile { type_decl: s }
+        type_declarations[tds] => ast::DCFile { type_decl: tds },
     }
 
     // Collect all our Type Declarations into a vector for the DCFile.
     type_declarations: Vec<ast::TypeDecl> {
         => vec![],
-        type_declarations[mut td_vec] type_decl[next_td] Semicolon => {
+        type_declarations[mut td_vec] type_decl[next_td] => {
             td_vec.push(next_td);
             td_vec
         }
@@ -281,27 +282,22 @@ parser! {
 
     }
 
-    // NOTE: Module names may be lexed as identifiers or module tokens.
-    // We make sure to pick up either token after the 'from' keyword.
     dc_import: ast::DCImport {
-        From Module(module) Import Identifier(class) import_views[ivs] => ast::DCImport {
+        py_mod[(m, ms)] dc_imp[(c, cs)] => ast::DCImport {
             span: span!(),
-            class: class,
-            module: vec![module],
-            views: ivs,
+            module: vec![m],
+            module_views: ms,
+            class: c,
+            class_views: cs,
         },
-        From Identifier(module) Import Identifier(class) import_views[ivs] => ast::DCImport {
-            span: span!(),
-            class: class,
-            module: vec![module],
-            views: ivs,
-        },
-        From nested_modules[nm] Import Identifier(class) import_views[ivs] => ast::DCImport {
-            span: span!(),
-            class: class,
-            module: nm,
-            views: ivs,
-        }
+        // FIXME: 'reduce_11' never used; dead code warning.
+        //nested_py_mod[(nm, ms)] dc_imp[(c, cs)] => ast::DCImport {
+        //    span: span!(),
+        //    module: nm,
+        //    module_views: ms,
+        //    class: c,
+        //    class_views: cs,
+        //},
     }
 
     type_definition: ast::TypeDefinition {
@@ -347,34 +343,75 @@ parser! {
         },
     }
 
+    // e.g. "from views ..."
+    py_mod: (String, Vec<String>) {
+        From import_with_suffix[(m, ms)] => (m, ms),
+    }
+
+    // e.g. "from game.views.Donut/AI ..."
+    nested_py_mod: (Vec<String>, Vec<String>) {
+        From nested_modules_with_suffix[(nm, ms)] => (nm, ms),
+    }
+
+    // e.g. "import DistributedDonut/AI/OV"
+    dc_imp: (String, Vec<String>) {
+        Import import_with_suffix[(c, cs)] => (c, cs),
+        // FIXME: Allow class imports without suffixes (and avoid shift-reduce conflict)
+        //Import Identifier(c) => (c, vec![]),
+    }
+
+    import_with_suffix: (String, Vec<String>) {
+        // "from views/AI/OV import DistributedDonut/AI/OV"
+        // "from my_views/AI/OV import DistributedDonut/AI/OV"
+        Identifier(i) view_suffixes[is] => (i, is),
+        Module(i) view_suffixes[is] => (i, is),
+    }
+
+    nested_modules_with_suffix: (Vec<String>, Vec<String>) {
+        nested_py_modules[nm] view_suffixes[ms] => (nm, ms),
+    }
+
     // Bundles module names in 'from' statements, e.g. "myviews.Donut".
-    // NOTE: Module names may be lexed as identifiers or module tokens.
-    nested_modules: Vec<String> {
+    nested_py_modules: Vec<String> {
         => vec![],
-        nested_modules[mut nm] Period Module(module) => {
-            nm.push(module);
+        nested_py_modules[mut nm] py_module[m] => {
+            nm.push(m);
             nm
         },
-        nested_modules[mut nm] Period Identifier(module) => {
-            nm.push(module);
+        nested_py_modules[mut nm] py_module[m] => {
+            nm.push(m);
             nm
         }
+        // FIXME: Handle 1 or more modules without shift-reduce conflict.
+        // py_module[m] => vec![m],
     }
 
-    // Bundle up all views of a dclass to be imported into a vector
+    // NOTE: Module names may be lexed as identifiers or module tokens.
+    py_module: String {
+        Period Identifier(m) => m,
+        Period Module(m) => m,
+    }
+
+    // Bundle up all views of a dclass/module to be imported, into a vector
     // of strings, each corresponding to a view suffix. (AI, UD, OV..)
-    import_views: Vec<String> {
+    view_suffixes: Vec<String> {
         => vec![],
-        // Matches '/AI' '/OV' from, example, "DistributedDonut/AI/OV"
-        import_views[mut ivs] ForwardSlash Identifier(view_suffix) => {
-            ivs.push(view_suffix);
-            ivs
+        view_suffixes[mut vs] view_suffix[s] => {
+            vs.push(s);
+            vs
         }
+        // FIXME: Handle 1 or more suffixes without shift-reduce conflict.
+        // view_suffix[s] => vec![s],
     }
 
-    // The 'parameters' grammar is made up of the current parameters
+    // Matches '/AI' '/OV' from, example, "DistributedDonut/AI/OV"
+    view_suffix: String {
+        ForwardSlash Identifier(s) => s
+    }
+
+    // The 'parameters' production is made up of the current parameters
     // plus a new parameter following, and returns a vector of all
-    // parameters parsed so far. This bundles them all up for other grammar.
+    // parameters parsed so far. This bundles them all up for other productions.
     parameters: Vec<ast::ParameterField> {
         => vec![],
         parameters[mut ps] parameter[p] => {
