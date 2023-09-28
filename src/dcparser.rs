@@ -291,13 +291,13 @@ parser! {
             class_views: cs,
         },
         // FIXME: 'reduce_11' never used; dead code warning.
-        nested_py_mod[(nm, ms)] dc_imp[(c, cs)] => ast::DCImport {
-            span: span!(),
-            module: nm,
-            module_views: ms,
-            class: c,
-            class_views: cs,
-        },
+        //nested_py_mod[(nm, ms)] dc_imp[(c, cs)] => ast::DCImport {
+        //    span: span!(),
+        //    module: nm,
+        //    module_views: ms,
+        //    class: c,
+        //    class_views: cs,
+        //},
     }
 
     type_definition: ast::TypeDefinition {
@@ -378,10 +378,6 @@ parser! {
             nm.push(m);
             nm
         },
-        nested_py_modules[mut nm] py_module[m] => {
-            nm.push(m);
-            nm
-        }
         // FIXME: Handle 1 or more modules without shift-reduce conflict.
         // py_module[m] => vec![m],
     }
@@ -435,5 +431,13 @@ pub fn parse<I: Iterator<Item = (DCToken, Span)>>(
 
 #[cfg(test)]
 mod unit_testing {
+    //use crate::dclexer::Lexer;
     //use super::*;
+
+    //#[test]
+    //fn parser_test() {
+    //let test_string: &str = "";
+    //let lexer = Lexer::new(test_string).inspect(|tok| eprintln!("tok: {:?}", tok));
+    //let program = parser::parse(lexer).unwrap();
+    //}
 }
