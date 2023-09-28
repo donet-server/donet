@@ -189,7 +189,7 @@ impl<'a> Lexer<'a> {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Span {
     pub min: usize,
     pub max: usize,

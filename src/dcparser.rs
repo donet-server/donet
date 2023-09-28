@@ -32,18 +32,18 @@ mod ast {
     use std::ops::Range;
     pub type IdentifierString = String; // type alias
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct DCFile {
         pub type_decl: Vec<TypeDecl>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct TypeDecl {
         pub span: Span,
         pub node: TypeDecl_,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub enum TypeDecl_ {
         KeywordType(KeywordType),
         StructType(StructType),
@@ -52,33 +52,33 @@ mod ast {
         TypeDefinition(TypeDefinition),
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct KeywordType {
         pub span: Span,
         pub node: KeywordType_,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub enum KeywordType_ {
         KeywordType(IdentifierString),
         KeywordList(Vec<IdentifierString>),
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct StructType {
         pub span: Span,
         pub identifier: IdentifierString,
         pub parameters: Vec<ParameterField>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct DistributedClassType {
         pub span: Span,
         pub identifier: IdentifierString,
         pub field_declarations: Vec<FieldDecl>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct DCImport {
         pub span: Span,
         pub module: Vec<String>, // python filename, or module(s)
@@ -87,52 +87,52 @@ mod ast {
         pub class_views: Vec<String>, // AI, UD, OV ...
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct TypeDefinition {
         pub span: Span,
         pub dc_type: DataType,
         pub alias: IdentifierString,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct FieldDecl {
         pub span: Span,
         pub node: FieldDecl_,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub enum FieldDecl_ {
         MolecularField(MolecularField),
         AtomicField(AtomicField),
         ParameterField(ParameterField),
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct MolecularField {
         pub identifier: IdentifierString,
         pub field_type: FieldType,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub enum FieldType {
         Atomic(AtomicField),
         Parameter(ParameterField),
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct AtomicField {
         pub identifier: IdentifierString,
         pub parameters: Vec<Parameter>,
         pub keyword_list: Option<KeywordType>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct ParameterField {
         pub parameter: Parameter,
         pub keyword_list: Option<KeywordType>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub enum Parameter {
         Char(CharParameter),
         Int(IntParameter),
@@ -142,13 +142,13 @@ mod ast {
         Array(ArrayParameter),
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct CharParameter {
         pub char_type: Option<IdentifierString>,
         pub char_literal: Option<char>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct IntParameter {
         pub identifier: Option<IdentifierString>,
         pub int_type: Option<IdentifierString>,
@@ -157,7 +157,7 @@ mod ast {
         pub int_constant: Option<i64>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct FloatParameter {
         pub identifier: Option<IdentifierString>,
         pub float_type: Option<IdentifierString>,
@@ -166,7 +166,7 @@ mod ast {
         pub float_constant: Option<f64>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct SizedParameter {
         pub sized_type: Option<IdentifierString>,
         pub size_constraint: Option<i64>,
@@ -174,46 +174,46 @@ mod ast {
         pub string_literal: Option<String>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct StructParameter {
         pub identifier1: IdentifierString,
         pub identifier2: Option<IdentifierString>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct ArrayParameter {
         pub data_type: DataType,
         pub identifier: Option<IdentifierString>,
         pub array_range: Range<i64>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct DataType {
         pub base_type: BaseType,
-        pub identifier: Option<String>, // used for IntType (unsigned/signed + bits)
+        pub type_identifier: Option<String>, // used for IntType (unsigned/signed + bits)
     }
 
     #[rustfmt::skip]
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub enum BaseType {
         CharType, IntType, FloatType,
         StringType, BlobType, StructType,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub enum IntTransform {
         OperatorIntLiteral { operator: DCToken, int_literal: i32 },
         ParenthesizedIntTransform(Box<IntTransform>),
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub enum FloatTransform {
         OperatorFloatLiteral { operator: DCToken, float_literal: f32 },
         ParenthesizedFloatTransform(Box<FloatTransform>),
     }
 }
 
-// Plex macro to start defining our grammar
+// Plex macro to start defining our grammar & productions
 parser! {
     fn parse_(DCToken, Span);
 
@@ -239,6 +239,7 @@ parser! {
             td_vec
         }
     }
+
     type_decl: ast::TypeDecl {
         keyword_type[k] => ast::TypeDecl {
             span: span!(),
@@ -282,6 +283,9 @@ parser! {
 
     }
 
+    // Donet does not make use of python-style import statements,
+    // as this is a feature used by Donet clients and AI/UD processes.
+    // We still have our production rules defined to avoid a parser panic.
     dc_import: ast::DCImport {
         py_mod[(m, ms)] dc_imp[(c, cs)] => ast::DCImport {
             span: span!(),
@@ -290,14 +294,13 @@ parser! {
             class: c,
             class_views: cs,
         },
-        // FIXME: 'reduce_11' never used; dead code warning.
-        //nested_py_mod[(nm, ms)] dc_imp[(c, cs)] => ast::DCImport {
-        //    span: span!(),
-        //    module: nm,
-        //    module_views: ms,
-        //    class: c,
-        //    class_views: cs,
-        //},
+        nested_py_mod[(nm, ms)] dc_imp[(c, cs)] => ast::DCImport {
+            span: span!(),
+            module: nm,
+            module_views: ms,
+            class: c,
+            class_views: cs,
+        },
     }
 
     type_definition: ast::TypeDefinition {
@@ -305,7 +308,7 @@ parser! {
             span: span!(),
             dc_type: ast::DataType {
                 base_type: ast::BaseType::CharType,
-                identifier: None,
+                type_identifier: None,
             },
             alias: alias,
         },
@@ -313,7 +316,7 @@ parser! {
             span: span!(),
             dc_type: ast::DataType {
                 base_type: ast::BaseType::IntType,
-                identifier: Some(int_id), // unsigned/signed + bits
+                type_identifier: Some(int_id), // unsigned/signed + bits
             },
             alias: alias,
         },
@@ -321,7 +324,7 @@ parser! {
             span: span!(),
             dc_type: ast::DataType {
                 base_type: ast::BaseType::FloatType,
-                identifier: None,
+                type_identifier: None,
             },
             alias: alias,
         },
@@ -329,7 +332,7 @@ parser! {
             span: span!(),
             dc_type: ast::DataType {
                 base_type: ast::BaseType::StringType,
-                identifier: None,
+                type_identifier: None,
             },
             alias: alias,
         },
@@ -337,7 +340,7 @@ parser! {
             span: span!(),
             dc_type: ast::DataType {
                 base_type: ast::BaseType::BlobType,
-                identifier: None,
+                type_identifier: None,
             },
             alias: alias,
         },
@@ -355,14 +358,12 @@ parser! {
 
     // e.g. "import DistributedDonut/AI/OV"
     dc_imp: (String, Vec<String>) {
-        Import import_with_suffix[(c, cs)] => (c, cs),
-        // FIXME: Allow class imports without suffixes (and avoid shift-reduce conflict)
-        //Import Identifier(c) => (c, vec![]),
+        Import import_with_suffix[(c, cs)] => (c, cs)
     }
 
     import_with_suffix: (String, Vec<String>) {
-        // "from views/AI/OV import DistributedDonut/AI/OV"
-        // "from my_views/AI/OV import DistributedDonut/AI/OV"
+        // e.g. "from views/AI/OV import DistributedDonut/AI/OV"
+        // e.g. "from my_views/AI/OV import DistributedDonut/AI/OV"
         Identifier(i) view_suffixes[is] => (i, is),
         Module(i) view_suffixes[is] => (i, is),
     }
@@ -377,9 +378,7 @@ parser! {
         nested_py_modules[mut nm] py_module[m] => {
             nm.push(m);
             nm
-        },
-        // FIXME: Handle 1 or more modules without shift-reduce conflict.
-        // py_module[m] => vec![m],
+        }
     }
 
     // NOTE: Module names may be lexed as identifiers or module tokens.
@@ -396,8 +395,6 @@ parser! {
             vs.push(s);
             vs
         }
-        // FIXME: Handle 1 or more suffixes without shift-reduce conflict.
-        // view_suffix[s] => vec![s],
     }
 
     // Matches '/AI' '/OV' from, example, "DistributedDonut/AI/OV"
@@ -431,13 +428,40 @@ pub fn parse<I: Iterator<Item = (DCToken, Span)>>(
 
 #[cfg(test)]
 mod unit_testing {
-    //use crate::dclexer::Lexer;
-    //use super::*;
+    use super::{ast, parse, Span};
+    use crate::dclexer::Lexer;
 
-    //#[test]
-    //fn parser_test() {
-    //let test_string: &str = "";
-    //let lexer = Lexer::new(test_string).inspect(|tok| eprintln!("tok: {:?}", tok));
-    //let program = parser::parse(lexer).unwrap();
-    //}
+    fn parse_for_ast_target(input: &str, target_ast: ast::DCFile) {
+        let lexer = Lexer::new(input).inspect(|tok| eprintln!("token: {:?}", tok));
+        let dc_file_ast: ast::DCFile = parse(lexer).unwrap();
+        // panic!("{:#?}", dc_file_ast); // Uncomment for debugging output AST
+        assert_eq!(dc_file_ast, target_ast);
+    }
+
+    #[test]
+    fn type_definition_production() {
+        let dc_file: &str = "typedef char test;\n";
+        let target_ast: ast::DCFile = ast::DCFile {
+            type_decl: vec![ast::TypeDecl {
+                span: Span {
+                    min: 0,
+                    max: 18,
+                    line: 1,
+                },
+                node: ast::TypeDecl_::TypeDefinition(ast::TypeDefinition {
+                    span: Span {
+                        min: 0,
+                        max: 18,
+                        line: 1,
+                    },
+                    dc_type: ast::DataType {
+                        base_type: ast::BaseType::CharType,
+                        type_identifier: None,
+                    },
+                    alias: String::from("test"),
+                }),
+            }],
+        };
+        parse_for_ast_target(dc_file, target_ast);
+    }
 }
