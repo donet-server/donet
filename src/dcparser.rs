@@ -291,13 +291,13 @@ parser! {
             class_views: cs,
         },
         // FIXME: 'reduce_11' never used; dead code warning.
-        //nested_py_mod[(nm, ms)] dc_imp[(c, cs)] => ast::DCImport {
-        //    span: span!(),
-        //    module: nm,
-        //    module_views: ms,
-        //    class: c,
-        //    class_views: cs,
-        //},
+        nested_py_mod[(nm, ms)] dc_imp[(c, cs)] => ast::DCImport {
+            span: span!(),
+            module: nm,
+            module_views: ms,
+            class: c,
+            class_views: cs,
+        },
     }
 
     type_definition: ast::TypeDefinition {
