@@ -1,4 +1,4 @@
-<img src="logo/donet_banner.png" align="right" width="50%"/>
+<img src="logo/donet_banner.png" align="right" width="45%"/>
 
 # Donet
 
@@ -16,6 +16,16 @@ their massive multiplayer online games, such as Toontown Online and Pirates of t
 from 2001 to 2013.
 
 Donet is currently in its early stages, but it aims to be a drop-in replacement for [Astron](https://github.com/astron/astron).
+
+How is the Donet project **different** from Astron?
+
+- Donet source is licensed under the GNU Affero General Public License, which is a copyleft free software license that
+classifies public network use as distribution under its terms. Astron uses the Modified BSD License, which is a permissive
+software license. 
+- Donet development comes with unit testing and code coverage reports. Functional testing is also in the works. Along with
+the benefits of safety with Rust, we do our best to guarantee the integrity of the Donet server.
+- Donet is a brand new open source project! We're in active development and plan to make more improvements in the future.
+We welcome with open arms new contributors to share in the development of Donet.
 
 ## Getting Started
 Please read the [introduction to Donet](./docs/01-Introduction.md) for an overview of the project 
