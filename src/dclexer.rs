@@ -21,6 +21,9 @@ use plex::lexer;
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub enum DCToken {
+    Whitespace,       // Not a DC token; Ignores: " " | tab | carriage-return
+    Comment,          // Not a DC token; Ignored. Satisfies lexer match.
+    Newline,          // Not a DC token; Used by lexer iterator to keep track of line #.
     // Letter   ::= "A" ... "z"
     // DecDigit ::= "0" ... "9"
     // OctDigit ::= "0" ... "7"
@@ -58,12 +61,6 @@ pub enum DCToken {
     // one 'SizedType' lexical token. We match them as separate tokens so that
     // when DB tables are created for objects they can use the corresponding SQL types.
 
-    Identifier(String), // ( Letter | "_" ) { Letter | DecDigit | "_" }
-    Module(String),   // ( Letter | "_" ) { Letter | DecDigit | "_" | "-" }
-    // NOTE: Module names in import statements may be matched as Indentifiers, and
-    // not Module tokens. We have the module token to accept Python module names with
-    // a '-' hyphen character. The parser will check for either token in import statements.
-
     // Keywords
     DClassType,     // "dclass"
     StructType,     // "struct"
@@ -71,6 +68,23 @@ pub enum DCToken {
     From,           // "from"
     Import,         // "import"
     TypeDefinition, // "typedef"
+
+    // DC Keywords
+    RAM,       // "ram"
+    REQUIRED,  // "required"
+    DB,        // "db"
+    AIRECV,    // "airecv"
+    OWNRECV,   // "ownrecv"
+    CLRECV,    // "clrecv"
+    BROADCAST, // "broadcast"
+    OWNSEND,   // "ownsend"
+    CLSEND,    // "clsend"
+
+    Identifier(String), // ( Letter | "_" ) { Letter | DecDigit | "_" }
+    Module(String),   // ( Letter | "_" ) { Letter | DecDigit | "_" | "-" }
+    // NOTE: Module names in import statements may be matched as Indentifiers, and
+    // not Module tokens. We have the module token to accept Python module names with
+    // a '-' hyphen character. The parser will check for either token in import statements.
 
     // Operators
     Percent,      // "%"
@@ -91,10 +105,6 @@ pub enum DCToken {
     Semicolon,        // ";"
     Equals,           // "="
     Colon,            // ":"
-    Whitespace,       // " " | tab | carriage-return | newline
-
-    Comment,          // Not a DC token; Ignored. Satisfies lexer match.
-    Newline,          // Not a DC token; Used by lexer iterator to keep track of line #.
 }
 
 // Plex macro to start defining our lexer regex rules.
@@ -145,9 +155,18 @@ lexer! {
     r#"import"# => (DCToken::Import, text),
     r#"typedef"# => (DCToken::TypeDefinition, text),
 
+    r#"ram"# => (DCToken::RAM, text),
+    r#"required"# => (DCToken::REQUIRED, text),
+    r#"db"# => (DCToken::DB, text),
+    r#"airecv"# => (DCToken::AIRECV, text),
+    r#"ownrecv"# => (DCToken::OWNRECV, text),
+    r#"clrecv"# => (DCToken::CLRECV, text),
+    r#"broadcast"# => (DCToken::BROADCAST, text),
+    r#"ownsend"# => (DCToken::OWNSEND, text),
+    r#"clsend"# => (DCToken::CLSEND, text),
+
     r#"[a-zA-Z_][a-zA-Z0-9_]*"# => (DCToken::Identifier(text.to_owned()), text),
     r#"[a-zA-Z_][a-zA-Z0-9_\-]*"# => (DCToken::Module(text.to_owned()), text),
-
     r#"\\(x[0-9a-fA-F]+|.)"# => (DCToken::EscapeCharacter(text.to_owned()), text),
 
     r#"%"# => (DCToken::Percent, text),
@@ -277,8 +296,11 @@ mod unit_testing {
             DCToken::KeywordType,
             DCToken::Identifier(String::from("test")),
             DCToken::Semicolon,
+            // Just need to cover these two tokens for coverage.
+            DCToken::DClassType,
+            DCToken::StructType,
         ];
-        lexer_test_for_target("keyword test;", target);
+        lexer_test_for_target("keyword test;\n dclass struct", target);
     }
 
     #[test]
@@ -411,6 +433,26 @@ mod unit_testing {
             DCToken::Colon,
         ];
         lexer_test_for_target("%*+-/(){}[],:", target);
+    }
+
+    #[test]
+    fn dc_keywords_tokens() {
+        let target: Vec<DCToken> = vec![
+            DCToken::RAM,
+            DCToken::REQUIRED,
+            DCToken::DB,
+            DCToken::AIRECV,
+            DCToken::OWNRECV,
+            DCToken::CLRECV,
+            DCToken::BROADCAST,
+            DCToken::OWNSEND,
+            DCToken::CLSEND,
+        ];
+        lexer_test_for_target(
+            "ram required db airecv ownrecv \
+            clrecv broadcast ownsend clsend",
+            target,
+        );
     }
 
     #[test]

@@ -55,13 +55,7 @@ mod ast {
     #[derive(Debug, PartialEq)]
     pub struct KeywordType {
         pub span: Span,
-        pub node: KeywordType_,
-    }
-
-    #[derive(Debug, PartialEq)]
-    pub enum KeywordType_ {
-        KeywordType(IdentifierString),
-        KeywordList(Vec<IdentifierString>),
+        pub identifier: IdentifierString,
     }
 
     #[derive(Debug, PartialEq)]
@@ -123,13 +117,13 @@ mod ast {
     pub struct AtomicField {
         pub identifier: IdentifierString,
         pub parameters: Vec<Parameter>,
-        pub keyword_list: Option<KeywordType>,
+        pub keyword_list: Vec<KeywordType>,
     }
 
     #[derive(Debug, PartialEq)]
     pub struct ParameterField {
         pub parameter: Parameter,
-        pub keyword_list: Option<KeywordType>,
+        pub keyword_list: Vec<KeywordType>,
     }
 
     #[derive(Debug, PartialEq)]
@@ -137,20 +131,21 @@ mod ast {
         Char(CharParameter),
         Int(IntParameter),
         Float(FloatParameter),
-        Sized(SizedParameter),
+        String(StringParameter),
+        Blob(BlobParameter),
         Struct(StructParameter),
         Array(ArrayParameter),
     }
 
     #[derive(Debug, PartialEq)]
     pub struct CharParameter {
-        pub char_type: Option<IdentifierString>,
+        pub identifier: Option<IdentifierString>,
         pub char_literal: Option<char>,
     }
 
     #[derive(Debug, PartialEq)]
     pub struct IntParameter {
-        pub identifier: Option<IdentifierString>,
+        pub identifier: IdentifierString,
         pub int_type: Option<IdentifierString>,
         pub int_range: Option<Range<i64>>,
         pub int_transform: Option<IntTransform>,
@@ -159,25 +154,36 @@ mod ast {
 
     #[derive(Debug, PartialEq)]
     pub struct FloatParameter {
-        pub identifier: Option<IdentifierString>,
+        pub identifier: IdentifierString,
         pub float_type: Option<IdentifierString>,
         pub float_range: Option<Range<f64>>,
         pub float_transform: Option<FloatTransform>,
         pub float_constant: Option<f64>,
     }
 
+    // NOTE: StringParameter and BlobParameter hold the same information,
+    // as by specification they are both 'SizedParameter' types. We use
+    // separate structs for strings and blobs so Donet knows exactly
+    // what data type they are and make optimizations.
+
     #[derive(Debug, PartialEq)]
-    pub struct SizedParameter {
-        pub sized_type: Option<IdentifierString>,
-        pub size_constraint: Option<i64>,
+    pub struct StringParameter {
         pub identifier: Option<IdentifierString>,
         pub string_literal: Option<String>,
+        pub size_constraint: Option<i64>,
+    }
+
+    #[derive(Debug, PartialEq)]
+    pub struct BlobParameter {
+        pub identifier: Option<IdentifierString>,
+        pub string_literal: Option<String>,
+        pub size_constraint: Option<i64>,
     }
 
     #[derive(Debug, PartialEq)]
     pub struct StructParameter {
-        pub identifier1: IdentifierString,
-        pub identifier2: Option<IdentifierString>,
+        pub struct_type: IdentifierString,
+        pub identifier: Option<IdentifierString>,
     }
 
     #[derive(Debug, PartialEq)]
@@ -266,12 +272,12 @@ parser! {
     keyword_type: ast::KeywordType {
         KeywordType Identifier(id) Semicolon => ast::KeywordType {
             span: span!(),
-            node: ast::KeywordType_::KeywordType(id),
+            identifier: id,
         }
     }
 
     struct_type: ast::StructType {
-        StructType Identifier(id) OpenBraces parameters[ps]
+        StructType Identifier(id) OpenBraces parameter_fields[ps]
         CloseBraces Semicolon => ast::StructType {
             span: span!(),
             identifier: id,
@@ -280,7 +286,12 @@ parser! {
     }
 
     distributed_class_type: ast::DistributedClassType {
-
+        DClassType Identifier(id) OpenBraces field_declarations[fds]
+        CloseBraces Semicolon => ast::DistributedClassType {
+            span: span!(),
+            identifier: id,
+            field_declarations: fds,
+        }
     }
 
     // Donet does not make use of python-style import statements,
@@ -402,10 +413,78 @@ parser! {
         ForwardSlash Identifier(s) => s
     }
 
-    // The 'parameters' production is made up of the current parameters
+    field_declarations: Vec<ast::FieldDecl> {
+        => vec![],
+        field_declarations[mut fds] field_declaration[fd] => {
+            fds.push(fd);
+            fds
+        }
+    }
+
+    field_declaration: ast::FieldDecl {
+        molecular_field[mf] => ast::FieldDecl {
+            span: span!(),
+            node: ast::FieldDecl_::MolecularField(mf),
+        },
+        atomic_field[af] => ast::FieldDecl {
+            span: span!(),
+            node: ast::FieldDecl_::AtomicField(af),
+        },
+        parameter_field[pf] => ast::FieldDecl {
+            span: span!(),
+            node: ast::FieldDecl_::ParameterField(pf),
+        },
+    }
+
+    molecular_field: ast::MolecularField {
+        Identifier(id) Colon atomic_field[af] => ast::MolecularField {
+            identifier: id,
+            field_type: ast::FieldType::Atomic(af),
+        },
+        // maybe separate atomic/parameter fields match to other production rule??
+        //
+        //Identifier(id) Colon parameter_fields[pfs] => ast::MolecularField {
+        //    identifier: id,
+        //    field_type: ast::FieldType::Parameter(pfs),
+        //}
+    }
+
+    atomic_fields: Vec<ast::AtomicField> {
+        => vec![],
+        atomic_fields[mut afs] Comma atomic_field[af] => {
+            afs.push(af);
+            afs
+        }
+    }
+
+    atomic_field: ast::AtomicField {
+        Identifier(id) OpenParenthesis parameters[ps]
+        CloseParenthesis dc_keyword_list[kl] => ast::AtomicField {
+            identifier: id,
+            parameters: ps,
+            keyword_list: kl,
+        }
+    }
+
+    // The 'parameter_fields' production is made up of the current parameters
     // plus a new parameter following, and returns a vector of all
     // parameters parsed so far. This bundles them all up for other productions.
-    parameters: Vec<ast::ParameterField> {
+    parameter_fields: Vec<ast::ParameterField> {
+        => vec![],
+        parameter_fields[mut ps] Comma parameter_field[p] => {
+            ps.push(p);
+            ps
+        }
+    }
+
+    parameter_field: ast::ParameterField {
+        parameter[p] dc_keyword_list[kl] => ast::ParameterField {
+            parameter: p,
+            keyword_list: kl,
+        }
+    }
+
+    parameters: Vec<ast::Parameter> {
         => vec![],
         parameters[mut ps] parameter[p] => {
             ps.push(p);
@@ -413,8 +492,181 @@ parser! {
         }
     }
 
-    parameter: ast::ParameterField {
+    parameter: ast::Parameter {
+        char_param[cp] => ast::Parameter::Char(cp),
+        int_param[ip] => ast::Parameter::Int(ip),
+        float_param[fp] => ast::Parameter::Float(fp),
+        string_param[sp] => ast::Parameter::String(sp),
+        blob_param[bp] => ast::Parameter::Blob(bp),
+        struct_param[sp] => ast::Parameter::Struct(sp),
+        array_param[ap] => ast::Parameter::Array(ap),
+    }
 
+    char_param: ast::CharParameter {
+        // FIXME: solve shift-reduce conflict
+        //CharType => ast::CharParameter {
+        //    identifier: None,
+        //    char_literal: None,
+        //},
+        CharType Identifier(id) => ast::CharParameter {
+            identifier: Some(id),
+            char_literal: None,
+        },
+        CharType Identifier(id) Equals CharacterLiteral(c) => ast::CharParameter {
+            identifier: Some(id),
+            char_literal: Some(c),
+        },
+    }
+
+    int_param: ast::IntParameter {
+        Colon Colon => ast::IntParameter {
+            identifier: String::from("id"),
+            int_type: None,
+            int_range: None,
+            int_transform: None,
+            int_constant: None,
+        }
+    }
+
+    int_range: Range<i64> {
+        OpenParenthesis DecimalLiteral(a) Hyphen DecimalLiteral(b) CloseParenthesis => a .. b
+    }
+
+    float_param: ast::FloatParameter {
+        Hyphen Hyphen Hyphen Hyphen Hyphen => ast::FloatParameter {
+            identifier: String::from("id"),
+            float_type: None,
+            float_range: None,
+            float_transform: None,
+            float_constant: None,
+        }
+    }
+
+    float_range: (f64, f64) {
+        OpenParenthesis FloatLiteral(a) Hyphen FloatLiteral(b) CloseParenthesis => (a, b)
+    }
+
+    string_param: ast::StringParameter {
+        StringType => ast::StringParameter {
+            identifier: None,
+            string_literal: None,
+            size_constraint: None,
+        },
+        // FIXME: solve shift-reduce conflict
+        //sized_string[sc] => ast::StringParameter {
+        //    identifier: None,
+        //    string_literal: None,
+        //    size_constraint: sc,
+        //},
+        named_sized_string[(id, sc)] => ast::StringParameter {
+            identifier: Some(id),
+            string_literal: None,
+            size_constraint: Some(sc),
+        },
+        named_sized_string[(id, sc)] Equals StringLiteral(sl) => ast::StringParameter {
+            identifier: Some(id),
+            string_literal: Some(sl),
+            size_constraint: Some(sc),
+        }
+    }
+
+    named_sized_string: (String, i64) {
+        sized_string[sc] Identifier(id) => (id, sc)
+    }
+
+    sized_string: i64 {
+        StringType size_constraint[sc] => sc
+    }
+
+    blob_param: ast::BlobParameter {
+        BlobType => ast::BlobParameter {
+            identifier: None,
+            string_literal: None,
+            size_constraint: None,
+        },
+        // FIXME: solve shift-reduce conflict
+        //sized_blob[sc] => ast::BlobParameter {
+        //    identifier: None,
+        //    string_literal: None,
+        //    size_constraint: sc,
+        //},
+        named_sized_blob[(id, sc)] => ast::BlobParameter {
+            identifier: Some(id),
+            string_literal: None,
+            size_constraint: Some(sc),
+        },
+        named_sized_blob[(id, sc)] Equals StringLiteral(sl) => ast::BlobParameter {
+            identifier: Some(id),
+            string_literal: Some(sl),
+            size_constraint: Some(sc),
+        }
+    }
+
+    named_sized_blob: (String, i64) {
+        sized_blob[sc] Identifier(id) => (id, sc)
+    }
+
+    sized_blob: i64 {
+        BlobType size_constraint[sc] => sc
+    }
+
+    size_constraint: i64 {
+        OpenParenthesis DecimalLiteral(s) CloseParenthesis => s
+    }
+
+    struct_param: ast::StructParameter {
+        // FIXME: solve shift-reduce conflict
+        //Identifier(struct_type) => ast::StructParameter {
+        //    struct_type: struct_type,
+        //    identifier: None,
+        //},
+        Identifier(struct_type) Identifier(struct_id) => ast::StructParameter {
+            struct_type: struct_type,
+            identifier: Some(struct_id),
+        },
+    }
+
+    // FIXME: Implement me
+    array_param: ast::ArrayParameter {
+        CloseBraces CloseBraces => ast::ArrayParameter {
+            data_type: ast::DataType {
+                base_type: ast::BaseType::CharType,
+                type_identifier: None,
+            },
+            identifier: None,
+            array_range: 1 .. 3,
+        }
+    }
+
+    // Bundle up all dc_keyword productions into one vector.
+    dc_keyword_list: Vec<ast::KeywordType> {
+        => vec![],
+        dc_keyword_list[mut kl] dc_keyword[k] => {
+            kl.push(k);
+            kl
+        }
+    }
+
+    // Wrap hardcoded DC keyword tokens into ast::KeywordType node.
+    dc_keyword: ast::KeywordType {
+        dc_keyword_[k] => ast::KeywordType {
+            span: span!(),
+            identifier: k,
+        }
+    }
+
+    // We use hardcoded DC keyword tokens, since using a plain
+    // identifier token causes a shift-reduce conflict in parsing.
+    dc_keyword_: String {
+        RAM => String::from("ram"),
+        REQUIRED => String::from("required"),
+        DB => String::from("db"),
+        AIRECV => String::from("airecv"),
+        OWNRECV => String::from("ownrecv"),
+        CLRECV => String::from("clrecv"),
+        BROADCAST => String::from("broadcast"),
+        OWNSEND => String::from("ownsend"),
+        CLSEND => String::from("clsend"),
     }
 
 }
@@ -431,6 +683,7 @@ mod unit_testing {
     use super::{ast, parse, Span};
     use crate::dclexer::Lexer;
 
+    // Utility function for verifying the parser output to the target AST.
     fn parse_for_ast_target(input: &str, target_ast: ast::DCFile) {
         let lexer = Lexer::new(input).inspect(|tok| eprintln!("token: {:?}", tok));
         let dc_file_ast: ast::DCFile = parse(lexer).unwrap();
