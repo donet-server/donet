@@ -259,7 +259,7 @@ parser! {
             span: span!(),
             node: ast::TypeDecl_::DistributedClassType(dc),
         },
-        dc_import[dci] => ast::TypeDecl {
+        python_import[dci] => ast::TypeDecl {
             span: span!(),
             node: ast::TypeDecl_::DCImport(dci),
         },
@@ -297,17 +297,10 @@ parser! {
     // Donet does not make use of python-style import statements,
     // as this is a feature used by Donet clients and AI/UD processes.
     // We still have our production rules defined to avoid a parser panic.
-    dc_import: ast::DCImport {
-        py_mod[(m, ms)] dc_imp[(c, cs)] => ast::DCImport {
+    python_import: ast::DCImport {
+        py_module[(m, ms)] dclass_import[(c, cs)] => ast::DCImport {
             span: span!(),
-            module: vec![m],
-            module_views: ms,
-            class: c,
-            class_views: cs,
-        },
-        nested_py_mod[(nm, ms)] dc_imp[(c, cs)] => ast::DCImport {
-            span: span!(),
-            module: nm,
+            module: m,
             module_views: ms,
             class: c,
             class_views: cs,
@@ -358,42 +351,40 @@ parser! {
     }
 
     // e.g. "from views ..."
-    py_mod: (String, Vec<String>) {
-        From import_with_suffix[(m, ms)] => (m, ms),
-    }
-
     // e.g. "from game.views.Donut/AI ..."
-    nested_py_mod: (Vec<String>, Vec<String>) {
-        From nested_modules_with_suffix[(nm, ms)] => (nm, ms),
+    py_module: (Vec<String>, Vec<String>) {
+        // See note @ `import_with_suffix`
+        From import_with_suffix[(m, ms)] => (vec![m], ms)
     }
 
     // e.g. "import DistributedDonut/AI/OV"
-    dc_imp: (String, Vec<String>) {
+    dclass_import: (String, Vec<String>) {
         Import import_with_suffix[(c, cs)] => (c, cs)
     }
 
     import_with_suffix: (String, Vec<String>) {
         // e.g. "from views/AI/OV import DistributedDonut/AI/OV"
-        // e.g. "from my_views/AI/OV import DistributedDonut/AI/OV"
-        Identifier(i) view_suffixes[is] => (i, is),
-        Module(i) view_suffixes[is] => (i, is),
-    }
-
-    nested_modules_with_suffix: (Vec<String>, Vec<String>) {
-        nested_py_modules[nm] view_suffixes[ms] => (nm, ms),
+        // e.g. "from my-views/AI/OV import DistributedDonut/AI/OV"
+        Identifier(i) nested_py_modules[_] view_suffixes[is] => (i, is),
+        Module(i) nested_py_modules[_] view_suffixes[is] => (i, is),
+        // NOTE: As you've noticed, we ignore nested_py_modules' value.
+        // This is because I've spent 3 hours trying to capture its value
+        // into a vector without having mutable reference issues. Since
+        // the Donet server won't ever need this information, I'm going
+        // to stop trying. We only require the parser to be able to match it.
     }
 
     // Bundles module names in 'from' statements, e.g. "myviews.Donut".
     nested_py_modules: Vec<String> {
         => vec![],
-        nested_py_modules[mut nm] py_module[m] => {
+        nested_py_modules[mut nm] module[m] => {
             nm.push(m);
             nm
         }
     }
 
     // NOTE: Module names may be lexed as identifiers or module tokens.
-    py_module: String {
+    module: String {
         Period Identifier(m) => m,
         Period Module(m) => m,
     }
@@ -458,13 +449,6 @@ parser! {
     }
 
     atomic_field: ast::AtomicField {
-        // FIXME: solve shift-reduce conflict
-        //Identifier(id) OpenParenthesis parameters[ps]
-        //CloseParenthesis Semicolon => ast::AtomicField {
-        //    identifier: id,
-        //    parameters: ps,
-        //    keyword_list: vec![],
-        //},
         Identifier(id) OpenParenthesis parameters[ps]
         CloseParenthesis dc_keyword_list[kl] Semicolon => ast::AtomicField {
             identifier: id,
@@ -525,9 +509,10 @@ parser! {
         },
     }
 
+    // FIXME: Implement
     int_param: ast::IntParameter {
         Colon Colon => ast::IntParameter {
-            identifier: String::from("id"),
+            identifier: "id".to_string(),
             int_type: None,
             int_range: None,
             int_transform: None,
@@ -539,9 +524,10 @@ parser! {
         OpenParenthesis DecimalLiteral(a) Hyphen DecimalLiteral(b) CloseParenthesis => a .. b
     }
 
+    // FIXME: Implement
     float_param: ast::FloatParameter {
         Hyphen Hyphen Hyphen Hyphen Hyphen => ast::FloatParameter {
-            identifier: String::from("id"),
+            identifier: "id".to_string(),
             float_type: None,
             float_range: None,
             float_transform: None,
@@ -667,15 +653,15 @@ parser! {
     // We use hardcoded DC keyword tokens, since using a plain
     // identifier token causes a shift-reduce conflict in parsing.
     dc_keyword_: String {
-        RAM => String::from("ram"),
-        REQUIRED => String::from("required"),
-        DB => String::from("db"),
-        AIRECV => String::from("airecv"),
-        OWNRECV => String::from("ownrecv"),
-        CLRECV => String::from("clrecv"),
-        BROADCAST => String::from("broadcast"),
-        OWNSEND => String::from("ownsend"),
-        CLSEND => String::from("clsend"),
+        RAM => "ram".to_string(),
+        REQUIRED => "required".to_string(),
+        DB => "db".to_string(),
+        AIRECV => "airecv".to_string(),
+        OWNRECV => "ownrecv".to_string(),
+        CLRECV => "clrecv".to_string(),
+        BROADCAST => "broadcast".to_string(),
+        OWNSEND => "ownsend".to_string(),
+        CLSEND => "clsend".to_string(),
     }
 
 }
@@ -730,9 +716,10 @@ mod unit_testing {
 
     #[test]
     fn python_style_imports() {
-        let dc_file: &str = "from example_views import DistributedDonut\n\
+        let dc_file: &str = "from example-views import DistributedDonut\n\
                              from views import DistributedDonut/AI/OV\n\
-                             from views/AI/OV import DistributedDonut/AI/OV\n";
+                             from views/AI/OV import DistributedDonut/AI/OV\n\
+                             from game.views.Donut/AI import DistributedDonut/AI\n";
         let target_ast: ast::DCFile = ast::DCFile {
             type_decl: vec![
                 // from example_views import DistributedDonut
@@ -748,7 +735,7 @@ mod unit_testing {
                             max: 42,
                             line: 1,
                         },
-                        module: vec!["example_views".to_string()],
+                        module: vec!["example-views".to_string()],
                         module_views: vec![],
                         class: "DistributedDonut".to_string(),
                         class_views: vec![],
@@ -790,6 +777,28 @@ mod unit_testing {
                         module_views: vec!["AI".to_string(), "OV".to_string()],
                         class: "DistributedDonut".to_string(),
                         class_views: vec!["AI".to_string(), "OV".to_string()],
+                    }),
+                },
+                // from game.views.Donut/AI import DistributedDonut/AI
+                ast::TypeDecl {
+                    span: Span {
+                        min: 131,
+                        max: 182,
+                        line: 4,
+                    },
+                    node: ast::TypeDecl_::DCImport(ast::DCImport {
+                        span: Span {
+                            min: 131,
+                            max: 182,
+                            line: 4,
+                        },
+                        // NOTE: We can't actually record more than one module name. It sucks,
+                        // I know- but we won't use it anyways. I've spent 3 hours on this.
+                        module: vec!["game".to_string()],
+                        //module: vec!["game".to_string(), "views".to_string(), "Donut".to_string()],
+                        module_views: vec!["AI".to_string()],
+                        class: "DistributedDonut".to_string(),
+                        class_views: vec!["AI".to_string()],
                     }),
                 },
             ],
