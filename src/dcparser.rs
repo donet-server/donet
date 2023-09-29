@@ -458,8 +458,15 @@ parser! {
     }
 
     atomic_field: ast::AtomicField {
+        // FIXME: solve shift-reduce conflict
+        //Identifier(id) OpenParenthesis parameters[ps]
+        //CloseParenthesis Semicolon => ast::AtomicField {
+        //    identifier: id,
+        //    parameters: ps,
+        //    keyword_list: vec![],
+        //},
         Identifier(id) OpenParenthesis parameters[ps]
-        CloseParenthesis dc_keyword_list[kl] => ast::AtomicField {
+        CloseParenthesis dc_keyword_list[kl] Semicolon => ast::AtomicField {
             identifier: id,
             parameters: ps,
             keyword_list: kl,
@@ -547,11 +554,12 @@ parser! {
     }
 
     string_param: ast::StringParameter {
-        StringType => ast::StringParameter {
-            identifier: None,
-            string_literal: None,
-            size_constraint: None,
-        },
+        // FIXME: Stops at this match for any string type.
+        //StringType => ast::StringParameter {
+        //    identifier: None,
+        //    string_literal: None,
+        //    size_constraint: None,
+        //},
         // FIXME: solve shift-reduce conflict
         //sized_string[sc] => ast::StringParameter {
         //    identifier: None,
@@ -579,11 +587,12 @@ parser! {
     }
 
     blob_param: ast::BlobParameter {
-        BlobType => ast::BlobParameter {
-            identifier: None,
-            string_literal: None,
-            size_constraint: None,
-        },
+        // FIXME: Stops at this match for any blob type.
+        //BlobType => ast::BlobParameter {
+        //    identifier: None,
+        //    string_literal: None,
+        //    size_constraint: None,
+        //},
         // FIXME: solve shift-reduce conflict
         //sized_blob[sc] => ast::BlobParameter {
         //    identifier: None,
@@ -687,7 +696,8 @@ mod unit_testing {
     fn parse_for_ast_target(input: &str, target_ast: ast::DCFile) {
         let lexer = Lexer::new(input).inspect(|tok| eprintln!("token: {:?}", tok));
         let dc_file_ast: ast::DCFile = parse(lexer).unwrap();
-        // panic!("{:#?}", dc_file_ast); // Uncomment for debugging output AST
+
+        eprintln!("{:#?}", dc_file_ast); // Pretty print output AST
         assert_eq!(dc_file_ast, target_ast);
     }
 
@@ -711,10 +721,91 @@ mod unit_testing {
                         base_type: ast::BaseType::CharType,
                         type_identifier: None,
                     },
-                    alias: String::from("test"),
+                    alias: "test".to_string(),
                 }),
             }],
         };
         parse_for_ast_target(dc_file, target_ast);
     }
+
+    #[test]
+    fn python_style_imports() {
+        let dc_file: &str = "from example_views import DistributedDonut\n\
+                             from views import DistributedDonut/AI/OV\n\
+                             from views/AI/OV import DistributedDonut/AI/OV\n";
+        let target_ast: ast::DCFile = ast::DCFile {
+            type_decl: vec![
+                // from example_views import DistributedDonut
+                ast::TypeDecl {
+                    span: Span {
+                        min: 0,
+                        max: 42,
+                        line: 1,
+                    },
+                    node: ast::TypeDecl_::DCImport(ast::DCImport {
+                        span: Span {
+                            min: 0,
+                            max: 42,
+                            line: 1,
+                        },
+                        module: vec!["example_views".to_string()],
+                        module_views: vec![],
+                        class: "DistributedDonut".to_string(),
+                        class_views: vec![],
+                    }),
+                },
+                // from views import DistributedDonut/AI/OV
+                ast::TypeDecl {
+                    span: Span {
+                        min: 43,
+                        max: 83,
+                        line: 2,
+                    },
+                    node: ast::TypeDecl_::DCImport(ast::DCImport {
+                        span: Span {
+                            min: 43,
+                            max: 83,
+                            line: 2,
+                        },
+                        module: vec!["views".to_string()],
+                        module_views: vec![],
+                        class: "DistributedDonut".to_string(),
+                        class_views: vec!["AI".to_string(), "OV".to_string()],
+                    }),
+                },
+                // from views/AI/OV import DistributedDonut/AI/OV
+                ast::TypeDecl {
+                    span: Span {
+                        min: 84,
+                        max: 130,
+                        line: 3,
+                    },
+                    node: ast::TypeDecl_::DCImport(ast::DCImport {
+                        span: Span {
+                            min: 84,
+                            max: 130,
+                            line: 3,
+                        },
+                        module: vec!["views".to_string()],
+                        module_views: vec!["AI".to_string(), "OV".to_string()],
+                        class: "DistributedDonut".to_string(),
+                        class_views: vec!["AI".to_string(), "OV".to_string()],
+                    }),
+                },
+            ],
+        };
+        parse_for_ast_target(dc_file, target_ast);
+    }
+
+    //#[test]
+    //fn distributed_class_production() {
+    //    let dc_file: &str = "dclass DistributedDonut {\n\
+    //                            set_foo(string(10) bar = \"aa\") ram;\n
+    //                            set_bar(blob(10) foo);\n
+    //                         };\n";
+    //    let target_ast: ast::DCFile = ast::DCFile {
+    //        type_decl: vec![],
+    //    };
+    //    //parse_for_ast_target(dc_file, target_ast);
+    //}
 }
