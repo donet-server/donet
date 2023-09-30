@@ -24,12 +24,12 @@
 use crate::dclexer::DCToken::*;
 use crate::dclexer::{DCToken, Span};
 use plex::parser;
+use std::ops::Range;
 
 mod ast {
     // In this module we store all the structures and enums
     // that make up the final generated abstract syntax tree.
-    use super::{DCToken, Span};
-    use std::ops::Range;
+    use super::{DCToken, Range, Span};
     pub type IdentifierString = String; // type alias
 
     #[derive(Debug, PartialEq)]
@@ -139,8 +139,8 @@ mod ast {
 
     #[derive(Debug, PartialEq)]
     pub struct IntParameter {
-        pub identifier: IdentifierString,
-        pub int_type: Option<IdentifierString>,
+        pub identifier: Option<IdentifierString>,
+        pub int_type: IdentifierString,
         pub int_range: Option<Range<i64>>,
         pub int_transform: Option<IntTransform>,
         pub int_constant: Option<i64>,
@@ -148,7 +148,7 @@ mod ast {
 
     #[derive(Debug, PartialEq)]
     pub struct FloatParameter {
-        pub identifier: IdentifierString,
+        pub identifier: Option<IdentifierString>,
         pub float_type: Option<IdentifierString>,
         pub float_range: Option<Range<f64>>,
         pub float_transform: Option<FloatTransform>,
@@ -500,25 +500,37 @@ parser! {
         },
     }
 
-    // FIXME: Implement
     int_param: ast::IntParameter {
-        Colon Colon => ast::IntParameter {
-            identifier: "id".to_string(),
-            int_type: None,
+        // FIXME: solve shift-reduce conflict
+        IntType(int_id) => ast::IntParameter {
+            identifier: None,
+            int_type: int_id,
             int_range: None,
             int_transform: None,
             int_constant: None,
-        }
+        },
+        //IntType(int_id) int_range[r] int_transform[t]
+        //Identifier(id) Equals DecimalLiteral(dl) => ast::IntParameter {
+        //    identifier: Some(id),
+        //    int_type: int_id,
+        //    int_range: Some(r),
+        //    int_transform: Some(t),
+        //    int_constant: Some(dl),
+        //}
     }
 
     int_range: Range<i64> {
         OpenParenthesis DecimalLiteral(a) Hyphen DecimalLiteral(b) CloseParenthesis => a .. b
     }
 
+    int_transform: ast::IntTransform {
+
+    }
+
     // FIXME: Implement
     float_param: ast::FloatParameter {
         Hyphen Hyphen Hyphen Hyphen Hyphen => ast::FloatParameter {
-            identifier: "id".to_string(),
+            identifier: Some("id".to_string()),
             float_type: None,
             float_range: None,
             float_transform: None,
@@ -794,15 +806,82 @@ mod unit_testing {
         parse_for_ast_target(dc_file, target_ast);
     }
 
-    //#[test]
-    //fn distributed_class_production() {
-    //    let dc_file: &str = "dclass DistributedDonut {\n\
-    //                            set_foo(string(10) bar = \"aa\") ram;\n
-    //                            set_bar(blob(10) foo);\n
-    //                         };\n";
-    //    let target_ast: ast::DCFile = ast::DCFile {
-    //        type_decl: vec![],
-    //    };
-    //    //parse_for_ast_target(dc_file, target_ast);
-    //}
+    #[test]
+    fn distributed_class_production() {
+        let dc_file: &str = "dclass DistributedDonut {\n\
+                                set_foo(string(10) bar = \"test\") ram db;\n
+                                set_bar(blob(10) foo);\n
+                                set_int_test(int8);\n
+                             };\n";
+        let target_ast: ast::DCFile = ast::DCFile {
+            type_decl: vec![ast::TypeDecl {
+                span: Span {
+                    min: 0,
+                    max: 208,
+                    line: 1,
+                },
+                node: ast::TypeDecl_::DistributedClassType(ast::DistributedClassType {
+                    span: Span {
+                        min: 0,
+                        max: 208,
+                        line: 1,
+                    },
+                    identifier: "DistributedDonut".to_string(),
+                    field_declarations: vec![
+                        ast::FieldDecl {
+                            span: Span {
+                                min: 26,
+                                max: 66,
+                                line: 2,
+                            },
+                            node: ast::FieldDecl_::AtomicField(ast::AtomicField {
+                                identifier: "set_foo".to_string(),
+                                parameters: vec![ast::Parameter::String(ast::StringParameter {
+                                    identifier: Some("bar".to_string()),
+                                    string_literal: Some("test".to_string()),
+                                    size_constraint: Some(10),
+                                })],
+                                keyword_list: vec!["ram".to_string(), "db".to_string()],
+                            }),
+                        },
+                        ast::FieldDecl {
+                            span: Span {
+                                min: 100,
+                                max: 122,
+                                line: 4,
+                            },
+                            node: ast::FieldDecl_::AtomicField(ast::AtomicField {
+                                identifier: "set_bar".to_string(),
+                                parameters: vec![ast::Parameter::Blob(ast::BlobParameter {
+                                    identifier: Some("foo".to_string()),
+                                    string_literal: None,
+                                    size_constraint: Some(10),
+                                })],
+                                keyword_list: vec![],
+                            }),
+                        },
+                        ast::FieldDecl {
+                            span: Span {
+                                min: 156,
+                                max: 175,
+                                line: 6,
+                            },
+                            node: ast::FieldDecl_::AtomicField(ast::AtomicField {
+                                identifier: "set_int_test".to_string(),
+                                parameters: vec![ast::Parameter::Int(ast::IntParameter {
+                                    identifier: None,
+                                    int_type: "int8".to_string(),
+                                    int_range: None,
+                                    int_transform: None,
+                                    int_constant: None,
+                                })],
+                                keyword_list: vec![],
+                            }),
+                        },
+                    ],
+                }),
+            }],
+        };
+        parse_for_ast_target(dc_file, target_ast);
+    }
 }
