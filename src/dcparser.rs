@@ -45,17 +45,11 @@ mod ast {
 
     #[derive(Debug, PartialEq)]
     pub enum TypeDecl_ {
-        KeywordType(KeywordType),
+        KeywordType(IdentifierString),
         StructType(StructType),
         DistributedClassType(DistributedClassType),
         DCImport(DCImport),
         TypeDefinition(TypeDefinition),
-    }
-
-    #[derive(Debug, PartialEq)]
-    pub struct KeywordType {
-        pub span: Span,
-        pub identifier: IdentifierString,
     }
 
     #[derive(Debug, PartialEq)]
@@ -117,13 +111,13 @@ mod ast {
     pub struct AtomicField {
         pub identifier: IdentifierString,
         pub parameters: Vec<Parameter>,
-        pub keyword_list: Vec<KeywordType>,
+        pub keyword_list: Vec<IdentifierString>,
     }
 
     #[derive(Debug, PartialEq)]
     pub struct ParameterField {
         pub parameter: Parameter,
-        pub keyword_list: Vec<KeywordType>,
+        pub keyword_list: Vec<IdentifierString>,
     }
 
     #[derive(Debug, PartialEq)]
@@ -269,11 +263,8 @@ parser! {
         },
     }
 
-    keyword_type: ast::KeywordType {
-        KeywordType Identifier(id) Semicolon => ast::KeywordType {
-            span: span!(),
-            identifier: id,
-        }
+    keyword_type: String {
+        KeywordType Identifier(id) Semicolon => id
     }
 
     struct_type: ast::StructType {
@@ -634,7 +625,7 @@ parser! {
     }
 
     // Bundle up all dc_keyword productions into one vector.
-    dc_keyword_list: Vec<ast::KeywordType> {
+    dc_keyword_list: Vec<String> {
         => vec![],
         dc_keyword_list[mut kl] dc_keyword[k] => {
             kl.push(k);
@@ -643,11 +634,8 @@ parser! {
     }
 
     // Wrap hardcoded DC keyword tokens into ast::KeywordType node.
-    dc_keyword: ast::KeywordType {
-        dc_keyword_[k] => ast::KeywordType {
-            span: span!(),
-            identifier: k,
-        }
+    dc_keyword: String {
+        dc_keyword_[k] => k
     }
 
     // We use hardcoded DC keyword tokens, since using a plain
