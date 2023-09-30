@@ -1,4 +1,4 @@
-<img src="logo/donet_banner.png" align="right" width="45%"/>
+<img src="logo/donet_banner.png" align="right" width="47%"/>
 
 # Donet
 
