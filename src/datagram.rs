@@ -515,6 +515,44 @@ mod unit_testing {
     }
 
     #[test]
+    fn dg_add_integers_and_types() {
+        // A bit repetitive, but we need coverage on all of these methods.
+        let mut dg: datagram::Datagram = datagram::Datagram::default();
+        let mut results: Vec<globals::DgResult> = vec![];
+        // Signed integers
+        results.push(dg.add_i8(i8::MAX));
+        results.push(dg.add_i16(i16::MAX));
+        results.push(dg.add_i32(i32::MAX));
+        results.push(dg.add_i64(i64::MAX));
+        // Unsigned integers
+        results.push(dg.add_u8(u8::MAX));
+        results.push(dg.add_u16(u16::MAX));
+        results.push(dg.add_u32(u32::MAX));
+        results.push(dg.add_u64(u64::MAX));
+        // 32-bit/64-bit floats
+        results.push(dg.add_f32(f32::MAX));
+        results.push(dg.add_f64(f64::MAX));
+        // Types (aliases)
+        results.push(dg.add_size(globals::DG_SIZE_MAX));
+        results.push(dg.add_channel(globals::CHANNEL_MAX));
+        results.push(dg.add_doid(globals::DOID_MAX));
+        results.push(dg.add_zone(globals::ZONE_MAX));
+        results.push(dg.add_location(globals::DOID_MAX, globals::ZONE_MAX));
+        results.push(dg.add_string("TEST")); // 16-bit length prefix + # of chars
+        results.push(dg.add_blob(vec![u8::MAX, u8::MAX])); // same prefix as above
+        results.push(dg.add_data(vec![u8::MAX, u8::MAX, u8::MAX, u8::MAX]));
+
+        for dg_res in results {
+            assert!(dg_res.is_ok());
+        }
+        let dg_size: globals::DgSize = dg.size();
+        let dg_buffer: Vec<u8> = dg.get_data();
+
+        assert_eq!(dg_buffer.len() as u16, dg_size); // verify buffer length
+        assert_eq!(dg_size, 82); // total in bytes
+    }
+
+    #[test]
     fn datagram_overflow_test() {
         let mut dg: datagram::Datagram = datagram::Datagram::default();
         let res_1: globals::DgBufferResult = dg.add_buffer(globals::DG_SIZE_MAX);
