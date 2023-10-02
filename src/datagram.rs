@@ -78,8 +78,8 @@ impl Datagram {
         // NOTE: I feel like there is a simpler way to do this.
         // Masking each byte and shifting it to the first byte,
         // then casting it as a u8 to represent one byte.
-        self.buffer.push((v & 0xff00) as u8);
-        self.buffer.push(((v & 0x00ff) << 8) as u8);
+        self.buffer.push((v & 0x00ff) as u8);
+        self.buffer.push(((v & 0xff00) >> 8) as u8);
         self.index += 2;
         Ok(())
     }
@@ -87,10 +87,10 @@ impl Datagram {
     pub fn add_u32(&mut self, mut v: u32) -> globals::DgResult {
         self.check_add_length(4)?;
         v = endianness::swap_le_32(v);
-        self.buffer.push((v & 0xff000000) as u8);
-        self.buffer.push(((v & 0x00ff0000) << 8) as u8);
-        self.buffer.push(((v & 0x0000ff00) << 16) as u8);
-        self.buffer.push(((v & 0x000000ff) << 24) as u8);
+        self.buffer.push((v & 0x000000ff) as u8);
+        self.buffer.push(((v & 0x0000ff00) >> 8) as u8);
+        self.buffer.push(((v & 0x00ff0000) >> 16) as u8);
+        self.buffer.push(((v & 0xff000000) >> 24) as u8);
         self.index += 4;
         Ok(())
     }
@@ -98,14 +98,14 @@ impl Datagram {
     pub fn add_u64(&mut self, mut v: u64) -> globals::DgResult {
         self.check_add_length(8)?;
         v = endianness::swap_le_64(v);
-        self.buffer.push((v & 0xff00000000000000) as u8);
-        self.buffer.push(((v & 0x00ff000000000000) << 8) as u8);
-        self.buffer.push(((v & 0x0000ff0000000000) << 16) as u8);
-        self.buffer.push(((v & 0x000000ff00000000) << 24) as u8);
-        self.buffer.push(((v & 0x00000000ff000000) << 32) as u8);
-        self.buffer.push(((v & 0x0000000000ff0000) << 40) as u8);
-        self.buffer.push(((v & 0x000000000000ff00) << 48) as u8);
-        self.buffer.push(((v & 0x00000000000000ff) << 56) as u8);
+        self.buffer.push((v & 0x00000000000000ff) as u8);
+        self.buffer.push(((v & 0x000000000000ff00) >> 8) as u8);
+        self.buffer.push(((v & 0x0000000000ff0000) >> 16) as u8);
+        self.buffer.push(((v & 0x00000000ff000000) >> 24) as u8);
+        self.buffer.push(((v & 0x000000ff00000000) >> 32) as u8);
+        self.buffer.push(((v & 0x0000ff0000000000) >> 40) as u8);
+        self.buffer.push(((v & 0x00ff000000000000) >> 48) as u8);
+        self.buffer.push(((v & 0xff00000000000000) >> 56) as u8);
         self.index += 8;
         Ok(())
     }
@@ -178,8 +178,8 @@ impl Datagram {
     }
 
     // Appends another datagram's binary data to this datagram.
-    pub fn add_datagram(&mut self, dg: Datagram) -> globals::DgResult {
-        let mut dg_buffer: Vec<u8> = dg.buffer;
+    pub fn add_datagram(&mut self, dg: &mut Datagram) -> globals::DgResult {
+        let dg_buffer: Vec<u8> = dg.get_data();
 
         if dg_buffer.len() > globals::DG_SIZE_MAX.into() {
             // Technically should not happen as the datagram given should
@@ -187,10 +187,7 @@ impl Datagram {
             // this error to avoid a panic at self.check_add_length().
             return Err(globals::DgError::DatagramOverflow);
         }
-        self.check_add_length(dg_buffer.len().try_into().unwrap())?;
-        self.buffer.append(&mut dg_buffer);
-        self.index += dg_buffer.len();
-        Ok(())
+        self.add_data(dg_buffer)
     }
 
     // Adds a dclass string value to the end of the datagram.
@@ -550,6 +547,28 @@ mod unit_testing {
 
         assert_eq!(dg_buffer.len() as u16, dg_size); // verify buffer length
         assert_eq!(dg_size, 82); // total in bytes
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn add_datagram() {
+        let mut dg: datagram::Datagram = datagram::Datagram::default();
+        let mut dg_2: datagram::Datagram = datagram::Datagram::new();
+
+        assert!(dg.add_channel(globals::CHANNEL_MAX).is_ok());
+        assert!(dg_2.add_blob(vec![0, 125, u8::MAX]).is_ok());
+        assert!(dg.add_datagram(&mut dg_2).is_ok());
+
+        let dg_size: globals::DgSize = dg.size();
+        let dg_buffer: Vec<u8> = dg.get_data();
+
+        assert_eq!(dg_buffer.len() as u16, dg_size);
+        assert_eq!(dg_buffer, vec![
+            u8::MAX, u8::MAX, u8::MAX, u8::MAX,
+            u8::MAX, u8::MAX, u8::MAX, u8::MAX,
+            3, 0, 0, 125, u8::MAX,
+        ]);
+        assert_eq!(dg_size, 13);
     }
 
     #[test]
