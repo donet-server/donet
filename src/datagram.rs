@@ -245,7 +245,7 @@ impl Datagram {
         &mut self,
         to: Vec<globals::Channel>,
         from: globals::Channel,
-        msg_type: u16,
+        msg_type: globals::MsgType,
     ) -> globals::DgResult {
         // Add recipient(s) count
         self.add_u8(to.len().try_into().unwrap())?;
@@ -262,7 +262,7 @@ impl Datagram {
     // Appends a control header, which is very similar to a server header,
     // but it always has only one recipient, which is the control channel,
     // and does not require a sender (or 'from') channel to be provided.
-    pub fn add_control_header(&mut self, msg_type: u16) -> globals::DgResult {
+    pub fn add_control_header(&mut self, msg_type: globals::MsgType) -> globals::DgResult {
         self.add_u8(1)?;
         self.add_channel(globals::CONTROL_CHANNEL)?;
         self.add_u16(msg_type)?;
@@ -476,11 +476,11 @@ impl DatagramIterator {
             + usize::from(self.read_recipient_count()) * mem::size_of::<globals::Channel>()
             + mem::size_of::<globals::Channel>(); // seek message type
 
-        let msg_type: u16 = self.read_u16(); // read message type
+        let msg_type: globals::MsgType = self.read_u16(); // read message type
         self.index = start_index; // do not advance dgi index
 
         for message in globals::Protocol::iter() {
-            let msg_id: u16 = message as u16;
+            let msg_id: globals::MsgType = globals::msg_type(message);
             if msg_type == msg_id {
                 return message;
             }
@@ -494,6 +494,7 @@ impl DatagramIterator {
 mod unit_testing {
     use crate::datagram;
     use crate::globals;
+    use crate::globals::{msg_type, Protocol};
 
     // ----------- Datagram ------------ //
     #[test]
@@ -551,7 +552,7 @@ mod unit_testing {
 
     #[test]
     #[rustfmt::skip]
-    fn add_datagram() {
+    fn dg_add_datagram() {
         let mut dg: datagram::Datagram = datagram::Datagram::default();
         let mut dg_2: datagram::Datagram = datagram::Datagram::new();
 
@@ -568,7 +569,37 @@ mod unit_testing {
             u8::MAX, u8::MAX, u8::MAX, u8::MAX,
             3, 0, 0, 125, u8::MAX,
         ]);
-        assert_eq!(dg_size, 13);
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn dg_add_message_headers() {
+        let mut dg: datagram::Datagram = datagram::Datagram::default();
+        let mut results: Vec<globals::DgResult> = vec![];
+
+        results.push(dg.add_server_header(
+            vec![globals::CHANNEL_MAX], // recipients
+            0, // sender
+            msg_type(Protocol::MDAddChannel), // msg type
+        ));
+
+        results.push(dg.add_control_header(msg_type(Protocol::MDAddChannel)));
+
+        for dg_res in results {
+            assert!(dg_res.is_ok());
+        }
+        let dg_size: globals::DgSize = dg.size();
+        let dg_buffer: Vec<u8> = dg.get_data();
+
+        assert_eq!(dg_buffer.len() as u16, dg_size);
+        assert_eq!(dg_buffer, vec![
+            1, u8::MAX, u8::MAX, u8::MAX, u8::MAX, // recipients
+            u8::MAX, u8::MAX, u8::MAX, u8::MAX,
+            0, 0, 0, 0, 0, 0, 0, 0, // sender
+            40, 35, // message type (9000; 0x2823, or 40, 35)
+            1, 1, 0, 0, 0, 0, 0, 0, 0, // recipients (control)
+            40, 35, // message type
+        ]);
     }
 
     #[test]

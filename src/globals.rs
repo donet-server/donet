@@ -23,6 +23,7 @@ use std::result::Result; // not to be confused with std::io::Result
 use strum_macros::EnumIter;
 
 // Type Definitions
+pub type MsgType = u16;
 pub type DgSize = u16;
 pub type Channel = u64;
 pub type DoId = u32;
@@ -67,6 +68,11 @@ pub type SqlResult = Result<(), Box<dyn Error>>;
 
 // Hack to reassure the compiler the result type of a future.
 pub fn set_future_return_type<T, F: Future<Output = T>>(_arg: &F) {}
+
+// Utility for converting protocol enumerator to u16 (MsgType)
+pub fn msg_type(proto_enum: Protocol) -> MsgType {
+    proto_enum as MsgType
+}
 
 #[repr(u16)] // 16-bit alignment
 #[derive(Copy, Clone, EnumIter)]
@@ -204,7 +210,7 @@ pub enum Protocol {
 
 #[cfg(test)]
 mod unit_testing {
-    use super::set_future_return_type;
+    use super::{msg_type, set_future_return_type, Protocol};
     use std::io::Result;
 
     #[test]
@@ -216,5 +222,12 @@ mod unit_testing {
         // Just make sure it doesn't panic or anything goofy.
         // Need this test to have test coverage on this file.
         set_future_return_type::<Result<()>, _>(&test_future);
+    }
+
+    #[test]
+    fn test_protocol_to_u16_util() {
+        assert_eq!(msg_type(Protocol::MDRemoveChannel), 9001);
+        assert_eq!(msg_type(Protocol::CAAddInterest), 1200);
+        assert_eq!(msg_type(Protocol::SSDeleteAIObjects), 2009);
     }
 }
