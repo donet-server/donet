@@ -292,7 +292,7 @@ pub struct DatagramIterator {
 }
 
 impl DatagramIterator {
-    pub fn new(&self, dg: Datagram) -> Self {
+    pub fn new(dg: Datagram) -> Self {
         DatagramIterator {
             datagram: dg,
             index: 0_usize,
@@ -358,48 +358,50 @@ impl DatagramIterator {
 
         // bitwise operations to concatenate two u8's into one u16.
         // graphical explanation:
-        //      a0   (byte 1)           b0   (byte 2)
-        //      11010001                00100111
+        //      a0   (byte 1; 0x28)     b0   (byte 2; 0x23)
+        //      00101000                01000110
+        //
+        //      NOTE: Turns out rust casts these in big-endian
         //
         //      [ a1 = a0 as u16 ]      [ b1 = b0 as u16 ]
-        //      00000000 11010001       00000000 00100111
+        //      00000000 00101000       00000000 01000110
         //
-        //      [ a2 = a1 << 8 ]             v v v v
-        //      11010001 00000000
+        //          v v v v v           [ b2 = b1 << 8 ]
+        //                              01000110 00000000
         //
-        //              00000000 00100111
-        //          OR  11010001 00000000
+        //              00000000 00101000 = a1
+        //          OR  01000110 00000000 = b2
         //
-        //              11010001 00100111  (u16, 2 bytes)
+        //              01000110 00101000  (u16, 2 bytes; 0x2328; 9000 decimal)
         //
         //  After, we use the swap_le_xx() function to make sure the bytes
         //  are swapped to the native system byte endianness.
         //
-        let value: u16 = ((data[self.index] as u16) << 8) | data[self.index + 1] as u16;
-        self.index += 1;
+        let value: u16 = (data[self.index] as u16) | ((data[self.index + 1] as u16) << 8);
+        self.index += 2;
         endianness::swap_le_16(value)
     }
 
     pub fn read_u32(&mut self) -> u32 {
         let data: Vec<u8> = self.datagram.get_data();
-        let value: u32 = ((data[self.index] as u32) << 24)
-            | ((data[self.index + 1] as u32) << 16)
-            | ((data[self.index + 2] as u32) << 8)
-            | data[self.index + 3] as u32;
+        let value: u32 = (data[self.index] as u32)
+            | ((data[self.index + 1] as u32) << 8)
+            | ((data[self.index + 2] as u32) << 16)
+            | ((data[self.index + 3] as u32) << 24);
         self.index += 4;
         endianness::swap_le_32(value)
     }
 
     pub fn read_u64(&mut self) -> u64 {
         let data: Vec<u8> = self.datagram.get_data();
-        let value: u64 = ((data[self.index] as u64) << 56)
-            | ((data[self.index + 1] as u64) << 48)
-            | ((data[self.index + 2] as u64) << 40)
-            | ((data[self.index + 3] as u64) << 32)
-            | ((data[self.index + 4] as u64) << 24)
-            | ((data[self.index + 5] as u64) << 16)
-            | ((data[self.index + 6] as u64) << 8)
-            | data[self.index + 7] as u64;
+        let value: u64 = (data[self.index] as u64)
+            | ((data[self.index + 1] as u64) << 8)
+            | ((data[self.index + 2] as u64) << 16)
+            | ((data[self.index + 3] as u64) << 24)
+            | ((data[self.index + 4] as u64) << 32)
+            | ((data[self.index + 5] as u64) << 40)
+            | ((data[self.index + 6] as u64) << 48)
+            | ((data[self.index + 7] as u64) << 56);
         self.index += 8;
         endianness::swap_le_64(value)
     }
@@ -626,5 +628,29 @@ mod unit_testing {
             globals::DgError::DatagramOverflow,
             "Datagram overflow occurred, but failed to respond with DgError::DatagramOverflow."
         );
+    }
+
+    #[test]
+    fn dgi_read_message_type() {
+        let mut dg: datagram::Datagram = datagram::Datagram::default();
+
+        let test_msg_types: Vec<Protocol> = vec![
+            Protocol::MDAddChannel,
+            Protocol::CAAddInterest,
+            Protocol::SSDeleteAIObjects,
+        ];
+
+        for m_type in &test_msg_types {
+            let res: globals::DgResult = dg.add_u16(msg_type(*m_type));
+            if res.is_err() {
+                panic!("{:#?}", res.unwrap_err());
+            }
+        }
+        let mut dgi: datagram::DatagramIterator = datagram::DatagramIterator::new(dg);
+
+        for m_type in &test_msg_types {
+            let read_msg_type: globals::MsgType = dgi.read_u16();
+            assert_eq!(read_msg_type, msg_type(*m_type));
+        }
     }
 }

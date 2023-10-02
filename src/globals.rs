@@ -75,7 +75,7 @@ pub fn msg_type(proto_enum: Protocol) -> MsgType {
 }
 
 #[repr(u16)] // 16-bit alignment
-#[derive(Copy, Clone, EnumIter)]
+#[derive(Debug, Copy, Clone, PartialEq, EnumIter)]
 pub enum Protocol {
     ClientHello = 1,
     ClientHelloResp = 2,
