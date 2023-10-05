@@ -112,9 +112,8 @@ file name via argument. (See `donet --help` for more information.)
 
 [^3]: Note in the diagram that every service requires its own Message Director service.
 All of the services' MDs make connections to the 'upstream MD', which in this case would
-be directly to the master message director. Therefore, the Donet daemon will always boot up
-a Message Director instance. This is why it is a required section in the TOML configuration
-file, and also why it is not included under the 'services' section.
+be directly to the master message director. In some instances, such as in development 
+environments, all services will make a direct connection to the master message director.
 
 <br>
 
