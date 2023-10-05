@@ -348,6 +348,9 @@ impl DatagramIterator {
 
     pub fn read_u8(&mut self) -> u8 {
         let data: Vec<u8> = self.datagram.get_data();
+        if self.check_read_length(1_u16).is_err() {
+            panic!("Tried to read past the end of a datagram message!");
+        }
         let value: u8 = data[self.index];
         self.index += 1; // bytes
         value
@@ -355,7 +358,9 @@ impl DatagramIterator {
 
     pub fn read_u16(&mut self) -> u16 {
         let data: Vec<u8> = self.datagram.get_data();
-
+        if self.check_read_length(2_u16).is_err() {
+            panic!("Tried to read past the end of a datagram message!");
+        }
         // bitwise operations to concatenate two u8's into one u16.
         // graphical explanation:
         //      a0   (byte 1; 0x28)     b0   (byte 2; 0x23)
@@ -384,6 +389,9 @@ impl DatagramIterator {
 
     pub fn read_u32(&mut self) -> u32 {
         let data: Vec<u8> = self.datagram.get_data();
+        if self.check_read_length(4_u16).is_err() {
+            panic!("Tried to read past the end of a datagram message!");
+        }
         let value: u32 = (data[self.index] as u32)
             | ((data[self.index + 1] as u32) << 8)
             | ((data[self.index + 2] as u32) << 16)
@@ -394,6 +402,9 @@ impl DatagramIterator {
 
     pub fn read_u64(&mut self) -> u64 {
         let data: Vec<u8> = self.datagram.get_data();
+        if self.check_read_length(8_u16).is_err() {
+            panic!("Tried to read past the end of a datagram message!");
+        }
         let value: u64 = (data[self.index] as u64)
             | ((data[self.index + 1] as u64) << 8)
             | ((data[self.index + 2] as u64) << 16)
