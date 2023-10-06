@@ -553,7 +553,7 @@ mod unit_testing {
         results.push(dg.add_blob(vec![u8::MAX, u8::MAX])); // same prefix as above
         results.push(dg.add_data(vec![u8::MAX, u8::MAX, u8::MAX, u8::MAX]));
 
-        for dg_res in results {
+        for dg_res in &results {
             assert!(dg_res.is_ok());
         }
         let dg_size: globals::DgSize = dg.size();
@@ -598,7 +598,7 @@ mod unit_testing {
 
         results.push(dg.add_control_header(msg_type(Protocol::MDAddChannel)));
 
-        for dg_res in results {
+        for dg_res in &results {
             assert!(dg_res.is_ok());
         }
         let dg_size: globals::DgSize = dg.size();
@@ -639,6 +639,54 @@ mod unit_testing {
             globals::DgError::DatagramOverflow,
             "Datagram overflow occurred, but failed to respond with DgError::DatagramOverflow."
         );
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn dgi_read_integers() {
+        let mut dg: datagram::Datagram = datagram::Datagram::default();
+        let mut results: Vec<globals::DgResult> = vec![];
+
+        results.push(dg.add_blob(vec![
+            u8::MAX, // 8-bits
+            u8::MAX, u8::MAX, // 16-bits
+            u8::MAX, u8::MAX, u8::MAX, u8::MAX, // 32-bits
+            u8::MAX, u8::MAX, u8::MAX, u8::MAX, u8::MAX, u8::MAX, u8::MAX, u8::MAX, // 64-bits
+            u8::MAX, // 8-bits
+            0, 0x80_u8, // 16-bits (i16::MIN)
+            u8::MAX, u8::MAX, u8::MAX, u8::MAX, // 32-bits
+            0, 0, 0, 0, 0, 0, 0, 0x80_u8 // 64-bits (i64::MIN)
+        ]));
+        for dg_res in &results {
+            assert!(dg_res.is_ok());
+        }
+        results.clear(); // clear results from dg setup
+
+        let mut dgi: datagram::DatagramIterator = datagram::DatagramIterator::new(dg);
+
+        // Read blob type length
+        let res_tag: globals::DgSize = dgi.read_u16();
+        // Unsigned integers
+        let res_u8: u8 = dgi.read_u8();
+        let res_u16: u16 = dgi.read_u16();
+        let res_u32: u32 = dgi.read_u32();
+        let res_u64: u64 = dgi.read_u64();
+        // Signed integers
+        let res_i8: i8 = dgi.read_i8();
+        let res_i16: i16 = dgi.read_i16();
+        let res_i32: i32 = dgi.read_i32();
+        let res_i64: i64 = dgi.read_i64();
+
+        assert_eq!(res_tag, 30_u16); // DC blob size tag
+        assert_eq!(res_u8, u8::MAX);
+        assert_eq!(res_u16, u16::MAX);
+        assert_eq!(res_u32, u32::MAX);
+        assert_eq!(res_u64, u64::MAX);
+        assert_eq!(res_i8, -1); // 0b11111111 is -1 base 10 :)
+        assert_eq!(res_i16, i16::MIN);
+        assert_eq!(res_i32, -1);
+        assert_eq!(res_i64, i64::MIN);
+        assert_eq!(dgi.get_remaining(), 0); // iterator should be exhausted
     }
 
     #[test]
