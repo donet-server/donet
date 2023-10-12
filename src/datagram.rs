@@ -697,6 +697,43 @@ mod unit_testing {
     }
 
     #[test]
+    fn dgi_read_dc_types() {
+        let mut dg: datagram::Datagram = datagram::Datagram::default();
+        let mut results: Vec<globals::DgResult> = vec![];
+
+        results.push(dg.add_blob(vec![
+            0x00_u8, // boolean false
+            0x01_u8, // boolean true
+            0, 0, 0, 0, 0, 0, 0, 0, // channel
+            0, 0, 0, 0, 0, 0, 0, 0, // location (doid + zone)
+        ]));
+        for dg_res in &results {
+            assert!(dg_res.is_ok());
+        }
+        results.clear(); // clear results from dg setup
+
+        let mut dgi: datagram::DatagramIterator = datagram::DatagramIterator::new(dg);
+
+        // Size Tag
+        let res_size: globals::DgSize = dgi.read_size();
+        // Boolean
+        let res_bool_false: bool = dgi.read_bool();
+        let res_bool_true: bool = dgi.read_bool();
+        // DC Types
+        let res_channel: globals::Channel = dgi.read_channel();
+        let res_doid: globals::DoId = dgi.read_doid();
+        let res_zone: globals::Zone = dgi.read_zone();
+
+        assert_eq!(res_size, 18_u16); // DC blob size tag
+        assert_eq!(res_bool_false, false);
+        assert_eq!(res_bool_true, true);
+        assert_eq!(res_channel, 0_u64);
+        assert_eq!(res_doid, 0_u32);
+        assert_eq!(res_zone, 0_u32);
+        assert_eq!(dgi.get_remaining(), 0); // iterator should be exhausted
+    }
+
+    #[test]
     fn dgi_read_message_type() {
         let mut dg: datagram::Datagram = datagram::Datagram::default();
 
