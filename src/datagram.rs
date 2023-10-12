@@ -655,7 +655,9 @@ mod unit_testing {
             u8::MAX, // 8-bits
             0, 0x80_u8, // 16-bits (i16::MIN)
             u8::MAX, u8::MAX, u8::MAX, u8::MAX, // 32-bits
-            0, 0, 0, 0, 0, 0, 0, 0x80_u8 // 64-bits (i64::MIN)
+            0, 0, 0, 0, 0, 0, 0, 0x80_u8, // 64-bits (i64::MIN)
+            0, 0, 0, 0, // 32-bits
+            0, 0, 0, 0, 0, 0, 0, 0 // 64-bits
         ]));
         for dg_res in &results {
             assert!(dg_res.is_ok());
@@ -676,8 +678,11 @@ mod unit_testing {
         let res_i16: i16 = dgi.read_i16();
         let res_i32: i32 = dgi.read_i32();
         let res_i64: i64 = dgi.read_i64();
+        // Floating point
+        let res_f32: f32 = dgi.read_f32();
+        let res_f64: f64 = dgi.read_f64();
 
-        assert_eq!(res_tag, 30_u16); // DC blob size tag
+        assert_eq!(res_tag, 42_u16); // DC blob size tag
         assert_eq!(res_u8, u8::MAX);
         assert_eq!(res_u16, u16::MAX);
         assert_eq!(res_u32, u32::MAX);
@@ -686,6 +691,8 @@ mod unit_testing {
         assert_eq!(res_i16, i16::MIN);
         assert_eq!(res_i32, -1);
         assert_eq!(res_i64, i64::MIN);
+        assert_eq!(res_f32, 0.0);
+        assert_eq!(res_f64, 0.0);
         assert_eq!(dgi.get_remaining(), 0); // iterator should be exhausted
     }
 
