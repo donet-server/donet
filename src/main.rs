@@ -30,6 +30,8 @@ pub mod service_factory;
 
 fn main() -> std::io::Result<()> {
     use config::*;
+    use dclexer::Lexer;
+    use dcparser::{ast, parse};
     use log::error;
     use service_factory::*;
     use std::fs::File;
@@ -47,9 +49,13 @@ fn main() -> std::io::Result<()> {
         .build()?;
 
     if args.len() > 1 {
+        // If we also read an extra argument, skip.
+        let mut consumed_next: bool = false;
+
         for item in args.iter().enumerate() {
             let (index, argument): (usize, &String) = item;
-            if index == 0 {
+            if (index == 0) || consumed_next {
+                consumed_next = false;
                 continue;
             }
             if argument.starts_with('-') {
@@ -59,6 +65,24 @@ fn main() -> std::io::Result<()> {
                 } else if argument == "-v" || argument == "--version" {
                     print_version(VERSION_STRING, GIT_SHA1);
                     return Ok(());
+                } else if argument == "-c" || argument == "--check-dc" {
+                    // Consume extra argument, catch error if out of arguments.
+                    if let Some(dc_filename) = args.get(index + 1) {
+                        consumed_next = true;
+
+                        // Synchronous read of file to string, then lex and parse.
+                        let mut dc_file: File = File::open(dc_filename)?;
+                        let mut contents: String = String::new();
+                        dc_file.read_to_string(&mut contents)?;
+
+                        let lexer = Lexer::new(&contents).inspect(|tok| eprintln!("token: {:?}", tok));
+                        let _: ast::DCFile = parse(lexer).unwrap();
+                    } else {
+                        println!("donet: {}: Missing filename argument.\n", argument);
+                        print_help_page(config_file);
+                        return Ok(());
+                    }
+                    continue;
                 } else {
                     println!("donet: {}: Invalid argument.\n", argument);
                     print_help_page(config_file);
@@ -182,7 +206,8 @@ fn print_help_page(config_path: &str) {
         in the current working directory as \"{}\".\n\
         \n\
         -h, --help      Print the help page.\n\
-        -v, --version   Print Donet binary build version & info.\n",
+        -v, --version   Print Donet binary build version & info.\n\
+        -c, --check-dc  Run the DC parser on the given DC file.\n",
         config_path
     );
 }
