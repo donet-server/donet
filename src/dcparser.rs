@@ -26,7 +26,7 @@ use crate::dclexer::{DCToken, Span};
 use plex::parser;
 use std::ops::Range;
 
-mod ast {
+pub mod ast {
     // In this module we store all the structures and enums
     // that make up the final generated abstract syntax tree.
     use super::{DCToken, Range, Span};
@@ -356,8 +356,10 @@ parser! {
     import_with_suffix: (String, Vec<String>) {
         // e.g. "from views/AI/OV import DistributedDonut/AI/OV"
         // e.g. "from my-views/AI/OV import DistributedDonut/AI/OV"
+        // e.g. "from views import *"
         Identifier(i) nested_py_modules[_] view_suffixes[is] => (i, is),
         Module(i) nested_py_modules[_] view_suffixes[is] => (i, is),
+        Star => ("*".to_string(), vec![]),
         // NOTE: As you've noticed, we ignore nested_py_modules' value.
         // This is because I've spent 3 hours trying to capture its value
         // into a vector without having mutable reference issues. Since
