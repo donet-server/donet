@@ -118,11 +118,11 @@ lexer! {
     r#"/[*](~(.*[*]/.*))[*]/"# => (DCToken::Comment, text),
     r#"\n"# => (DCToken::Newline, text),
 
-    r#"[1-9]+[0-9]?+"# => (DCToken::DecimalLiteral(match text.parse::<i64>() {
+    r#"0|([1-9][0-9]*)"# => (DCToken::DecimalLiteral(match text.parse::<i64>() {
         Ok(n) => { n },
         Err(err) => {
             error!("Found DecimalLiteral token, but failed to parse as i64.\n\n{}", err);
-            panic!("The DC lexer encountered an issue and could not continue.");
+            panic!("The DC lexer failed to parse a literal and could not continue.");
         },
     }), text),
     r#"0[0-7]+"# => (DCToken::OctalLiteral(text.to_owned()), text),
@@ -133,7 +133,7 @@ lexer! {
         Ok(f) => { f },
         Err(err) => {
             error!("Found FloatLiteral token, but failed to parse as f64.\n\n{}", err);
-            panic!("The DC lexer encountered an issue and could not continue.");
+            panic!("The DC lexer failed to parse a literal and could not continue.");
         }
     }), text),
 
@@ -188,7 +188,7 @@ lexer! {
     r#"\:"# => (DCToken::Colon, text),
     r#"."# => {
         error!("Found unexpected character: {}", text);
-        panic!("The DC lexer encountered an issue and could not continue.");
+        panic!("The DC lexer found an unexpected character and could not continue.");
     }
 }
 
@@ -458,7 +458,7 @@ mod unit_testing {
     #[test]
     #[should_panic]
     fn unexpected_token_test() {
-        let test_string: String = String::from("uint8 invalid_literal = 09;");
+        let test_string: String = String::from("uint8 invalid_token = \\");
         let lexer = Lexer::new(&test_string).inspect(|tok| eprintln!("token: {:?}", tok));
 
         for (_, (_token, _span)) in lexer.enumerate() {
