@@ -56,7 +56,7 @@ pub mod ast {
     pub struct StructType {
         pub span: Span,
         pub identifier: IdentifierString,
-        pub parameters: Vec<ParameterField>,
+        pub parameters: Vec<Parameter>,
     }
 
     #[derive(Debug, PartialEq)]
@@ -202,13 +202,13 @@ pub mod ast {
 
     #[derive(Debug, PartialEq)]
     pub enum IntTransform {
-        OperatorIntLiteral { operator: DCToken, int_literal: i32 },
+        OperatorIntLiteral { operator: DCToken, int_literal: i64 },
         ParenthesizedIntTransform(Box<IntTransform>),
     }
 
     #[derive(Debug, PartialEq)]
     pub enum FloatTransform {
-        OperatorFloatLiteral { operator: DCToken, float_literal: f32 },
+        OperatorFloatLiteral { operator: DCToken, float_literal: f64 },
         ParenthesizedFloatTransform(Box<FloatTransform>),
     }
 }
@@ -263,18 +263,24 @@ parser! {
         },
     }
 
+    // ----- Keyword Type ----- //
+
     keyword_type: String {
         KeywordType Identifier(id) Semicolon => id
     }
 
+    // ----- Struct Type ----- //
+
     struct_type: ast::StructType {
-        StructType Identifier(id) OpenBraces parameter_fields[ps]
+        StructType Identifier(id) OpenBraces parameters[ps]
         CloseBraces Semicolon => ast::StructType {
             span: span!(),
             identifier: id,
             parameters: ps,
         }
     }
+
+    // ----- Distributed Class Type ----- //
 
     distributed_class_type: ast::DistributedClassType {
         DClassType Identifier(id) OpenBraces field_declarations[fds]
@@ -285,18 +291,7 @@ parser! {
         }
     }
 
-    // Donet does not make use of python-style import statements,
-    // as this is a feature used by Donet clients and AI/UD processes.
-    // We still have our production rules defined to avoid a parser panic.
-    python_import: ast::DCImport {
-        py_module[(m, ms)] dclass_import[(c, cs)] => ast::DCImport {
-            span: span!(),
-            module: m,
-            module_views: ms,
-            class: c,
-            class_views: cs,
-        },
-    }
+    // ----- Type Definition Type ----- //
 
     type_definition: ast::TypeDefinition {
         TypeDefinition CharType Identifier(alias) Semicolon => ast::TypeDefinition {
@@ -338,6 +333,21 @@ parser! {
                 type_identifier: None,
             },
             alias: alias,
+        },
+    }
+
+    // ----- Python-style Import ----- //
+
+    // Donet does not make use of python-style import statements,
+    // as this is a feature used by Donet clients and AI/UD processes.
+    // We still have our production rules defined to avoid a parser panic.
+    python_import: ast::DCImport {
+        py_module[(m, ms)] dclass_import[(c, cs)] => ast::DCImport {
+            span: span!(),
+            module: m,
+            module_views: ms,
+            class: c,
+            class_views: cs,
         },
     }
 
@@ -397,6 +407,8 @@ parser! {
         ForwardSlash Identifier(s) => s
     }
 
+    // ----- Field Declaration ----- //
+
     field_declarations: Vec<ast::FieldDecl> {
         => vec![],
         field_declarations[mut fds] field_declaration[fd] => {
@@ -420,6 +432,8 @@ parser! {
         },
     }
 
+    // ----- Molecular Field ----- //
+
     molecular_field: ast::MolecularField {
         Identifier(id) Colon atomic_field[af] => ast::MolecularField {
             identifier: id,
@@ -432,6 +446,8 @@ parser! {
         //    field_type: ast::FieldType::Parameter(pfs),
         //}
     }
+
+    // ----- Atomic Field ----- //
 
     atomic_fields: Vec<ast::AtomicField> {
         => vec![],
@@ -450,6 +466,8 @@ parser! {
         }
     }
 
+    // ----- Parameter Fields ----- //
+
     // The 'parameter_fields' production is made up of the current parameters
     // plus a new parameter following, and returns a vector of all
     // parameters parsed so far. This bundles them all up for other productions.
@@ -462,11 +480,13 @@ parser! {
     }
 
     parameter_field: ast::ParameterField {
-        parameter[p] dc_keyword_list[kl] => ast::ParameterField {
+        struct_parameter[p] dc_keyword_list[kl] => ast::ParameterField {
             parameter: p,
             keyword_list: kl,
         }
     }
+
+    // ----- Parameters ----- //
 
     parameters: Vec<ast::Parameter> {
         => vec![],
@@ -474,6 +494,10 @@ parser! {
             ps.push(p);
             ps
         }
+    }
+
+    struct_parameter: ast::Parameter {
+        parameter[p] Semicolon => p
     }
 
     parameter: ast::Parameter {
@@ -485,6 +509,8 @@ parser! {
         struct_param[sp] => ast::Parameter::Struct(sp),
         array_param[ap] => ast::Parameter::Array(ap),
     }
+
+    // ----- Char Parameter ----- //
 
     char_param: ast::CharParameter {
         // FIXME: solve shift-reduce conflict
@@ -502,23 +528,44 @@ parser! {
         },
     }
 
+    // ----- Integer Parameter ----- //
+
     int_param: ast::IntParameter {
-        // FIXME: solve shift-reduce conflict
-        IntType(int_id) => ast::IntParameter {
-            identifier: None,
+        //IntType(int_id) => ast::IntParameter {
+        //    identifier: None,
+        //    int_type: int_id,
+        //    int_range: None,
+        //    int_transform: None,
+        //    int_constant: None,
+        //},
+        named_transformed_ranged_int[(int_id, r, t, id)] => ast::IntParameter {
+            identifier: Some(id),
             int_type: int_id,
-            int_range: None,
-            int_transform: None,
+            int_range: r,
+            int_transform: t,
             int_constant: None,
         },
-        //IntType(int_id) int_range[r] int_transform[t]
-        //Identifier(id) Equals DecimalLiteral(dl) => ast::IntParameter {
-        //    identifier: Some(id),
-        //    int_type: int_id,
-        //    int_range: Some(r),
-        //    int_transform: Some(t),
-        //    int_constant: Some(dl),
-        //}
+        named_transformed_ranged_int[(int_id, r, t, id)]
+        Equals DecimalLiteral(dl) => ast::IntParameter {
+            identifier: Some(id),
+            int_type: int_id,
+            int_range: r,
+            int_transform: t,
+            int_constant: Some(dl),
+        },
+    }
+
+    named_transformed_ranged_int: (String, Option<Range<i64>>, Option<ast::IntTransform>, String) {
+        transformed_ranged_int[(int_id, r, t)] Identifier(id) => (int_id, Some(r), Some(t), id),
+        IntType(int_id) Identifier(id) => (int_id, None, None, id),
+    }
+
+    transformed_ranged_int: (String, Range<i64>, ast::IntTransform) {
+        ranged_int[(int_id, r)] int_transform[t] => (int_id, r, t)
+    }
+
+    ranged_int: (String, Range<i64>) {
+        IntType(int_id) int_range[r] => (int_id, r)
     }
 
     int_range: Range<i64> {
@@ -526,13 +573,17 @@ parser! {
     }
 
     int_transform: ast::IntTransform {
-
+        Percent DecimalLiteral(n) => ast::IntTransform::OperatorIntLiteral {
+            operator: Percent,
+            int_literal: n,
+        }
     }
 
-    // FIXME: Implement
+    // ----- Float Parameter ----- //
+
     float_param: ast::FloatParameter {
-        Hyphen Hyphen Hyphen Hyphen Hyphen => ast::FloatParameter {
-            identifier: Some("id".to_string()),
+        FloatType => ast::FloatParameter {
+            identifier: None,
             float_type: None,
             float_range: None,
             float_transform: None,
@@ -544,66 +595,58 @@ parser! {
         OpenParenthesis FloatLiteral(a) Hyphen FloatLiteral(b) CloseParenthesis => (a, b)
     }
 
+    // ----- String Parameter ----- //
+
     string_param: ast::StringParameter {
-        // FIXME: Stops at this match for any string type.
         //StringType => ast::StringParameter {
         //    identifier: None,
         //    string_literal: None,
         //    size_constraint: None,
         //},
-        // FIXME: solve shift-reduce conflict
-        //sized_string[sc] => ast::StringParameter {
-        //    identifier: None,
-        //    string_literal: None,
-        //    size_constraint: sc,
-        //},
         named_sized_string[(id, sc)] => ast::StringParameter {
             identifier: Some(id),
             string_literal: None,
-            size_constraint: Some(sc),
+            size_constraint: sc,
         },
         named_sized_string[(id, sc)] Equals StringLiteral(sl) => ast::StringParameter {
             identifier: Some(id),
             string_literal: Some(sl),
-            size_constraint: Some(sc),
-        }
+            size_constraint: sc,
+        },
     }
 
-    named_sized_string: (String, i64) {
-        sized_string[sc] Identifier(id) => (id, sc)
+    named_sized_string: (String, Option<i64>) {
+        sized_string[sc] Identifier(id) => (id, Some(sc)),
+        StringType Identifier(id) => (id, None), // accept w/o size constraint
     }
 
     sized_string: i64 {
         StringType size_constraint[sc] => sc
     }
 
+    // ----- Blob Parameter ----- //
+
     blob_param: ast::BlobParameter {
-        // FIXME: Stops at this match for any blob type.
         //BlobType => ast::BlobParameter {
         //    identifier: None,
         //    string_literal: None,
         //    size_constraint: None,
         //},
-        // FIXME: solve shift-reduce conflict
-        //sized_blob[sc] => ast::BlobParameter {
-        //    identifier: None,
-        //    string_literal: None,
-        //    size_constraint: sc,
-        //},
         named_sized_blob[(id, sc)] => ast::BlobParameter {
             identifier: Some(id),
             string_literal: None,
-            size_constraint: Some(sc),
+            size_constraint: sc,
         },
         named_sized_blob[(id, sc)] Equals StringLiteral(sl) => ast::BlobParameter {
             identifier: Some(id),
             string_literal: Some(sl),
-            size_constraint: Some(sc),
-        }
+            size_constraint: sc,
+        },
     }
 
-    named_sized_blob: (String, i64) {
-        sized_blob[sc] Identifier(id) => (id, sc)
+    named_sized_blob: (String, Option<i64>) {
+        sized_blob[sc] Identifier(id) => (id, Some(sc)),
+        BlobType Identifier(id) => (id, None), // also accept w/o constraint
     }
 
     sized_blob: i64 {
@@ -614,17 +657,16 @@ parser! {
         OpenParenthesis DecimalLiteral(s) CloseParenthesis => s
     }
 
+    // ----- Struct Parameter ----- //
+
     struct_param: ast::StructParameter {
-        // FIXME: solve shift-reduce conflict
-        //Identifier(struct_type) => ast::StructParameter {
-        //    struct_type: struct_type,
-        //    identifier: None,
-        //},
         Identifier(struct_type) Identifier(struct_id) => ast::StructParameter {
             struct_type: struct_type,
             identifier: Some(struct_id),
         },
     }
+
+    // ----- Array Parameter ----- //
 
     // FIXME: Implement me
     array_param: ast::ArrayParameter {
@@ -637,6 +679,8 @@ parser! {
             array_range: 1 .. 3,
         }
     }
+
+    // ----- DC Keywords ----- //
 
     // Bundle up all dc_keyword productions into one vector.
     dc_keyword_list: Vec<String> {
@@ -813,19 +857,19 @@ mod unit_testing {
         let dc_file: &str = "dclass DistributedDonut {\n\
                                 set_foo(string(10) bar = \"test\") ram db;\n
                                 set_bar(blob(10) foo);\n
-                                set_int_test(int8);\n
+                                set_int_test(int8 e);\n
                              };\n";
         let target_ast: ast::DCFile = ast::DCFile {
             type_decl: vec![ast::TypeDecl {
                 span: Span {
                     min: 0,
-                    max: 208,
+                    max: 210,
                     line: 1,
                 },
                 node: ast::TypeDecl_::DistributedClassType(ast::DistributedClassType {
                     span: Span {
                         min: 0,
-                        max: 208,
+                        max: 210,
                         line: 1,
                     },
                     identifier: "DistributedDonut".to_string(),
@@ -865,13 +909,13 @@ mod unit_testing {
                         ast::FieldDecl {
                             span: Span {
                                 min: 156,
-                                max: 175,
+                                max: 177,
                                 line: 6,
                             },
                             node: ast::FieldDecl_::AtomicField(ast::AtomicField {
                                 identifier: "set_int_test".to_string(),
                                 parameters: vec![ast::Parameter::Int(ast::IntParameter {
-                                    identifier: None,
+                                    identifier: Some("e".to_string()),
                                     int_type: "int8".to_string(),
                                     int_range: None,
                                     int_transform: None,
