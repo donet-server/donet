@@ -48,14 +48,15 @@ fn main() -> std::io::Result<()> {
         .thread_stack_size(2 * 1024 * 1024) // default: 2MB
         .build()?;
 
-    if args.len() > 1 {
-        // If we also read an extra argument, skip.
-        let mut consumed_next: bool = false;
+    let mut want_dc_check: bool = false;
+    let mut dc_check_file: Option<&String> = None;
+    let mut consumed_next_arg: bool = false;
 
+    if args.len() > 1 {
         for item in args.iter().enumerate() {
             let (index, argument): (usize, &String) = item;
-            if (index == 0) || consumed_next {
-                consumed_next = false;
+            if (index == 0) || consumed_next_arg {
+                consumed_next_arg = false;
                 continue;
             }
             if argument.starts_with('-') {
@@ -68,15 +69,9 @@ fn main() -> std::io::Result<()> {
                 } else if argument == "-c" || argument == "--check-dc" {
                     // Consume extra argument, catch error if out of arguments.
                     if let Some(dc_filename) = args.get(index + 1) {
-                        consumed_next = true;
-
-                        // Synchronous read of file to string, then lex and parse.
-                        let mut dc_file: File = File::open(dc_filename)?;
-                        let mut contents: String = String::new();
-                        dc_file.read_to_string(&mut contents)?;
-
-                        let lexer = Lexer::new(&contents).inspect(|tok| eprintln!("token: {:?}", tok));
-                        let _: ast::DCFile = parse(lexer).unwrap();
+                        consumed_next_arg = true;
+                        want_dc_check = true;
+                        dc_check_file = Some(dc_filename);
                     } else {
                         println!("donet: {}: Missing filename argument.\n", argument);
                         print_help_page(config_file);
@@ -98,6 +93,21 @@ fn main() -> std::io::Result<()> {
     }
     // Init logger utility
     logger::initialize_logger()?;
+
+    // Perform actions based on arguments parsed
+    if want_dc_check {
+        if dc_check_file.is_none() {
+            error!("No DC filename provided. Cannot do DC read.");
+            return Err(Error::new(ErrorKind::InvalidInput, "No DC file given."));
+        }
+        // Synchronous read of file to string, then lex and parse.
+        let mut dc_file: File = File::open(dc_check_file.unwrap())?;
+        let mut contents: String = String::new();
+        dc_file.read_to_string(&mut contents)?;
+
+        let lexer = Lexer::new(&contents);
+        let _: ast::DCFile = parse(lexer).unwrap();
+    }
 
     // Read the daemon configuration file
     let mut conf_file: File = File::open(config_file)?;
