@@ -510,151 +510,73 @@ parser! {
         array_param[ap] => ast::Parameter::Array(ap),
     }
 
+    size_constraint: Option<i64> {
+        => None,
+        OpenParenthesis DecimalLiteral(sc) CloseParenthesis => Some(sc)
+    }
+
+    int_range: Option<Range<i64>> {
+        => None,
+        OpenParenthesis DecimalLiteral(a) Hyphen DecimalLiteral(b) CloseParenthesis => Some(a .. b)
+    }
+
+    float_range: Option<Range<f64>> {
+        => None,
+        OpenParenthesis FloatLiteral(a) Hyphen FloatLiteral(b) CloseParenthesis => Some(a .. b)
+    }
+
+    array_range: Option<Vec<Range<i64>>> {
+        => None,
+        OpenBrackets array_range_opts[aros] CloseBrackets => Some(aros)
+    }
+
+    array_range_opts: Vec<Range<i64>> {
+        => vec![],
+        array_range_opts[mut aros] Hyphen DecimalLiteral(aro) => {
+            aros.push(aro);
+            aros
+        },
+        array_range_opts[mut aros] DecimalLiteral(aro) => {
+            aros.push(aro);
+            aros
+        }
+    }
+
     // ----- Char Parameter ----- //
 
     char_param: ast::CharParameter {
-        // FIXME: solve shift-reduce conflict
-        //CharType => ast::CharParameter {
-        //    identifier: None,
-        //    char_literal: None,
-        //},
-        CharType Identifier(id) => ast::CharParameter {
-            identifier: Some(id),
-            char_literal: None,
-        },
-        CharType Identifier(id) Equals CharacterLiteral(c) => ast::CharParameter {
-            identifier: Some(id),
-            char_literal: Some(c),
-        },
     }
 
     // ----- Integer Parameter ----- //
 
     int_param: ast::IntParameter {
-        //IntType(int_id) => ast::IntParameter {
-        //    identifier: None,
-        //    int_type: int_id,
-        //    int_range: None,
-        //    int_transform: None,
-        //    int_constant: None,
-        //},
-        named_transformed_ranged_int[(int_id, r, t, id)] => ast::IntParameter {
-            identifier: Some(id),
-            int_type: int_id,
-            int_range: r,
-            int_transform: t,
-            int_constant: None,
-        },
-        named_transformed_ranged_int[(int_id, r, t, id)]
-        Equals DecimalLiteral(dl) => ast::IntParameter {
-            identifier: Some(id),
-            int_type: int_id,
-            int_range: r,
-            int_transform: t,
-            int_constant: Some(dl),
-        },
-    }
-
-    named_transformed_ranged_int: (String, Option<Range<i64>>, Option<ast::IntTransform>, String) {
-        transformed_ranged_int[(int_id, r, t)] Identifier(id) => (int_id, Some(r), Some(t), id),
-        IntType(int_id) Identifier(id) => (int_id, None, None, id),
-    }
-
-    transformed_ranged_int: (String, Range<i64>, ast::IntTransform) {
-        ranged_int[(int_id, r)] int_transform[t] => (int_id, r, t)
-    }
-
-    ranged_int: (String, Range<i64>) {
-        IntType(int_id) int_range[r] => (int_id, r)
-    }
-
-    int_range: Range<i64> {
-        OpenParenthesis DecimalLiteral(a) Hyphen DecimalLiteral(b) CloseParenthesis => a .. b
-    }
-
-    int_transform: ast::IntTransform {
-        Percent DecimalLiteral(n) => ast::IntTransform::OperatorIntLiteral {
-            operator: Percent,
-            int_literal: n,
-        }
     }
 
     // ----- Float Parameter ----- //
 
     float_param: ast::FloatParameter {
-        FloatType => ast::FloatParameter {
-            identifier: None,
-            float_type: None,
-            float_range: None,
-            float_transform: None,
-            float_constant: None,
-        }
-    }
-
-    float_range: (f64, f64) {
-        OpenParenthesis FloatLiteral(a) Hyphen FloatLiteral(b) CloseParenthesis => (a, b)
     }
 
     // ----- String Parameter ----- //
 
     string_param: ast::StringParameter {
-        //StringType => ast::StringParameter {
-        //    identifier: None,
-        //    string_literal: None,
-        //    size_constraint: None,
-        //},
-        named_sized_string[(id, sc)] => ast::StringParameter {
-            identifier: Some(id),
-            string_literal: None,
-            size_constraint: sc,
-        },
-        named_sized_string[(id, sc)] Equals StringLiteral(sl) => ast::StringParameter {
-            identifier: Some(id),
-            string_literal: Some(sl),
-            size_constraint: sc,
-        },
-    }
-
-    named_sized_string: (String, Option<i64>) {
-        sized_string[sc] Identifier(id) => (id, Some(sc)),
-        StringType Identifier(id) => (id, None), // accept w/o size constraint
-    }
-
-    sized_string: i64 {
-        StringType size_constraint[sc] => sc
     }
 
     // ----- Blob Parameter ----- //
 
+    // FIXME: plex needs to fix optional grammar. cannot move on with the parser.
+    // FIXME: https://github.com/goffrie/plex/issues/20
+    //opt_id: Option<String> {
+    //    => None,
+    //    Identifier(id) => Some(id)
+    //}
+
     blob_param: ast::BlobParameter {
-        //BlobType => ast::BlobParameter {
-        //    identifier: None,
-        //    string_literal: None,
-        //    size_constraint: None,
-        //},
-        named_sized_blob[(id, sc)] => ast::BlobParameter {
-            identifier: Some(id),
+        BlobType size_constraint[sc] => ast::BlobParameter {
+            identifier: None,
             string_literal: None,
             size_constraint: sc,
         },
-        named_sized_blob[(id, sc)] Equals StringLiteral(sl) => ast::BlobParameter {
-            identifier: Some(id),
-            string_literal: Some(sl),
-            size_constraint: sc,
-        },
-    }
-
-    named_sized_blob: (String, Option<i64>) {
-        sized_blob[sc] Identifier(id) => (id, Some(sc)),
-        BlobType Identifier(id) => (id, None), // also accept w/o constraint
-    }
-
-    sized_blob: i64 {
-        BlobType size_constraint[sc] => sc
-    }
-
-    size_constraint: i64 {
-        OpenParenthesis DecimalLiteral(s) CloseParenthesis => s
     }
 
     // ----- Struct Parameter ----- //
