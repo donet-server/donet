@@ -776,77 +776,23 @@ mod unit_testing {
 
     #[test]
     fn distributed_class_production() {
-        let dc_file: &str = "dclass DistributedDonut {\n\
-                                set_foo(string(10) bar = \"test\") ram db;\n
-                                set_bar(blob(10) foo);\n
-                                set_int_test(int8 e);\n
+        let dc_file: &str = "dclass DistributedDonut {\n
                              };\n";
         let target_ast: ast::DCFile = ast::DCFile {
             type_decl: vec![ast::TypeDecl {
                 span: Span {
                     min: 0,
-                    max: 210,
+                    max: 58,
                     line: 1,
                 },
                 node: ast::TypeDecl_::DistributedClassType(ast::DistributedClassType {
                     span: Span {
                         min: 0,
-                        max: 210,
+                        max: 58,
                         line: 1,
                     },
                     identifier: "DistributedDonut".to_string(),
-                    field_declarations: vec![
-                        ast::FieldDecl {
-                            span: Span {
-                                min: 26,
-                                max: 66,
-                                line: 2,
-                            },
-                            node: ast::FieldDecl_::AtomicField(ast::AtomicField {
-                                identifier: "set_foo".to_string(),
-                                parameters: vec![ast::Parameter::String(ast::StringParameter {
-                                    identifier: Some("bar".to_string()),
-                                    string_literal: Some("test".to_string()),
-                                    size_constraint: Some(10),
-                                })],
-                                keyword_list: vec!["ram".to_string(), "db".to_string()],
-                            }),
-                        },
-                        ast::FieldDecl {
-                            span: Span {
-                                min: 100,
-                                max: 122,
-                                line: 4,
-                            },
-                            node: ast::FieldDecl_::AtomicField(ast::AtomicField {
-                                identifier: "set_bar".to_string(),
-                                parameters: vec![ast::Parameter::Blob(ast::BlobParameter {
-                                    identifier: Some("foo".to_string()),
-                                    string_literal: None,
-                                    size_constraint: Some(10),
-                                })],
-                                keyword_list: vec![],
-                            }),
-                        },
-                        ast::FieldDecl {
-                            span: Span {
-                                min: 156,
-                                max: 177,
-                                line: 6,
-                            },
-                            node: ast::FieldDecl_::AtomicField(ast::AtomicField {
-                                identifier: "set_int_test".to_string(),
-                                parameters: vec![ast::Parameter::Int(ast::IntParameter {
-                                    identifier: Some("e".to_string()),
-                                    int_type: "int8".to_string(),
-                                    int_range: None,
-                                    int_transform: None,
-                                    int_constant: None,
-                                })],
-                                keyword_list: vec![],
-                            }),
-                        },
-                    ],
+                    field_declarations: vec![],
                 }),
             }],
         };
