@@ -16,17 +16,15 @@ publish = false
 # where it can find the OpenSSL include & library files.
 # Please prefix your cargo build command with: `OPENSSL_DIR=/usr/`
 # The directory may vary depending on your distribution of Linux.
+libdonet = { path = "libdonet", version = "0.1.0", default-features = true }
 tokio = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
 mysql = { version = "24.0", default-features = false, features = ["derive"] }
 mysql_common = { version = "*", default-features = true }
 serde = { version = "1", features = ["derive"] }
 log = { version = "0.4", features = ["std"] }
-strum = { version = "0.25", features = ["derive"] }
-strum_macros = { version = "0.25" }
 toml = { version = "0.7" }
 multimap = { version = "0.9" }
 chrono = { version = "0.4" }
-plex = { version = "0.3" }
 
 [build-dependencies]
 git-sha1 = { version = "1.1" }

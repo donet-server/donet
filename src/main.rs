@@ -15,14 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-pub mod byte_order;
 pub mod channel_map;
 pub mod config;
-pub mod datagram;
 pub mod dbserver;
-pub mod dclexer;
-pub mod dcparser;
-pub mod globals;
 pub mod logger;
 pub mod message_director;
 pub mod network;
@@ -30,8 +25,8 @@ pub mod service_factory;
 
 fn main() -> std::io::Result<()> {
     use config::*;
-    use dclexer::Lexer;
-    use dcparser::{ast, parse};
+    use libdonet::dclexer::Lexer;
+    use libdonet::dcparser::{ast, parse};
     use log::error;
     use service_factory::*;
     use std::fs::File;
@@ -201,7 +196,7 @@ fn main() -> std::io::Result<()> {
         }
     };
     // Hack to reassure the compiler that I want to return an IO result.
-    globals::set_future_return_type::<std::io::Result<()>, _>(&daemon_main);
+    libdonet::globals::set_future_return_type::<std::io::Result<()>, _>(&daemon_main);
 
     // Start using Tokio, return `daemon_main` result.
     tokio_runtime.block_on(daemon_main)

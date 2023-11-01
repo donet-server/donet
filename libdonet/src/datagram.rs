@@ -17,7 +17,6 @@
 
 use crate::byte_order as endianness;
 use crate::globals;
-use log::error;
 use std::mem;
 use std::vec::Vec;
 use strum::IntoEnumIterator;
@@ -46,7 +45,7 @@ impl Datagram {
         let new_index: usize = self.index + usize::from(length);
 
         if new_index > globals::DG_SIZE_MAX.into() {
-            error!("Tried to add data to the datagram past its maximum size!");
+            // FIXME: error!("Tried to add data to the datagram past its maximum size!");
             return Err(globals::DgError::DatagramOverflow);
         }
         Ok(())
@@ -303,7 +302,7 @@ impl DatagramIterator {
         let new_index: globals::DgSize = self.index as globals::DgSize + bytes;
 
         if new_index > self.datagram.size() {
-            error!("The DatagramIterator tried to read past the end of the buffer!");
+            // FIXME: error!("The DatagramIterator tried to read past the end of the buffer!");
             return Err(globals::DgError::DatagramIteratorEOF);
         }
         Ok(())
@@ -469,7 +468,7 @@ impl DatagramIterator {
     // Does not advance the DatagramIterator index.
     pub fn read_recipient_count(&mut self) -> u8 {
         if self.datagram.size() == 0 {
-            error!("Cannot read from an empty datagram!");
+            // FIXME: error!("Cannot read from an empty datagram!");
             // FIXME: Throw error instead of panic here.
             panic!("Tried to read from an empty datagram.");
         }

@@ -15,7 +15,6 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use log::error;
 use plex::lexer;
 
 #[rustfmt::skip]
@@ -120,8 +119,8 @@ lexer! {
 
     r#"0|([1-9][0-9]*)"# => (DCToken::DecimalLiteral(match text.parse::<i64>() {
         Ok(n) => { n },
-        Err(err) => {
-            error!("Found DecimalLiteral token, but failed to parse as i64.\n\n{}", err);
+        Err(_err) => {
+            // FIXME: error!("Found DecimalLiteral token, but failed to parse as i64.\n\n{}", err);
             panic!("The DC lexer failed to parse a literal and could not continue.");
         },
     }), text),
@@ -131,8 +130,8 @@ lexer! {
 
     r#"([0-9]?)+\.[0-9]+"# => (DCToken::FloatLiteral(match text.parse::<f64>() {
         Ok(f) => { f },
-        Err(err) => {
-            error!("Found FloatLiteral token, but failed to parse as f64.\n\n{}", err);
+        Err(_err) => {
+            // FIXME: error!("Found FloatLiteral token, but failed to parse as f64.\n\n{}", err);
             panic!("The DC lexer failed to parse a literal and could not continue.");
         }
     }), text),
@@ -187,7 +186,7 @@ lexer! {
     r#"\="# => (DCToken::Equals, text),
     r#"\:"# => (DCToken::Colon, text),
     r#"."# => {
-        error!("Found unexpected character: {}", text);
+        // FIXME: error!("Found unexpected character: {}", text);
         panic!("The DC lexer found an unexpected character and could not continue.");
     }
 }

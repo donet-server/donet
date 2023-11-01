@@ -17,8 +17,8 @@
 
 use crate::config::*;
 use crate::dbserver::{DBCredentials, DatabaseServer};
-use crate::globals;
 use crate::message_director::MessageDirector;
+use libdonet::globals;
 use log::{error, info};
 use std::io::{Error, ErrorKind, Result};
 use tokio::task::JoinHandle;
