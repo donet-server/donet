@@ -2,10 +2,10 @@
 name = "libdonet"
 version = "0.1.0"
 edition = "2021"
-license = "AGPL-3.0-only"
-authors = ["maxrdz <me@maxrdz.com>"]
-homepage = "https://github.com/donet-server/donet/"
-repository = "https://github.com/donet-server/donet/"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
 readme = "README.md"
 
 [dependencies]
@@ -13,10 +13,3 @@ serde = { version = "1", features = ["derive"] }
 strum = { version = "0.25", features = ["derive"] }
 strum_macros = { version = "0.25" }
 plex = { version = "0.3" }
-
-[profile.release]
-codegen-units = 1 # Won't affect GH workflow times
-panic = "abort" # Remove unwind code on release
-opt-level = 3
-lto = true
-strip = true

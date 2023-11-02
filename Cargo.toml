@@ -1,33 +1,21 @@
-[package]
-name = "donet"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "libdonet",
+    "donet"
+]
+default-members = [
+    "libdonet",
+    "donet"
+]
+resolver = "2"
+
+[workspace.package]
 license = "AGPL-3.0-only"
-authors = ["maxrdz <me@maxrdz.com>"]
+authors = [
+    "maxrdz <me@maxrdz.com>"
+]
 homepage = "https://github.com/donet-server/donet/"
 repository = "https://github.com/donet-server/donet/"
-keywords = ["donet", "dc", "networking", "panda3d", "server", "mmo"]
-readme = "README.md"
-publish = false
-
-[dependencies]
-# For the 'mysql' package, if you're on a 32-bit linux system that
-# is not Debian/RHEL-based, you may have to define the directory
-# where it can find the OpenSSL include & library files.
-# Please prefix your cargo build command with: `OPENSSL_DIR=/usr/`
-# The directory may vary depending on your distribution of Linux.
-libdonet = { path = "libdonet", version = "0.1.0", default-features = true }
-tokio = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
-mysql = { version = "24.0", default-features = false, features = ["derive"] }
-mysql_common = { version = "*", default-features = true }
-serde = { version = "1", features = ["derive"] }
-log = { version = "0.4", features = ["std"] }
-toml = { version = "0.7" }
-multimap = { version = "0.9" }
-chrono = { version = "0.4" }
-
-[build-dependencies]
-git-sha1 = { version = "1.1" }
 
 [profile.release]
 codegen-units = 1 # Won't affect GH workflow times
