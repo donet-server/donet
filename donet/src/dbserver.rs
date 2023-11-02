@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+use crate::utils;
 use libdonet::globals;
 use log::{error, info};
 use mysql::prelude::*;
@@ -115,14 +116,14 @@ impl DatabaseServer<'_> {
         }
     }
 
-    pub fn init_service(&mut self) -> globals::SqlResult {
+    pub fn init_service(&mut self) -> utils::SqlResult {
         self.check_database_tables()?;
         Ok(())
     }
 
     // If the Objects, DClasses, & Fields tables do not exist in the
     // database, then we will create the required tables automatically.
-    pub fn check_database_tables(&mut self) -> globals::SqlResult {
+    pub fn check_database_tables(&mut self) -> utils::SqlResult {
         self.sql_conn.query_drop(
             r"CREATE TABLE IF NOT EXISTS objects (
                                     doid INT UNSIGNED NOT NULL PRIMARY KEY,

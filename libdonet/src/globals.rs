@@ -16,8 +16,6 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 use crate::dclexer::{DCToken, Span};
-use std::error::Error;
-use std::future::Future;
 use std::mem;
 use std::result::Result; // not to be confused with std::io::Result
 use strum_macros::EnumIter;
@@ -62,12 +60,6 @@ pub enum DgError {
 
 pub type DgResult = Result<(), DgError>;
 pub type DgBufferResult = Result<DgSize, DgError>;
-
-// MySQL Result (mysql crate API response)
-pub type SqlResult = Result<(), Box<dyn Error>>;
-
-// Hack to reassure the compiler the result type of a future.
-pub fn set_future_return_type<T, F: Future<Output = T>>(_arg: &F) {}
 
 // Utility for converting protocol enumerator to u16 (MsgType)
 pub fn msg_type(proto_enum: Protocol) -> MsgType {
@@ -210,19 +202,7 @@ pub enum Protocol {
 
 #[cfg(test)]
 mod unit_testing {
-    use super::{msg_type, set_future_return_type, Protocol};
-    use std::io::Result;
-
-    #[test]
-    fn test_future_return_type_util() {
-        let test_future = async move {
-            println!("async!");
-            Ok(())
-        };
-        // Just make sure it doesn't panic or anything goofy.
-        // Need this test to have test coverage on this file.
-        set_future_return_type::<Result<()>, _>(&test_future);
-    }
+    use super::{msg_type, Protocol};
 
     #[test]
     fn test_protocol_to_u16_util() {

@@ -18,7 +18,7 @@
 use crate::config::*;
 use crate::dbserver::{DBCredentials, DatabaseServer};
 use crate::message_director::MessageDirector;
-use libdonet::globals;
+use crate::utils;
 use log::{error, info};
 use std::io::{Error, ErrorKind, Result};
 use tokio::task::JoinHandle;
@@ -74,7 +74,7 @@ impl MessageDirectorService {
         let md: MessageDirector = MessageDirector::new(md_conf.bind.as_str(), upstream).await?;
 
         let md_loop = async move { md.init_network().await };
-        globals::set_future_return_type::<Result<()>, _>(&md_loop);
+        utils::set_future_return_type::<Result<()>, _>(&md_loop);
 
         Ok(tokio::task::spawn(md_loop))
     }
@@ -130,7 +130,7 @@ impl DatabaseServerService {
             password: sql_config.pass.as_str(),
         };
         let mut db: DatabaseServer = DatabaseServer::new(creds);
-        let res: globals::SqlResult = db.init_service();
+        let res: utils::SqlResult = db.init_service();
 
         if res.is_err() {
             error!("Failed to initialize the Database Server.");

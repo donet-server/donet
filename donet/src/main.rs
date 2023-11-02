@@ -22,6 +22,7 @@ pub mod logger;
 pub mod message_director;
 pub mod network;
 pub mod service_factory;
+pub mod utils;
 
 fn main() -> std::io::Result<()> {
     use config::*;
@@ -196,7 +197,7 @@ fn main() -> std::io::Result<()> {
         }
     };
     // Hack to reassure the compiler that I want to return an IO result.
-    libdonet::globals::set_future_return_type::<std::io::Result<()>, _>(&daemon_main);
+    utils::set_future_return_type::<std::io::Result<()>, _>(&daemon_main);
 
     // Start using Tokio, return `daemon_main` result.
     tokio_runtime.block_on(daemon_main)
