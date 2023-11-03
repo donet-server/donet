@@ -70,9 +70,9 @@ pub mod ast {
     pub struct DCImport {
         pub span: Span,
         pub module: Vec<String>, // python filename, or module(s)
-        pub module_views: Vec<String>,
+        pub module_views: Option<Vec<String>>,
         pub class: IdentifierString,
-        pub class_views: Vec<String>, // /AI, /UD, /OV ...
+        pub class_views: Option<Vec<String>>, // /AI, /UD, /OV ...
     }
 
     #[derive(Debug, PartialEq)]
@@ -342,12 +342,26 @@ parser! {
     // as this is a feature used by Donet clients and AI/UD processes.
     // We still have our production rules defined to avoid a parser panic.
     python_import: ast::DCImport {
-        py_module[(m, ms)] dclass_import[(c, cs)] => ast::DCImport {
-            span: span!(),
-            module: m,
-            module_views: ms,
-            class: c,
-            class_views: cs,
+        py_module[(m, ms)] dclass_import[(c, cs)] => {
+            // NOTE: This is an ugly fix for not being able to pass Options
+            // through the production parameters (due to moved values and
+            // borrow checking issues (skill issues)), so we turn the Vectors
+            // (which do implement the Copy trait) into Options here.
+            let mut mvs_opt: Option<Vec<String>> = None;
+            let mut cvs_opt: Option<Vec<String>> = None;
+            if !ms.is_empty() {
+                mvs_opt = Some(ms);
+            }
+            if !cs.is_empty() {
+                cvs_opt = Some(cs);
+            }
+            ast::DCImport {
+                span: span!(),
+                module: m,
+                module_views: mvs_opt,
+                class: c,
+                class_views: cvs_opt,
+            }
         },
     }
 
@@ -686,9 +700,9 @@ mod unit_testing {
                             line: 1,
                         },
                         module: vec!["example-views".to_string()],
-                        module_views: vec![],
+                        module_views: None,
                         class: "DistributedDonut".to_string(),
-                        class_views: vec![],
+                        class_views: None,
                     }),
                 },
                 // "from views import DistributedDonut/AI/OV"
@@ -705,9 +719,9 @@ mod unit_testing {
                             line: 2,
                         },
                         module: vec!["views".to_string()],
-                        module_views: vec![],
+                        module_views: None,
                         class: "DistributedDonut".to_string(),
-                        class_views: vec!["AI".to_string(), "OV".to_string()],
+                        class_views: Some(vec!["AI".to_string(), "OV".to_string()]),
                     }),
                 },
                 // "from views/AI/OV import DistributedDonut/AI/OV"
@@ -724,9 +738,9 @@ mod unit_testing {
                             line: 3,
                         },
                         module: vec!["views".to_string()],
-                        module_views: vec!["AI".to_string(), "OV".to_string()],
+                        module_views: Some(vec!["AI".to_string(), "OV".to_string()]),
                         class: "DistributedDonut".to_string(),
-                        class_views: vec!["AI".to_string(), "OV".to_string()],
+                        class_views: Some(vec!["AI".to_string(), "OV".to_string()]),
                     }),
                 },
                 // "from game.views.Donut/AI import DistributedDonut/AI"
@@ -743,9 +757,9 @@ mod unit_testing {
                             line: 4,
                         },
                         module: vec!["game".to_string(), "views".to_string(), "Donut".to_string()],
-                        module_views: vec!["AI".to_string()],
+                        module_views: Some(vec!["AI".to_string()]),
                         class: "DistributedDonut".to_string(),
-                        class_views: vec!["AI".to_string()],
+                        class_views: Some(vec!["AI".to_string()]),
                     }),
                 },
                 // "from views import *"
@@ -762,9 +776,9 @@ mod unit_testing {
                             line: 5,
                         },
                         module: vec!["views".to_string()],
-                        module_views: vec![],
+                        module_views: None,
                         class: "*".to_string(),
-                        class_views: vec![],
+                        class_views: None,
                     }),
                 },
             ],
