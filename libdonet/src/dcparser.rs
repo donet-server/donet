@@ -72,7 +72,7 @@ pub mod ast {
         pub module: Vec<String>, // python filename, or module(s)
         pub module_views: Vec<String>,
         pub class: IdentifierString,
-        pub class_views: Vec<String>, // AI, UD, OV ...
+        pub class_views: Vec<String>, // /AI, /UD, /OV ...
     }
 
     #[derive(Debug, PartialEq)]
@@ -354,57 +354,39 @@ parser! {
     // e.g. "from views ..."
     // e.g. "from game.views.Donut/AI ..."
     py_module: (Vec<String>, Vec<String>) {
-        // See note @ `import_with_suffix`
-        From import_with_suffix[(m, ms)] => (vec![m], ms)
-    }
-
-    // e.g. "import DistributedDonut/AI/OV"
-    dclass_import: (String, Vec<String>) {
-        Import import_with_suffix[(c, cs)] => (c, cs)
-    }
-
-    import_with_suffix: (String, Vec<String>) {
-        // e.g. "from views/AI/OV import DistributedDonut/AI/OV"
-        // e.g. "from my-views/AI/OV import DistributedDonut/AI/OV"
-        // e.g. "from views import *"
-        Identifier(i) nested_py_modules[_] view_suffixes[is] => (i, is),
-        Module(i) nested_py_modules[_] view_suffixes[is] => (i, is),
-        Star => ("*".to_string(), vec![]),
-        // NOTE: As you've noticed, we ignore nested_py_modules' value.
-        // This is because I've spent 3 hours trying to capture its value
-        // into a vector without having mutable reference issues. Since
-        // the Donet server won't ever need this information, I'm going
-        // to stop trying. We only require the parser to be able to match it.
+        From modules[ms] view_suffixes[is] => (ms, is)
     }
 
     // Bundles module names in 'from' statements, e.g. "myviews.Donut".
-    nested_py_modules: Vec<String> {
-        => vec![],
-        nested_py_modules[mut nm] module[m] => {
+    modules: Vec<String> {
+        module_identifier[m] => vec![m],
+        modules[mut nm] Period module_identifier[m] => {
             nm.push(m);
             nm
         }
     }
 
     // NOTE: Module names may be lexed as identifiers or module tokens.
-    module: String {
-        Period Identifier(m) => m,
-        Period Module(m) => m,
+    module_identifier: String {
+        Identifier(m) => m,
+        Module(m) => m,
+    }
+
+    // e.g. "... import DistributedDonut/AI/OV"
+    // e.g. "... import *"
+    dclass_import: (String, Vec<String>) {
+        Import Identifier(c) view_suffixes[cs] => (c, cs),
+        Import Star => ("*".to_string(), vec![]),
     }
 
     // Bundle up all views of a dclass/module to be imported, into a vector
     // of strings, each corresponding to a view suffix. (AI, UD, OV..)
     view_suffixes: Vec<String> {
         => vec![],
-        view_suffixes[mut vs] view_suffix[s] => {
+        view_suffixes[mut vs] ForwardSlash Identifier(s) => {
             vs.push(s);
             vs
         }
-    }
-
-    // Matches '/AI' '/OV' from, example, "DistributedDonut/AI/OV"
-    view_suffix: String {
-        ForwardSlash Identifier(s) => s
     }
 
     // ----- Field Declaration ----- //
@@ -631,7 +613,6 @@ parser! {
         OWNSEND => "ownsend".to_string(),
         CLSEND => "clsend".to_string(),
     }
-
 }
 
 // This is the interface to our parser; Provides an iterator.
@@ -687,10 +668,11 @@ mod unit_testing {
         let dc_file: &str = "from example-views import DistributedDonut\n\
                              from views import DistributedDonut/AI/OV\n\
                              from views/AI/OV import DistributedDonut/AI/OV\n\
-                             from game.views.Donut/AI import DistributedDonut/AI\n";
+                             from game.views.Donut/AI import DistributedDonut/AI\n\
+                             from views import *\n";
         let target_ast: ast::DCFile = ast::DCFile {
             type_decl: vec![
-                // from example_views import DistributedDonut
+                // "from example_views import DistributedDonut"
                 ast::TypeDecl {
                     span: Span {
                         min: 0,
@@ -709,7 +691,7 @@ mod unit_testing {
                         class_views: vec![],
                     }),
                 },
-                // from views import DistributedDonut/AI/OV
+                // "from views import DistributedDonut/AI/OV"
                 ast::TypeDecl {
                     span: Span {
                         min: 43,
@@ -728,7 +710,7 @@ mod unit_testing {
                         class_views: vec!["AI".to_string(), "OV".to_string()],
                     }),
                 },
-                // from views/AI/OV import DistributedDonut/AI/OV
+                // "from views/AI/OV import DistributedDonut/AI/OV"
                 ast::TypeDecl {
                     span: Span {
                         min: 84,
@@ -747,7 +729,7 @@ mod unit_testing {
                         class_views: vec!["AI".to_string(), "OV".to_string()],
                     }),
                 },
-                // from game.views.Donut/AI import DistributedDonut/AI
+                // "from game.views.Donut/AI import DistributedDonut/AI"
                 ast::TypeDecl {
                     span: Span {
                         min: 131,
@@ -760,13 +742,29 @@ mod unit_testing {
                             max: 182,
                             line: 4,
                         },
-                        // NOTE: We can't actually record more than one module name. It sucks,
-                        // I know- but we won't use it anyways. I've spent 3 hours on this.
-                        module: vec!["game".to_string()],
-                        //module: vec!["game".to_string(), "views".to_string(), "Donut".to_string()],
+                        module: vec!["game".to_string(), "views".to_string(), "Donut".to_string()],
                         module_views: vec!["AI".to_string()],
                         class: "DistributedDonut".to_string(),
                         class_views: vec!["AI".to_string()],
+                    }),
+                },
+                // "from views import *"
+                ast::TypeDecl {
+                    span: Span {
+                        min: 183,
+                        max: 202,
+                        line: 5,
+                    },
+                    node: ast::TypeDecl_::DCImport(ast::DCImport {
+                        span: Span {
+                            min: 183,
+                            max: 202,
+                            line: 5,
+                        },
+                        module: vec!["views".to_string()],
+                        module_views: vec![],
+                        class: "*".to_string(),
+                        class_views: vec![],
                     }),
                 },
             ],
