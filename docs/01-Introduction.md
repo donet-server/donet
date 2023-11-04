@@ -176,6 +176,8 @@ list below to learn and understand the different concepts and terms used in Done
 
   Objects seen by a client, but not owned by it, also have their client-side representation without a suffix.
 
+  <img src="./images/view_diagram.png" width=70% />
+
   Each view implements the logic that is executed when a field of the Distributed Object is called.
   For example, a Distributed Class named 'DistributedAvatar' has AI and OV views. The AI view
   may have the privilege to add currency to the 'DistributedAvatar' object, while the OV view has
