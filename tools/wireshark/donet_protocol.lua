@@ -1,8 +1,8 @@
-p_donet_internal = Proto ("donet_internal", "DoNet Internal Protocol (MD)")
-p_donet_client = Proto ("donet_client", "DoNet Client Protocol (CA)")
+p_donet_internal = Proto ("donet_internal", "Donet Internal Protocol (MD)")
+p_donet_client = Proto ("donet_client", "Donet Client Protocol (CA)")
 
 donet_md_port = 7199
-donet_ca_port = 6667
+donet_ca_port = 7198
 
 -- Donet Internal protocol fields
 
