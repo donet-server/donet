@@ -149,7 +149,6 @@ pub mod ast {
     #[derive(Debug, PartialEq)]
     pub struct FloatParameter {
         pub identifier: Option<IdentifierString>,
-        pub float_type: Option<IdentifierString>,
         pub float_range: Option<Range<f64>>,
         pub float_transform: Option<FloatTransform>,
         pub float_constant: Option<f64>,
@@ -272,7 +271,7 @@ parser! {
     // ----- Struct Type ----- //
 
     struct_type: ast::StructType {
-        StructType Identifier(id) OpenBraces parameters[ps]
+        StructType Identifier(id) OpenBraces struct_parameters[ps]
         CloseBraces Semicolon => ast::StructType {
             span: span!(),
             identifier: id,
@@ -395,6 +394,9 @@ parser! {
 
     // Bundle up all views of a dclass/module to be imported, into a vector
     // of strings, each corresponding to a view suffix. (AI, UD, OV..)
+    //
+    //      view_suffixes -> ε
+    //      view_suffixes -> view_suffixes '/' Identifier
     view_suffixes: Vec<String> {
         => vec![],
         view_suffixes[mut vs] ForwardSlash Identifier(s) => {
@@ -484,9 +486,9 @@ parser! {
 
     // ----- Parameters ----- //
 
-    parameters: Vec<ast::Parameter> {
+    struct_parameters: Vec<ast::Parameter> {
         => vec![],
-        parameters[mut ps] parameter[p] => {
+        struct_parameters[mut ps] struct_parameter[p] => {
             ps.push(p);
             ps
         }
@@ -494,6 +496,14 @@ parser! {
 
     struct_parameter: ast::Parameter {
         parameter[p] Semicolon => p
+    }
+
+    parameters: Vec<ast::Parameter> {
+        => vec![],
+        parameters[mut ps] parameter[p] => {
+            ps.push(p);
+            ps
+        }
     }
 
     parameter: ast::Parameter {
@@ -538,54 +548,127 @@ parser! {
         }
     }
 
-    // ----- Char Parameter ----- //
+    int_transform: Option<ast::IntTransform> {
+        => None,
+        // FIXME: Accept spec's `IntegerLiteral`, not just DecimalLiteral.
+        Percent DecimalLiteral(dl) => Some(ast::IntTransform::OperatorIntLiteral {
+            operator: Percent,
+            int_literal: dl,
+        }),
+        ForwardSlash DecimalLiteral(dl) => Some(ast::IntTransform::OperatorIntLiteral {
+            operator: ForwardSlash,
+            int_literal: dl,
+        }),
+        Star DecimalLiteral(dl) => Some(ast::IntTransform::OperatorIntLiteral {
+            operator: Star,
+            int_literal: dl,
+        }),
+        Hyphen DecimalLiteral(dl) => Some(ast::IntTransform::OperatorIntLiteral {
+            operator: Hyphen,
+            int_literal: dl,
+        }),
+        Plus DecimalLiteral(dl) => Some(ast::IntTransform::OperatorIntLiteral {
+            operator: Plus,
+            int_literal: dl,
+        }),
+    }
 
+    float_transform: Option<ast::FloatTransform> {
+        => None,
+        // TODO: Implement
+    }
+
+    param_id: Option<String> {
+        => None,
+        Identifier(id) => Some(id)
+    }
+
+    // The following productions are a bit repetitive, though
+    // there is no cleaner way to define param initialization
+    // while enforcing a certain data type to be used.
+
+    param_char_init: Option<char> {
+        => None,
+        Equals CharacterLiteral(cl) => Some(cl),
+    }
+
+    param_str_init: Option<String> {
+        => None,
+        Equals StringLiteral(sl) => Some(sl),
+    }
+
+    param_bin_init: Option<String> {
+        => None,
+        Equals BinaryLiteral(bl) => Some(bl),
+    }
+
+    param_dec_const: Option<i64> {
+        => None,
+        Equals DecimalLiteral(dc) => Some(dc),
+    }
+
+    param_float_const: Option<f64> {
+        => None,
+        Equals FloatLiteral(fl) => Some(fl),
+    }
+
+    // ----- Char Parameter ----- //
     char_param: ast::CharParameter {
+        CharType param_id[id] param_char_init[cl] => ast::CharParameter {
+            identifier: id,
+            char_literal: cl,
+        }
     }
 
     // ----- Integer Parameter ----- //
-
     int_param: ast::IntParameter {
+        IntType(it) param_id[id] int_range[ir] param_dec_const[dc] int_transform[itr] => ast::IntParameter {
+            int_type: it,
+            identifier: id,
+            int_range: ir,
+            int_transform: itr,
+            int_constant: dc,
+        }
     }
 
     // ----- Float Parameter ----- //
-
     float_param: ast::FloatParameter {
+        FloatType param_id[id] float_range[fr] param_float_const[fl] float_transform[ft] => ast::FloatParameter {
+            identifier: id,
+            float_range: fr,
+            float_transform: ft,
+            float_constant: fl,
+        }
     }
 
     // ----- String Parameter ----- //
-
     string_param: ast::StringParameter {
+        StringType size_constraint[sc] param_id[id] param_str_init[sl] => ast::StringParameter {
+            identifier: id,
+            string_literal: sl,
+            size_constraint: sc,
+        }
     }
 
     // ----- Blob Parameter ----- //
-
-    // FIXME: plex needs to fix optional grammar. cannot move on with the parser.
-    // FIXME: https://github.com/goffrie/plex/issues/20
-    //opt_id: Option<String> {
-    //    => None,
-    //    Identifier(id) => Some(id)
-    //}
-
     blob_param: ast::BlobParameter {
-        BlobType size_constraint[sc] => ast::BlobParameter {
-            identifier: None,
-            string_literal: None,
+        BlobType size_constraint[sc] param_id[id] param_bin_init[bl] => ast::BlobParameter {
+            identifier: id,
+            string_literal: bl,
             size_constraint: sc,
         },
     }
 
     // ----- Struct Parameter ----- //
-
     struct_param: ast::StructParameter {
-        Identifier(struct_type) Identifier(struct_id) => ast::StructParameter {
-            struct_type: struct_type,
-            identifier: Some(struct_id),
-        },
+        // FIXME: Fix shift-reduce conflict with required identifier and optional identifier.
+        //param_id[struct_type] param_id[struct_id] => ast::StructParameter {
+        //    struct_type: struct_type,
+        //    identifier: struct_id,
+        //},
     }
 
     // ----- Array Parameter ----- //
-
     // FIXME: Implement me
     array_param: ast::ArrayParameter {
         CloseBraces CloseBraces => ast::ArrayParameter {
@@ -609,14 +692,9 @@ parser! {
         }
     }
 
-    // Wrap hardcoded DC keyword tokens into ast::KeywordType node.
-    dc_keyword: String {
-        dc_keyword_[k] => k
-    }
-
     // We use hardcoded DC keyword tokens, since using a plain
     // identifier token causes a shift-reduce conflict in parsing.
-    dc_keyword_: String {
+    dc_keyword: String {
         RAM => "ram".to_string(),
         REQUIRED => "required".to_string(),
         DB => "db".to_string(),
