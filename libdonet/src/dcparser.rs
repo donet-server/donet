@@ -212,7 +212,6 @@ pub mod ast {
     }
 }
 
-// Plex macro to start defining our grammar & productions
 parser! {
     fn parse_(DCToken, Span);
 
@@ -367,7 +366,7 @@ parser! {
     // e.g. "from views ..."
     // e.g. "from game.views.Donut/AI ..."
     py_module: (Vec<String>, Vec<String>) {
-        From modules[ms] view_suffixes[is] => (ms, is)
+        From modules[ms] slash_identifier[is] => (ms, is)
     }
 
     // Bundles module names in 'from' statements, e.g. "myviews.Donut".
@@ -388,20 +387,20 @@ parser! {
     // e.g. "... import DistributedDonut/AI/OV"
     // e.g. "... import *"
     dclass_import: (String, Vec<String>) {
-        Import Identifier(c) view_suffixes[cs] => (c, cs),
+        Import Identifier(c) slash_identifier[cs] => (c, cs),
         Import Star => ("*".to_string(), vec![]),
     }
 
     // Bundle up all views of a dclass/module to be imported, into a vector
     // of strings, each corresponding to a view suffix. (AI, UD, OV..)
     //
-    //      view_suffixes -> ε
-    //      view_suffixes -> view_suffixes '/' Identifier
-    view_suffixes: Vec<String> {
+    //      slash_identifier -> ε
+    //      slash_identifier -> slash_identifier '/' Identifier
+    slash_identifier: Vec<String> {
         => vec![],
-        view_suffixes[mut vs] ForwardSlash Identifier(s) => {
-            vs.push(s);
-            vs
+        slash_identifier[mut si] ForwardSlash Identifier(id) => {
+            si.push(id);
+            si
         }
     }
 
@@ -513,7 +512,7 @@ parser! {
         string_param[sp] => ast::Parameter::String(sp),
         blob_param[bp] => ast::Parameter::Blob(bp),
         struct_param[sp] => ast::Parameter::Struct(sp),
-        array_param[ap] => ast::Parameter::Array(ap),
+        //array_param[ap] => ast::Parameter::Array(ap),
     }
 
     size_constraint: Option<i64> {
@@ -578,7 +577,11 @@ parser! {
         // TODO: Implement
     }
 
-    param_id: Option<String> {
+    //  optional_name -> Identifier | ε
+    optional_name: Option<String> {
+        // if epsilon found AND lookahead is Identifier, don't reduce
+        // this is what holds together the parser from shitting itself.
+        #[no_reduce(Identifier)]
         => None,
         Identifier(id) => Some(id)
     }
@@ -614,7 +617,7 @@ parser! {
 
     // ----- Char Parameter ----- //
     char_param: ast::CharParameter {
-        CharType param_id[id] param_char_init[cl] => ast::CharParameter {
+        CharType optional_name[id] param_char_init[cl] => ast::CharParameter {
             identifier: id,
             char_literal: cl,
         }
@@ -622,7 +625,7 @@ parser! {
 
     // ----- Integer Parameter ----- //
     int_param: ast::IntParameter {
-        IntType(it) param_id[id] int_range[ir] param_dec_const[dc] int_transform[itr] => ast::IntParameter {
+        IntType(it) optional_name[id] int_range[ir] param_dec_const[dc] int_transform[itr] => ast::IntParameter {
             int_type: it,
             identifier: id,
             int_range: ir,
@@ -633,7 +636,7 @@ parser! {
 
     // ----- Float Parameter ----- //
     float_param: ast::FloatParameter {
-        FloatType param_id[id] float_range[fr] param_float_const[fl] float_transform[ft] => ast::FloatParameter {
+        FloatType optional_name[id] float_range[fr] param_float_const[fl] float_transform[ft] => ast::FloatParameter {
             identifier: id,
             float_range: fr,
             float_transform: ft,
@@ -643,7 +646,7 @@ parser! {
 
     // ----- String Parameter ----- //
     string_param: ast::StringParameter {
-        StringType size_constraint[sc] param_id[id] param_str_init[sl] => ast::StringParameter {
+        StringType size_constraint[sc] optional_name[id] param_str_init[sl] => ast::StringParameter {
             identifier: id,
             string_literal: sl,
             size_constraint: sc,
@@ -652,7 +655,7 @@ parser! {
 
     // ----- Blob Parameter ----- //
     blob_param: ast::BlobParameter {
-        BlobType size_constraint[sc] param_id[id] param_bin_init[bl] => ast::BlobParameter {
+        BlobType size_constraint[sc] optional_name[id] param_bin_init[bl] => ast::BlobParameter {
             identifier: id,
             string_literal: bl,
             size_constraint: sc,
@@ -661,15 +664,15 @@ parser! {
 
     // ----- Struct Parameter ----- //
     struct_param: ast::StructParameter {
-        // FIXME: Fix shift-reduce conflict with required identifier and optional identifier.
-        //param_id[struct_type] param_id[struct_id] => ast::StructParameter {
-        //    struct_type: struct_type,
-        //    identifier: struct_id,
-        //},
+        Identifier(struct_type) optional_name[struct_id] => ast::StructParameter {
+            struct_type: struct_type,
+            identifier: struct_id,
+        },
     }
 
     // ----- Array Parameter ----- //
-    // FIXME: Implement me
+    /*
+    // TODO: Implement me
     array_param: ast::ArrayParameter {
         CloseBraces CloseBraces => ast::ArrayParameter {
             data_type: ast::DataType {
@@ -679,7 +682,7 @@ parser! {
             identifier: None,
             array_range: 1 .. 3,
         }
-    }
+    }*/
 
     // ----- DC Keywords ----- //
 
