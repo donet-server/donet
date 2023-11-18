@@ -512,7 +512,7 @@ parser! {
         string_param[sp] => ast::Parameter::String(sp),
         blob_param[bp] => ast::Parameter::Blob(bp),
         struct_param[sp] => ast::Parameter::Struct(sp),
-        //array_param[ap] => ast::Parameter::Array(ap),
+        array_param[ap] => ast::Parameter::Array(ap),
     }
 
     size_constraint: Option<i64> {
@@ -530,21 +530,15 @@ parser! {
         OpenParenthesis FloatLiteral(a) Hyphen FloatLiteral(b) CloseParenthesis => Some(a .. b)
     }
 
-    array_range: Option<Vec<Range<i64>>> {
-        => None,
-        OpenBrackets array_range_opts[aros] CloseBrackets => Some(aros)
+    array_range: Range<i64> {
+        OpenBrackets array_range_opt[array_range] CloseBrackets => array_range
     }
 
-    array_range_opts: Vec<Range<i64>> {
-        => vec![],
-        array_range_opts[mut aros] Hyphen DecimalLiteral(aro) => {
-            aros.push(aro);
-            aros
-        },
-        array_range_opts[mut aros] DecimalLiteral(aro) => {
-            aros.push(aro);
-            aros
-        }
+    array_range_opt: Range<i64> {
+        => 0 .. 0,
+        #[no_reduce(Hyphen)] // do not reduce if lookahead is the '-' token
+        DecimalLiteral(a) => a .. a,
+        DecimalLiteral(min) Hyphen DecimalLiteral(max) => min .. max,
     }
 
     int_transform: Option<ast::IntTransform> {
@@ -664,25 +658,24 @@ parser! {
 
     // ----- Struct Parameter ----- //
     struct_param: ast::StructParameter {
-        Identifier(struct_type) optional_name[struct_id] => ast::StructParameter {
-            struct_type: struct_type,
-            identifier: struct_id,
-        },
+        #[no_reduce(OpenBrackets)] // avoid ambiguity between struct & array parameters
+        Identifier(st) optional_name[si] => ast::StructParameter {
+            struct_type: st,
+            identifier: si,
+        }
     }
 
     // ----- Array Parameter ----- //
-    /*
-    // TODO: Implement me
     array_param: ast::ArrayParameter {
-        CloseBraces CloseBraces => ast::ArrayParameter {
+        Identifier(_) optional_name[ai] array_range[ar] => ast::ArrayParameter {
             data_type: ast::DataType {
                 base_type: ast::BaseType::CharType,
                 type_identifier: None,
             },
-            identifier: None,
-            array_range: 1 .. 3,
+            identifier: ai,
+            array_range: ar,
         }
-    }*/
+    }
 
     // ----- DC Keywords ----- //
 
