@@ -50,40 +50,49 @@ pub enum DCToken {
     EscapeCharacter(String), // "\" ( <any character> | "x" hexDigit { hexDigit } )
 
     // Data Types
-    CharType,           // "char"
-    IntType(String),    // "int8" | "int16" | "int32" | "int64"
-                        // | "uint8" | "uint16" | "uint32" | "uint64"
-    FloatType,          // "float64"
-    StringType,         // "string"
-    BlobType,           // "blob"
+    CharT,             // "char"
+    Int8T,             // "int8"
+    Int16T,            // "int16"
+    Int32T,            // "int32"
+    Int64T,            // "int64"
+    UInt8T,            // "uint8"
+    UInt16T,           // "uint16"
+    UInt32T,           // "uint32"
+    UInt64T,           // "uint64"
+    Float64T,          // "float64"
+    Int8ArrayT,        // "int8array"
+    Int16ArrayT,       // "int16array"
+    Int32ArrayT,       // "int32array"
+    UInt8ArrayT,       // "uint8array"
+    UInt16ArrayT,      // "uint16array"
+    UInt32ArrayT,      // "uint32array"
+    UInt32UInt8ArrayT, // "uint32uint8array"
+    StringT,           // "string"
+    BlobT,             // "blob"
+    Blob32T,           // "blob32"
     // NOTE: Astron DC specification defines both string and blob type under
     // one 'SizedType' lexical token. We match them as separate tokens so that
     // when DB tables are created for objects they can use the corresponding SQL types.
 
     // Keywords
-    DClassType,     // "dclass"
-    StructType,     // "struct"
-    KeywordType,    // "keyword"
-    From,           // "from"
-    Import,         // "import"
-    TypeDefinition, // "typedef"
+    DClass,  // "dclass"
+    Struct,  // "struct"
+    Keyword, // "keyword"
+    Typedef, // "typedef"
+    From,    // "from"
+    Import,  // "import"
+    Switch,  // "switch"
+    Case,    // "case"
+    Default, // "default"
+    Break,   // "break"
 
-    // DC Keywords
-    RAM,       // "ram"
-    REQUIRED,  // "required"
-    DB,        // "db"
-    AIRECV,    // "airecv"
-    OWNRECV,   // "ownrecv"
-    CLRECV,    // "clrecv"
-    BROADCAST, // "broadcast"
-    OWNSEND,   // "ownsend"
-    CLSEND,    // "clsend"
-
-    Identifier(String), // ( Letter | "_" ) { Letter | DecDigit | "_" }
-    Module(String),   // ( Letter | "_" ) { Letter | DecDigit | "_" | "-" }
     // NOTE: Module names in import statements may be matched as Indentifiers, and
     // not Module tokens. We have the module token to accept Python module names with
     // a '-' hyphen character. The parser will check for either token in import statements.
+    Identifier(String), // ( Letter | "_" ) { Letter | DecDigit | "_" }
+    Module(String),     // ( Letter | "_" ) { Letter | DecDigit | "_" | "-" }
+    DCKeyword(String),  // ( "ram" | "required" | "db" | "airecv" | "ownrecv" |
+                        //   "clrecv" | "broadcast" | "ownsend" | "clsend" )
 
     // Operators
     Percent,      // "%"
@@ -106,7 +115,12 @@ pub enum DCToken {
     Colon,            // ":"
 }
 
-// Plex macro to start defining our lexer regex rules.
+#[rustfmt::skip]
+static DC_KEYWORDS: &[&str] = &[
+    "ram", "required", "db", "airecv", "ownrecv",
+    "clrecv", "broadcast", "ownsend", "clsend",
+];
+
 lexer! {
     fn next_token(text: 'a) -> (DCToken, &'a str);
 
@@ -119,20 +133,19 @@ lexer! {
 
     r#"0|([1-9][0-9]*)"# => (DCToken::DecimalLiteral(match text.parse::<i64>() {
         Ok(n) => { n },
-        Err(_err) => {
-            // FIXME: error!("Found DecimalLiteral token, but failed to parse as i64.\n\n{}", err);
-            panic!("The DC lexer failed to parse a literal and could not continue.");
+        Err(err) => {
+            panic!("dclexer: Found DecimalLiteral token, but failed to parse as i64.\n\n{}", err);
         },
     }), text),
+
     r#"0[0-7]+"# => (DCToken::OctalLiteral(text.to_owned()), text),
     r#"0[xX][0-9a-fA-F]+"# => (DCToken::HexLiteral(text.to_owned()), text),
     r#"0[bB][0-1]+"# => (DCToken::BinaryLiteral(text.to_owned()), text),
 
     r#"([0-9]?)+\.[0-9]+"# => (DCToken::FloatLiteral(match text.parse::<f64>() {
         Ok(f) => { f },
-        Err(_err) => {
-            // FIXME: error!("Found FloatLiteral token, but failed to parse as f64.\n\n{}", err);
-            panic!("The DC lexer failed to parse a literal and could not continue.");
+        Err(err) => {
+            panic!("dclexer: Found FloatLiteral token, but failed to parse as f64.\n\n{}", err);
         }
     }), text),
 
@@ -141,30 +154,48 @@ lexer! {
     r#"'.'"# => (DCToken::CharacterLiteral(text.chars().nth(1).unwrap()), text),
     r#"\"[^\"]+\""# => (DCToken::StringLiteral(text.to_owned().replace('\"', "")), text),
 
-    r#"char"# => (DCToken::CharType, text),
-    r#"[u]?(int8|int16|int32|int64)"# => (DCToken::IntType(text.to_owned()), text),
-    r#"float64"# => (DCToken::FloatType, text),
-    r#"string"# => (DCToken::StringType, text),
-    r#"blob"# => (DCToken::BlobType, text),
+    // Signed/unsigned integer data types *could* be a single token,
+    // but parsing is easier if they are all individual lexical tokens.
+    r#"char"# => (DCToken::CharT, text),
+    r#"int8"# => (DCToken::Int8T, text),
+    r#"int16"# => (DCToken::Int16T, text),
+    r#"int32"# => (DCToken::Int32T, text),
+    r#"int64"# => (DCToken::Int64T, text),
+    r#"uint8"# => (DCToken::UInt8T, text),
+    r#"uint16"# => (DCToken::UInt16T, text),
+    r#"uint32"# => (DCToken::UInt32T, text),
+    r#"uint64"# => (DCToken::UInt64T, text),
+    r#"float64"# => (DCToken::Float64T, text),
+    r#"int8array"# => (DCToken::Int8ArrayT, text),
+    r#"int16array"# => (DCToken::Int16ArrayT, text),
+    r#"int32array"# => (DCToken::Int32ArrayT, text),
+    r#"uint8array"# => (DCToken::UInt8ArrayT, text),
+    r#"uint16array"# => (DCToken::UInt16ArrayT, text),
+    r#"uint32array"# => (DCToken::UInt32ArrayT, text),
+    r#"uint32uint8array"# => (DCToken::UInt32UInt8ArrayT, text),
+    r#"string"# => (DCToken::StringT, text),
+    r#"blob"# => (DCToken::BlobT, text),
+    r#"blob32"# => (DCToken::Blob32T, text),
 
-    r#"dclass"# => (DCToken::DClassType, text),
-    r#"struct"# => (DCToken::StructType, text),
-    r#"keyword"# => (DCToken::KeywordType, text),
+    r#"dclass"# => (DCToken::DClass, text),
+    r#"struct"# => (DCToken::Struct, text),
+    r#"keyword"# => (DCToken::Keyword, text),
     r#"from"# => (DCToken::From, text),
     r#"import"# => (DCToken::Import, text),
-    r#"typedef"# => (DCToken::TypeDefinition, text),
+    r#"typedef"# => (DCToken::Typedef, text),
+    r#"switch"# => (DCToken::Switch, text),
+    r#"case"# => (DCToken::Case, text),
+    r#"default"# => (DCToken::Default, text),
+    r#"break"# => (DCToken::Break, text),
 
-    r#"ram"# => (DCToken::RAM, text),
-    r#"required"# => (DCToken::REQUIRED, text),
-    r#"db"# => (DCToken::DB, text),
-    r#"airecv"# => (DCToken::AIRECV, text),
-    r#"ownrecv"# => (DCToken::OWNRECV, text),
-    r#"clrecv"# => (DCToken::CLRECV, text),
-    r#"broadcast"# => (DCToken::BROADCAST, text),
-    r#"ownsend"# => (DCToken::OWNSEND, text),
-    r#"clsend"# => (DCToken::CLSEND, text),
-
-    r#"[a-zA-Z_][a-zA-Z0-9_]*"# => (DCToken::Identifier(text.to_owned()), text),
+    r#"[a-zA-Z_][a-zA-Z0-9_]*"# => {
+        // Decide whether this is an identifier or a keyword.
+        if DC_KEYWORDS.contains(&text) {
+            (DCToken::DCKeyword(text.to_owned()), text)
+        } else {
+            (DCToken::Identifier(text.to_owned()), text)
+        }
+    },
     r#"[a-zA-Z_][a-zA-Z0-9_\-]*"# => (DCToken::Module(text.to_owned()), text),
     r#"\\(x[0-9a-fA-F]+|.)"# => (DCToken::EscapeCharacter(text.to_owned()), text),
 
@@ -186,8 +217,7 @@ lexer! {
     r#"\="# => (DCToken::Equals, text),
     r#"\:"# => (DCToken::Colon, text),
     r#"."# => {
-        // FIXME: error!("Found unexpected character: {}", text);
-        panic!("The DC lexer found an unexpected character and could not continue.");
+        panic!("dclexer: Found an unexpected character: {}", text);
     }
 }
 
@@ -292,14 +322,20 @@ mod unit_testing {
     #[test]
     fn keyword_definition_test() {
         let target: Vec<DCToken> = vec![
-            DCToken::KeywordType,
+            DCToken::Keyword,
             DCToken::Identifier(String::from("test")),
             DCToken::Semicolon,
             // Just need to cover these two tokens for coverage.
-            DCToken::DClassType,
-            DCToken::StructType,
+            DCToken::DClass,
+            DCToken::Struct,
         ];
         lexer_test_for_target("keyword test;\n dclass struct", target);
+    }
+
+    #[test]
+    fn switch_tokens_test() {
+        let target: Vec<DCToken> = vec![DCToken::Switch, DCToken::Case, DCToken::Default, DCToken::Break];
+        lexer_test_for_target("switch case default break", target);
     }
 
     #[test]
@@ -389,25 +425,30 @@ mod unit_testing {
 
     #[test]
     fn data_types() {
+        #[rustfmt::skip]
         let target: Vec<DCToken> = vec![
-            DCToken::CharType,
-            DCToken::IntType(String::from("int8")),
-            DCToken::IntType(String::from("int16")),
-            DCToken::IntType(String::from("int32")),
-            DCToken::IntType(String::from("int64")),
-            DCToken::IntType(String::from("uint8")),
-            DCToken::IntType(String::from("uint16")),
-            DCToken::IntType(String::from("uint32")),
-            DCToken::IntType(String::from("uint64")),
-            DCToken::FloatType,
-            DCToken::StringType,
-            DCToken::BlobType,
+            DCToken::CharT,
+            // Signed / Unsigned Integers
+            DCToken::Int8T, DCToken::Int16T, DCToken::Int32T, DCToken::Int64T,
+            DCToken::UInt8T, DCToken::UInt16T, DCToken::UInt32T, DCToken::UInt64T,
+            // Array Data Types
+            DCToken::Int8ArrayT, DCToken::Int16ArrayT, DCToken::Int32ArrayT,
+            DCToken::UInt8ArrayT, DCToken::UInt16ArrayT, DCToken::UInt32ArrayT,
+            DCToken::UInt32UInt8ArrayT,
+            // Floating Point (float64)
+            DCToken::Float64T,
+            // Sized Types (string / blob)
+            DCToken::StringT,
+            DCToken::BlobT,
+            DCToken::Blob32T,
         ];
         lexer_test_for_target(
             "char \
             int8 int16 int32 int64 \
             uint8 uint16 uint32 uint64 \
-            float64 string blob",
+            int8array int16array int32array \
+            uint8array uint16array uint32array uint32uint8array \
+            float64 string blob blob32",
             target,
         );
     }
@@ -437,15 +478,15 @@ mod unit_testing {
     #[test]
     fn dc_keywords_tokens() {
         let target: Vec<DCToken> = vec![
-            DCToken::RAM,
-            DCToken::REQUIRED,
-            DCToken::DB,
-            DCToken::AIRECV,
-            DCToken::OWNRECV,
-            DCToken::CLRECV,
-            DCToken::BROADCAST,
-            DCToken::OWNSEND,
-            DCToken::CLSEND,
+            DCToken::DCKeyword("ram".to_string()),
+            DCToken::DCKeyword("required".to_string()),
+            DCToken::DCKeyword("db".to_string()),
+            DCToken::DCKeyword("airecv".to_string()),
+            DCToken::DCKeyword("ownrecv".to_string()),
+            DCToken::DCKeyword("clrecv".to_string()),
+            DCToken::DCKeyword("broadcast".to_string()),
+            DCToken::DCKeyword("ownsend".to_string()),
+            DCToken::DCKeyword("clsend".to_string()),
         ];
         lexer_test_for_target(
             "ram required db airecv ownrecv \

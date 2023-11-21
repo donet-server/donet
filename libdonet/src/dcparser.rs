@@ -264,13 +264,13 @@ parser! {
     // ----- Keyword Type ----- //
 
     keyword_type: String {
-        KeywordType Identifier(id) Semicolon => id
+        Keyword Identifier(id) Semicolon => id
     }
 
     // ----- Struct Type ----- //
 
     struct_type: ast::StructType {
-        StructType Identifier(id) OpenBraces struct_parameters[ps]
+        Struct Identifier(id) OpenBraces struct_parameters[ps]
         CloseBraces Semicolon => ast::StructType {
             span: span!(),
             identifier: id,
@@ -281,7 +281,7 @@ parser! {
     // ----- Distributed Class Type ----- //
 
     distributed_class_type: ast::DistributedClassType {
-        DClassType Identifier(id) OpenBraces field_declarations[fds]
+        DClass Identifier(id) OpenBraces field_declarations[fds]
         CloseBraces Semicolon => ast::DistributedClassType {
             span: span!(),
             identifier: id,
@@ -292,7 +292,7 @@ parser! {
     // ----- Type Definition Type ----- //
 
     type_definition: ast::TypeDefinition {
-        TypeDefinition CharType Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef CharT Identifier(alias) Semicolon => ast::TypeDefinition {
             span: span!(),
             dc_type: ast::DataType {
                 base_type: ast::BaseType::CharType,
@@ -300,15 +300,15 @@ parser! {
             },
             alias: alias,
         },
-        TypeDefinition IntType(int_id) Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef Int8T Identifier(alias) Semicolon => ast::TypeDefinition {
             span: span!(),
             dc_type: ast::DataType {
                 base_type: ast::BaseType::IntType,
-                type_identifier: Some(int_id), // unsigned/signed + bits
+                type_identifier: Some("int8".to_string()), // unsigned/signed + bits
             },
             alias: alias,
         },
-        TypeDefinition FloatType Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef Float64T Identifier(alias) Semicolon => ast::TypeDefinition {
             span: span!(),
             dc_type: ast::DataType {
                 base_type: ast::BaseType::FloatType,
@@ -316,7 +316,7 @@ parser! {
             },
             alias: alias,
         },
-        TypeDefinition StringType Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef StringT Identifier(alias) Semicolon => ast::TypeDefinition {
             span: span!(),
             dc_type: ast::DataType {
                 base_type: ast::BaseType::StringType,
@@ -324,7 +324,7 @@ parser! {
             },
             alias: alias,
         },
-        TypeDefinition BlobType Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef BlobT Identifier(alias) Semicolon => ast::TypeDefinition {
             span: span!(),
             dc_type: ast::DataType {
                 base_type: ast::BaseType::BlobType,
@@ -611,7 +611,7 @@ parser! {
 
     // ----- Char Parameter ----- //
     char_param: ast::CharParameter {
-        CharType optional_name[id] param_char_init[cl] => ast::CharParameter {
+        CharT optional_name[id] param_char_init[cl] => ast::CharParameter {
             identifier: id,
             char_literal: cl,
         }
@@ -619,8 +619,9 @@ parser! {
 
     // ----- Integer Parameter ----- //
     int_param: ast::IntParameter {
-        IntType(it) optional_name[id] int_range[ir] param_dec_const[dc] int_transform[itr] => ast::IntParameter {
-            int_type: it,
+        Int8T optional_name[id] int_range[ir]
+        param_dec_const[dc] int_transform[itr] => ast::IntParameter {
+            int_type: "int8".to_string(),
             identifier: id,
             int_range: ir,
             int_transform: itr,
@@ -630,7 +631,8 @@ parser! {
 
     // ----- Float Parameter ----- //
     float_param: ast::FloatParameter {
-        FloatType optional_name[id] float_range[fr] param_float_const[fl] float_transform[ft] => ast::FloatParameter {
+        Float64T optional_name[id] float_range[fr]
+        param_float_const[fl] float_transform[ft] => ast::FloatParameter {
             identifier: id,
             float_range: fr,
             float_transform: ft,
@@ -640,7 +642,7 @@ parser! {
 
     // ----- String Parameter ----- //
     string_param: ast::StringParameter {
-        StringType size_constraint[sc] optional_name[id] param_str_init[sl] => ast::StringParameter {
+        StringT size_constraint[sc] optional_name[id] param_str_init[sl] => ast::StringParameter {
             identifier: id,
             string_literal: sl,
             size_constraint: sc,
@@ -649,7 +651,7 @@ parser! {
 
     // ----- Blob Parameter ----- //
     blob_param: ast::BlobParameter {
-        BlobType size_constraint[sc] optional_name[id] param_bin_init[bl] => ast::BlobParameter {
+        BlobT size_constraint[sc] optional_name[id] param_bin_init[bl] => ast::BlobParameter {
             identifier: id,
             string_literal: bl,
             size_constraint: sc,
@@ -682,24 +684,10 @@ parser! {
     // Bundle up all dc_keyword productions into one vector.
     dc_keyword_list: Vec<String> {
         => vec![],
-        dc_keyword_list[mut kl] dc_keyword[k] => {
+        dc_keyword_list[mut kl] DCKeyword(k) => {
             kl.push(k);
             kl
         }
-    }
-
-    // We use hardcoded DC keyword tokens, since using a plain
-    // identifier token causes a shift-reduce conflict in parsing.
-    dc_keyword: String {
-        RAM => "ram".to_string(),
-        REQUIRED => "required".to_string(),
-        DB => "db".to_string(),
-        AIRECV => "airecv".to_string(),
-        OWNRECV => "ownrecv".to_string(),
-        CLRECV => "clrecv".to_string(),
-        BROADCAST => "broadcast".to_string(),
-        OWNSEND => "ownsend".to_string(),
-        CLSEND => "clsend".to_string(),
     }
 }
 
