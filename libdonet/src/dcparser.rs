@@ -78,7 +78,7 @@ pub mod ast {
     #[derive(Debug, PartialEq)]
     pub struct TypeDefinition {
         pub span: Span,
-        pub dc_type: DataType,
+        pub dc_type: DCToken,
         pub alias: IdentifierString,
     }
 
@@ -181,15 +181,9 @@ pub mod ast {
 
     #[derive(Debug, PartialEq)]
     pub struct ArrayParameter {
-        pub data_type: DataType,
+        pub data_type: DCToken,
         pub identifier: Option<IdentifierString>,
         pub array_range: Range<i64>,
-    }
-
-    #[derive(Debug, PartialEq)]
-    pub struct DataType {
-        pub base_type: BaseType,
-        pub type_identifier: Option<String>, // used for IntType (unsigned/signed + bits)
     }
 
     #[rustfmt::skip]
@@ -294,42 +288,42 @@ parser! {
     type_definition: ast::TypeDefinition {
         Typedef CharT Identifier(alias) Semicolon => ast::TypeDefinition {
             span: span!(),
-            dc_type: ast::DataType {
-                base_type: ast::BaseType::CharType,
-                type_identifier: None,
-            },
+            dc_type: CharT,
             alias: alias,
         },
-        Typedef Int8T Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef signed_integers[dt] Identifier(alias) Semicolon => ast::TypeDefinition {
             span: span!(),
-            dc_type: ast::DataType {
-                base_type: ast::BaseType::IntType,
-                type_identifier: Some("int8".to_string()), // unsigned/signed + bits
-            },
+            dc_type: dt,
+            alias: alias,
+        },
+        Typedef unsigned_integers[dt] Identifier(alias) Semicolon => ast::TypeDefinition {
+            span: span!(),
+            dc_type: dt,
+            alias: alias,
+        },
+        Typedef array_data_types[dt] Identifier(alias) Semicolon => ast::TypeDefinition {
+            span: span!(),
+            dc_type: dt,
             alias: alias,
         },
         Typedef Float64T Identifier(alias) Semicolon => ast::TypeDefinition {
             span: span!(),
-            dc_type: ast::DataType {
-                base_type: ast::BaseType::FloatType,
-                type_identifier: None,
-            },
+            dc_type: Float64T,
             alias: alias,
         },
         Typedef StringT Identifier(alias) Semicolon => ast::TypeDefinition {
             span: span!(),
-            dc_type: ast::DataType {
-                base_type: ast::BaseType::StringType,
-                type_identifier: None,
-            },
+            dc_type: StringT,
             alias: alias,
         },
         Typedef BlobT Identifier(alias) Semicolon => ast::TypeDefinition {
             span: span!(),
-            dc_type: ast::DataType {
-                base_type: ast::BaseType::BlobType,
-                type_identifier: None,
-            },
+            dc_type: BlobT,
+            alias: alias,
+        },
+        Typedef Blob32T Identifier(alias) Semicolon => ast::TypeDefinition {
+            span: span!(),
+            dc_type: Blob32T,
             alias: alias,
         },
     }
@@ -477,7 +471,7 @@ parser! {
     }
 
     parameter_field: ast::ParameterField {
-        struct_parameter[p] dc_keyword_list[kl] => ast::ParameterField {
+        parameter[p] dc_keyword_list[kl] => ast::ParameterField {
             parameter: p,
             keyword_list: kl,
         }
@@ -651,6 +645,16 @@ parser! {
         UInt64T => UInt64T,
     }
 
+    array_data_types: DCToken {
+        Int8ArrayT => Int8ArrayT,
+        Int16ArrayT => Int16ArrayT,
+        Int32ArrayT => Int32ArrayT,
+        UInt8ArrayT => UInt8ArrayT,
+        UInt16ArrayT => UInt16ArrayT,
+        UInt32ArrayT => UInt32ArrayT,
+        UInt32UInt8ArrayT => UInt32UInt8ArrayT,
+    }
+
     // ----- Float Parameter ----- //
     float_param: ast::FloatParameter {
         Float64T optional_name[id] float_range[fr]
@@ -692,10 +696,7 @@ parser! {
     // ----- Array Parameter ----- //
     array_param: ast::ArrayParameter {
         Identifier(_) optional_name[ai] array_range[ar] => ast::ArrayParameter {
-            data_type: ast::DataType {
-                base_type: ast::BaseType::CharType,
-                type_identifier: None,
-            },
+            data_type: CharT, // fixme
             identifier: ai,
             array_range: ar,
         }
@@ -703,7 +704,7 @@ parser! {
 
     // ----- DC Keywords ----- //
 
-    // Bundle up all dc_keyword productions into one vector.
+    // Bundle up all (or none) DCKeyword tokens into one production.
     dc_keyword_list: Vec<String> {
         => vec![],
         dc_keyword_list[mut kl] DCKeyword(k) => {
@@ -722,7 +723,7 @@ pub fn parse<I: Iterator<Item = (DCToken, Span)>>(
 
 #[cfg(test)]
 mod unit_testing {
-    use super::{ast, parse, Span};
+    use super::{ast, parse, DCToken, Span};
     use crate::dclexer::Lexer;
 
     // Utility function for verifying the parser output to the target AST.
@@ -750,10 +751,7 @@ mod unit_testing {
                         max: 18,
                         line: 1,
                     },
-                    dc_type: ast::DataType {
-                        base_type: ast::BaseType::CharType,
-                        type_identifier: None,
-                    },
+                    dc_type: DCToken::CharT,
                     alias: "test".to_string(),
                 }),
             }],
