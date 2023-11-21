@@ -140,7 +140,7 @@ pub mod ast {
     #[derive(Debug, PartialEq)]
     pub struct IntParameter {
         pub identifier: Option<IdentifierString>,
-        pub int_type: IdentifierString,
+        pub int_type: DCToken,
         pub int_range: Option<Range<i64>>,
         pub int_transform: Option<IntTransform>,
         pub int_constant: Option<i64>,
@@ -619,14 +619,36 @@ parser! {
 
     // ----- Integer Parameter ----- //
     int_param: ast::IntParameter {
-        Int8T optional_name[id] int_range[ir]
+        signed_integers[it] optional_name[id] int_range[ir]
         param_dec_const[dc] int_transform[itr] => ast::IntParameter {
-            int_type: "int8".to_string(),
+            int_type: it,
             identifier: id,
             int_range: ir,
             int_transform: itr,
             int_constant: dc,
-        }
+        },
+        unsigned_integers[it] optional_name[id] int_range[ir]
+        param_dec_const[dc] int_transform[itr] => ast::IntParameter {
+            int_type: it,
+            identifier: id,
+            int_range: ir,
+            int_transform: itr,
+            int_constant: dc,
+        },
+    }
+
+    signed_integers: DCToken {
+        Int8T => Int8T,
+        Int16T => Int16T,
+        Int32T => Int32T,
+        Int64T => Int64T,
+    }
+
+    unsigned_integers: DCToken {
+        UInt8T => UInt8T,
+        UInt16T => UInt16T,
+        UInt32T => UInt32T,
+        UInt64T => UInt64T,
     }
 
     // ----- Float Parameter ----- //
