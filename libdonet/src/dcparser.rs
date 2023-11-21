@@ -613,16 +613,16 @@ parser! {
 
     // ----- Integer Parameter ----- //
     int_param: ast::IntParameter {
-        signed_integers[it] optional_name[id] int_range[ir]
-        param_dec_const[dc] int_transform[itr] => ast::IntParameter {
+        signed_integers[it] int_range[ir] int_transform[itr]
+        optional_name[id] param_dec_const[dc] => ast::IntParameter {
             int_type: it,
             identifier: id,
             int_range: ir,
             int_transform: itr,
             int_constant: dc,
         },
-        unsigned_integers[it] optional_name[id] int_range[ir]
-        param_dec_const[dc] int_transform[itr] => ast::IntParameter {
+        unsigned_integers[it] int_range[ir] int_transform[itr]
+        optional_name[id] param_dec_const[dc] => ast::IntParameter {
             int_type: it,
             identifier: id,
             int_range: ir,
@@ -657,8 +657,8 @@ parser! {
 
     // ----- Float Parameter ----- //
     float_param: ast::FloatParameter {
-        Float64T optional_name[id] float_range[fr]
-        param_float_const[fl] float_transform[ft] => ast::FloatParameter {
+        Float64T float_range[fr] float_transform[ft]
+        optional_name[id] param_float_const[fl] => ast::FloatParameter {
             identifier: id,
             float_range: fr,
             float_transform: ft,
