@@ -70,9 +70,6 @@ pub enum DCToken {
     StringT,           // "string"
     BlobT,             // "blob"
     Blob32T,           // "blob32"
-    // NOTE: Astron DC specification defines both string and blob type under
-    // one 'SizedType' lexical token. We match them as separate tokens so that
-    // when DB tables are created for objects they can use the corresponding SQL types.
 
     // Keywords
     DClass,  // "dclass"
