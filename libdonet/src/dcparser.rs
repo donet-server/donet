@@ -63,6 +63,7 @@ pub mod ast {
     pub struct DistributedClassType {
         pub span: Span,
         pub identifier: IdentifierString,
+        pub parent_class: Option<IdentifierString>,
         pub field_declarations: Vec<FieldDecl>,
     }
 
@@ -275,12 +276,18 @@ parser! {
     // ----- Distributed Class Type ----- //
 
     distributed_class_type: ast::DistributedClassType {
-        DClass Identifier(id) OpenBraces field_declarations[fds]
-        CloseBraces Semicolon => ast::DistributedClassType {
+        DClass Identifier(id) optional_inheritance[pc] OpenBraces
+        field_declarations[fds] CloseBraces Semicolon => ast::DistributedClassType {
             span: span!(),
             identifier: id,
+            parent_class: pc,
             field_declarations: fds,
         }
+    }
+
+    optional_inheritance: Option<String> {
+        => None,
+        Colon Identifier(id) => Some(id),
     }
 
     // ----- Type Definition Type ----- //
@@ -887,6 +894,7 @@ mod unit_testing {
                         line: 1,
                     },
                     identifier: "DistributedDonut".to_string(),
+                    parent_class: None,
                     field_declarations: vec![],
                 }),
             }],
