@@ -430,12 +430,6 @@ parser! {
             identifier: id,
             field_type: ast::FieldType::Atomic(af),
         },
-        // maybe separate atomic/parameter fields match to other production rule??
-        //
-        //Identifier(id) Colon parameter_fields[pfs] => ast::MolecularField {
-        //    identifier: id,
-        //    field_type: ast::FieldType::Parameter(pfs),
-        //}
     }
 
     // ----- Atomic Field ----- //
@@ -459,9 +453,6 @@ parser! {
 
     // ----- Parameter Fields ----- //
 
-    // The 'parameter_fields' production is made up of the current parameters
-    // plus a new parameter following, and returns a vector of all
-    // parameters parsed so far. This bundles them all up for other productions.
     parameter_fields: Vec<ast::ParameterField> {
         => vec![],
         parameter_fields[mut ps] Comma parameter_field[p] => {
@@ -565,7 +556,6 @@ parser! {
         // TODO: Implement
     }
 
-    //  optional_name -> Identifier | ε
     optional_name: Option<String> {
         // if epsilon found AND lookahead is Identifier, don't reduce
         // this is what holds together the parser from shitting itself.
@@ -573,10 +563,6 @@ parser! {
         => None,
         Identifier(id) => Some(id)
     }
-
-    // The following productions are a bit repetitive, though
-    // there is no cleaner way to define param initialization
-    // while enforcing a certain data type to be used.
 
     param_char_init: Option<char> {
         => None,
@@ -699,7 +685,22 @@ parser! {
             data_type: CharT, // fixme
             identifier: ai,
             array_range: ar,
-        }
+        },
+        signed_integers[dt] array_range[ar] optional_name[id] => ast::ArrayParameter {
+            data_type: dt,
+            identifier: id,
+            array_range: ar,
+        },
+        unsigned_integers[dt] array_range[ar] optional_name[id] => ast::ArrayParameter {
+            data_type: dt,
+            identifier: id,
+            array_range: ar,
+        },
+        array_data_types[dt] array_range[ar] optional_name[id] => ast::ArrayParameter {
+            data_type: dt,
+            identifier: id,
+            array_range: ar,
+        },
     }
 
     // ----- DC Keywords ----- //
