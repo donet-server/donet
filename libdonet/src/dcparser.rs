@@ -502,10 +502,15 @@ parser! {
 
     parameters: Vec<ast::Parameter> {
         => vec![],
+        #[no_reduce(Comma)] // don't reduce if we're expecting more params
         parameters[mut ps] parameter[p] => {
             ps.push(p);
             ps
-        }
+        },
+        parameters[mut ps] parameter[p] Comma => {
+            ps.push(p);
+            ps
+        },
     }
 
     parameter: ast::Parameter {
