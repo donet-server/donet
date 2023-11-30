@@ -287,18 +287,15 @@ parser! {
 
     optional_inheritance: Option<Vec<String>> {
         => None,
-        Colon class_parents[cp] => {
-            if cp.is_empty() {
-                None
-            } else {
-                Some(cp)
-            }
+        Colon Identifier(parent) additional_parents[mut cp] => {
+            cp.insert(0, parent);
+            Some(cp)
         },
     }
 
-    class_parents: Vec<String> {
+    additional_parents: Vec<String> {
         => vec![],
-        class_parents[mut cp] Comma Identifier(class) => {
+        additional_parents[mut cp] Comma Identifier(class) => {
             cp.push(class);
             cp
         }
