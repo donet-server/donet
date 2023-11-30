@@ -63,7 +63,7 @@ pub mod ast {
     pub struct DistributedClassType {
         pub span: Span,
         pub identifier: IdentifierString,
-        pub parent_class: Option<IdentifierString>,
+        pub parent_classes: Option<Vec<IdentifierString>>,
         pub field_declarations: Vec<FieldDecl>,
     }
 
@@ -280,14 +280,28 @@ parser! {
         field_declarations[fds] CloseBraces Semicolon => ast::DistributedClassType {
             span: span!(),
             identifier: id,
-            parent_class: pc,
+            parent_classes: pc,
             field_declarations: fds,
         }
     }
 
-    optional_inheritance: Option<String> {
+    optional_inheritance: Option<Vec<String>> {
         => None,
-        Colon Identifier(id) => Some(id),
+        Colon class_parents[cp] => {
+            if cp.is_empty() {
+                None
+            } else {
+                Some(cp)
+            }
+        },
+    }
+
+    class_parents: Vec<String> {
+        => vec![],
+        class_parents[mut cp] Comma Identifier(class) => {
+            cp.push(class);
+            cp
+        }
     }
 
     // ----- Type Definition Type ----- //
@@ -894,7 +908,7 @@ mod unit_testing {
                         line: 1,
                     },
                     identifier: "DistributedDonut".to_string(),
-                    parent_class: None,
+                    parent_classes: None,
                     field_declarations: vec![],
                 }),
             }],
