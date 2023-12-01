@@ -304,42 +304,50 @@ parser! {
     // ----- Type Definition Type ----- //
 
     type_definition: ast::TypeDefinition {
-        Typedef CharT Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef CharT Identifier(alias)
+        opt_array_range[_] Semicolon => ast::TypeDefinition {
             span: span!(),
             dc_type: CharT,
             alias: alias,
         },
-        Typedef signed_integers[dt] Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef signed_integers[dt] Identifier(alias)
+        opt_array_range[_] Semicolon => ast::TypeDefinition {
             span: span!(),
             dc_type: dt,
             alias: alias,
         },
-        Typedef unsigned_integers[dt] Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef unsigned_integers[dt] Identifier(alias)
+        opt_array_range[_] Semicolon => ast::TypeDefinition {
             span: span!(),
             dc_type: dt,
             alias: alias,
         },
-        Typedef array_data_types[dt] Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef array_data_types[dt] Identifier(alias)
+        opt_array_range[_] Semicolon => ast::TypeDefinition {
             span: span!(),
             dc_type: dt,
             alias: alias,
         },
-        Typedef Float64T Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef Float64T Identifier(alias)
+        opt_array_range[_] Semicolon => ast::TypeDefinition {
             span: span!(),
             dc_type: Float64T,
             alias: alias,
         },
-        Typedef StringT Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef StringT Identifier(alias)
+        opt_array_range[_] Semicolon => ast::TypeDefinition {
             span: span!(),
             dc_type: StringT,
             alias: alias,
         },
-        Typedef BlobT Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef BlobT Identifier(alias)
+        opt_array_range[_] Semicolon => ast::TypeDefinition {
             span: span!(),
             dc_type: BlobT,
             alias: alias,
         },
-        Typedef Blob32T Identifier(alias) Semicolon => ast::TypeDefinition {
+        Typedef Blob32T Identifier(alias)
+        opt_array_range[_] Semicolon => ast::TypeDefinition {
             span: span!(),
             dc_type: Blob32T,
             alias: alias,
@@ -562,6 +570,11 @@ parser! {
 
     array_range: Range<i64> {
         OpenBrackets array_range_opt[array_range] CloseBrackets => array_range
+    }
+
+    opt_array_range: Option<Range<i64>> {
+        => None,
+        array_range[ar] => Some(ar),
     }
 
     array_range_opt: Range<i64> {
