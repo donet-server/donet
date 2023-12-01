@@ -32,18 +32,18 @@ pub mod ast {
     use super::{DCToken, Range, Span};
     pub type IdentifierString = String; // type alias
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct DCFile {
         pub type_decl: Vec<TypeDecl>,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct TypeDecl {
         pub span: Span,
         pub node: TypeDecl_,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub enum TypeDecl_ {
         KeywordType(IdentifierString),
         StructType(StructType),
@@ -52,14 +52,14 @@ pub mod ast {
         TypeDefinition(TypeDefinition),
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct StructType {
         pub span: Span,
         pub identifier: IdentifierString,
         pub parameters: Vec<Parameter>,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct DistributedClassType {
         pub span: Span,
         pub identifier: IdentifierString,
@@ -67,7 +67,7 @@ pub mod ast {
         pub field_declarations: Vec<FieldDecl>,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct DCImport {
         pub span: Span,
         pub module: Vec<String>, // python filename, or module(s)
@@ -76,52 +76,52 @@ pub mod ast {
         pub class_views: Option<Vec<String>>, // /AI, /UD, /OV ...
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct TypeDefinition {
         pub span: Span,
         pub dc_type: DCToken,
         pub alias: IdentifierString,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct FieldDecl {
         pub span: Span,
         pub node: FieldDecl_,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub enum FieldDecl_ {
         MolecularField(MolecularField),
         AtomicField(AtomicField),
         ParameterField(ParameterField),
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct MolecularField {
         pub identifier: IdentifierString,
-        pub field_type: FieldType,
+        pub fields: Vec<FieldType>,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub enum FieldType {
         Atomic(AtomicField),
         Parameter(ParameterField),
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct AtomicField {
         pub identifier: IdentifierString,
         pub parameters: Vec<Parameter>,
         pub keyword_list: Vec<IdentifierString>,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct ParameterField {
         pub parameter: Parameter,
         pub keyword_list: Vec<IdentifierString>,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub enum Parameter {
         Char(CharParameter),
         Int(IntParameter),
@@ -132,13 +132,13 @@ pub mod ast {
         Array(ArrayParameter),
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct CharParameter {
         pub identifier: Option<IdentifierString>,
         pub char_literal: Option<char>,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct IntParameter {
         pub identifier: Option<IdentifierString>,
         pub int_type: DCToken,
@@ -147,7 +147,7 @@ pub mod ast {
         pub int_constant: Option<i64>,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct FloatParameter {
         pub identifier: Option<IdentifierString>,
         pub float_range: Option<Range<f64>>,
@@ -160,27 +160,27 @@ pub mod ast {
     // separate structs for strings and blobs so Donet knows exactly
     // what data type they are and make optimizations.
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct StringParameter {
         pub identifier: Option<IdentifierString>,
         pub string_literal: Option<String>,
         pub size_constraint: Option<i64>,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct BlobParameter {
         pub identifier: Option<IdentifierString>,
         pub string_literal: Option<String>,
         pub size_constraint: Option<i64>,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct StructParameter {
         pub struct_type: IdentifierString,
         pub identifier: Option<IdentifierString>,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct ArrayParameter {
         pub data_type: DCToken,
         pub identifier: Option<IdentifierString>,
@@ -188,19 +188,19 @@ pub mod ast {
     }
 
     #[rustfmt::skip]
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub enum BaseType {
         CharType, IntType, FloatType,
         StringType, BlobType, StructType,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub enum IntTransform {
         OperatorIntLiteral { operator: DCToken, int_literal: i64 },
         ParenthesizedIntTransform(Box<IntTransform>),
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub enum FloatTransform {
         OperatorFloatLiteral { operator: DCToken, float_literal: f64 },
         ParenthesizedFloatTransform(Box<FloatTransform>),
@@ -444,16 +444,37 @@ parser! {
     // ----- Molecular Field ----- //
 
     molecular_field: ast::MolecularField {
-        Identifier(id) Colon atomic_field[af] => ast::MolecularField {
-            identifier: id,
-            field_type: ast::FieldType::Atomic(af),
+        Identifier(id) Colon atomic_field[af] atomic_fields[mut afs] => {
+            afs.insert(0, af);
+            let mut new_afs: Vec<ast::FieldType> = vec![];
+
+            for atomic_field in &afs {
+                new_afs.push(ast::FieldType::Atomic(atomic_field.clone()));
+            }
+
+            ast::MolecularField {
+                identifier: id,
+                fields: new_afs,
+            }
+        },
+        Identifier(id) Colon parameter_field[pf] parameter_fields[mut pfs] => {
+            pfs.insert(0, pf);
+            let mut new_pfs: Vec<ast::FieldType> = vec![];
+
+            for parameter_field in &pfs {
+                new_pfs.push(ast::FieldType::Parameter(parameter_field.clone()));
+            }
+
+            ast::MolecularField {
+                identifier: id,
+                fields: new_pfs,
+            }
         },
     }
 
     // ----- Atomic Field ----- //
 
     atomic_fields: Vec<ast::AtomicField> {
-        => vec![],
         atomic_fields[mut afs] Comma atomic_field[af] => {
             afs.push(af);
             afs
@@ -472,7 +493,6 @@ parser! {
     // ----- Parameter Fields ----- //
 
     parameter_fields: Vec<ast::ParameterField> {
-        => vec![],
         parameter_fields[mut ps] Comma parameter_field[p] => {
             ps.push(p);
             ps
