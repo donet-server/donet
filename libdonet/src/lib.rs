@@ -17,6 +17,7 @@
 
 pub mod byte_order;
 pub mod datagram;
+pub mod dcfile;
 pub mod dclexer;
 pub mod dcparser;
 pub mod globals;
