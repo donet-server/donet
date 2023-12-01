@@ -444,7 +444,7 @@ parser! {
     // ----- Molecular Field ----- //
 
     molecular_field: ast::MolecularField {
-        Identifier(id) Colon atomic_field[af] atomic_fields[mut afs] => {
+        Identifier(id) Colon atomic_field[af] atomic_fields[mut afs] Semicolon => {
             afs.insert(0, af);
             let mut new_afs: Vec<ast::FieldType> = vec![];
 
@@ -457,7 +457,7 @@ parser! {
                 fields: new_afs,
             }
         },
-        Identifier(id) Colon parameter_field[pf] parameter_fields[mut pfs] => {
+        Identifier(id) Colon parameter_field[pf] parameter_fields[mut pfs] Semicolon => {
             pfs.insert(0, pf);
             let mut new_pfs: Vec<ast::FieldType> = vec![];
 
@@ -475,6 +475,7 @@ parser! {
     // ----- Atomic Field ----- //
 
     atomic_fields: Vec<ast::AtomicField> {
+        => vec![],
         atomic_fields[mut afs] Comma atomic_field[af] => {
             afs.push(af);
             afs
@@ -493,6 +494,7 @@ parser! {
     // ----- Parameter Fields ----- //
 
     parameter_fields: Vec<ast::ParameterField> {
+        => vec![],
         parameter_fields[mut ps] Comma parameter_field[p] => {
             ps.push(p);
             ps
