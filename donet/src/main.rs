@@ -87,10 +87,8 @@ fn main() -> std::io::Result<()> {
             }
         }
     }
-    // Init logger utility
     logger::initialize_logger()?;
 
-    // Perform actions based on arguments parsed
     if want_dc_check {
         if dc_check_file.is_none() {
             error!("No DC filename provided. Cannot do DC read.");
@@ -119,8 +117,6 @@ fn main() -> std::io::Result<()> {
     let daemon_config: DonetConfig = toml_parse.unwrap();
 
     let daemon_main = async move {
-        // FIXME: clippy doesn't like redundant clones, but they're needed.
-        // This is probably bad code but it works. Will fix later.
         #[allow(clippy::redundant_clone)]
         let services: Services = daemon_config.services.clone();
 
@@ -143,7 +139,6 @@ fn main() -> std::io::Result<()> {
         let want_event_logger: bool = services.event_logger.is_some();
 
         if want_client_agent {
-            // Initialize the Client Agent
             let ca_factory: ClientAgentService = ClientAgentService {};
             ca_service = ca_factory.create()?;
 
@@ -151,7 +146,6 @@ fn main() -> std::io::Result<()> {
             ca_service.start(daemon_config.clone()).await?;
         }
         if want_message_director {
-            // Initialize the Message Director
             let md_factory: MessageDirectorService = MessageDirectorService {};
             md_service = md_factory.create()?;
 
@@ -159,7 +153,6 @@ fn main() -> std::io::Result<()> {
             service_handles.push(md_service.start(daemon_config.clone()).await?);
         }
         if want_state_server {
-            // Initialize the State Server
             let ss_factory: StateServerService = StateServerService {};
             ss_service = ss_factory.create()?;
 
@@ -167,7 +160,6 @@ fn main() -> std::io::Result<()> {
             ss_service.start(daemon_config.clone()).await?;
         }
         if want_database_server {
-            // Initialize the Database Server
             let db_factory: DatabaseServerService = DatabaseServerService {};
             db_service = db_factory.create()?;
 
@@ -175,7 +167,6 @@ fn main() -> std::io::Result<()> {
             db_service.start(daemon_config.clone()).await?;
         }
         if want_dbss {
-            // Initialize the Database State Server
             let dbss_factory: DBSSService = DBSSService {};
             dbss_service = dbss_factory.create()?;
 
@@ -183,7 +174,6 @@ fn main() -> std::io::Result<()> {
             dbss_service.start(daemon_config.clone()).await?;
         }
         if want_event_logger {
-            // Initialize the Event Logger
             let el_factory: EventLoggerService = EventLoggerService {};
             el_service = el_factory.create()?;
 
@@ -199,7 +189,6 @@ fn main() -> std::io::Result<()> {
     // Hack to reassure the compiler that I want to return an IO result.
     utils::set_future_return_type::<std::io::Result<()>, _>(&daemon_main);
 
-    // Start using Tokio, return `daemon_main` result.
     tokio_runtime.block_on(daemon_main)
 }
 
