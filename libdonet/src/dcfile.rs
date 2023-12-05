@@ -15,15 +15,17 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+use crate::globals;
 use multimap::MultiMap;
+use std::sync::{Arc, Mutex}; // thread safe
 
 // --------- Field ---------- //
 
-pub struct DCField<'dcfile> {
-    class: Option<&'dcfile DClass<'dcfile>>,
-    _struct: Option<Box<DCStruct>>,
-    name: String,
-    field_id: u16,
+pub struct DCField {
+    class: Option<Arc<Mutex<DClass>>>,
+    _struct: Option<Arc<Mutex<DCStruct>>>,
+    field_name: String,
+    field_id: globals::FieldId,
     parent_is_dclass: bool,
     default_value_stale: bool,
     has_default_value: bool,
@@ -31,13 +33,13 @@ pub struct DCField<'dcfile> {
     bogus_field: bool,
 }
 
-pub trait DCFieldInterface<'dcfile> {
-    fn new(name: &str, id: u16) -> Self;
+pub trait DCFieldInterface {
+    fn new(name: &str, id: globals::FieldId) -> Self;
     fn generate_hash(&mut self);
-    fn set_field_id(&mut self, id: u16);
+    fn set_field_id(&mut self, id: globals::FieldId);
     fn set_field_name(&mut self, name: String);
-    fn set_parent_struct(&mut self, parent: &'dcfile DCStruct);
-    fn set_parent_dclass(&mut self, parent: &'dcfile DClass);
+    fn set_parent_struct(&mut self, parent: Arc<Mutex<DCStruct>>);
+    fn set_parent_dclass(&mut self, parent: Arc<Mutex<DClass>>);
 }
 
 // ---------- Struct ---------- //
@@ -46,39 +48,39 @@ pub struct DCStruct {}
 
 // ---------- DClass ---------- //
 
-pub type FieldName2Field<'dcfile> = MultiMap<String, &'dcfile DCField<'dcfile>>;
-pub type FieldIndex2Field<'dcfile> = MultiMap<u16, &'dcfile DCField<'dcfile>>;
+pub type FieldName2Field = MultiMap<String, Arc<Mutex<DCField>>>;
+pub type FieldIndex2Field = MultiMap<globals::FieldId, Arc<Mutex<DCField>>>;
 
-pub struct DClass<'dcfile> {
+pub struct DClass {
     class_name: String,
-    class_id: u16,
+    class_id: globals::DClassId,
     is_struct: bool,
     is_bogus_class: bool,
 
-    class_parents: Vec<&'dcfile DClass<'dcfile>>,
-    constructor: Option<&'dcfile DCField<'dcfile>>,
-    fields: Vec<&'dcfile DCField<'dcfile>>,
-    inherited_fields: Vec<&'dcfile DCField<'dcfile>>,
-    field_name_2_field: FieldName2Field<'dcfile>,
-    field_index_2_field: FieldIndex2Field<'dcfile>,
+    class_parents: Vec<Arc<Mutex<DClass>>>,
+    constructor: Option<Arc<Mutex<DCField>>>,
+    fields: Vec<Arc<Mutex<DCField>>>,
+    inherited_fields: Vec<Arc<Mutex<DCField>>>,
+    field_name_2_field: FieldName2Field,
+    field_index_2_field: FieldIndex2Field,
 }
 
-pub trait DClassInterface<'dcfile> {
-    fn new(name: &str, id: u16) -> Self;
+pub trait DClassInterface {
+    fn new(name: &str, id: globals::DClassId) -> Self;
     fn generate_hash(&mut self);
 
-    fn set_parent(&mut self, parent: &'dcfile DClass);
+    fn set_parent(&mut self, parent: Arc<Mutex<DClass>>);
 
     fn get_name(&mut self) -> String;
-    fn get_class_id(&mut self) -> u16;
+    fn get_class_id(&mut self) -> globals::DClassId;
     fn get_num_parents(&mut self) -> usize;
-    fn get_parent(&mut self, index: usize) -> Option<&'dcfile DClass>;
+    fn get_parent(&mut self, index: usize) -> Option<Arc<Mutex<DClass>>>;
     fn has_constructor(&mut self) -> bool;
-    fn get_constructor(&mut self) -> Option<&'dcfile DCField>;
+    fn get_constructor(&mut self) -> Option<Arc<Mutex<DCField>>>;
 }
 
-impl<'dcfile> DClassInterface<'dcfile> for DClass<'dcfile> {
-    fn new(name: &str, id: u16) -> Self {
+impl DClassInterface for DClass {
+    fn new(name: &str, id: globals::DClassId) -> Self {
         DClass {
             class_name: name.to_owned(),
             class_id: id,
@@ -97,7 +99,7 @@ impl<'dcfile> DClassInterface<'dcfile> for DClass<'dcfile> {
         todo!(); // TODO: Implement once hash gen is written
     }
 
-    fn set_parent(&mut self, parent: &'dcfile DClass) {
+    fn set_parent(&mut self, parent: Arc<Mutex<DClass>>) {
         self.class_parents.push(parent);
     }
 
@@ -105,7 +107,7 @@ impl<'dcfile> DClassInterface<'dcfile> for DClass<'dcfile> {
         self.class_name.clone()
     }
 
-    fn get_class_id(&mut self) -> u16 {
+    fn get_class_id(&mut self) -> globals::DClassId {
         self.class_id
     }
 
@@ -113,16 +115,16 @@ impl<'dcfile> DClassInterface<'dcfile> for DClass<'dcfile> {
         self.class_parents.len()
     }
 
-    fn get_parent(&mut self, index: usize) -> Option<&'dcfile DClass> {
+    fn get_parent(&mut self, index: usize) -> Option<Arc<Mutex<DClass>>> {
         // copy the reference inside the option instead of a reference to the reference
-        self.class_parents.get(index).copied()
+        self.class_parents.get(index).cloned()
     }
 
     fn has_constructor(&mut self) -> bool {
         self.constructor.is_some()
     }
 
-    fn get_constructor(&mut self) -> Option<&'dcfile DCField> {
-        self.constructor
+    fn get_constructor(&mut self) -> Option<Arc<Mutex<DCField>>> {
+        self.constructor.clone()
     }
 }
