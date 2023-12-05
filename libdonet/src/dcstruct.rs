@@ -15,11 +15,4 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-pub mod byte_order;
-pub mod datagram;
-pub mod dcfield;
-pub mod dclass;
-pub mod dclexer;
-pub mod dcparser;
-pub mod dcstruct;
-pub mod globals;
+pub struct DCStruct {}
