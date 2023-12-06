@@ -23,6 +23,6 @@ target/
 venv/
 .venv/
 
-# Local DoNet Daemon Configuration
+# Local Donet Daemon Configuration
 daemon.toml
 
