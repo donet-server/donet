@@ -21,7 +21,7 @@ use multimap::MultiMap;
 use std::sync::{Arc, Mutex};
 
 pub type FieldName2Field = MultiMap<String, Arc<Mutex<DCField>>>;
-pub type FieldIndex2Field = MultiMap<globals::FieldId, Arc<Mutex<DCField>>>;
+pub type FieldId2Field = MultiMap<globals::FieldId, Arc<Mutex<DCField>>>;
 
 pub struct DClass {
     class_name: String,
@@ -34,7 +34,7 @@ pub struct DClass {
     fields: Vec<Arc<Mutex<DCField>>>,
     inherited_fields: Vec<Arc<Mutex<DCField>>>,
     field_name_2_field: FieldName2Field,
-    field_index_2_field: FieldIndex2Field,
+    field_id_2_field: FieldId2Field,
 }
 
 pub trait DClassInterface {
@@ -63,7 +63,7 @@ impl DClassInterface for DClass {
             fields: vec![],
             inherited_fields: vec![],
             field_name_2_field: MultiMap::new(),
-            field_index_2_field: MultiMap::new(),
+            field_id_2_field: MultiMap::new(),
         }
     }
 

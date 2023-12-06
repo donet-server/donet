@@ -20,8 +20,6 @@ use crate::dcstruct::DCStruct;
 use crate::globals;
 use std::sync::{Arc, Mutex}; // thread safe
 
-// --------- Field ---------- //
-
 pub struct DCField {
     class: Option<Arc<Mutex<DClass>>>,
     _struct: Option<Arc<Mutex<DCStruct>>>,
@@ -41,4 +39,25 @@ pub trait DCFieldInterface {
     fn set_field_name(&mut self, name: String);
     fn set_parent_struct(&mut self, parent: Arc<Mutex<DCStruct>>);
     fn set_parent_dclass(&mut self, parent: Arc<Mutex<DClass>>);
+}
+
+impl DCFieldInterface for DCField {
+    fn new(name: &str, id: globals::FieldId) -> Self {
+        todo!();
+    }
+    fn generate_hash(&mut self) {
+        todo!();
+    }
+    fn set_field_id(&mut self, id: globals::FieldId) {
+        todo!();
+    }
+    fn set_field_name(&mut self, name: String) {
+        todo!();
+    }
+    fn set_parent_struct(&mut self, parent: Arc<Mutex<DCStruct>>) {
+        todo!();
+    }
+    fn set_parent_dclass(&mut self, parent: Arc<Mutex<DClass>>) {
+        todo!();
+    }
 }
