@@ -26,7 +26,7 @@ dc_files = ["main.dc", "game.dc"]
 #        - 'services.event_logger'
 
 [services.client_agent]
-bind = "127.0.0.1:6667"
+bind = "127.0.0.1:7198"
 # 'protocol' will be a future feature.
 #protocol = "TCP" # Underlying protocol to use below DoNet's (Options: 'TCP', 'UDP')
 # 'dc_file_hash' tells the daemon what DC hash (32-bit) to expect from the client.
