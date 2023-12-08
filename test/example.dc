@@ -4,11 +4,11 @@ typedef uint32 zoneId;
 typedef uint64 channel;
 
 // The views for these distributed classes.
-from views import Root/AI/AE
+from views import Root/AI
 from views import AnonymousContact/UD
-from views import LoginManager/AI/AE
-from views import DistributedWorld/AI/AE
-from views import DistributedAvatar/AI/AE/OV
+from views import LoginManager/AI
+from views import DistributedWorld/AI
+from views import DistributedAvatar/AI/OV
 
 // Container for services and top-level stuff.
 dclass Root {

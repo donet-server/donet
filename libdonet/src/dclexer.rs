@@ -90,6 +90,7 @@ pub enum DCToken {
     Module(String),     // ( Letter | "_" ) { Letter | DecDigit | "_" | "-" }
     DCKeyword(String),  // ( "ram" | "required" | "db" | "airecv" | "ownrecv" |
                         //   "clrecv" | "broadcast" | "ownsend" | "clsend" )
+    ViewSuffix(String), // ( "AI", "OV", "UD" )
 
     // Operators
     Percent,      // "%"
@@ -117,6 +118,7 @@ static DC_KEYWORDS: &[&str] = &[
     "ram", "required", "db", "airecv", "ownrecv",
     "clrecv", "broadcast", "ownsend", "clsend",
 ];
+static DC_VIEW_SUFFIXES: &[&str] = &["AI", "OV", "UD"];
 
 lexer! {
     fn next_token(text: 'a) -> (DCToken, &'a str);
@@ -186,9 +188,11 @@ lexer! {
     r#"break"# => (DCToken::Break, text),
 
     r#"[a-zA-Z_][a-zA-Z0-9_]*"# => {
-        // Decide whether this is an identifier or a keyword.
+        // Decide whether this is an identifier, keyword, or view suffix.
         if DC_KEYWORDS.contains(&text) {
             (DCToken::DCKeyword(text.to_owned()), text)
+        } else if DC_VIEW_SUFFIXES.contains(&text) {
+            (DCToken::ViewSuffix(text.to_owned()), text)
         } else {
             (DCToken::Identifier(text.to_owned()), text)
         }
@@ -348,9 +352,9 @@ mod unit_testing {
             DCToken::Import,
             DCToken::Identifier(String::from("DistributedDonut")),
             DCToken::ForwardSlash,
-            DCToken::Identifier(String::from("AI")),
+            DCToken::ViewSuffix(String::from("AI")),
             DCToken::ForwardSlash,
-            DCToken::Identifier(String::from("OV")),
+            DCToken::ViewSuffix(String::from("OV")),
         ];
         lexer_test_for_target("from my-views.Donut import DistributedDonut/AI/OV", target);
     }

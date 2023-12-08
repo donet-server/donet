@@ -134,7 +134,12 @@ parser! {
 
                 for (i, module_suffix) in mvs_opt.unwrap().into_iter().enumerate() {
                     let full_import: String = m.clone() + &module_suffix;
-                    c_symbol = class_symbols.get(i + 1).unwrap().clone();
+
+                    if (class_symbols.len() - 1) <= i {
+                        c_symbol = class_symbols.last().unwrap().clone();
+                    } else {
+                        c_symbol = class_symbols.get(i + 1).unwrap().clone();
+                    }
 
                     let dc_import: DCImport = DCImport::new(full_import, vec![c_symbol]);
 
@@ -197,7 +202,7 @@ parser! {
     //      slash_identifier -> slash_identifier '/' Identifier
     slash_identifier: Vec<String> {
         => vec![],
-        slash_identifier[mut si] ForwardSlash Identifier(id) => {
+        slash_identifier[mut si] ForwardSlash ViewSuffix(id) => {
             si.push(id);
             si
         }
@@ -442,7 +447,7 @@ pub fn parse<I: Iterator<Item = (DCToken, Span)>>(
 #[cfg(test)]
 mod unit_testing {
     use super::{parse, DC_FILE};
-    use crate::dcfile::DCFileInterface;
+    use crate::dcfile::{DCFileInterface, DCImport};
     use crate::dclexer::Lexer;
 
     fn parse_dcfile_string(input: &str) {
@@ -457,13 +462,41 @@ mod unit_testing {
     fn python_module_imports() {
         let dc_file: &str = "from example-views import DistributedDonut\n\
                              from views import DistributedDonut/AI/OV\n\
-                             from views/AI/OV import DistributedDonut/AI/OV\n\
+                             from views/AI/OV/UD import DistributedDonut/AI/OV/UD\n\
                              from game.views.Donut/AI import DistributedDonut/AI\n\
                              from views import *\n";
         parse_dcfile_string(dc_file);
 
         unsafe {
-            assert_eq!(DC_FILE.get_num_imports(), 8);
+            let expected_num_imports: usize = 9;
+            let mut imports: Vec<DCImport> = vec![];
+            assert_eq!(DC_FILE.get_num_imports(), expected_num_imports);
+
+            for i in 0..expected_num_imports {
+                imports.push(DC_FILE.get_python_import(i));
+            }
+
+            assert_eq!(imports[0].python_module, "example-views");
+            assert_eq!(imports[0].symbols, vec!["DistributedDonut"]);
+            assert_eq!(imports[1].python_module, "views");
+            assert_eq!(
+                imports[1].symbols,
+                vec!["DistributedDonut", "DistributedDonutAI", "DistributedDonutOV"]
+            );
+            assert_eq!(imports[2].python_module, "views");
+            assert_eq!(imports[2].symbols, vec!["DistributedDonut"]);
+            assert_eq!(imports[3].python_module, "viewsAI");
+            assert_eq!(imports[3].symbols, vec!["DistributedDonutAI"]);
+            assert_eq!(imports[4].python_module, "viewsOV");
+            assert_eq!(imports[4].symbols, vec!["DistributedDonutOV"]);
+            assert_eq!(imports[5].python_module, "viewsUD");
+            assert_eq!(imports[5].symbols, vec!["DistributedDonutUD"]);
+            assert_eq!(imports[6].python_module, "game.views.Donut");
+            assert_eq!(imports[6].symbols, vec!["DistributedDonut"]);
+            assert_eq!(imports[7].python_module, "game.views.DonutAI");
+            assert_eq!(imports[7].symbols, vec!["DistributedDonutAI"]);
+            assert_eq!(imports[8].python_module, "views");
+            assert_eq!(imports[8].symbols, vec!["*"]);
         }
     }
 }

@@ -23,8 +23,8 @@ use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
 pub struct DCImport {
-    python_module: String,
-    symbols: Vec<String>,
+    pub python_module: String,
+    pub symbols: Vec<String>,
 }
 
 impl DCImport {

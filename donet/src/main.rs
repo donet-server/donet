@@ -29,7 +29,7 @@ fn main() -> std::io::Result<()> {
     use libdonet::dclexer::Lexer;
     use libdonet::dcparser::parse;
     use libdonet::globals::ParseError;
-    use log::error;
+    use log::{error, info};
     use service_factory::*;
     use std::fs::File;
     use std::io::{Error, ErrorKind, Read};
@@ -40,10 +40,6 @@ fn main() -> std::io::Result<()> {
     static GIT_SHA1: &str = env!("GIT_SHA1");
     let mut config_file: &str = "daemon.toml"; // default
     let args: Vec<String> = std::env::args().collect();
-    let tokio_runtime: Runtime = Builder::new_multi_thread()
-        .enable_io()
-        .thread_stack_size(2 * 1024 * 1024) // default: 2MB
-        .build()?;
 
     let mut want_dc_check: bool = false;
     let mut dc_check_file: Option<&String> = None;
@@ -101,7 +97,15 @@ fn main() -> std::io::Result<()> {
         dc_file.read_to_string(&mut contents)?;
 
         let lexer = Lexer::new(&contents);
-        let _: Result<(), ParseError> = parse(lexer);
+        let parser_res: Result<(), ParseError> = parse(lexer);
+
+        if parser_res.is_err() {
+            error!("Failed to parse DC file: {:?}", parser_res.unwrap_err());
+            return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
+        }
+        // FIXME: Hash generator not yet complete on libdonet; Prints 0xffffffff as hash.
+        info!("Parsed file with no issues. DC File Hash: 0x{:x}", u32::MAX);
+        return Ok(());
     }
 
     // Read the daemon configuration file
@@ -116,6 +120,13 @@ fn main() -> std::io::Result<()> {
         return Err(Error::new(ErrorKind::InvalidInput, toml_error.message()));
     }
     let daemon_config: DonetConfig = toml_parse.unwrap();
+
+    // Once we've got arguments parsed and configuration read,
+    // we are safe to start the Tokio asynchronous runtime.
+    let tokio_runtime: Runtime = Builder::new_multi_thread()
+        .enable_io()
+        .thread_stack_size(2 * 1024 * 1024) // default: 2MB
+        .build()?;
 
     let daemon_main = async move {
         #[allow(clippy::redundant_clone)]
