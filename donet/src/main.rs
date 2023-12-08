@@ -27,7 +27,8 @@ pub mod utils;
 fn main() -> std::io::Result<()> {
     use config::*;
     use libdonet::dclexer::Lexer;
-    use libdonet::dcparser::{ast, parse};
+    use libdonet::dcparser::parse;
+    use libdonet::globals::ParseError;
     use log::error;
     use service_factory::*;
     use std::fs::File;
@@ -100,7 +101,7 @@ fn main() -> std::io::Result<()> {
         dc_file.read_to_string(&mut contents)?;
 
         let lexer = Lexer::new(&contents);
-        let _: ast::DCFile = parse(lexer).unwrap();
+        let _: Result<(), ParseError> = parse(lexer);
     }
 
     // Read the daemon configuration file

@@ -20,6 +20,7 @@ use crate::dcstruct::DCStruct;
 use crate::globals;
 use std::sync::{Arc, Mutex}; // thread safe
 
+#[derive(Debug)]
 pub struct DCField {
     class: Option<Arc<Mutex<DClass>>>,
     _struct: Option<Arc<Mutex<DCStruct>>>,

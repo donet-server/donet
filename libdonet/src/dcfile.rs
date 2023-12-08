@@ -19,51 +19,66 @@ use crate::dcfield::DCField;
 use crate::dclass::DClass;
 use crate::dcstruct::DCStruct;
 use crate::globals;
-use std::io::Result;
 use std::sync::{Arc, Mutex};
 
+#[derive(Debug, Clone)]
 pub struct DCImport {
     python_module: String,
-    views: Vec<String>,
+    symbols: Vec<String>,
 }
 
-pub trait DCImportInterface {
-    fn new(module_import: String, views: Vec<String>) -> DCImport;
-}
-
-impl DCImportInterface for DCImport {
-    fn new(module_import: String, views: Vec<String>) -> DCImport {
+impl DCImport {
+    pub fn new(mod_: String, symbols: Vec<String>) -> DCImport {
         DCImport {
-            python_module: module_import,
-            views: views,
+            python_module: mod_,
+            symbols: symbols,
         }
     }
 }
 
+#[derive(Debug)]
 pub struct DCFile {
     structs: Vec<Mutex<DCStruct>>,
     dclasses: Vec<Mutex<DClass>>,
-    // TODO: imports, keywords
+    imports: Vec<DCImport>, // not modified after declaration; no mutex required.
+    // TODO: keywords
     field_id_2_field: Vec<Arc<Mutex<DCField>>>,
     // TODO: type_id_2_type, type_name_2_type
 }
 
 #[rustfmt::skip]
 pub trait DCFileInterface {
-    // DC File
     fn get_hash(&mut self) -> u32;
     fn generate_hash(&mut self);
     fn add_field(&mut self, field: DCField); // assigns unique ID for the whole DC file
+    // Python Imports
+    fn get_num_imports(&mut self) -> usize;
+    fn get_python_import(&mut self, index: usize) -> DCImport;
+    fn add_python_import(&mut self, import: DCImport);
     // Distributed Class
     fn get_num_dclasses(&mut self) -> usize;
     fn get_dclass(&mut self, index: usize) -> Arc<Mutex<DClass>>;
     fn get_dclass_by_id(&mut self, id: globals::DClassId) -> Arc<Mutex<DClass>>;
     fn get_dclass_by_name(&mut self, name: &str) -> Arc<Mutex<DClass>>;
-    fn add_dclass(&mut self, dclass: DClass) -> Result<()>;
+    fn add_dclass(&mut self, dclass: DClass);
     // DC Struct
     fn get_num_structs(&mut self) -> usize;
     fn get_struct(&mut self, index: usize) -> Arc<Mutex<DCStruct>>;
-    fn add_struct(&mut self, strct: DCStruct) -> Result<()>;
+    fn add_struct(&mut self, strct: DCStruct);
+}
+
+// We store the output of this constructor in static memory @ dcparser.rs, so we
+// need to declare the new() function as a const fn. It is also implemented
+// outside of the DCFileInterface trait as you can't declare const funcs in traits.
+impl DCFile {
+    pub const fn new() -> DCFile {
+        DCFile {
+            structs: vec![],
+            dclasses: vec![],
+            imports: vec![],
+            field_id_2_field: vec![],
+        }
+    }
 }
 
 impl DCFileInterface for DCFile {
@@ -76,6 +91,19 @@ impl DCFileInterface for DCFile {
     fn add_field(&mut self, field: DCField) {
         todo!();
     }
+
+    // Python Imports
+    fn get_num_imports(&mut self) -> usize {
+        self.imports.len()
+    }
+    fn get_python_import(&mut self, index: usize) -> DCImport {
+        self.imports.get(index).unwrap().clone()
+    }
+    fn add_python_import(&mut self, import: DCImport) {
+        self.imports.push(import);
+    }
+
+    // Distributed Class
     fn get_num_dclasses(&mut self) -> usize {
         todo!();
     }
@@ -88,16 +116,18 @@ impl DCFileInterface for DCFile {
     fn get_dclass_by_name(&mut self, name: &str) -> Arc<Mutex<DClass>> {
         todo!();
     }
-    fn add_dclass(&mut self, dclass: DClass) -> Result<()> {
+    fn add_dclass(&mut self, dclass: DClass) {
         todo!();
     }
+
+    // DC Struct
     fn get_num_structs(&mut self) -> usize {
         todo!();
     }
     fn get_struct(&mut self, index: usize) -> Arc<Mutex<DCStruct>> {
         todo!();
     }
-    fn add_struct(&mut self, strct: DCStruct) -> Result<()> {
+    fn add_struct(&mut self, strct: DCStruct) {
         todo!();
     }
 }

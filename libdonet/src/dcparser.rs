@@ -21,191 +21,13 @@
 #![allow(clippy::type_complexity, clippy::redundant_field_names, clippy::ptr_arg)]
 #![allow(clippy::redundant_closure_call, clippy::enum_variant_names)]
 
+use crate::dcfile::*;
 use crate::dclexer::DCToken::*;
 use crate::dclexer::{DCToken, Span};
 use plex::parser;
 use std::ops::Range;
 
-pub mod ast {
-    // In this module we store all the structures and enums
-    // that make up the final generated abstract syntax tree.
-    use super::{DCToken, Range, Span};
-    pub type IdentifierString = String; // type alias
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct DCFile {
-        pub type_decl: Vec<TypeDecl>,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct TypeDecl {
-        pub span: Span,
-        pub node: TypeDecl_,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub enum TypeDecl_ {
-        KeywordType(IdentifierString),
-        StructType(StructType),
-        DistributedClassType(DistributedClassType),
-        DCImport(DCImport),
-        TypeDefinition(TypeDefinition),
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct StructType {
-        pub span: Span,
-        pub identifier: IdentifierString,
-        pub parameters: Vec<Parameter>,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct DistributedClassType {
-        pub span: Span,
-        pub identifier: IdentifierString,
-        pub parent_classes: Option<Vec<IdentifierString>>,
-        pub field_declarations: Vec<FieldDecl>,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct DCImport {
-        pub span: Span,
-        pub module: Vec<String>, // python filename, or module(s)
-        pub module_views: Option<Vec<String>>,
-        pub class: IdentifierString,
-        pub class_views: Option<Vec<String>>, // /AI, /UD, /OV ...
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct TypeDefinition {
-        pub span: Span,
-        pub dc_type: DCToken,
-        pub alias: IdentifierString,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct FieldDecl {
-        pub span: Span,
-        pub node: FieldDecl_,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub enum FieldDecl_ {
-        MolecularField(MolecularField),
-        AtomicField(AtomicField),
-        ParameterField(ParameterField),
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct MolecularField {
-        pub identifier: IdentifierString,
-        pub fields: Vec<FieldType>,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub enum FieldType {
-        Atomic(AtomicField),
-        Parameter(ParameterField),
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct AtomicField {
-        pub identifier: IdentifierString,
-        pub parameters: Vec<Parameter>,
-        pub keyword_list: Vec<IdentifierString>,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct ParameterField {
-        pub parameter: Parameter,
-        pub keyword_list: Vec<IdentifierString>,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub enum Parameter {
-        Char(CharParameter),
-        Int(IntParameter),
-        Float(FloatParameter),
-        String(StringParameter),
-        Blob(BlobParameter),
-        Struct(StructParameter),
-        Array(ArrayParameter),
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct CharParameter {
-        pub identifier: Option<IdentifierString>,
-        pub char_literal: Option<char>,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct IntParameter {
-        pub identifier: Option<IdentifierString>,
-        pub int_type: DCToken,
-        pub int_range: Option<Range<i64>>,
-        pub int_transform: Option<IntTransform>,
-        pub int_constant: Option<i64>,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct FloatParameter {
-        pub identifier: Option<IdentifierString>,
-        pub float_range: Option<Range<f64>>,
-        pub float_transform: Option<FloatTransform>,
-        pub float_constant: Option<f64>,
-    }
-
-    // NOTE: StringParameter and BlobParameter hold the same information,
-    // as by specification they are both 'SizedParameter' types. We use
-    // separate structs for strings and blobs so Donet knows exactly
-    // what data type they are and make optimizations.
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct StringParameter {
-        pub identifier: Option<IdentifierString>,
-        pub string_literal: Option<String>,
-        pub size_constraint: Option<i64>,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct BlobParameter {
-        pub identifier: Option<IdentifierString>,
-        pub string_literal: Option<String>,
-        pub size_constraint: Option<i64>,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct StructParameter {
-        pub struct_type: IdentifierString,
-        pub identifier: Option<IdentifierString>,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct ArrayParameter {
-        pub data_type: DCToken,
-        pub identifier: Option<IdentifierString>,
-        pub array_range: Range<i64>,
-    }
-
-    #[rustfmt::skip]
-    #[derive(Debug, PartialEq, Clone)]
-    pub enum BaseType {
-        CharType, IntType, FloatType,
-        StringType, BlobType, StructType,
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub enum IntTransform {
-        OperatorIntLiteral { operator: DCToken, int_literal: i64 },
-        ParenthesizedIntTransform(Box<IntTransform>),
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    pub enum FloatTransform {
-        OperatorFloatLiteral { operator: DCToken, float_literal: f64 },
-        ParenthesizedFloatTransform(Box<FloatTransform>),
-    }
-}
+pub static mut DC_FILE: DCFile = DCFile::new();
 
 parser! {
     fn parse_(DCToken, Span);
@@ -219,70 +41,36 @@ parser! {
         }
     }
 
-    // DC File (root production of the grammar)
-    dc_file: ast::DCFile {
-        type_declarations[tds] => ast::DCFile { type_decl: tds },
+    // root production of the grammar
+    dc_file: () {
+        type_declarations => {},
     }
 
-    // Collect all our Type Declarations into a vector for the DCFile.
-    type_declarations: Vec<ast::TypeDecl> {
-        => vec![],
-        type_declarations[mut td_vec] type_decl[next_td] => {
-            td_vec.push(next_td);
-            td_vec
-        }
+    type_declarations: () {
+        => {},
+        type_declarations type_decl => {},
     }
 
-    type_decl: ast::TypeDecl {
-        keyword_type[k] => ast::TypeDecl {
-            span: span!(),
-            node: ast::TypeDecl_::KeywordType(k),
-        },
-        struct_type[s] => ast::TypeDecl {
-            span: span!(),
-            node: ast::TypeDecl_::StructType(s),
-        },
-        distributed_class_type[dc] => ast::TypeDecl {
-            span: span!(),
-            node: ast::TypeDecl_::DistributedClassType(dc),
-        },
-        python_import[dci] => ast::TypeDecl {
-            span: span!(),
-            node: ast::TypeDecl_::DCImport(dci),
-        },
-        type_definition[td] => ast::TypeDecl {
-            span: span!(),
-            node: ast::TypeDecl_::TypeDefinition(td),
-        },
+    type_decl: () {
+        keyword_type => {},
+        struct_type => {},
+        distributed_class_type => {},
+        python_import => {},
+        type_definition => {},
     }
 
-    // ----- Keyword Type ----- //
-
-    keyword_type: String {
-        Keyword Identifier(id) Semicolon => id
+    keyword_type: () {
+        Keyword Identifier(id) Semicolon => {}
     }
 
-    // ----- Struct Type ----- //
-
-    struct_type: ast::StructType {
+    struct_type: () {
         Struct Identifier(id) OpenBraces struct_parameters[ps]
-        CloseBraces Semicolon => ast::StructType {
-            span: span!(),
-            identifier: id,
-            parameters: ps,
-        }
+        CloseBraces Semicolon => {},
     }
 
-    // ----- Distributed Class Type ----- //
-
-    distributed_class_type: ast::DistributedClassType {
+    distributed_class_type: () {
         DClass Identifier(id) optional_inheritance[pc] OpenBraces
-        field_declarations[fds] CloseBraces Semicolon => ast::DistributedClassType {
-            span: span!(),
-            identifier: id,
-            parent_classes: pc,
-            field_declarations: fds,
-        }
+        field_declarations[fds] CloseBraces Semicolon => {}
     }
 
     optional_inheritance: Option<Vec<String>> {
@@ -301,65 +89,18 @@ parser! {
         }
     }
 
-    // ----- Type Definition Type ----- //
-
-    type_definition: ast::TypeDefinition {
-        Typedef CharT Identifier(alias)
-        opt_array_range[_] Semicolon => ast::TypeDefinition {
-            span: span!(),
-            dc_type: CharT,
-            alias: alias,
-        },
-        Typedef signed_integers[dt] Identifier(alias)
-        opt_array_range[_] Semicolon => ast::TypeDefinition {
-            span: span!(),
-            dc_type: dt,
-            alias: alias,
-        },
-        Typedef unsigned_integers[dt] Identifier(alias)
-        opt_array_range[_] Semicolon => ast::TypeDefinition {
-            span: span!(),
-            dc_type: dt,
-            alias: alias,
-        },
-        Typedef array_data_types[dt] Identifier(alias)
-        opt_array_range[_] Semicolon => ast::TypeDefinition {
-            span: span!(),
-            dc_type: dt,
-            alias: alias,
-        },
-        Typedef Float64T Identifier(alias)
-        opt_array_range[_] Semicolon => ast::TypeDefinition {
-            span: span!(),
-            dc_type: Float64T,
-            alias: alias,
-        },
-        Typedef StringT Identifier(alias)
-        opt_array_range[_] Semicolon => ast::TypeDefinition {
-            span: span!(),
-            dc_type: StringT,
-            alias: alias,
-        },
-        Typedef BlobT Identifier(alias)
-        opt_array_range[_] Semicolon => ast::TypeDefinition {
-            span: span!(),
-            dc_type: BlobT,
-            alias: alias,
-        },
-        Typedef Blob32T Identifier(alias)
-        opt_array_range[_] Semicolon => ast::TypeDefinition {
-            span: span!(),
-            dc_type: Blob32T,
-            alias: alias,
-        },
+    type_definition: () {
+        Typedef CharT Identifier(alias) opt_array_range[_] Semicolon => {},
+        Typedef signed_integers[dt] Identifier(alias) opt_array_range[_] Semicolon => {},
+        Typedef unsigned_integers[dt] Identifier(alias) opt_array_range[_] Semicolon => {},
+        Typedef array_data_types[dt] Identifier(alias) opt_array_range[_] Semicolon => {},
+        Typedef Float64T Identifier(alias) opt_array_range[_] Semicolon => {},
+        Typedef StringT Identifier(alias) opt_array_range[_] Semicolon => {},
+        Typedef BlobT Identifier(alias) opt_array_range[_] Semicolon => {},
+        Typedef Blob32T Identifier(alias) opt_array_range[_] Semicolon => {},
     }
 
-    // ----- Python-style Import ----- //
-
-    // Donet does not make use of python-style import statements,
-    // as this is a feature used by Donet clients and AI/UD processes.
-    // We still have our production rules defined to avoid a parser panic.
-    python_import: ast::DCImport {
+    python_import: () {
         py_module[(m, ms)] dclass_import[(c, cs)] => {
             // NOTE: This is an ugly fix for not being able to pass Options
             // through the production parameters (due to moved values and
@@ -373,20 +114,58 @@ parser! {
             if !cs.is_empty() {
                 cvs_opt = Some(cs);
             }
-            ast::DCImport {
-                span: span!(),
-                module: m,
-                module_views: mvs_opt,
-                class: c,
-                class_views: cvs_opt,
+
+            let mut class_symbols: Vec<String> = vec![c.clone()];
+
+            // Separates "Class/AI/OV" to ["Class", "ClassAI", "ClassOV"]
+            if cvs_opt.is_some() {
+                for class_suffix in &cvs_opt.unwrap() {
+                    class_symbols.push(c.clone() + class_suffix);
+                }
+            }
+
+            // Handles e.g. "from module/AI/OV/UD import DistributedThing/AI/OV/UD"
+            if mvs_opt.is_some() {
+                let mut c_symbol: String = class_symbols.get(0).unwrap().clone();
+
+                unsafe {
+                    DC_FILE.add_python_import(DCImport::new(m.clone(), vec![c_symbol]))
+                }
+
+                for (i, module_suffix) in mvs_opt.unwrap().into_iter().enumerate() {
+                    let full_import: String = m.clone() + &module_suffix;
+                    c_symbol = class_symbols.get(i + 1).unwrap().clone();
+
+                    let dc_import: DCImport = DCImport::new(full_import, vec![c_symbol]);
+
+                    unsafe {
+                        DC_FILE.add_python_import(dc_import.clone());
+                    }
+                }
+                return;
+            }
+            unsafe {
+                DC_FILE.add_python_import(DCImport::new(m, class_symbols));
             }
         },
     }
 
     // e.g. "from views ..."
     // e.g. "from game.views.Donut/AI ..."
-    py_module: (Vec<String>, Vec<String>) {
-        From modules[ms] slash_identifier[is] => (ms, is)
+    py_module: (String, Vec<String>) {
+        From modules[ms] slash_identifier[is] => {
+
+            // We need to join all module identifiers into one string
+            let mut modules_string: String = String::new();
+
+            for (i, mod_) in ms.into_iter().enumerate() {
+                if i != 0 {
+                    modules_string.push('.');
+                }
+                modules_string.push_str(&mod_);
+            }
+            (modules_string, is)
+        }
     }
 
     // Bundles module names in 'from' statements, e.g. "myviews.Donut".
@@ -426,131 +205,73 @@ parser! {
 
     // ----- Field Declaration ----- //
 
-    field_declarations: Vec<ast::FieldDecl> {
-        => vec![],
-        field_declarations[mut fds] field_declaration[fd] => {
-            fds.push(fd);
-            fds
-        }
+    field_declarations: () {
+        => {},
+        field_declarations[mut fds] field_declaration[fd] => {},
     }
 
-    field_declaration: ast::FieldDecl {
-        molecular_field[mf] => ast::FieldDecl {
-            span: span!(),
-            node: ast::FieldDecl_::MolecularField(mf),
-        },
-        atomic_field[af] => ast::FieldDecl {
-            span: span!(),
-            node: ast::FieldDecl_::AtomicField(af),
-        },
-        parameter_field[pf] => ast::FieldDecl {
-            span: span!(),
-            node: ast::FieldDecl_::ParameterField(pf),
-        },
+    field_declaration: () {
+        molecular_field[mf] => {},
+        atomic_field[af] => {},
+        parameter_field[pf] => {},
     }
 
     // ----- Molecular Field ----- //
 
-    molecular_field: ast::MolecularField {
-        Identifier(id) Colon atomic_field[af] atomic_fields[mut afs] Semicolon => {
-            afs.insert(0, af);
-            let mut new_afs: Vec<ast::FieldType> = vec![];
-
-            for atomic_field in &afs {
-                new_afs.push(ast::FieldType::Atomic(atomic_field.clone()));
-            }
-
-            ast::MolecularField {
-                identifier: id,
-                fields: new_afs,
-            }
-        },
-        Identifier(id) Colon parameter_field[pf] parameter_fields[mut pfs] Semicolon => {
-            pfs.insert(0, pf);
-            let mut new_pfs: Vec<ast::FieldType> = vec![];
-
-            for parameter_field in &pfs {
-                new_pfs.push(ast::FieldType::Parameter(parameter_field.clone()));
-            }
-
-            ast::MolecularField {
-                identifier: id,
-                fields: new_pfs,
-            }
-        },
+    molecular_field: () {
+        Identifier(id) Colon atomic_field[af] atomic_fields[mut afs] Semicolon => {},
+        Identifier(id) Colon parameter_field[pf] parameter_fields[mut pfs] Semicolon => {},
     }
 
     // ----- Atomic Field ----- //
 
-    atomic_fields: Vec<ast::AtomicField> {
-        => vec![],
-        atomic_fields[mut afs] Comma atomic_field[af] => {
-            afs.push(af);
-            afs
-        }
+    atomic_fields: () {
+        => {},
+        atomic_fields Comma atomic_field => {},
     }
 
-    atomic_field: ast::AtomicField {
+    atomic_field: () {
         Identifier(id) OpenParenthesis parameters[ps]
-        CloseParenthesis dc_keyword_list[kl] Semicolon => ast::AtomicField {
-            identifier: id,
-            parameters: ps,
-            keyword_list: kl,
-        }
+        CloseParenthesis dc_keyword_list[kl] Semicolon => {},
     }
 
     // ----- Parameter Fields ----- //
 
-    parameter_fields: Vec<ast::ParameterField> {
-        => vec![],
-        parameter_fields[mut ps] Comma parameter_field[p] => {
-            ps.push(p);
-            ps
-        }
+    parameter_fields: () {
+        => {},
+        parameter_fields Comma parameter_field => {},
     }
 
-    parameter_field: ast::ParameterField {
-        parameter[p] dc_keyword_list[kl] => ast::ParameterField {
-            parameter: p,
-            keyword_list: kl,
-        }
+    parameter_field: () {
+        parameter[p] dc_keyword_list[kl] => {},
     }
 
     // ----- Parameters ----- //
 
-    struct_parameters: Vec<ast::Parameter> {
-        => vec![],
-        struct_parameters[mut ps] struct_parameter[p] => {
-            ps.push(p);
-            ps
-        }
+    struct_parameters: () {
+        => {},
+        struct_parameters struct_parameter => {},
     }
 
-    struct_parameter: ast::Parameter {
-        parameter[p] Semicolon => p
+    struct_parameter: () {
+        parameter Semicolon => {}
     }
 
-    parameters: Vec<ast::Parameter> {
-        => vec![],
+    parameters: () {
+        => {},
         #[no_reduce(Comma)] // don't reduce if we're expecting more params
-        parameters[mut ps] parameter[p] => {
-            ps.push(p);
-            ps
-        },
-        parameters[mut ps] parameter[p] Comma => {
-            ps.push(p);
-            ps
-        },
+        parameters parameter => {},
+        parameters parameter Comma => {},
     }
 
-    parameter: ast::Parameter {
-        char_param[cp] => ast::Parameter::Char(cp),
-        int_param[ip] => ast::Parameter::Int(ip),
-        float_param[fp] => ast::Parameter::Float(fp),
-        string_param[sp] => ast::Parameter::String(sp),
-        blob_param[bp] => ast::Parameter::Blob(bp),
-        struct_param[sp] => ast::Parameter::Struct(sp),
-        array_param[ap] => ast::Parameter::Array(ap),
+    parameter: () {
+        char_param => {},
+        int_param => {},
+        float_param => {},
+        string_param => {},
+        blob_param => {},
+        struct_param => {},
+        array_param => {},
     }
 
     size_constraint: Option<i64> {
@@ -584,32 +305,17 @@ parser! {
         DecimalLiteral(min) Hyphen DecimalLiteral(max) => min .. max,
     }
 
-    int_transform: Option<ast::IntTransform> {
+    int_transform: Option<()> {
         => None,
         // FIXME: Accept spec's `IntegerLiteral`, not just DecimalLiteral.
-        Percent DecimalLiteral(dl) => Some(ast::IntTransform::OperatorIntLiteral {
-            operator: Percent,
-            int_literal: dl,
-        }),
-        ForwardSlash DecimalLiteral(dl) => Some(ast::IntTransform::OperatorIntLiteral {
-            operator: ForwardSlash,
-            int_literal: dl,
-        }),
-        Star DecimalLiteral(dl) => Some(ast::IntTransform::OperatorIntLiteral {
-            operator: Star,
-            int_literal: dl,
-        }),
-        Hyphen DecimalLiteral(dl) => Some(ast::IntTransform::OperatorIntLiteral {
-            operator: Hyphen,
-            int_literal: dl,
-        }),
-        Plus DecimalLiteral(dl) => Some(ast::IntTransform::OperatorIntLiteral {
-            operator: Plus,
-            int_literal: dl,
-        }),
+        Percent DecimalLiteral(dl) => Some(()),
+        ForwardSlash DecimalLiteral(dl) => Some(()),
+        Star DecimalLiteral(dl) => Some(()),
+        Hyphen DecimalLiteral(dl) => Some(()),
+        Plus DecimalLiteral(dl) => Some(()),
     }
 
-    float_transform: Option<ast::FloatTransform> {
+    float_transform: Option<()> {
         => None,
         // TODO: Implement
     }
@@ -648,31 +354,17 @@ parser! {
     }
 
     // ----- Char Parameter ----- //
-    char_param: ast::CharParameter {
-        CharT optional_name[id] param_char_init[cl] => ast::CharParameter {
-            identifier: id,
-            char_literal: cl,
-        }
+    char_param: () {
+        CharT optional_name[id] param_char_init[cl] => {}
     }
 
     // ----- Integer Parameter ----- //
-    int_param: ast::IntParameter {
+    int_param: () {
         signed_integers[it] int_range[ir] int_transform[itr]
-        optional_name[id] param_dec_const[dc] => ast::IntParameter {
-            int_type: it,
-            identifier: id,
-            int_range: ir,
-            int_transform: itr,
-            int_constant: dc,
-        },
+        optional_name[id] param_dec_const[dc] => {},
+
         unsigned_integers[it] int_range[ir] int_transform[itr]
-        optional_name[id] param_dec_const[dc] => ast::IntParameter {
-            int_type: it,
-            identifier: id,
-            int_range: ir,
-            int_transform: itr,
-            int_constant: dc,
-        },
+        optional_name[id] param_dec_const[dc] => {},
     }
 
     signed_integers: DCToken {
@@ -700,65 +392,33 @@ parser! {
     }
 
     // ----- Float Parameter ----- //
-    float_param: ast::FloatParameter {
+    float_param: () {
         Float64T float_range[fr] float_transform[ft]
-        optional_name[id] param_float_const[fl] => ast::FloatParameter {
-            identifier: id,
-            float_range: fr,
-            float_transform: ft,
-            float_constant: fl,
-        }
+        optional_name[id] param_float_const[fl] => {},
     }
 
     // ----- String Parameter ----- //
-    string_param: ast::StringParameter {
-        StringT size_constraint[sc] optional_name[id] param_str_init[sl] => ast::StringParameter {
-            identifier: id,
-            string_literal: sl,
-            size_constraint: sc,
-        }
+    string_param: () {
+        StringT size_constraint[sc] optional_name[id] param_str_init[sl] => {}
     }
 
     // ----- Blob Parameter ----- //
-    blob_param: ast::BlobParameter {
-        BlobT size_constraint[sc] optional_name[id] param_bin_init[bl] => ast::BlobParameter {
-            identifier: id,
-            string_literal: bl,
-            size_constraint: sc,
-        },
+    blob_param: () {
+        BlobT size_constraint[sc] optional_name[id] param_bin_init[bl] => {},
     }
 
     // ----- Struct Parameter ----- //
-    struct_param: ast::StructParameter {
-        #[no_reduce(OpenBrackets)] // avoid ambiguity between struct & array parameters
-        Identifier(st) optional_name[si] => ast::StructParameter {
-            struct_type: st,
-            identifier: si,
-        }
+    struct_param: () {
+        #[no_reduce(OpenBrackets)] // avoids ambiguity between struct & array parameters
+        Identifier(st) optional_name[si] => {},
     }
 
     // ----- Array Parameter ----- //
-    array_param: ast::ArrayParameter {
-        Identifier(_) optional_name[ai] array_range[ar] => ast::ArrayParameter {
-            data_type: CharT, // fixme
-            identifier: ai,
-            array_range: ar,
-        },
-        signed_integers[dt] array_range[ar] optional_name[id] => ast::ArrayParameter {
-            data_type: dt,
-            identifier: id,
-            array_range: ar,
-        },
-        unsigned_integers[dt] array_range[ar] optional_name[id] => ast::ArrayParameter {
-            data_type: dt,
-            identifier: id,
-            array_range: ar,
-        },
-        array_data_types[dt] array_range[ar] optional_name[id] => ast::ArrayParameter {
-            data_type: dt,
-            identifier: id,
-            array_range: ar,
-        },
+    array_param: () {
+        Identifier(_) optional_name[ai] array_range[ar] => {},
+        signed_integers[dt] array_range[ar] optional_name[id] => {},
+        unsigned_integers[dt] array_range[ar] optional_name[id] => {},
+        array_data_types[dt] array_range[ar] optional_name[id] => {},
     }
 
     // ----- DC Keywords ----- //
@@ -773,183 +433,37 @@ parser! {
     }
 }
 
-// This is the interface to our parser; Provides an iterator.
 pub fn parse<I: Iterator<Item = (DCToken, Span)>>(
     i: I,
-) -> Result<ast::DCFile, (Option<(DCToken, Span)>, &'static str)> {
+) -> Result<(), (Option<(DCToken, Span)>, &'static str)> {
     parse_(i)
 }
 
 #[cfg(test)]
 mod unit_testing {
-    use super::{ast, parse, DCToken, Span};
+    use super::{parse, DC_FILE};
+    use crate::dcfile::DCFileInterface;
     use crate::dclexer::Lexer;
 
-    // Utility function for verifying the parser output to the target AST.
-    fn parse_for_ast_target(input: &str, target_ast: ast::DCFile) {
+    fn parse_dcfile_string(input: &str) {
         let lexer = Lexer::new(input).inspect(|tok| eprintln!("token: {:?}", tok));
-        let dc_file_ast: ast::DCFile = parse(lexer).unwrap();
-
-        eprintln!("{:#?}", dc_file_ast); // Pretty print output AST
-        assert_eq!(dc_file_ast, target_ast);
+        let _: () = parse(lexer).unwrap();
+        unsafe {
+            eprintln!("{:#?}", DC_FILE); // pretty print parser output to stderr
+        }
     }
 
     #[test]
-    fn type_definition_production() {
-        let dc_file: &str = "typedef char test;\n";
-        let target_ast: ast::DCFile = ast::DCFile {
-            type_decl: vec![ast::TypeDecl {
-                span: Span {
-                    min: 0,
-                    max: 18,
-                    line: 1,
-                },
-                node: ast::TypeDecl_::TypeDefinition(ast::TypeDefinition {
-                    span: Span {
-                        min: 0,
-                        max: 18,
-                        line: 1,
-                    },
-                    dc_type: DCToken::CharT,
-                    alias: "test".to_string(),
-                }),
-            }],
-        };
-        parse_for_ast_target(dc_file, target_ast);
-    }
-
-    #[test]
-    fn python_style_imports() {
+    fn python_module_imports() {
         let dc_file: &str = "from example-views import DistributedDonut\n\
                              from views import DistributedDonut/AI/OV\n\
                              from views/AI/OV import DistributedDonut/AI/OV\n\
                              from game.views.Donut/AI import DistributedDonut/AI\n\
                              from views import *\n";
-        let target_ast: ast::DCFile = ast::DCFile {
-            type_decl: vec![
-                // "from example_views import DistributedDonut"
-                ast::TypeDecl {
-                    span: Span {
-                        min: 0,
-                        max: 42,
-                        line: 1,
-                    },
-                    node: ast::TypeDecl_::DCImport(ast::DCImport {
-                        span: Span {
-                            min: 0,
-                            max: 42,
-                            line: 1,
-                        },
-                        module: vec!["example-views".to_string()],
-                        module_views: None,
-                        class: "DistributedDonut".to_string(),
-                        class_views: None,
-                    }),
-                },
-                // "from views import DistributedDonut/AI/OV"
-                ast::TypeDecl {
-                    span: Span {
-                        min: 43,
-                        max: 83,
-                        line: 2,
-                    },
-                    node: ast::TypeDecl_::DCImport(ast::DCImport {
-                        span: Span {
-                            min: 43,
-                            max: 83,
-                            line: 2,
-                        },
-                        module: vec!["views".to_string()],
-                        module_views: None,
-                        class: "DistributedDonut".to_string(),
-                        class_views: Some(vec!["AI".to_string(), "OV".to_string()]),
-                    }),
-                },
-                // "from views/AI/OV import DistributedDonut/AI/OV"
-                ast::TypeDecl {
-                    span: Span {
-                        min: 84,
-                        max: 130,
-                        line: 3,
-                    },
-                    node: ast::TypeDecl_::DCImport(ast::DCImport {
-                        span: Span {
-                            min: 84,
-                            max: 130,
-                            line: 3,
-                        },
-                        module: vec!["views".to_string()],
-                        module_views: Some(vec!["AI".to_string(), "OV".to_string()]),
-                        class: "DistributedDonut".to_string(),
-                        class_views: Some(vec!["AI".to_string(), "OV".to_string()]),
-                    }),
-                },
-                // "from game.views.Donut/AI import DistributedDonut/AI"
-                ast::TypeDecl {
-                    span: Span {
-                        min: 131,
-                        max: 182,
-                        line: 4,
-                    },
-                    node: ast::TypeDecl_::DCImport(ast::DCImport {
-                        span: Span {
-                            min: 131,
-                            max: 182,
-                            line: 4,
-                        },
-                        module: vec!["game".to_string(), "views".to_string(), "Donut".to_string()],
-                        module_views: Some(vec!["AI".to_string()]),
-                        class: "DistributedDonut".to_string(),
-                        class_views: Some(vec!["AI".to_string()]),
-                    }),
-                },
-                // "from views import *"
-                ast::TypeDecl {
-                    span: Span {
-                        min: 183,
-                        max: 202,
-                        line: 5,
-                    },
-                    node: ast::TypeDecl_::DCImport(ast::DCImport {
-                        span: Span {
-                            min: 183,
-                            max: 202,
-                            line: 5,
-                        },
-                        module: vec!["views".to_string()],
-                        module_views: None,
-                        class: "*".to_string(),
-                        class_views: None,
-                    }),
-                },
-            ],
-        };
-        parse_for_ast_target(dc_file, target_ast);
-    }
+        parse_dcfile_string(dc_file);
 
-    #[test]
-    fn distributed_class_production() {
-        let dc_file: &str = "dclass DistributedDonut {\n
-                             };\n";
-        let target_ast: ast::DCFile = ast::DCFile {
-            type_decl: vec![ast::TypeDecl {
-                span: Span {
-                    min: 0,
-                    max: 58,
-                    line: 1,
-                },
-                node: ast::TypeDecl_::DistributedClassType(ast::DistributedClassType {
-                    span: Span {
-                        min: 0,
-                        max: 58,
-                        line: 1,
-                    },
-                    identifier: "DistributedDonut".to_string(),
-                    parent_classes: None,
-                    field_declarations: vec![],
-                }),
-            }],
-        };
-        parse_for_ast_target(dc_file, target_ast);
+        unsafe {
+            assert_eq!(DC_FILE.get_num_imports(), 8);
+        }
     }
 }

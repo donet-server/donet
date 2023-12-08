@@ -23,6 +23,7 @@ use std::sync::{Arc, Mutex};
 pub type FieldName2Field = MultiMap<String, Arc<Mutex<DCField>>>;
 pub type FieldId2Field = MultiMap<globals::FieldId, Arc<Mutex<DCField>>>;
 
+#[derive(Debug)]
 pub struct DClass {
     class_name: String,
     class_id: globals::DClassId,
