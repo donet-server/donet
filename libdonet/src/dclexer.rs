@@ -197,7 +197,8 @@ lexer! {
             (DCToken::Identifier(text.to_owned()), text)
         }
     },
-    r#"[a-zA-Z_][a-zA-Z0-9_\-]*"# => (DCToken::Module(text.to_owned()), text),
+    // Yes, Python modules can legally have hyphens and start with a number!
+    r#"[a-zA-Z0-9_][a-zA-Z0-9_\-]*"# => (DCToken::Module(text.to_owned()), text),
     r#"\\(x[0-9a-fA-F]+|.)"# => (DCToken::EscapeCharacter(text.to_owned()), text),
 
     r#"%"# => (DCToken::Percent, text),

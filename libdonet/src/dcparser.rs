@@ -175,17 +175,50 @@ parser! {
 
     // Bundles module names in 'from' statements, e.g. "myviews.Donut".
     modules: Vec<String> {
-        module_identifier[m] => vec![m],
-        modules[mut nm] Period module_identifier[m] => {
+        legal_python_module_identifiers[m] => vec![m],
+        modules[mut nm] Period legal_python_module_identifiers[m] => {
             nm.push(m);
             nm
         }
     }
 
-    // NOTE: Module names may be lexed as identifiers or module tokens.
-    module_identifier: String {
-        Identifier(m) => m,
-        Module(m) => m,
+    // Specifically used by the Python-style DC import grammar to accept
+    // **legal** python module identifiers that may lexed as other tokens.
+    legal_python_module_identifiers: String {
+        Identifier(id) => id,
+        Module(id) => id,
+        DCKeyword(id) => id,
+        ViewSuffix(id) => id,
+        CharT => "char".to_string(),
+        Int8T => "int8".to_string(),
+        Int16T => "int16".to_string(),
+        Int32T => "int32".to_string(),
+        Int64T => "int64".to_string(),
+        UInt8T => "uint8".to_string(),
+        UInt16T => "uint16".to_string(),
+        UInt32T => "uint32".to_string(),
+        UInt64T => "uint64".to_string(),
+        Float64T => "float64".to_string(),
+        Int8ArrayT => "int8array".to_string(),
+        Int16ArrayT => "int16array".to_string(),
+        Int32ArrayT => "int32array".to_string(),
+        UInt8ArrayT => "uint8array".to_string(),
+        UInt16ArrayT => "uint16array".to_string(),
+        UInt32ArrayT => "uint32array".to_string(),
+        UInt32UInt8ArrayT => "uint32uint8array".to_string(),
+        StringT => "string".to_string(),
+        BlobT => "blob".to_string(),
+        Blob32T => "blob32".to_string(),
+        DClass => "dclass".to_string(),
+        Struct => "struct".to_string(),
+        Keyword => "keyword".to_string(),
+        Typedef => "typedef".to_string(),
+        From => "from".to_string(),
+        Import => "import".to_string(),
+        Switch => "switch".to_string(),
+        Case => "case".to_string(),
+        Default => "default".to_string(),
+        Break => "break".to_string(),
     }
 
     // e.g. "... import DistributedDonut/AI/OV"
@@ -464,11 +497,15 @@ mod unit_testing {
                              from views import DistributedDonut/AI/OV\n\
                              from views/AI/OV/UD import DistributedDonut/AI/OV/UD\n\
                              from game.views.Donut/AI import DistributedDonut/AI\n\
-                             from views import *\n";
+                             from views import *\n
+                             /* The next one tests handling legal python identifiers\n\
+                              * that may be lexed as tokens other than Id/Module.
+                              */
+                             from db.char import DistributedDonut\n";
         parse_dcfile_string(dc_file);
 
         unsafe {
-            let expected_num_imports: usize = 9;
+            let expected_num_imports: usize = 10;
             let mut imports: Vec<DCImport> = vec![];
             assert_eq!(DC_FILE.get_num_imports(), expected_num_imports);
 
