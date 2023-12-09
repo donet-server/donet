@@ -50,7 +50,7 @@ impl PrimeNumberGenerator {
                     maybe_prime = false;
                 }
                 j += 1;
-                assert_ne!(j < self.primes.len(), false);
+                assert!(j < self.primes.len());
             }
             if maybe_prime {
                 self.primes.push(candidate);
