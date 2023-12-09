@@ -15,21 +15,27 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+pub static MAX_PRIME_NUMBERS: u16 = 1000;
+
 pub struct PrimeNumberGenerator {
     primes: Vec<u16>,
+}
+
+pub struct PandaLegacyHashGenerator {
+    hash: u32, // 32-bit hash
+    index: u16,
+    primes: PrimeNumberGenerator,
 }
 
 impl PrimeNumberGenerator {
     pub fn new() -> PrimeNumberGenerator {
         PrimeNumberGenerator { primes: vec![2_u16] }
     }
-    /* Returns the nth prime number.  this[0] returns 2, this[1] returns 3;
+    /* Returns the nth prime number. this[0] returns 2, this[1] returns 3;
      * successively larger values of n return larger prime numbers, up to the
      * largest prime number that can be represented in an int.
      */
     pub fn get_prime(&mut self, n: u16) -> u16 {
-        assert_ne!(n >= 0, false);
-
         // Compute the prime numbers between the last-computed prime number and n.
         let mut candidate: u16 = self.primes.last().unwrap() + 1_u16;
         while self.primes.len() <= usize::from(n) {
@@ -52,5 +58,37 @@ impl PrimeNumberGenerator {
             candidate += 1;
         }
         *self.primes.get(usize::from(n)).unwrap()
+    }
+}
+
+impl PandaLegacyHashGenerator {
+    pub fn new() -> PandaLegacyHashGenerator {
+        PandaLegacyHashGenerator {
+            hash: 0_u32,
+            index: 0_u16,
+            primes: PrimeNumberGenerator::new(),
+        }
+    }
+    // Adds another integer to the hash so far.
+    pub fn add_int(&mut self, number: u32) {
+        assert!(self.index < MAX_PRIME_NUMBERS);
+        self.hash += u32::from(self.primes.get_prime(self.index)) * number;
+        self.index = (self.index + 1) % MAX_PRIME_NUMBERS;
+    }
+
+    // Adds a blob to the hash, by breaking it down into a sequence of integers.
+    pub fn add_blob(&mut self, blob: Vec<u8>) {
+        self.add_int(blob.len().try_into().unwrap());
+        for byte in blob.into_iter() {
+            self.add_int(u32::from(byte));
+        }
+    }
+    // Adds a string to the hash, by breaking it down into a sequence of integers.
+    pub fn add_string(&mut self, string: String) {
+        self.add_blob(string.into_bytes());
+    }
+
+    pub const fn get_hash(&self) -> u32 {
+        self.hash & 0xffffffff
     }
 }
