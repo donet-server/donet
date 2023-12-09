@@ -24,3 +24,4 @@ pub mod dclexer;
 pub mod dcparser;
 pub mod dcstruct;
 pub mod globals;
+pub mod hashgen;
