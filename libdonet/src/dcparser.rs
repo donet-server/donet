@@ -54,6 +54,7 @@ parser! {
     type_decl: () {
         keyword_type => {},
         struct_type => {},
+        switch_type => {},
         distributed_class_type => {},
         python_import => {},
         type_definition => {},
@@ -64,8 +65,17 @@ parser! {
     }
 
     struct_type: () {
-        Struct Identifier(id) OpenBraces struct_parameters[ps]
-        CloseBraces Semicolon => {},
+        Struct Identifier(id) OpenBraces struct_fields CloseBraces Semicolon => {},
+    }
+
+    struct_fields: () {
+        => {},
+        struct_fields struct_field Semicolon => {},
+    }
+
+    struct_field: () {
+        parameter => {},
+        switch_type => {},
     }
 
     distributed_class_type: () {
@@ -241,6 +251,32 @@ parser! {
         }
     }
 
+    switch_type: () {
+        Switch optional_name[id] OpenParenthesis parameter_or_atomic
+        CloseParenthesis OpenBraces switch_fields CloseBraces => {
+            // TODO: create new switch
+        }
+    }
+
+    switch_fields: () {
+        => {},
+        switch_fields switch_case => {},
+        switch_fields Default Colon => {},
+        switch_fields Break Semicolon => {},
+        switch_fields parameter Semicolon => {},
+    }
+
+    switch_case: () {
+        Case parameter Colon => {},
+        Case DecimalLiteral(dl) Colon => {},
+        Case OctalLiteral(ol) Colon => {},
+        Case HexLiteral(hl) Colon => {},
+        Case BinaryLiteral(bl) Colon => {},
+        Case FloatLiteral(fl) Colon => {},
+        Case CharacterLiteral(cl) Colon => {},
+        Case StringLiteral(sl) Colon => {},
+    }
+
     // ----- Field Declaration ----- //
 
     field_declarations: () {
@@ -273,6 +309,11 @@ parser! {
         CloseParenthesis dc_keyword_list[kl] Semicolon => {},
     }
 
+    parameter_or_atomic: () {
+        parameter => (),
+        atomic_field => (),
+    }
+
     // ----- Parameter Fields ----- //
 
     parameter_fields: () {
@@ -285,15 +326,6 @@ parser! {
     }
 
     // ----- Parameters ----- //
-
-    struct_parameters: () {
-        => {},
-        struct_parameters struct_parameter => {},
-    }
-
-    struct_parameter: () {
-        parameter Semicolon => {}
-    }
 
     parameters: () {
         => {},
