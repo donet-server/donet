@@ -28,6 +28,7 @@ pub type DoId = u32;
 pub type Zone = u32;
 pub type DClassId = u16;
 pub type FieldId = u16;
+pub type DCFileHash = u32; // 32-bit hash
 
 // Type Limits
 pub const DG_SIZE_MAX: DgSize = u16::MAX;
@@ -45,6 +46,16 @@ pub const CONTROL_CHANNEL: Channel = 1;
 pub const BCHAN_CLIENTS: Channel = 10;
 pub const BCHAN_STATESERVERS: Channel = 12;
 pub const BCHAN_DBSERVERS: Channel = 13;
+
+// DC File Constants
+pub static DC_KEYWORDS: &[&str] = &[
+    "ram", "required", "db", "airecv", "ownrecv", "clrecv", "broadcast", "ownsend", "clsend",
+];
+pub static DC_VIEW_SUFFIXES: &[&str] = &["AI", "OV", "UD"];
+pub static DC_MULTIPLE_INHERITANCE: bool = true;
+pub static DC_VIRTUAL_INHERITANCE: bool = true;
+pub static DC_SORT_INHERITANCE_BY_FILE: bool = false;
+pub static MAX_PRIME_NUMBERS: u16 = 1000;
 
 // Error type returned by DC parser
 pub type ParseError = (Option<(DCToken, Span)>, &'static str);

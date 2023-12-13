@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+use crate::globals::{DC_KEYWORDS, DC_VIEW_SUFFIXES};
 use plex::lexer;
 
 #[rustfmt::skip]
@@ -112,13 +113,6 @@ pub enum DCToken {
     Equals,           // "="
     Colon,            // ":"
 }
-
-#[rustfmt::skip]
-static DC_KEYWORDS: &[&str] = &[
-    "ram", "required", "db", "airecv", "ownrecv",
-    "clrecv", "broadcast", "ownsend", "clsend",
-];
-static DC_VIEW_SUFFIXES: &[&str] = &["AI", "OV", "UD"];
 
 lexer! {
     fn next_token(text: 'a) -> (DCToken, &'a str);

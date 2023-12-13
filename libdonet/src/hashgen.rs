@@ -15,14 +15,14 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-pub static MAX_PRIME_NUMBERS: u16 = 1000;
+use crate::globals::{DCFileHash, MAX_PRIME_NUMBERS};
 
 pub struct PrimeNumberGenerator {
     primes: Vec<u16>,
 }
 
 pub struct PandaLegacyHashGenerator {
-    hash: u32, // 32-bit hash
+    hash: DCFileHash,
     index: u16,
     primes: PrimeNumberGenerator,
 }
@@ -88,7 +88,7 @@ impl PandaLegacyHashGenerator {
         self.add_blob(string.into_bytes());
     }
 
-    pub const fn get_hash(&self) -> u32 {
+    pub const fn get_hash(&self) -> DCFileHash {
         self.hash & 0xffffffff
     }
 }
