@@ -17,6 +17,7 @@
 
 use crate::dcfield::DCField;
 use crate::globals;
+use crate::hashgen::DCHashGenerator;
 use multimap::MultiMap;
 use std::sync::{Arc, Mutex};
 
@@ -40,7 +41,7 @@ pub struct DClass {
 
 pub trait DClassInterface {
     fn new(name: &str, id: globals::DClassId) -> Self;
-    fn generate_hash(&mut self);
+    fn generate_hash(&mut self, hashgen: &mut DCHashGenerator);
 
     fn set_parent(&mut self, parent: Arc<Mutex<DClass>>);
 
@@ -68,7 +69,7 @@ impl DClassInterface for DClass {
         }
     }
 
-    fn generate_hash(&mut self) {
+    fn generate_hash(&mut self, hashgen: &mut DCHashGenerator) {
         todo!(); // TODO: Implement once hash gen is written
     }
 
