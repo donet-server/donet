@@ -1,6 +1,6 @@
 <img src="logo/donet_banner.png" align="right" width="47%"/>
 
-# Donet
+# donet
 
 _**D**istributed **O**bject **Net**work Engine_
 
@@ -51,4 +51,6 @@ Resources for more info on Panda's Distributed Networking (Sources listed in chr
 
 <br>
 
-Donet logo artwork created & designed by [Karla Valeria Rodriguez](https://github.com/karla-valeria). 🍩
+Donet logo artwork created by [honeymatsu](https://honeymatsu.carrd.co/). 🍩
+
+Older revisions of the Donet logo created and designed by [Karla Valeria Rodriguez](https://github.com/karla-valeria). 🍩
