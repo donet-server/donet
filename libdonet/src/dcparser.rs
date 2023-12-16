@@ -390,6 +390,12 @@ parser! {
         // TODO: Implement
     }
 
+    /* FIXME: this is stupid and i dont fully understand this area of DC syntax
+     *        Will fix once DC file classes are completed. */
+    array_to_literal_hack: () {
+        OpenBrackets DecimalLiteral int_transform[_] CloseBrackets => {},
+    }
+
     optional_name: Option<String> {
         // if epsilon found AND lookahead is Identifier, don't reduce
         // this is what holds together the parser from shitting itself.
@@ -411,6 +417,7 @@ parser! {
     param_bin_init: Option<String> {
         => None,
         Equals BinaryLiteral(bl) => Some(bl),
+        Equals array_to_literal_hack => None,
     }
 
     param_dec_const: Option<i64> {
