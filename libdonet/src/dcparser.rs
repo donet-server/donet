@@ -100,14 +100,14 @@ parser! {
     }
 
     type_definition: () {
-        Typedef CharT Identifier(alias) opt_array_range[_] Semicolon => {},
-        Typedef signed_integers[dt] Identifier(alias) opt_array_range[_] Semicolon => {},
-        Typedef unsigned_integers[dt] Identifier(alias) opt_array_range[_] Semicolon => {},
-        Typedef array_data_types[dt] Identifier(alias) opt_array_range[_] Semicolon => {},
-        Typedef Float64T Identifier(alias) opt_array_range[_] Semicolon => {},
-        Typedef StringT Identifier(alias) opt_array_range[_] Semicolon => {},
-        Typedef BlobT Identifier(alias) opt_array_range[_] Semicolon => {},
-        Typedef Blob32T Identifier(alias) opt_array_range[_] Semicolon => {},
+        Typedef CharT Identifier(alias) opt_value_range[_] Semicolon => {},
+        Typedef signed_integers[dt] Identifier(alias) opt_value_range[_] Semicolon => {},
+        Typedef unsigned_integers[dt] Identifier(alias) opt_value_range[_] Semicolon => {},
+        Typedef array_data_types[dt] Identifier(alias) opt_value_range[_] Semicolon => {},
+        Typedef Float64T Identifier(alias) opt_value_range[_] Semicolon => {},
+        Typedef StringT Identifier(alias) opt_value_range[_] Semicolon => {},
+        Typedef BlobT Identifier(alias) opt_value_range[_] Semicolon => {},
+        Typedef Blob32T Identifier(alias) opt_value_range[_] Semicolon => {},
     }
 
     python_import: () {
@@ -196,7 +196,6 @@ parser! {
     // **legal** python module identifiers that may lexed as other tokens.
     legal_python_module_identifiers: String {
         Identifier(id) => id,
-        Module(id) => id,
         DCKeyword(id) => id,
         ViewSuffix(id) => id,
         CharT => "char".to_string(),
@@ -223,8 +222,6 @@ parser! {
         Struct => "struct".to_string(),
         Keyword => "keyword".to_string(),
         Typedef => "typedef".to_string(),
-        From => "from".to_string(),
-        Import => "import".to_string(),
         Switch => "switch".to_string(),
         Case => "case".to_string(),
         Default => "default".to_string(),
@@ -351,28 +348,36 @@ parser! {
 
     int_range: Option<Range<i64>> {
         => None,
-        OpenParenthesis DecimalLiteral(a) Hyphen DecimalLiteral(b) CloseParenthesis => Some(a .. b)
+        OpenParenthesis DecimalLiteral(a) Hyphen DecimalLiteral(b) CloseParenthesis => Some(a .. b),
+        // NOTE: The rule below is a workaround to a small 'issue' that I cannot fix.
+        //       The lexer may lex the hypen and literal as a negative literal if no
+        //       spaces are used in between tokens. This mitigates this issue, so its ok.
+        OpenParenthesis DecimalLiteral(a)
+        DecimalLiteral(negative_b) CloseParenthesis => Some(a .. negative_b.abs()),
     }
 
     float_range: Option<Range<f64>> {
         => None,
-        OpenParenthesis FloatLiteral(a) Hyphen FloatLiteral(b) CloseParenthesis => Some(a .. b)
+        OpenParenthesis FloatLiteral(a) Hyphen FloatLiteral(b) CloseParenthesis => Some(a .. b),
+        OpenParenthesis FloatLiteral(a)
+        FloatLiteral(negative_b) CloseParenthesis => Some(a .. negative_b.abs()),
     }
 
-    array_range: Range<i64> {
-        OpenBrackets array_range_opt[array_range] CloseBrackets => array_range
+    value_range: Range<i64> {
+        OpenBrackets value_range_opt[value_range] CloseBrackets => value_range
     }
 
-    opt_array_range: Option<Range<i64>> {
+    opt_value_range: Option<Range<i64>> {
         => None,
-        array_range[ar] => Some(ar),
+        value_range[ar] => Some(ar),
     }
 
-    array_range_opt: Range<i64> {
+    value_range_opt: Range<i64> {
         => 0 .. 0,
         #[no_reduce(Hyphen)] // do not reduce if lookahead is the '-' token
         DecimalLiteral(a) => a .. a,
         DecimalLiteral(min) Hyphen DecimalLiteral(max) => min .. max,
+        DecimalLiteral(min) DecimalLiteral(negative_max) => min .. negative_max.abs(),
     }
 
     int_transform: Option<()> {
@@ -390,10 +395,10 @@ parser! {
         // TODO: Implement
     }
 
-    /* FIXME: this is stupid and i dont fully understand this area of DC syntax
+    /* FIXME: this is stupid and i dont fully understand this area of DC syntax.
      *        Will fix once DC file classes are completed. */
     array_to_literal_hack: () {
-        OpenBrackets DecimalLiteral int_transform[_] CloseBrackets => {},
+        OpenBrackets array_literals[_] CloseBrackets => {},
     }
 
     optional_name: Option<String> {
@@ -420,28 +425,45 @@ parser! {
         Equals array_to_literal_hack => None,
     }
 
-    param_dec_const: Option<i64> {
+    param_dec_init: Option<i64> {
         => None,
         Equals DecimalLiteral(dc) => Some(dc),
     }
 
-    param_float_const: Option<f64> {
+    param_float_init: Option<f64> {
         => None,
         Equals FloatLiteral(fl) => Some(fl),
     }
 
+    param_array_init: Option<Vec<i64>> {
+        => None,
+        Equals OpenBrackets array_literals[al] CloseBrackets => None,
+    }
+
+    array_literals: Vec<i64> {
+        => vec![],
+        array_literals[mut al] DecimalLiteral(dl) int_transform[it] => {
+            al.push(dl);
+            al
+        },
+        array_literals[mut al] Comma DecimalLiteral(dl) int_transform[it] => {
+            al.push(dl);
+            al
+        },
+    }
+
     // ----- Char Parameter ----- //
     char_param: () {
-        CharT optional_name[id] param_char_init[cl] => {}
+        CharT optional_name[id] opt_value_range[vr] param_char_init[cl] => {}
     }
 
     // ----- Integer Parameter ----- //
     int_param: () {
         signed_integers[it] int_range[ir] int_transform[itr]
-        optional_name[id] param_dec_const[dc] => {},
+        optional_name[id] param_dec_init[dc] => {},
 
         unsigned_integers[it] int_range[ir] int_transform[itr]
-        optional_name[id] param_dec_const[dc] => {},
+        optional_name[id] param_dec_init[dc] => {},
     }
 
     signed_integers: DCToken {
@@ -471,7 +493,7 @@ parser! {
     // ----- Float Parameter ----- //
     float_param: () {
         Float64T float_range[fr] float_transform[ft]
-        optional_name[id] param_float_const[fl] => {},
+        optional_name[id] param_float_init[fl] => {},
     }
 
     // ----- String Parameter ----- //
@@ -492,10 +514,11 @@ parser! {
 
     // ----- Array Parameter ----- //
     array_param: () {
-        Identifier(_) optional_name[ai] array_range[ar] => {},
-        signed_integers[dt] array_range[ar] optional_name[id] => {},
-        unsigned_integers[dt] array_range[ar] optional_name[id] => {},
-        array_data_types[dt] array_range[ar] optional_name[id] => {},
+        // FIXME: this is utterly horrifying
+        Identifier(_) optional_name[ai] value_range[vr] param_array_init[pai] => {},
+        signed_integers[dt] value_range[vr] optional_name[id] param_array_init[pai] => {},
+        unsigned_integers[dt] value_range[vr] optional_name[id] param_array_init[pai] => {},
+        array_data_types[dt] value_range[vr] optional_name[id] param_array_init[pai] => {},
     }
 
     // ----- DC Keywords ----- //
@@ -532,7 +555,7 @@ mod unit_testing {
 
     #[test]
     fn python_module_imports() {
-        let dc_file: &str = "from example-views import DistributedDonut\n\
+        let dc_file: &str = "from example_views import DistributedDonut\n\
                              from views import DistributedDonut/AI/OV\n\
                              from views/AI/OV/UD import DistributedDonut/AI/OV/UD\n\
                              from game.views.Donut/AI import DistributedDonut/AI\n\
@@ -552,7 +575,7 @@ mod unit_testing {
                 imports.push(DC_FILE.get_python_import(i));
             }
 
-            assert_eq!(imports[0].python_module, "example-views");
+            assert_eq!(imports[0].python_module, "example_views");
             assert_eq!(imports[0].symbols, vec!["DistributedDonut"]);
             assert_eq!(imports[1].python_module, "views");
             assert_eq!(

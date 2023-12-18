@@ -84,11 +84,7 @@ pub enum DCToken {
     Default, // "default"
     Break,   // "break"
 
-    // NOTE: Module names in import statements may be matched as Indentifiers, and
-    // not Module tokens. We have the module token to accept Python module names with
-    // a '-' hyphen character. The parser will check for either token in import statements.
     Identifier(String), // ( Letter | "_" ) { Letter | DecDigit | "_" }
-    Module(String),     // ( Letter | "_" ) { Letter | DecDigit | "_" | "-" }
     DCKeyword(String),  // ( "ram" | "required" | "db" | "airecv" | "ownrecv" |
                         //   "clrecv" | "broadcast" | "ownsend" | "clsend" )
     ViewSuffix(String), // ( "AI", "OV", "UD" )
@@ -124,7 +120,7 @@ lexer! {
     r#"/[*](~(.*[*]/.*))[*]/"# => (DCToken::Comment, text),
     r#"\n"# => (DCToken::Newline, text),
 
-    r#"0|([1-9][0-9]*)"# => (DCToken::DecimalLiteral(match text.parse::<i64>() {
+    r#"0|([1-9][0-9]*)|-([1-9][0-9]*)"# => (DCToken::DecimalLiteral(match text.parse::<i64>() {
         Ok(n) => { n },
         Err(err) => {
             panic!("dclexer: Found DecimalLiteral token, but failed to parse as i64.\n\n{}", err);
@@ -135,7 +131,7 @@ lexer! {
     r#"0[xX][0-9a-fA-F]+"# => (DCToken::HexLiteral(text.to_owned()), text),
     r#"0[bB][0-1]+"# => (DCToken::BinaryLiteral(text.to_owned()), text),
 
-    r#"([0-9]?)+\.[0-9]+"# => (DCToken::FloatLiteral(match text.parse::<f64>() {
+    r#"([0-9]?)+\.[0-9]+|-([0-9]?)+\.[0-9]+"# => (DCToken::FloatLiteral(match text.parse::<f64>() {
         Ok(f) => { f },
         Err(err) => {
             panic!("dclexer: Found FloatLiteral token, but failed to parse as f64.\n\n{}", err);
@@ -191,8 +187,6 @@ lexer! {
             (DCToken::Identifier(text.to_owned()), text)
         }
     },
-    // Yes, Python modules can legally have hyphens and start with a number!
-    r#"[a-zA-Z0-9_][a-zA-Z0-9_\-]*"# => (DCToken::Module(text.to_owned()), text),
     r#"\\(x[0-9a-fA-F]+|.)"# => (DCToken::EscapeCharacter(text.to_owned()), text),
 
     r#"%"# => (DCToken::Percent, text),
@@ -341,7 +335,7 @@ mod unit_testing {
         // their DC files to pass our lexer / parser without issues.
         let target: Vec<DCToken> = vec![
             DCToken::From,
-            DCToken::Module(String::from("my-views")),
+            DCToken::Identifier(String::from("views")),
             DCToken::Period,
             DCToken::Identifier(String::from("Donut")),
             DCToken::Import,
@@ -351,7 +345,7 @@ mod unit_testing {
             DCToken::ForwardSlash,
             DCToken::ViewSuffix(String::from("OV")),
         ];
-        lexer_test_for_target("from my-views.Donut import DistributedDonut/AI/OV", target);
+        lexer_test_for_target("from views.Donut import DistributedDonut/AI/OV", target);
     }
 
     #[test]
