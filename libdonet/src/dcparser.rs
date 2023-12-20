@@ -61,11 +61,11 @@ parser! {
     }
 
     keyword_type: () {
-        Keyword Identifier(id) Semicolon => {}
+        Keyword Identifier(_) Semicolon => {}
     }
 
     struct_type: () {
-        Struct Identifier(id) OpenBraces struct_fields CloseBraces Semicolon => {},
+        Struct Identifier(_) OpenBraces struct_fields CloseBraces Semicolon => {},
     }
 
     struct_fields: () {
@@ -79,8 +79,8 @@ parser! {
     }
 
     distributed_class_type: () {
-        DClass Identifier(id) optional_inheritance[pc] OpenBraces
-        field_declarations[fds] CloseBraces Semicolon => {}
+        DClass Identifier(_) optional_inheritance[_] OpenBraces
+        field_declarations[_] CloseBraces Semicolon => {}
     }
 
     optional_inheritance: Option<Vec<String>> {
@@ -100,14 +100,14 @@ parser! {
     }
 
     type_definition: () {
-        Typedef CharT Identifier(alias) opt_value_range[_] Semicolon => {},
-        Typedef signed_integers[dt] Identifier(alias) opt_value_range[_] Semicolon => {},
-        Typedef unsigned_integers[dt] Identifier(alias) opt_value_range[_] Semicolon => {},
-        Typedef array_data_types[dt] Identifier(alias) opt_value_range[_] Semicolon => {},
-        Typedef Float64T Identifier(alias) opt_value_range[_] Semicolon => {},
-        Typedef StringT Identifier(alias) opt_value_range[_] Semicolon => {},
-        Typedef BlobT Identifier(alias) opt_value_range[_] Semicolon => {},
-        Typedef Blob32T Identifier(alias) opt_value_range[_] Semicolon => {},
+        Typedef CharT Identifier(_) opt_array_range[_] Semicolon => {},
+        Typedef signed_integers[_] Identifier(_) opt_array_range[_] Semicolon => {},
+        Typedef unsigned_integers[_] Identifier(_) opt_array_range[_] Semicolon => {},
+        Typedef array_data_types[_] Identifier(_) opt_array_range[_] Semicolon => {},
+        Typedef Float64T Identifier(_) opt_array_range[_] Semicolon => {},
+        Typedef StringT Identifier(_) opt_array_range[_] Semicolon => {},
+        Typedef BlobT Identifier(_) opt_array_range[_] Semicolon => {},
+        Typedef Blob32T Identifier(_) opt_array_range[_] Semicolon => {},
     }
 
     python_import: () {
@@ -223,7 +223,6 @@ parser! {
         Keyword => "keyword".to_string(),
         Typedef => "typedef".to_string(),
         Switch => "switch".to_string(),
-        Case => "case".to_string(),
         Default => "default".to_string(),
         Break => "break".to_string(),
     }
@@ -249,7 +248,7 @@ parser! {
     }
 
     switch_type: () {
-        Switch optional_name[id] OpenParenthesis parameter_or_atomic
+        Switch optional_name[_] OpenParenthesis parameter_or_atomic
         CloseParenthesis OpenBraces switch_fields CloseBraces => {
             // TODO: create new switch
         }
@@ -265,33 +264,33 @@ parser! {
 
     switch_case: () {
         Case parameter Colon => {},
-        Case DecimalLiteral(dl) Colon => {},
-        Case OctalLiteral(ol) Colon => {},
-        Case HexLiteral(hl) Colon => {},
-        Case BinaryLiteral(bl) Colon => {},
-        Case FloatLiteral(fl) Colon => {},
-        Case CharacterLiteral(cl) Colon => {},
-        Case StringLiteral(sl) Colon => {},
+        Case DecimalLiteral(_) Colon => {},
+        Case OctalLiteral(_) Colon => {},
+        Case HexLiteral(_) Colon => {},
+        Case BinaryLiteral(_) Colon => {},
+        Case FloatLiteral(_) Colon => {},
+        Case CharacterLiteral(_) Colon => {},
+        Case StringLiteral(_) Colon => {},
     }
 
     // ----- Field Declaration ----- //
 
     field_declarations: () {
         => {},
-        field_declarations[mut fds] field_declaration[fd] => {},
+        field_declarations[_] field_declaration[_] => {},
     }
 
     field_declaration: () {
-        molecular_field[mf] => {},
-        atomic_field[af] => {},
-        parameter_field[pf] => {},
+        molecular_field[_] => {},
+        atomic_field[_] => {},
+        parameter_field[_] => {},
     }
 
     // ----- Molecular Field ----- //
 
     molecular_field: () {
-        Identifier(id) Colon atomic_field[af] atomic_fields[mut afs] Semicolon => {},
-        Identifier(id) Colon parameter_field[pf] parameter_fields[mut pfs] Semicolon => {},
+        Identifier(_) Colon atomic_field[_] atomic_fields[_] Semicolon => {},
+        Identifier(_) Colon parameter_field[_] parameter_fields[_] Semicolon => {},
     }
 
     // ----- Atomic Field ----- //
@@ -302,8 +301,16 @@ parser! {
     }
 
     atomic_field: () {
-        Identifier(id) OpenParenthesis parameters[ps]
-        CloseParenthesis dc_keyword_list[kl] Semicolon => {},
+        Identifier(_) OpenParenthesis parameters[_]
+        CloseParenthesis dc_keyword_list[_] Semicolon => {},
+    }
+
+    dc_keyword_list: Vec<String> {
+        => vec![],
+        dc_keyword_list[mut kl] DCKeyword(k) => {
+            kl.push(k);
+            kl
+        }
     }
 
     parameter_or_atomic: () {
@@ -319,7 +326,7 @@ parser! {
     }
 
     parameter_field: () {
-        parameter[p] dc_keyword_list[kl] => {},
+        parameter[_] dc_keyword_list[_] => {},
     }
 
     // ----- Parameters ----- //
@@ -363,16 +370,16 @@ parser! {
         FloatLiteral(negative_b) CloseParenthesis => Some(a .. negative_b.abs()),
     }
 
-    value_range: Range<i64> {
-        OpenBrackets value_range_opt[value_range] CloseBrackets => value_range
+    array_range: Range<i64> {
+        OpenBrackets array_range_opt[ar] CloseBrackets => ar
     }
 
-    opt_value_range: Option<Range<i64>> {
+    opt_array_range: Option<Range<i64>> {
         => None,
-        value_range[ar] => Some(ar),
+        array_range[ar] => Some(ar),
     }
 
-    value_range_opt: Range<i64> {
+    array_range_opt: Range<i64> {
         => 0 .. 0,
         #[no_reduce(Hyphen)] // do not reduce if lookahead is the '-' token
         DecimalLiteral(a) => a .. a,
@@ -382,18 +389,22 @@ parser! {
 
     int_transform: Option<()> {
         => None,
-        // FIXME: Accept spec's `IntegerLiteral`, not just DecimalLiteral.
-        Percent DecimalLiteral(dl) => Some(()),
-        ForwardSlash DecimalLiteral(dl) => Some(()),
-        Star DecimalLiteral(dl) => Some(()),
-        Hyphen DecimalLiteral(dl) => Some(()),
-        Plus DecimalLiteral(dl) => Some(()),
+        Percent DecimalLiteral(_) => Some(()),
+        ForwardSlash DecimalLiteral(_) => Some(()),
+        Star DecimalLiteral(_) => Some(()),
+        Hyphen DecimalLiteral(_) => Some(()),
+        Plus DecimalLiteral(_) => Some(()),
     }
 
     float_transform: Option<()> {
         => None,
-        // TODO: Implement
+        Percent FloatLiteral(_) => Some(()),
+        ForwardSlash FloatLiteral(_) => Some(()),
+        Star FloatLiteral(_) => Some(()),
+        Hyphen FloatLiteral(_) => Some(()),
+        Plus FloatLiteral(_) => Some(()),
     }
+
 
     /* FIXME: this is stupid and i dont fully understand this area of DC syntax.
      *        Will fix once DC file classes are completed. */
@@ -409,44 +420,44 @@ parser! {
         Identifier(id) => Some(id)
     }
 
-    param_char_init: Option<char> {
+    char_default: Option<char> {
         => None,
         Equals CharacterLiteral(cl) => Some(cl),
     }
 
-    param_str_init: Option<String> {
+    string_default: Option<String> {
         => None,
         Equals StringLiteral(sl) => Some(sl),
     }
 
-    param_bin_init: Option<String> {
+    binary_default: Option<String> {
         => None,
         Equals BinaryLiteral(bl) => Some(bl),
         Equals array_to_literal_hack => None,
     }
 
-    param_dec_init: Option<i64> {
+    decimal_default: Option<i64> {
         => None,
         Equals DecimalLiteral(dc) => Some(dc),
     }
 
-    param_float_init: Option<f64> {
+    float_default: Option<f64> {
         => None,
         Equals FloatLiteral(fl) => Some(fl),
     }
 
-    param_array_init: Option<Vec<i64>> {
+    array_default: Option<Vec<i64>> {
         => None,
-        Equals OpenBrackets array_literals[al] CloseBrackets => None,
+        Equals OpenBrackets array_literals[_] CloseBrackets => None,
     }
 
     array_literals: Vec<i64> {
         => vec![],
-        array_literals[mut al] DecimalLiteral(dl) int_transform[it] => {
+        array_literals[mut al] DecimalLiteral(dl) int_transform[_] => {
             al.push(dl);
             al
         },
-        array_literals[mut al] Comma DecimalLiteral(dl) int_transform[it] => {
+        array_literals[mut al] Comma DecimalLiteral(dl) int_transform[_] => {
             al.push(dl);
             al
         },
@@ -454,18 +465,59 @@ parser! {
 
     // ----- Char Parameter ----- //
     char_param: () {
-        CharT optional_name[id] opt_value_range[vr] param_char_init[cl] => {}
+        CharT optional_name[_] opt_array_range[_] char_default[_] => {}
     }
 
     // ----- Integer Parameter ----- //
     int_param: () {
-        signed_integers[it] int_range[ir] int_transform[itr]
-        optional_name[id] param_dec_init[dc] => {},
+        signed_integers[_] int_range[_] int_transform[_]
+        optional_name[_] decimal_default[_] => {},
 
-        unsigned_integers[it] int_range[ir] int_transform[itr]
-        optional_name[id] param_dec_init[dc] => {},
+        unsigned_integers[_] int_range[_] int_transform[_]
+        optional_name[_] decimal_default[_] => {},
     }
 
+    integer_type_with_transform: () {
+        data_type[tok] int_transform[it] => {},
+        data_type[tok] float_transform[ft] => {},
+    }
+
+    integer_types: DCToken {
+        signed_integers[tok] => tok,
+        unsigned_integers[tok] => tok,
+    }
+
+    // ----- Float Parameter ----- //
+    float_param: () {
+        Float64T float_range[_] float_transform[_]
+        optional_name[_] float_default[_] => {},
+    }
+
+    // ----- String Parameter ----- //
+    string_param: () {
+        StringT size_constraint[_] optional_name[_] string_default[_] => {}
+    }
+
+    // ----- Blob Parameter ----- //
+    blob_param: () {
+        BlobT size_constraint[_] optional_name[_] binary_default[_] => {},
+    }
+
+    // ----- Struct Parameter ----- //
+    struct_param: () {
+        #[no_reduce(OpenBrackets)] // avoids ambiguity between struct & array parameters
+        Identifier(_) optional_name[_] => {},
+    }
+
+    // ----- Array Parameter ----- //
+    array_param: () {
+        Identifier(_) optional_name[_] int_transform[_] array_range[_] array_default[_] => {},
+        signed_integers[_] array_range[_] int_transform[_] optional_name[_] array_default[_] => {},
+        unsigned_integers[_] array_range[_] int_transform[_] optional_name[_] array_default[_] => {},
+        array_data_types[_] array_range[_] int_transform[_] optional_name[_] array_default[_] => {},
+    }
+
+    // ----- Misc/Helper Productions ----- //
     signed_integers: DCToken {
         Int8T => Int8T,
         Int16T => Int16T,
@@ -488,48 +540,6 @@ parser! {
         UInt16ArrayT => UInt16ArrayT,
         UInt32ArrayT => UInt32ArrayT,
         UInt32UInt8ArrayT => UInt32UInt8ArrayT,
-    }
-
-    // ----- Float Parameter ----- //
-    float_param: () {
-        Float64T float_range[fr] float_transform[ft]
-        optional_name[id] param_float_init[fl] => {},
-    }
-
-    // ----- String Parameter ----- //
-    string_param: () {
-        StringT size_constraint[sc] optional_name[id] param_str_init[sl] => {}
-    }
-
-    // ----- Blob Parameter ----- //
-    blob_param: () {
-        BlobT size_constraint[sc] optional_name[id] param_bin_init[bl] => {},
-    }
-
-    // ----- Struct Parameter ----- //
-    struct_param: () {
-        #[no_reduce(OpenBrackets)] // avoids ambiguity between struct & array parameters
-        Identifier(st) optional_name[si] => {},
-    }
-
-    // ----- Array Parameter ----- //
-    array_param: () {
-        // FIXME: this is utterly horrifying
-        Identifier(_) optional_name[ai] value_range[vr] param_array_init[pai] => {},
-        signed_integers[dt] value_range[vr] optional_name[id] param_array_init[pai] => {},
-        unsigned_integers[dt] value_range[vr] optional_name[id] param_array_init[pai] => {},
-        array_data_types[dt] value_range[vr] optional_name[id] param_array_init[pai] => {},
-    }
-
-    // ----- DC Keywords ----- //
-
-    // Bundle up all (or none) DCKeyword tokens into one production.
-    dc_keyword_list: Vec<String> {
-        => vec![],
-        dc_keyword_list[mut kl] DCKeyword(k) => {
-            kl.push(k);
-            kl
-        }
     }
 }
 
