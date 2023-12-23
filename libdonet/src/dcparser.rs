@@ -25,8 +25,12 @@ use crate::dcfile::*;
 use crate::dclexer::DCToken::*;
 use crate::dclexer::{DCToken, Span};
 use plex::parser;
-use std::ops::Range;
 
+/* We store the DC file struct in static memory and consider it mutable.
+ * By default in Rust, static memory is always non-mutable. Since we have
+ * to declare the DC file struct as mutable to modify it and add elements to
+ * it as we parse the DC file, we have to use an unsafe block when accessing it.
+ */
 pub static mut DC_FILE: DCFile = DCFile::new();
 
 parser! {
@@ -47,8 +51,10 @@ parser! {
     }
 
     type_declarations: () {
-        => {},
-        type_declarations type_decl => {},
+        epsilon => {},
+        type_declarations type_decl Semicolon => {},
+        // NOTE: Python-style DC imports are the only decls exempt from ';'.
+        type_declarations python_style_import => {},
     }
 
     type_decl: () {
@@ -56,61 +62,12 @@ parser! {
         struct_type => {},
         switch_type => {},
         distributed_class_type => {},
-        python_import => {},
         type_definition => {},
     }
 
-    keyword_type: () {
-        Keyword Identifier(_) Semicolon => {}
-    }
+    // ---------- Python-style Imports ---------- //
 
-    struct_type: () {
-        Struct Identifier(_) OpenBraces struct_fields CloseBraces Semicolon => {},
-    }
-
-    struct_fields: () {
-        => {},
-        struct_fields struct_field Semicolon => {},
-    }
-
-    struct_field: () {
-        parameter => {},
-        switch_type => {},
-    }
-
-    distributed_class_type: () {
-        DClass Identifier(_) optional_inheritance[_] OpenBraces
-        field_declarations[_] CloseBraces Semicolon => {}
-    }
-
-    optional_inheritance: Option<Vec<String>> {
-        => None,
-        Colon Identifier(parent) additional_parents[mut cp] => {
-            cp.insert(0, parent);
-            Some(cp)
-        },
-    }
-
-    additional_parents: Vec<String> {
-        => vec![],
-        additional_parents[mut cp] Comma Identifier(class) => {
-            cp.push(class);
-            cp
-        }
-    }
-
-    type_definition: () {
-        Typedef CharT Identifier(_) opt_array_range[_] Semicolon => {},
-        Typedef signed_integers[_] Identifier(_) opt_array_range[_] Semicolon => {},
-        Typedef unsigned_integers[_] Identifier(_) opt_array_range[_] Semicolon => {},
-        Typedef array_data_types[_] Identifier(_) opt_array_range[_] Semicolon => {},
-        Typedef Float64T Identifier(_) opt_array_range[_] Semicolon => {},
-        Typedef StringT Identifier(_) opt_array_range[_] Semicolon => {},
-        Typedef BlobT Identifier(_) opt_array_range[_] Semicolon => {},
-        Typedef Blob32T Identifier(_) opt_array_range[_] Semicolon => {},
-    }
-
-    python_import: () {
+    python_style_import: () {
         py_module[(m, ms)] dclass_import[(c, cs)] => {
             // NOTE: This is an ugly fix for not being able to pass Options
             // through the production parameters (due to moved values and
@@ -192,8 +149,11 @@ parser! {
         }
     }
 
-    // Specifically used by the Python-style DC import grammar to accept
-    // **legal** python module identifiers that may lexed as other tokens.
+    /* Mandatory fix for resolving issue #16.
+     *
+     * Specifically used by the Python-style DC import grammar to accept
+     * **LEGAL** python module identifiers that may lexed as other tokens.
+     */
     legal_python_module_identifiers: String {
         Identifier(id) => id,
         DCKeyword(id) => id,
@@ -207,6 +167,7 @@ parser! {
         UInt16T => "uint16".to_string(),
         UInt32T => "uint32".to_string(),
         UInt64T => "uint64".to_string(),
+        Float32T => "float32".to_string(),
         Float64T => "float64".to_string(),
         Int8ArrayT => "int8array".to_string(),
         Int16ArrayT => "int16array".to_string(),
@@ -217,7 +178,6 @@ parser! {
         UInt32UInt8ArrayT => "uint32uint8array".to_string(),
         StringT => "string".to_string(),
         BlobT => "blob".to_string(),
-        Blob32T => "blob32".to_string(),
         DClass => "dclass".to_string(),
         Struct => "struct".to_string(),
         Keyword => "keyword".to_string(),
@@ -240,12 +200,97 @@ parser! {
     //      slash_identifier -> ε
     //      slash_identifier -> slash_identifier '/' Identifier
     slash_identifier: Vec<String> {
-        => vec![],
+        epsilon => vec![],
         slash_identifier[mut si] ForwardSlash ViewSuffix(id) => {
             si.push(id);
             si
         }
     }
+
+    // ---------- DC Keyword ---------- //
+
+    keyword_type: () {
+        Keyword Identifier(_) => {
+            // TODO: register keyword identifier in DC file
+        }
+    }
+
+    // ---------- DC Struct ---------- //
+
+    struct_type: () {
+        Struct Identifier(_) OpenBraces struct_fields CloseBraces => {},
+    }
+
+    struct_fields: () {
+        epsilon => {},
+        struct_fields struct_field Semicolon => {},
+    }
+
+    struct_field: () {
+        switch_type => {},
+        unnamed_field => {},
+        named_field => {},
+    }
+
+    // ---------- Distributed Class ---------- //
+
+    distributed_class_type: () {
+        DClass Identifier(_) optional_inheritance[_] OpenBraces
+        optional_class_fields CloseBraces => {}
+    }
+
+    optional_class_fields: () {
+        epsilon => {},
+        optional_class_fields Semicolon => {},
+        optional_class_fields class_field Semicolon => {},
+    }
+
+    class_field: () {
+        // e.g. "setPos(float64 x, float64 y, float64 z) ram broadcast"
+        named_field dc_keyword_list => {},
+        // e.g. "setStats : setAvatarCount, setNewAvatarCount"
+        molecular_field => {},
+    }
+
+    dc_keyword_list: Vec<String> {
+        epsilon => vec![],
+        dc_keyword_list[mut kl] DCKeyword(k) => {
+            kl.push(k);
+            kl
+        }
+    }
+
+    optional_inheritance: Option<Vec<String>> {
+        epsilon => None,
+        Colon Identifier(parent) class_parents[mut cp] => {
+            // TODO: Check if identifier is a defined class.
+            cp.insert(0, parent);
+            Some(cp)
+        },
+    }
+
+    class_parents: Vec<String> {
+        epsilon => vec![],
+        class_parents[mut cp] Comma Identifier(class) => {
+            cp.push(class);
+            cp
+        }
+    }
+
+    // ---------- Type Definitions ---------- //
+
+    type_definition: () {
+        Typedef CharT Identifier(_) => {},
+        Typedef signed_integer_type[_] Identifier(_) => {},
+        Typedef unsigned_integer_type[_] Identifier(_) => {},
+        Typedef array_data_type[_] Identifier(_) => {},
+        Typedef Float32T Identifier(_) => {},
+        Typedef Float64T Identifier(_) => {},
+        Typedef StringT Identifier(_) => {},
+        Typedef BlobT Identifier(_) => {},
+    }
+
+    // ---------- Panda DC Switch Statements ---------- //
 
     switch_type: () {
         Switch optional_name[_] OpenParenthesis parameter_or_atomic
@@ -255,7 +300,7 @@ parser! {
     }
 
     switch_fields: () {
-        => {},
+        epsilon => {},
         switch_fields switch_case => {},
         switch_fields Default Colon => {},
         switch_fields Break Semicolon => {},
@@ -263,40 +308,20 @@ parser! {
     }
 
     switch_case: () {
-        Case parameter Colon => {},
-        Case DecimalLiteral(_) Colon => {},
-        Case OctalLiteral(_) Colon => {},
-        Case HexLiteral(_) Colon => {},
-        Case BinaryLiteral(_) Colon => {},
-        Case FloatLiteral(_) Colon => {},
-        Case CharacterLiteral(_) Colon => {},
-        Case StringLiteral(_) Colon => {},
+        Case parameter Semicolon => {},
     }
 
-    // ----- Field Declaration ----- //
-
-    field_declarations: () {
-        => {},
-        field_declarations[_] field_declaration[_] => {},
-    }
-
-    field_declaration: () {
-        molecular_field[_] => {},
-        atomic_field[_] => {},
-        parameter_field[_] => {},
-    }
-
-    // ----- Molecular Field ----- //
+    // ---------- Molecular Field ---------- //
 
     molecular_field: () {
-        Identifier(_) Colon atomic_field[_] atomic_fields[_] Semicolon => {},
-        Identifier(_) Colon parameter_field[_] parameter_fields[_] Semicolon => {},
+        Identifier(_) Colon atomic_field[_] atomic_fields[_] => {},
+        Identifier(_) Colon parameter_field[_] parameter_fields[_] => {},
     }
 
-    // ----- Atomic Field ----- //
+    // ---------- Atomic Field ---------- //
 
     atomic_fields: () {
-        => {},
+        epsilon => {},
         atomic_fields Comma atomic_field => {},
     }
 
@@ -305,23 +330,75 @@ parser! {
         CloseParenthesis dc_keyword_list[_] Semicolon => {},
     }
 
-    dc_keyword_list: Vec<String> {
-        => vec![],
-        dc_keyword_list[mut kl] DCKeyword(k) => {
-            kl.push(k);
-            kl
-        }
-    }
-
     parameter_or_atomic: () {
-        parameter => (),
-        atomic_field => (),
+        parameter => {},
+        atomic_field => {},
     }
 
-    // ----- Parameter Fields ----- //
+    // ---------- Method ---------- //
+
+    method: () {
+        OpenParenthesis parameters CloseParenthesis => {},
+    }
+
+    method_value: () {
+        OpenParenthesis parameter_values CloseParenthesis => {},
+    }
+
+    method_as_field: () {
+        Identifier(_) method => {},
+    }
+
+    // ---------- DC Fields ---------- //
+
+    field_with_name_as_array: () {
+        nonmethod_type_with_name OpenBrackets array_range CloseBrackets => {},
+        field_with_name_as_array OpenBrackets array_range CloseBrackets => {},
+    }
+
+    field_with_name_and_default: () {
+        nonmethod_type_with_name Equals type_value => {},
+        field_with_name_as_array Equals type_value => {},
+        method_as_field Equals method_value type_value => {},
+    }
+
+    named_field: () {
+        method_as_field => {},
+        nonmethod_type_with_name => {},
+        field_with_name_as_array => {},
+        field_with_name_and_default => {},
+    }
+
+    unnamed_field: () {
+        nonmethod_type => {},
+        nonmethod_type Equals type_value => {},
+    }
+
+    nonmethod_type: () {
+        nonmethod_type_no_array => {},
+        #[no_reduce(OpenBrackets)] // avoids conflict with type_with_array rule
+        type_with_array => {},
+    }
+
+    nonmethod_type_no_array: () {
+        #[no_reduce(OpenBrackets)]
+        Identifier(_) => {
+            // TODO: check if it is a defined type.
+        },
+        #[no_reduce(OpenBrackets)]
+        numeric_type => {},
+        #[no_reduce(OpenBrackets)]
+        builtin_array_type => {},
+    }
+
+    nonmethod_type_with_name: () {
+        nonmethod_type Identifier(_) => {},
+    }
+
+    // ---------- Parameter Fields ---------- //
 
     parameter_fields: () {
-        => {},
+        epsilon => {},
         parameter_fields Comma parameter_field => {},
     }
 
@@ -329,210 +406,182 @@ parser! {
         parameter[_] dc_keyword_list[_] => {},
     }
 
-    // ----- Parameters ----- //
+    // ---------- Parameter ---------- //
 
     parameters: () {
-        => {},
+        epsilon => {},
         #[no_reduce(Comma)] // don't reduce if we're expecting more params
         parameters parameter => {},
         parameters parameter Comma => {},
     }
 
     parameter: () {
-        char_param => {},
-        int_param => {},
-        float_param => {},
-        string_param => {},
-        blob_param => {},
-        struct_param => {},
-        array_param => {},
+        type_value => {},
+        nonmethod_type => {},
+        nonmethod_type Equals type_value => {},
     }
 
-    size_constraint: Option<i64> {
-        => None,
-        OpenParenthesis DecimalLiteral(sc) CloseParenthesis => Some(sc)
-    }
-
-    int_range: Option<Range<i64>> {
-        => None,
-        OpenParenthesis DecimalLiteral(a) Hyphen DecimalLiteral(b) CloseParenthesis => Some(a .. b),
-        // NOTE: The rule below is a workaround to a small 'issue' that I cannot fix.
-        //       The lexer may lex the hypen and literal as a negative literal if no
-        //       spaces are used in between tokens. This mitigates this issue, so its ok.
-        OpenParenthesis DecimalLiteral(a)
-        DecimalLiteral(negative_b) CloseParenthesis => Some(a .. negative_b.abs()),
-    }
-
-    float_range: Option<Range<f64>> {
-        => None,
-        OpenParenthesis FloatLiteral(a) Hyphen FloatLiteral(b) CloseParenthesis => Some(a .. b),
-        OpenParenthesis FloatLiteral(a)
-        FloatLiteral(negative_b) CloseParenthesis => Some(a .. negative_b.abs()),
-    }
-
-    array_range: Range<i64> {
-        OpenBrackets array_range_opt[ar] CloseBrackets => ar
-    }
-
-    opt_array_range: Option<Range<i64>> {
-        => None,
-        array_range[ar] => Some(ar),
-    }
-
-    array_range_opt: Range<i64> {
-        => 0 .. 0,
-        #[no_reduce(Hyphen)] // do not reduce if lookahead is the '-' token
-        DecimalLiteral(a) => a .. a,
-        DecimalLiteral(min) Hyphen DecimalLiteral(max) => min .. max,
-        DecimalLiteral(min) DecimalLiteral(negative_max) => min .. negative_max.abs(),
-    }
-
-    int_transform: Option<()> {
-        => None,
-        Percent DecimalLiteral(_) => Some(()),
-        ForwardSlash DecimalLiteral(_) => Some(()),
-        Star DecimalLiteral(_) => Some(()),
-        Hyphen DecimalLiteral(_) => Some(()),
-        Plus DecimalLiteral(_) => Some(()),
-    }
-
-    float_transform: Option<()> {
-        => None,
-        Percent FloatLiteral(_) => Some(()),
-        ForwardSlash FloatLiteral(_) => Some(()),
-        Star FloatLiteral(_) => Some(()),
-        Hyphen FloatLiteral(_) => Some(()),
-        Plus FloatLiteral(_) => Some(()),
-    }
-
-
-    /* FIXME: this is stupid and i dont fully understand this area of DC syntax.
-     *        Will fix once DC file classes are completed. */
-    array_to_literal_hack: () {
-        OpenBrackets array_literals[_] CloseBrackets => {},
-    }
-
-    optional_name: Option<String> {
-        // if epsilon found AND lookahead is Identifier, don't reduce
-        // this is what holds together the parser from shitting itself.
-        #[no_reduce(Identifier)]
-        => None,
-        Identifier(id) => Some(id)
-    }
-
-    char_default: Option<char> {
-        => None,
-        Equals CharacterLiteral(cl) => Some(cl),
-    }
-
-    string_default: Option<String> {
-        => None,
-        Equals StringLiteral(sl) => Some(sl),
-    }
-
-    binary_default: Option<String> {
-        => None,
-        Equals BinaryLiteral(bl) => Some(bl),
-        Equals array_to_literal_hack => None,
-    }
-
-    decimal_default: Option<i64> {
-        => None,
-        Equals DecimalLiteral(dc) => Some(dc),
-    }
-
-    float_default: Option<f64> {
-        => None,
-        Equals FloatLiteral(fl) => Some(fl),
-    }
-
-    array_default: Option<Vec<i64>> {
-        => None,
-        Equals OpenBrackets array_literals[_] CloseBrackets => None,
-    }
-
-    array_literals: Vec<i64> {
-        => vec![],
-        array_literals[mut al] DecimalLiteral(dl) int_transform[_] => {
-            al.push(dl);
-            al
+    type_with_array: () {
+        numeric_type OpenBrackets array_range CloseBrackets => {},
+        Identifier(_) OpenBrackets array_range CloseBrackets => {
+            // TODO: Check if identifier is a defined type.
         },
-        array_literals[mut al] Comma DecimalLiteral(dl) int_transform[_] => {
-            al.push(dl);
-            al
-        },
+        builtin_array_type OpenBrackets array_range CloseBrackets => {},
+        type_with_array OpenBrackets array_range CloseBrackets => {},
     }
 
-    // ----- Char Parameter ----- //
-    char_param: () {
-        CharT optional_name[_] opt_array_range[_] char_default[_] => {}
+    builtin_array_type: () {
+        sized_type_token[_] => {},
+        sized_type_token[_] OpenParenthesis array_range CloseParenthesis => {},
     }
 
-    // ----- Integer Parameter ----- //
-    int_param: () {
-        signed_integers[_] int_range[_] int_transform[_]
-        optional_name[_] decimal_default[_] => {},
-
-        unsigned_integers[_] int_range[_] int_transform[_]
-        optional_name[_] decimal_default[_] => {},
+    numeric_range: () {
+        epsilon => {},
+        char_or_number => {},
+        char_or_number Hyphen char_or_number => {},
     }
 
-    integer_type_with_transform: () {
-        data_type[tok] int_transform[it] => {},
-        data_type[tok] float_transform[ft] => {},
+    array_range: () {
+        epsilon => {},
+        char_or_u16 => {},
+        char_or_u16 Hyphen char_or_u16 => {},
     }
 
-    integer_types: DCToken {
-        signed_integers[tok] => tok,
-        unsigned_integers[tok] => tok,
+    array_expansion: () {
+        type_value => {},
+        signed_integer_type[_] Star unsigned_16_bit_int[_] => {},
+        DecimalLiteral(_) Star unsigned_16_bit_int[_] => {},
+        HexLiteral(_) Star unsigned_16_bit_int[_] => {},
+        StringT Star unsigned_16_bit_int[_] => {},
     }
 
-    // ----- Float Parameter ----- //
-    float_param: () {
-        Float64T float_range[_] float_transform[_]
-        optional_name[_] float_default[_] => {},
+    element_values: () {
+        array_expansion => {},
+        element_values Comma array_expansion => {},
     }
 
-    // ----- String Parameter ----- //
-    string_param: () {
-        StringT size_constraint[_] optional_name[_] string_default[_] => {}
+    array_value: () {
+        OpenBrackets CloseBrackets => {},
+        OpenBrackets element_values CloseBrackets => {},
     }
 
-    // ----- Blob Parameter ----- //
-    blob_param: () {
-        BlobT size_constraint[_] optional_name[_] binary_default[_] => {},
+    struct_value: () {
+        OpenBraces field_values CloseBraces => {},
     }
 
-    // ----- Struct Parameter ----- //
-    struct_param: () {
-        #[no_reduce(OpenBrackets)] // avoids ambiguity between struct & array parameters
-        Identifier(_) optional_name[_] => {},
+    field_values: () {
+        type_value => {},
+        field_values Comma type_value => {},
+        method_value => {},
+        field_values Comma method_value => {},
     }
 
-    // ----- Array Parameter ----- //
-    array_param: () {
-        Identifier(_) optional_name[_] int_transform[_] array_range[_] array_default[_] => {},
-        signed_integers[_] array_range[_] int_transform[_] optional_name[_] array_default[_] => {},
-        unsigned_integers[_] array_range[_] int_transform[_] optional_name[_] array_default[_] => {},
-        array_data_types[_] array_range[_] int_transform[_] optional_name[_] array_default[_] => {},
+    parameter_values: () {
+        type_value => {},
+        parameter_values Comma type_value => {},
     }
 
-    // ----- Misc/Helper Productions ----- //
-    signed_integers: DCToken {
+    type_or_sized_value: () {
+        type_value => {},
+        sized_type_token[_] => {},
+    }
+
+    type_value: () {
+        DecimalLiteral(_) => {},
+        CharacterLiteral(_) => {},
+        HexLiteral(_) => {},
+        signed_integer[_] => {},
+        array_value => {},
+        struct_value => {},
+    }
+
+    numeric_type: () {
+        numeric_type_token[_] => {},
+        numeric_with_modulus[_] => {},
+        numeric_with_divisor[_] => {},
+        numeric_with_range[_] => {},
+    }
+
+    numeric_with_range: () {
+        numeric_type_token[_] OpenParenthesis numeric_range CloseParenthesis => {},
+        numeric_with_modulus[_] OpenParenthesis numeric_range CloseParenthesis => {},
+        numeric_with_divisor[_] OpenParenthesis numeric_range CloseParenthesis => {},
+    }
+
+    numeric_with_divisor: () {
+        numeric_type_token[_] ForwardSlash number[_] => {},
+        numeric_with_modulus[_] ForwardSlash number[_] => {},
+    }
+
+    numeric_with_modulus: () {
+        numeric_type_token[_] Percent number[_] => {},
+    }
+
+    signed_integer: i64 {
+        Plus DecimalLiteral(dl) => dl,
+        Hyphen DecimalLiteral(dl) => dl,
+    }
+
+    // Both of these types represent a sized type (aka, array type)
+    sized_type_token: DCToken {
+        StringT => StringT,
+        BlobT => BlobT,
+    }
+
+    numeric_type_token: DCToken {
+        CharT => CharT,
+        signed_integer_type[tok] => tok,
+        unsigned_integer_type[tok] => tok,
+        Float32T => Float32T,
+        Float64T => Float64T,
+    }
+
+    char_or_number: () {
+        CharT => {},
+        number[_] => {},
+    }
+
+    number: DCToken {
+        DecimalLiteral(dl) => DecimalLiteral(dl),
+        FloatLiteral(fl) => FloatLiteral(fl),
+    }
+
+    char_or_u16: () {
+        CharT => {},
+        unsigned_16_bit_int[_] => {},
+    }
+
+    /* In Panda's parser, this production is known as 'small_unsigned_integer'.
+     * C++ standard for an 'unsigned int' size is at least 16 bits.
+     * 16 bits for LP32 data model; ILP32, LLP64, & LP64 are 32 bits.
+     */
+    unsigned_16_bit_int: u16 {
+        DecimalLiteral(v) => {
+            match u16::try_from(v) {
+                Ok(n) => { n },
+                Err(err) => {
+                    // Downcast failed, number must be out of range.
+                    panic!("Number out of range.\n{}", err);
+                },
+            }
+        }
+    }
+
+    signed_integer_type: DCToken {
         Int8T => Int8T,
         Int16T => Int16T,
         Int32T => Int32T,
         Int64T => Int64T,
     }
 
-    unsigned_integers: DCToken {
+    unsigned_integer_type: DCToken {
         UInt8T => UInt8T,
         UInt16T => UInt16T,
         UInt32T => UInt32T,
         UInt64T => UInt64T,
     }
 
-    array_data_types: DCToken {
+    array_data_type: DCToken {
         Int8ArrayT => Int8ArrayT,
         Int16ArrayT => Int16ArrayT,
         Int32ArrayT => Int32ArrayT,
@@ -540,6 +589,15 @@ parser! {
         UInt16ArrayT => UInt16ArrayT,
         UInt32ArrayT => UInt32ArrayT,
         UInt32UInt8ArrayT => UInt32UInt8ArrayT,
+    }
+
+    optional_name: Option<String> {
+        epsilon => None,
+        Identifier(id) => Some(id)
+    }
+
+    epsilon: () {
+        => {}, // alias for 'epsilon', or 'none', syntax
     }
 }
 
