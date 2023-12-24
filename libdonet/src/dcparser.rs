@@ -52,12 +52,12 @@ parser! {
 
     type_declarations: () {
         epsilon => {},
-        type_declarations type_decl Semicolon => {},
-        // NOTE: Python-style DC imports are the only decls exempt from ';'.
-        type_declarations python_style_import => {},
+        type_declarations Semicolon => {},
+        type_declarations type_decl => {},
     }
 
     type_decl: () {
+        python_style_import => {},
         keyword_type => {},
         struct_type => {},
         switch_type => {},
@@ -69,9 +69,9 @@ parser! {
 
     python_style_import: () {
         py_module[(m, ms)] dclass_import[(c, cs)] => {
-            // NOTE: This is an ugly fix for not being able to pass Options
-            // through the production parameters (due to moved values and
-            // borrow checking issues (skill issues)), so we turn the Vectors
+            // NOTE: Workaround for not being able to pass Options through
+            // the production parameters (due to moved values and borrow
+            // checking issues (skill issues)), so we turn the Vectors
             // (which do implement the Copy trait) into Options here.
             let mut mvs_opt: Option<Vec<String>> = None;
             let mut cvs_opt: Option<Vec<String>> = None;
@@ -280,14 +280,8 @@ parser! {
     // ---------- Type Definitions ---------- //
 
     type_definition: () {
-        Typedef CharT Identifier(_) => {},
-        Typedef signed_integer_type[_] Identifier(_) => {},
-        Typedef unsigned_integer_type[_] Identifier(_) => {},
-        Typedef array_data_type[_] Identifier(_) => {},
-        Typedef Float32T Identifier(_) => {},
-        Typedef Float64T Identifier(_) => {},
-        Typedef StringT Identifier(_) => {},
-        Typedef BlobT Identifier(_) => {},
+        Typedef nonmethod_type_with_name => {},
+        type_definition OpenBrackets array_range CloseBrackets => {},
     }
 
     // ---------- Panda DC Switch Statements ---------- //
@@ -311,6 +305,11 @@ parser! {
         Case parameter Semicolon => {},
     }
 
+    parameter_or_atomic: () {
+        parameter => {},
+        atomic_field => {},
+    }
+
     // ---------- Molecular Field ---------- //
 
     molecular_field: () {
@@ -330,11 +329,6 @@ parser! {
         CloseParenthesis dc_keyword_list[_] Semicolon => {},
     }
 
-    parameter_or_atomic: () {
-        parameter => {},
-        atomic_field => {},
-    }
-
     // ---------- Method ---------- //
 
     method: () {
@@ -347,6 +341,27 @@ parser! {
 
     method_as_field: () {
         Identifier(_) method => {},
+    }
+
+    nonmethod_type: () {
+        nonmethod_type_no_array => {},
+        #[no_reduce(OpenBrackets)] // avoids conflict with type_with_array rule
+        type_with_array => {},
+    }
+
+    nonmethod_type_no_array: () {
+        #[no_reduce(OpenBrackets)]
+        Identifier(_) => {
+            // TODO: check if it is a defined type.
+        },
+        #[no_reduce(OpenBrackets)]
+        numeric_type => {},
+        #[no_reduce(OpenBrackets)]
+        builtin_array_type => {},
+    }
+
+    nonmethod_type_with_name: () {
+        nonmethod_type Identifier(_) => {},
     }
 
     // ---------- DC Fields ---------- //
@@ -372,27 +387,6 @@ parser! {
     unnamed_field: () {
         nonmethod_type => {},
         nonmethod_type Equals type_value => {},
-    }
-
-    nonmethod_type: () {
-        nonmethod_type_no_array => {},
-        #[no_reduce(OpenBrackets)] // avoids conflict with type_with_array rule
-        type_with_array => {},
-    }
-
-    nonmethod_type_no_array: () {
-        #[no_reduce(OpenBrackets)]
-        Identifier(_) => {
-            // TODO: check if it is a defined type.
-        },
-        #[no_reduce(OpenBrackets)]
-        numeric_type => {},
-        #[no_reduce(OpenBrackets)]
-        builtin_array_type => {},
-    }
-
-    nonmethod_type_with_name: () {
-        nonmethod_type Identifier(_) => {},
     }
 
     // ---------- Parameter Fields ---------- //
@@ -421,6 +415,8 @@ parser! {
         nonmethod_type Equals type_value => {},
     }
 
+    // ---------- DC Data Types ---------- //
+
     type_with_array: () {
         numeric_type OpenBrackets array_range CloseBrackets => {},
         Identifier(_) OpenBrackets array_range CloseBrackets => {
@@ -435,21 +431,9 @@ parser! {
         sized_type_token[_] OpenParenthesis array_range CloseParenthesis => {},
     }
 
-    numeric_range: () {
-        epsilon => {},
-        char_or_number => {},
-        char_or_number Hyphen char_or_number => {},
-    }
-
-    array_range: () {
-        epsilon => {},
-        char_or_u16 => {},
-        char_or_u16 Hyphen char_or_u16 => {},
-    }
-
     array_expansion: () {
         type_value => {},
-        signed_integer_type[_] Star unsigned_16_bit_int[_] => {},
+        signed_integer[_] Star unsigned_16_bit_int[_] => {},
         DecimalLiteral(_) Star unsigned_16_bit_int[_] => {},
         HexLiteral(_) Star unsigned_16_bit_int[_] => {},
         StringT Star unsigned_16_bit_int[_] => {},
@@ -517,9 +501,16 @@ parser! {
         numeric_type_token[_] Percent number[_] => {},
     }
 
-    signed_integer: i64 {
-        Plus DecimalLiteral(dl) => dl,
-        Hyphen DecimalLiteral(dl) => dl,
+    numeric_range: () {
+        epsilon => {},
+        char_or_number => {},
+        char_or_number Hyphen char_or_number => {},
+    }
+
+    array_range: () {
+        epsilon => {},
+        char_or_u16 => {},
+        char_or_u16 Hyphen char_or_u16 => {},
     }
 
     // Both of these types represent a sized type (aka, array type)
@@ -538,7 +529,13 @@ parser! {
 
     char_or_number: () {
         CharT => {},
+        signed_integer[_] => {},
         number[_] => {},
+    }
+
+    signed_integer: i64 {
+        Plus DecimalLiteral(dl) => dl,
+        Hyphen DecimalLiteral(dl) => dl,
     }
 
     number: DCToken {
