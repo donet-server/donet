@@ -40,7 +40,7 @@ pub struct DClass {
 }
 
 pub trait DClassInterface {
-    fn new(name: &str, id: globals::DClassId) -> Self;
+    fn new(name: &str) -> Self;
     fn generate_hash(&mut self, hashgen: &mut DCHashGenerator);
 
     fn set_parent(&mut self, parent: Arc<Mutex<DClass>>);
@@ -54,10 +54,10 @@ pub trait DClassInterface {
 }
 
 impl DClassInterface for DClass {
-    fn new(name: &str, id: globals::DClassId) -> Self {
+    fn new(name: &str) -> Self {
         DClass {
             class_name: name.to_owned(),
-            class_id: id,
+            class_id: 0, // assigned later
             is_struct: false,
             is_bogus_class: true,
             class_parents: vec![],

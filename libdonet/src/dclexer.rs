@@ -60,7 +60,7 @@ pub enum DCToken {
     UInt16T,           // "uint16"
     UInt32T,           // "uint32"
     UInt64T,           // "uint64"
-    Float32T,          // "float32"
+    Float32T,          // "float32" (used on Astron)
     Float64T,          // "float64"
     Int8ArrayT,        // "int8array"
     Int16ArrayT,       // "int16array"
@@ -71,6 +71,7 @@ pub enum DCToken {
     UInt32UInt8ArrayT, // "uint32uint8array"
     StringT,           // "string"
     BlobT,             // "blob"
+    Blob32T,           // "blob32" (used on Panda)
 
     // Keywords
     DClass,  // "dclass"
@@ -165,6 +166,7 @@ lexer! {
     r#"uint32uint8array"# => (DCToken::UInt32UInt8ArrayT, text),
     r#"string"# => (DCToken::StringT, text),
     r#"blob"# => (DCToken::BlobT, text),
+    r#"blob32"# => (DCToken::Blob32T, text),
 
     r#"dclass"# => (DCToken::DClass, text),
     r#"struct"# => (DCToken::Struct, text),
@@ -431,6 +433,7 @@ mod unit_testing {
             // Sized Types (string / blob)
             DCToken::StringT,
             DCToken::BlobT,
+            DCToken::Blob32T,
         ];
         lexer_test_for_target(
             "char \
@@ -438,7 +441,7 @@ mod unit_testing {
             uint8 uint16 uint32 uint64 \
             int8array int16array int32array \
             uint8array uint16array uint32array uint32uint8array \
-            float32 float64 string blob",
+            float32 float64 string blob blob32",
             target,
         );
     }

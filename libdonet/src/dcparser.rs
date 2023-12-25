@@ -21,17 +21,41 @@
 #![allow(clippy::type_complexity, clippy::redundant_field_names, clippy::ptr_arg)]
 #![allow(clippy::redundant_closure_call, clippy::enum_variant_names)]
 
-use crate::dcfile::*;
+use crate::dcfield;
+use crate::dcfile::{DCFile, DCFileInterface, DCImport};
+use crate::dclass;
 use crate::dclexer::DCToken::*;
 use crate::dclexer::{DCToken, Span};
+use crate::dcstruct;
 use plex::parser;
 
-/* We store the DC file struct in static memory and consider it mutable.
- * By default in Rust, static memory is always non-mutable. Since we have
- * to declare the DC file struct as mutable to modify it and add elements to
- * it as we parse the DC file, we have to use an unsafe block when accessing it.
+/* To write the DC file elements to memory just as Panda and Astron do, I
+ * initially stored the DCFile struct on static memory as mutable. This required
+ * the unsafe block { } whenever it was accessed or modified, but it did not cause
+ * undefined behavior ... until unit testing. Of course, it is ideal to not use
+ * unsafe techniques from the beginning, so I decided to make use of Plex's features
+ * by assigning types to the grammar's non-terminals and propogating the elements
+ * bottom-up. (as LALR(1) parsers are 'bottom-up' parsers, where they start by
+ * producing the 'edge' productions, until the parser reduces all non-terminals
+ * to the root production of the language grammar.)
+ *
+ * Since we are propogating elements from the bottom of the parse tree and upwards,
+ * the return types of non-terminals closer to the root production get bigger and bigger,
+ * as they're carrying more and more of the total elements in the DC file until they are
+ * all 'plugged in together' into the DC file struct once we reduce to the root production.
+ *
+ * Even though it may *appear* visually ugly, this is the safest, and cleanest,
+ * approach to assembling the DC file structure in memory using Plex.
  */
-pub static mut DC_FILE: DCFile = DCFile::new();
+
+enum TypeDeclaration {
+    PythonImport(Vec<DCImport>),
+    KeywordType(Option<u8>), // placeholders
+    StructType(Option<u8>),
+    SwitchType(Option<u8>),
+    DClassType(dclass::DClass),
+    TypedefType(Option<u8>),
+}
 
 parser! {
     fn parse_(DCToken, Span);
@@ -46,33 +70,61 @@ parser! {
     }
 
     // root production of the grammar
-    dc_file: () {
-        type_declarations => {},
+    dc_file: DCFile {
+        type_declarations[tds] => {
+            let mut dc_file: DCFile = DCFile::new();
+
+            for type_declaration in tds {
+                match type_declaration {
+                    TypeDeclaration::PythonImport(imports) => {
+                        for import in imports {
+                            dc_file.add_python_import(import);
+                        }
+                    },
+                    TypeDeclaration::KeywordType(_) => {},
+                    TypeDeclaration::StructType(_) => {},
+                    TypeDeclaration::SwitchType(_) => {},
+                    TypeDeclaration::DClassType(dclass) => {
+                        dc_file.add_dclass(dclass);
+                    },
+                    TypeDeclaration::TypedefType(_) => {},
+                }
+            }
+            dc_file
+        },
     }
 
-    type_declarations: () {
-        epsilon => {},
-        type_declarations Semicolon => {},
-        type_declarations type_decl => {},
+    type_declarations: Vec<TypeDeclaration> {
+        epsilon => vec![],
+        type_declarations[tds] Semicolon => tds,
+        type_declarations[mut tds] type_decl[td] => {
+            tds.push(td);
+            tds
+        },
     }
 
-    type_decl: () {
-        python_style_import => {},
-        keyword_type => {},
-        struct_type => {},
-        switch_type => {},
-        distributed_class_type => {},
-        type_definition => {},
+    type_decl: TypeDeclaration {
+        python_style_import[py_imports] => TypeDeclaration::PythonImport(py_imports),
+        keyword_type => TypeDeclaration::KeywordType(None),
+        struct_type => TypeDeclaration::StructType(None),
+        switch_type => TypeDeclaration::SwitchType(None),
+        distributed_class_type[dclass] => TypeDeclaration::DClassType(dclass),
+        type_definition => TypeDeclaration::TypedefType(None),
     }
 
     // ---------- Python-style Imports ---------- //
 
-    python_style_import: () {
+    python_style_import: Vec<DCImport> {
         py_module[(m, ms)] dclass_import[(c, cs)] => {
-            // NOTE: Workaround for not being able to pass Options through
-            // the production parameters (due to moved values and borrow
-            // checking issues (skill issues)), so we turn the Vectors
-            // (which do implement the Copy trait) into Options here.
+            // Since more than one DCImport structure can be generated from
+            // one python_style_import non-terminal, we return a vector type.
+            let mut result_vec: Vec<DCImport> = vec![];
+
+            /* NOTE: Workaround for not being able to pass Options through
+             * the non-terminal parameters (due to moved values and borrow
+             * checking issues (skill issues)), so we turn the Vectors
+             * (which do implement the Copy trait) into Options here.
+             */
             let mut mvs_opt: Option<Vec<String>> = None;
             let mut cvs_opt: Option<Vec<String>> = None;
             if !ms.is_empty() {
@@ -95,9 +147,7 @@ parser! {
             if mvs_opt.is_some() {
                 let mut c_symbol: String = class_symbols.get(0).unwrap().clone();
 
-                unsafe {
-                    DC_FILE.add_python_import(DCImport::new(m.clone(), vec![c_symbol]))
-                }
+                result_vec.push(DCImport::new(m.clone(), vec![c_symbol]));
 
                 for (i, module_suffix) in mvs_opt.unwrap().into_iter().enumerate() {
                     let full_import: String = m.clone() + &module_suffix;
@@ -108,17 +158,12 @@ parser! {
                         c_symbol = class_symbols.get(i + 1).unwrap().clone();
                     }
 
-                    let dc_import: DCImport = DCImport::new(full_import, vec![c_symbol]);
-
-                    unsafe {
-                        DC_FILE.add_python_import(dc_import.clone());
-                    }
+                    result_vec.push(DCImport::new(full_import, vec![c_symbol]));
                 }
-                return;
+                return result_vec;
             }
-            unsafe {
-                DC_FILE.add_python_import(DCImport::new(m, class_symbols));
-            }
+            result_vec.push(DCImport::new(m, class_symbols));
+            result_vec
         },
     }
 
@@ -233,9 +278,12 @@ parser! {
 
     // ---------- Distributed Class ---------- //
 
-    distributed_class_type: () {
-        DClass Identifier(_) optional_inheritance[_] OpenBraces
-        optional_class_fields CloseBraces => {}
+    distributed_class_type: dclass::DClass {
+        DClass Identifier(id) optional_inheritance[_] OpenBraces
+        optional_class_fields CloseBraces => {
+            use dclass::DClassInterface;
+            dclass::DClass::new(&id)
+        }
     }
 
     optional_class_fields: () {
@@ -600,22 +648,21 @@ parser! {
 
 pub fn parse<I: Iterator<Item = (DCToken, Span)>>(
     i: I,
-) -> Result<(), (Option<(DCToken, Span)>, &'static str)> {
+) -> Result<DCFile, (Option<(DCToken, Span)>, &'static str)> {
     parse_(i)
 }
 
 #[cfg(test)]
 mod unit_testing {
-    use super::{parse, DC_FILE};
-    use crate::dcfile::{DCFileInterface, DCImport};
+    use super::parse;
+    use crate::dcfile::*;
     use crate::dclexer::Lexer;
 
-    fn parse_dcfile_string(input: &str) {
+    fn parse_dcfile_string(input: &str) -> DCFile {
         let lexer = Lexer::new(input).inspect(|tok| eprintln!("token: {:?}", tok));
-        let _: () = parse(lexer).unwrap();
-        unsafe {
-            eprintln!("{:#?}", DC_FILE); // pretty print DC element tree to stderr
-        }
+        let dc_file: DCFile = parse(lexer).unwrap();
+        eprintln!("{:#?}", dc_file); // pretty print DC element tree to stderr
+        dc_file
     }
 
     #[test]
@@ -629,39 +676,37 @@ mod unit_testing {
                               * that may be lexed as tokens other than Id/Module.
                               */
                              from db.char import DistributedDonut\n";
-        parse_dcfile_string(dc_file);
+        let mut dc_file = parse_dcfile_string(dc_file);
 
-        unsafe {
-            let expected_num_imports: usize = 10;
-            let mut imports: Vec<DCImport> = vec![];
-            assert_eq!(DC_FILE.get_num_imports(), expected_num_imports);
+        let expected_num_imports: usize = 10;
+        let mut imports: Vec<DCImport> = vec![];
+        assert_eq!(dc_file.get_num_imports(), expected_num_imports);
 
-            for i in 0..expected_num_imports {
-                imports.push(DC_FILE.get_python_import(i));
-            }
-
-            assert_eq!(imports[0].python_module, "example_views");
-            assert_eq!(imports[0].symbols, vec!["DistributedDonut"]);
-            assert_eq!(imports[1].python_module, "views");
-            assert_eq!(
-                imports[1].symbols,
-                vec!["DistributedDonut", "DistributedDonutAI", "DistributedDonutOV"]
-            );
-            assert_eq!(imports[2].python_module, "views");
-            assert_eq!(imports[2].symbols, vec!["DistributedDonut"]);
-            assert_eq!(imports[3].python_module, "viewsAI");
-            assert_eq!(imports[3].symbols, vec!["DistributedDonutAI"]);
-            assert_eq!(imports[4].python_module, "viewsOV");
-            assert_eq!(imports[4].symbols, vec!["DistributedDonutOV"]);
-            assert_eq!(imports[5].python_module, "viewsUD");
-            assert_eq!(imports[5].symbols, vec!["DistributedDonutUD"]);
-            assert_eq!(imports[6].python_module, "game.views.Donut");
-            assert_eq!(imports[6].symbols, vec!["DistributedDonut"]);
-            assert_eq!(imports[7].python_module, "game.views.DonutAI");
-            assert_eq!(imports[7].symbols, vec!["DistributedDonutAI"]);
-            assert_eq!(imports[8].python_module, "views");
-            assert_eq!(imports[8].symbols, vec!["*"]);
+        for i in 0..expected_num_imports {
+            imports.push(dc_file.get_python_import(i));
         }
+
+        assert_eq!(imports[0].python_module, "example_views");
+        assert_eq!(imports[0].symbols, vec!["DistributedDonut"]);
+        assert_eq!(imports[1].python_module, "views");
+        assert_eq!(
+            imports[1].symbols,
+            vec!["DistributedDonut", "DistributedDonutAI", "DistributedDonutOV"]
+        );
+        assert_eq!(imports[2].python_module, "views");
+        assert_eq!(imports[2].symbols, vec!["DistributedDonut"]);
+        assert_eq!(imports[3].python_module, "viewsAI");
+        assert_eq!(imports[3].symbols, vec!["DistributedDonutAI"]);
+        assert_eq!(imports[4].python_module, "viewsOV");
+        assert_eq!(imports[4].symbols, vec!["DistributedDonutOV"]);
+        assert_eq!(imports[5].python_module, "viewsUD");
+        assert_eq!(imports[5].symbols, vec!["DistributedDonutUD"]);
+        assert_eq!(imports[6].python_module, "game.views.Donut");
+        assert_eq!(imports[6].symbols, vec!["DistributedDonut"]);
+        assert_eq!(imports[7].python_module, "game.views.DonutAI");
+        assert_eq!(imports[7].symbols, vec!["DistributedDonutAI"]);
+        assert_eq!(imports[8].python_module, "views");
+        assert_eq!(imports[8].symbols, vec!["*"]);
     }
 
     #[test]

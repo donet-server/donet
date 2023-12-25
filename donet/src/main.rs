@@ -26,6 +26,7 @@ pub mod utils;
 
 fn main() -> std::io::Result<()> {
     use config::*;
+    use libdonet::dcfile::DCFile;
     use libdonet::dclexer::Lexer;
     use libdonet::dcparser::parse;
     use libdonet::globals::ParseError;
@@ -97,7 +98,7 @@ fn main() -> std::io::Result<()> {
         dc_file.read_to_string(&mut contents)?;
 
         let lexer = Lexer::new(&contents);
-        let parser_res: Result<(), ParseError> = parse(lexer);
+        let parser_res: Result<DCFile, ParseError> = parse(lexer);
 
         if parser_res.is_err() {
             error!("Failed to parse DC file: {:?}", parser_res.unwrap_err());
