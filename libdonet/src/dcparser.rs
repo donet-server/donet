@@ -565,6 +565,8 @@ parser! {
     sized_type_token: DCToken {
         StringT => StringT,
         BlobT => BlobT,
+        Blob32T => Blob32T,
+        array_data_type[tok] => tok,
     }
 
     numeric_type_token: DCToken {
