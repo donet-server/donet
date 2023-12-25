@@ -157,7 +157,6 @@ parser! {
     legal_python_module_identifiers: String {
         Identifier(id) => id,
         DCKeyword(id) => id,
-        ViewSuffix(id) => id,
         CharT => "char".to_string(),
         Int8T => "int8".to_string(),
         Int16T => "int16".to_string(),
@@ -296,13 +295,14 @@ parser! {
     switch_fields: () {
         epsilon => {},
         switch_fields switch_case => {},
-        switch_fields Default Colon => {},
-        switch_fields Break Semicolon => {},
         switch_fields parameter Semicolon => {},
+        switch_fields named_field Semicolon => {},
+        switch_fields Break Semicolon => {},
     }
 
     switch_case: () {
-        Case parameter Semicolon => {},
+        Case parameter Colon => {},
+        Default Colon => {},
     }
 
     parameter_or_atomic: () {
@@ -614,7 +614,7 @@ mod unit_testing {
         let lexer = Lexer::new(input).inspect(|tok| eprintln!("token: {:?}", tok));
         let _: () = parse(lexer).unwrap();
         unsafe {
-            eprintln!("{:#?}", DC_FILE); // pretty print parser output to stderr
+            eprintln!("{:#?}", DC_FILE); // pretty print DC element tree to stderr
         }
     }
 
@@ -662,5 +662,56 @@ mod unit_testing {
             assert_eq!(imports[8].python_module, "views");
             assert_eq!(imports[8].symbols, vec!["*"]);
         }
+    }
+
+    #[test]
+    fn sample_keyword_definitions() {
+        let dc_file: &str = "keyword p2p;\nkeyword monkey;\n";
+        parse_dcfile_string(dc_file);
+    }
+
+    #[test]
+    fn sample_struct_declarations() {
+        let dc_file: &str = "struct GiftItem {\n\
+                                blob Item;\n\
+                                string giftTag;\n\
+                            };\n\
+                            struct gardenSpecial {\n\
+                                uint8 index;\n\
+                                uint8 count;\n\
+                            };\n";
+        parse_dcfile_string(dc_file);
+    }
+
+    #[test]
+    fn sample_distributed_class() {
+        let dc_file: &str = "dclass WelcomeValleyManager : DistributedObject {\n\
+                                clientSetZone(uint32) airecv clsend;\n\
+                                requestZoneIdMessage(uint32, uint16) airecv clsend;\n\
+                                requestZoneIdResponse(uint32, uint16);\n\
+                            };\n\
+                            dclass DistributedChild : DistributedParent, DistributedP2 {\n\
+                            };\n";
+        parse_dcfile_string(dc_file);
+    }
+
+    #[test]
+    fn sample_switch_type() {
+        let dc_file: &str = "dclass WelcomeValleyManager : DistributedObject {\n\
+                                clientSetZone(uint32) airecv clsend;\n\
+                                requestZoneIdMessage(uint32, uint16) airecv clsend;\n\
+                                requestZoneIdResponse(uint32, uint16);\n\
+                            };\n\
+                            dclass DistributedGoofySpeedway : DistributedCCharBase {\n\
+                            };\n";
+        parse_dcfile_string(dc_file);
+    }
+
+    #[test]
+    fn type_declaration_optional_delimiter() {
+        let dc_file: &str = "typedef int16 test1[2];\n\
+                            typedef int32 test2[2]\n\
+                            typedef int64 test3;";
+        parse_dcfile_string(dc_file);
     }
 }
