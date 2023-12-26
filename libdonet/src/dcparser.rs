@@ -226,6 +226,7 @@ parser! {
         UInt32UInt8ArrayT => "uint32uint8array".to_string(),
         StringT => "string".to_string(),
         BlobT => "blob".to_string(),
+        Blob32T => "blob32".to_string(),
         DClass => "dclass".to_string(),
         Struct => "struct".to_string(),
         Keyword => "keyword".to_string(),
@@ -727,6 +728,27 @@ mod unit_testing {
         assert_eq!(imports[7].symbols, vec!["DistributedDonutAI"]);
         assert_eq!(imports[8].python_module, "views");
         assert_eq!(imports[8].symbols, vec!["*"]);
+    }
+
+    #[test]
+    fn legal_python_module_identifiers() {
+        // See comment at 'legal_python_module_identifiers' non-terminal.
+        #[rustfmt::skip]
+        let legal_identifiers: Vec<&str> = vec![
+            "char", "int8", "int16", "int32", "int64",
+            "uint8", "uint16", "uint32", "uint64", "float32", "float64",
+            "int8array", "int16array", "int32array",
+            "uint8array", "uint16array", "uint32array", "uint32uint8array",
+            "string", "blob", "blob32", "dclass", "struct", "keyword",
+            "typedef", "switch", "default", "break",
+        ];
+        let mut dc_file: String = String::new();
+
+        for module_name in &legal_identifiers {
+            let code: String = format!("from {} import DistributedClass\n", *module_name);
+            dc_file.push_str(code.as_str());
+        }
+        parse_dcfile_string(dc_file.as_str());
     }
 
     #[test]
