@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+use crate::dckeyword::DCKeyword;
 use crate::dclass::DClass;
 use crate::dcstruct::DCStruct;
 use crate::globals;
@@ -42,7 +43,7 @@ pub struct DCFile {
     structs: Vec<Mutex<DCStruct>>,
     dclasses: Vec<Mutex<DClass>>,
     imports: Vec<DCImport>, // not modified after declaration; no mutex required.
-    // TODO: keywords
+    keywords: Vec<DCKeyword>,
     field_id_2_field: Vec<Arc<Mutex<DCField>>>,
     // TODO: type_id_2_type, type_name_2_type
     all_object_valid: bool,
@@ -58,6 +59,10 @@ pub trait DCFileInterface {
     fn get_num_imports(&mut self) -> usize;
     fn get_python_import(&mut self, index: usize) -> DCImport;
     fn add_python_import(&mut self, import: DCImport);
+    // DC Keyword
+    fn get_num_keywords(&self) -> usize;
+    fn get_keyword(&self, index: usize) -> Arc<DCKeyword>;
+    fn add_keyword(&mut self, keyword: DCKeyword);
     // Distributed Class
     fn get_num_dclasses(&mut self) -> usize;
     fn get_next_dclass_id(&mut self) -> globals::DClassId;
@@ -71,16 +76,13 @@ pub trait DCFileInterface {
     fn add_struct(&mut self, strct: DCStruct);
 }
 
-/* We store the output of this constructor in static memory @ dcparser.rs, so we
- * need to declare the new() function as a const fn. It is also implemented
- * outside of the DCFileInterface trait as you can't declare const funcs in traits.
- */
 impl DCFile {
-    pub const fn new() -> DCFile {
+    pub fn new() -> DCFile {
         DCFile {
             structs: vec![],
             dclasses: vec![],
             imports: vec![],
+            keywords: vec![],
             field_id_2_field: vec![],
             all_object_valid: true,
             inherited_fields_stale: false,
@@ -102,7 +104,7 @@ impl DCFileInterface for DCFile {
     // Accumulates the elements of the DC file into the hash.
     fn generate_hash(&mut self, hashgen: &mut DCHashGenerator) {
         if globals::DC_VIRTUAL_INHERITANCE {
-            // Just to make the hash number changes in this case.
+            // Just to change the hash output in this case.
             if globals::DC_SORT_INHERITANCE_BY_FILE {
                 hashgen.add_int(1_u32);
             } else {
@@ -133,6 +135,20 @@ impl DCFileInterface for DCFile {
 
     fn add_python_import(&mut self, import: DCImport) {
         self.imports.push(import);
+    }
+
+    // ---------- DC Keyword ---------- //
+
+    fn get_num_keywords(&self) -> usize {
+        todo!();
+    }
+
+    fn get_keyword(&self, index: usize) -> Arc<DCKeyword> {
+        todo!();
+    }
+
+    fn add_keyword(&mut self, keyword: DCKeyword) {
+        () // TODO!
     }
 
     // ---------- Distributed Class ---------- //

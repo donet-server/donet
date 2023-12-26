@@ -15,14 +15,16 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-// The following suppress linting warnings, which are okay to ignore
-// as they go off in the parser grammar definitions, which we are writing
-// just as the plex crate readme says we should, so everything is okay.
+/* The following suppress linting warnings, which are okay to ignore
+ * as they go off in the parser grammar definitions, which we are writing
+ * just as the plex crate readme says we should, so everything is okay.
+ */
 #![allow(clippy::type_complexity, clippy::redundant_field_names, clippy::ptr_arg)]
 #![allow(clippy::redundant_closure_call, clippy::enum_variant_names)]
 
 use crate::dcfield;
 use crate::dcfile::{DCFile, DCFileInterface, DCImport};
+use crate::dckeyword;
 use crate::dclass;
 use crate::dclexer::DCToken::*;
 use crate::dclexer::{DCToken, Span};
@@ -50,8 +52,8 @@ use plex::parser;
 
 enum TypeDeclaration {
     PythonImport(Vec<DCImport>),
-    KeywordType(Option<u8>), // placeholders
-    StructType(Option<u8>),
+    KeywordType(dckeyword::DCKeyword),
+    StructType(dcstruct::DCStruct),
     SwitchType(Option<u8>),
     DClassType(dclass::DClass),
     TypedefType(Option<u8>),
@@ -81,7 +83,9 @@ parser! {
                             dc_file.add_python_import(import);
                         }
                     },
-                    TypeDeclaration::KeywordType(_) => {},
+                    TypeDeclaration::KeywordType(keyword) => {
+                        dc_file.add_keyword(keyword);
+                    },
                     TypeDeclaration::StructType(_) => {},
                     TypeDeclaration::SwitchType(_) => {},
                     TypeDeclaration::DClassType(dclass) => {
@@ -105,8 +109,8 @@ parser! {
 
     type_decl: TypeDeclaration {
         python_style_import[py_imports] => TypeDeclaration::PythonImport(py_imports),
-        keyword_type => TypeDeclaration::KeywordType(None),
-        struct_type => TypeDeclaration::StructType(None),
+        keyword_type[keyword] => TypeDeclaration::KeywordType(keyword),
+        struct_type[strct] => TypeDeclaration::StructType(strct),
         switch_type => TypeDeclaration::SwitchType(None),
         distributed_class_type[dclass] => TypeDeclaration::DClassType(dclass),
         type_definition => TypeDeclaration::TypedefType(None),
@@ -253,16 +257,21 @@ parser! {
 
     // ---------- DC Keyword ---------- //
 
-    keyword_type: () {
-        Keyword Identifier(_) => {
+    keyword_type: dckeyword::DCKeyword {
+        Keyword Identifier(id) => {
+            use dckeyword::DCKeywordInterface;
             // TODO: register keyword identifier in DC file
+            dckeyword::DCKeyword::new(id, None)
         }
     }
 
     // ---------- DC Struct ---------- //
 
-    struct_type: () {
-        Struct Identifier(_) OpenBraces struct_fields CloseBraces => {},
+    struct_type: dcstruct::DCStruct {
+        Struct Identifier(_) OpenBraces struct_fields CloseBraces => {
+            // TODO: DC Struct missing implementation
+            dcstruct::DCStruct::new()
+        },
     }
 
     struct_fields: () {
@@ -301,6 +310,10 @@ parser! {
 
     dc_keyword_list: Vec<String> {
         epsilon => vec![],
+        dc_keyword_list[mut kl] Identifier(k) => {
+            kl.push(k);
+            kl
+        }
         dc_keyword_list[mut kl] DCKeyword(k) => {
             kl.push(k);
             kl

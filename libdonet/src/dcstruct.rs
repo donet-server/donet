@@ -17,3 +17,9 @@
 
 #[derive(Debug, PartialEq)]
 pub struct DCStruct {}
+
+impl DCStruct {
+    pub fn new() -> DCStruct {
+        DCStruct {}
+    }
+}

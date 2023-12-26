@@ -19,6 +19,7 @@ pub mod byte_order;
 pub mod datagram;
 pub mod dcfield;
 pub mod dcfile;
+pub mod dckeyword;
 pub mod dclass;
 pub mod dclexer;
 pub mod dcparser;
