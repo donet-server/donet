@@ -26,7 +26,7 @@ pub mod utils;
 
 fn main() -> std::io::Result<()> {
     use config::*;
-    use libdonet::dcfile::DCFile;
+    use libdonet::dcfile::{DCFile, DCFileInterface};
     use libdonet::dclexer::Lexer;
     use libdonet::dcparser::parse;
     use libdonet::globals::ParseError;
@@ -100,13 +100,12 @@ fn main() -> std::io::Result<()> {
         let lexer = Lexer::new(&contents);
         let parser_res: Result<DCFile, ParseError> = parse(lexer);
 
-        if parser_res.is_err() {
-            error!("Failed to parse DC file: {:?}", parser_res.unwrap_err());
-            return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
+        if let Ok(mut dc_file) = parser_res {
+            info!("No issues found. DC File Hash: {}", dc_file.get_pretty_hash());
+            return Ok(());
         }
-        // FIXME: Hash generator not yet complete on libdonet; Prints 0xffffffff as hash.
-        info!("Parsed file with no issues. DC File Hash: 0x{:x}", u32::MAX);
-        return Ok(());
+        error!("Failed to parse DC file: {:?}", parser_res.unwrap_err());
+        return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
     }
 
     // Read the daemon configuration file

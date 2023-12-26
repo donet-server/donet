@@ -54,6 +54,7 @@ pub struct DCFile {
 pub trait DCFileInterface {
     fn get_hash(&mut self) -> globals::DCFileHash;
     fn generate_hash(&mut self, hashgen: &mut DCHashGenerator);
+    fn get_pretty_hash(&mut self) -> String;
     fn add_field(&mut self, field: DCField); // assigns unique ID for the whole DC file
     // Python Imports
     fn get_num_imports(&mut self) -> usize;
@@ -117,6 +118,11 @@ impl DCFileInterface for DCFile {
             let mut locked_dclass: MutexGuard<'_, DClass> = dclass.lock().unwrap();
             locked_dclass.generate_hash(hashgen);
         }
+    }
+
+    // Returns a string with the hash as a pretty format hexadecimal.
+    fn get_pretty_hash(&mut self) -> String {
+        format!("0x{:0width$x}", self.get_hash(), width = 8) // 2 hex / byte = 8 hex
     }
 
     fn add_field(&mut self, field: DCField) {
