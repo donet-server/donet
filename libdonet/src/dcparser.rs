@@ -262,6 +262,11 @@ parser! {
             use dckeyword::DCKeywordInterface;
             // TODO: register keyword identifier in DC file
             dckeyword::DCKeyword::new(id, None)
+        },
+        Keyword DCKeyword(historic) => {
+            // This is already a legacy keyword.
+            use dckeyword::DCKeywordInterface;
+            dckeyword::DCKeyword::new(historic, None)
         }
     }
 
@@ -726,52 +731,125 @@ mod unit_testing {
 
     #[test]
     fn sample_keyword_definitions() {
-        let dc_file: &str = "keyword p2p;\nkeyword monkey;\n";
+        let dc_file: &str = "keyword p2p;\n\
+                             keyword monkey;\n\
+                             // rUDP to donet one day?
+                             keyword unreliable;\n";
         parse_dcfile_string(dc_file);
     }
 
     #[test]
     fn sample_struct_declarations() {
         let dc_file: &str = "struct GiftItem {\n\
-                                blob Item;\n\
-                                string giftTag;\n\
-                            };\n\
-                            struct gardenSpecial {\n\
-                                uint8 index;\n\
-                                uint8 count;\n\
-                            };\n";
+                                 blob Item;\n\
+                                 string giftTag;\n\
+                             };\n\
+                             struct activity {\n\
+                                string activityName;\n\
+                                uint8 activityId;\n\
+                             };\n\
+                             struct party {\n\
+                                activity activities[];\n\
+                                uint8 status;\n\
+                             };\n";
         parse_dcfile_string(dc_file);
     }
 
     #[test]
     fn sample_distributed_class() {
         let dc_file: &str = "dclass WelcomeValleyManager : DistributedObject {\n\
-                                clientSetZone(uint32) airecv clsend;\n\
-                                requestZoneIdMessage(uint32, uint16) airecv clsend;\n\
-                                requestZoneIdResponse(uint32, uint16);\n\
-                            };\n\
-                            dclass DistributedChild : DistributedParent, DistributedP2 {\n\
-                            };\n";
+                                 clientSetZone(uint32) airecv clsend;\n\
+                                 requestZoneIdMessage(uint32, uint16) airecv clsend;\n\
+                                 requestZoneIdResponse(uint32, uint16);\n\
+                             };\n\
+                             dclass ToontownDistrictStats {\n\
+                                 settoontownDistrictId(uint32) broadcast required ram;\n\
+                                 setAvatarCount(uint32) broadcast required ram;\n\
+                                 setNewAvatarCount(uint32) broadcast required ram;\n\
+                                 setStats : setAvatarCount, setNewAvatarCount;\n\
+                             };\n\
+                             dclass DistributedChild : DistributedParent, DistributedP2 {\n\
+                             };\n";
         parse_dcfile_string(dc_file);
     }
 
     #[test]
     fn sample_switch_type() {
-        let dc_file: &str = "dclass WelcomeValleyManager : DistributedObject {\n\
-                                clientSetZone(uint32) airecv clsend;\n\
-                                requestZoneIdMessage(uint32, uint16) airecv clsend;\n\
-                                requestZoneIdResponse(uint32, uint16);\n\
-                            };\n\
-                            dclass DistributedGoofySpeedway : DistributedCCharBase {\n\
-                            };\n";
+        let dc_file: &str = "struct BuffData {\n\
+                               switch (uint16) {\n\
+                                 case 0:\n\
+                                   break;\n\
+                                 case 1:\n\
+                                   uint8 val1;\n\
+                                   break;\n\
+                                 case 2:\n\
+                                   uint8 val1;\n\
+                                   uint8 val2;\n\
+                                   break;\n\
+                                 case 3:\n\
+                                   uint8 val1;\n\
+                                   break;\n\
+                                 case 4:\n\
+                                   int16/100 val1;\n\
+                                   break;\n\
+                               };\n\
+                             };\n";
+        parse_dcfile_string(dc_file);
+    }
+
+    #[test]
+    fn test_method_data_types() {
+        let dc_file: &str = "struct MethodDataTypesTest {\n\
+                                 Char character;\n\
+                                 blob Item;\n\
+                                 blob32 pandaOnlyToken;\n\
+                                 float32 astronOnlyToken;\n\
+                                 string giftTag;\n\
+                                 int32(0-990999) testMethodValue;\n\
+                                 int8(-1-1) testNegativeValues;\n\
+                                 int8(-5--99) testNegativeValuesPartTwo;\n\
+                                 int8(+0-+9) plusForPositiveForSomeReason;\n\
+                                 int8array arrayDataTypeTest;
+                                 int16array anotherArray;
+                                 int32array evenMoreComplexArray;
+                                 uint8array byteArray;
+                                 uint16array unsignedIntegerArray;
+                                 uint32array unsignedLongArray;
+                                 uint32uint8array thisWeirdPandaArrayType;
+                             };\n";
+        parse_dcfile_string(dc_file);
+    }
+
+    #[test]
+    fn test_value_transforms() {
+        let dc_file: &str = "struct TransformedTypesTest {\n\
+                                 int32%360 angle;\n\
+                                 int32%360/1000 floatingPointAngle;\n\
+                                 int32/1000 efficientFloatIn32Bits;\n\
+                                 float32 waitIsntAstronsFloat32TheSame;\n\
+                                 int8(0-1) thisIsLiterallyABoolean;\n\
+                                 uint16/1000(0-1) youCanStackThemToo;\n\
+                                 int64/10000(+50-+999) [] thisIsValid;\n\
+                                 int8%10(0-10) anotherOne;\n\
+                                 int16%100/10(-80-+100) lastTest;\n\
+                             };\n";
+        parse_dcfile_string(dc_file);
+    }
+
+    #[test]
+    fn developer_defined_keywords() {
+        let dc_file: &str = "keyword f6f7;\n\
+                             dclass DistributedDonut {\n\
+                                 testingField() f6f7;\n\
+                             };\n";
         parse_dcfile_string(dc_file);
     }
 
     #[test]
     fn type_declaration_optional_delimiter() {
         let dc_file: &str = "typedef int16 test1[2];\n\
-                            typedef int32 test2[2]\n\
-                            typedef int64 test3;";
+                             typedef int32 test2[2]\n\
+                             typedef int64 test3;";
         parse_dcfile_string(dc_file);
     }
 }
