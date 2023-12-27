@@ -47,6 +47,7 @@ pub trait DClassInterface {
 
     fn get_name(&mut self) -> String;
     fn get_class_id(&mut self) -> globals::DClassId;
+    fn set_class_id(&mut self, id: globals::DClassId);
     fn get_num_parents(&mut self) -> usize;
     fn get_parent(&mut self, index: usize) -> Option<Arc<Mutex<DClass>>>;
     fn has_constructor(&mut self) -> bool;
@@ -70,7 +71,7 @@ impl DClassInterface for DClass {
     }
 
     fn generate_hash(&mut self, hashgen: &mut DCHashGenerator) {
-        todo!(); // TODO: Implement once hash gen is written
+        () // TODO: Implement once hash gen is written
     }
 
     fn set_parent(&mut self, parent: Arc<Mutex<DClass>>) {
@@ -83,6 +84,10 @@ impl DClassInterface for DClass {
 
     fn get_class_id(&mut self) -> globals::DClassId {
         self.class_id
+    }
+
+    fn set_class_id(&mut self, id: globals::DClassId) {
+        self.class_id = id;
     }
 
     fn get_num_parents(&mut self) -> usize {

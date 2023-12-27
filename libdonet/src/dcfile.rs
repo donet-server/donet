@@ -184,7 +184,7 @@ impl DCFileInterface for DCFile {
     }
 
     fn add_dclass(&mut self, dclass: DClass) {
-        () // TODO!
+        self.dclasses.push(Mutex::new(dclass));
     }
 
     // ---------- DC Struct ---------- //

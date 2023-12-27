@@ -88,7 +88,12 @@ parser! {
                     },
                     TypeDeclaration::StructType(_) => {},
                     TypeDeclaration::SwitchType(_) => {},
-                    TypeDeclaration::DClassType(dclass) => {
+                    TypeDeclaration::DClassType(mut dclass) => {
+                        use dclass::DClassInterface;
+
+                        let next_class_id: usize = dc_file.get_num_dclasses();
+                        dclass.set_class_id(next_class_id.try_into().unwrap());
+
                         dc_file.add_dclass(dclass);
                     },
                     TypeDeclaration::TypedefType(_) => {},
