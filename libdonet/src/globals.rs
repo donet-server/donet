@@ -22,7 +22,7 @@ use strum_macros::EnumIter;
 
 // Type Definitions
 pub type MsgType = u16;
-pub type DgSize = u16;
+pub type DgSizeTag = u16;
 pub type Channel = u64;
 pub type DoId = u32;
 pub type Zone = u32;
@@ -31,7 +31,7 @@ pub type FieldId = u16;
 pub type DCFileHash = u32; // 32-bit hash
 
 // Type Limits
-pub const DG_SIZE_MAX: DgSize = u16::MAX;
+pub const DG_SIZE_MAX: DgSizeTag = u16::MAX;
 pub const CHANNEL_MAX: Channel = u64::MAX;
 pub const DOID_MAX: DoId = u32::MAX;
 pub const ZONE_MAX: Zone = u32::MAX;
@@ -70,7 +70,7 @@ pub enum DgError {
 }
 
 pub type DgResult = Result<(), DgError>;
-pub type DgBufferResult = Result<DgSize, DgError>;
+pub type DgBufferResult = Result<DgSizeTag, DgError>;
 
 // Utility for converting protocol enumerator to u16 (MsgType)
 pub fn msg_type(proto_enum: Protocol) -> MsgType {

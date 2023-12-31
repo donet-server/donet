@@ -41,7 +41,7 @@ impl Datagram {
     }
 
     // Checks if we can add `length` number of bytes to the datagram.
-    fn check_add_length(&mut self, length: globals::DgSize) -> globals::DgResult {
+    fn check_add_length(&mut self, length: globals::DgSizeTag) -> globals::DgResult {
         let new_index: usize = self.index + usize::from(length);
 
         if new_index > globals::DG_SIZE_MAX.into() {
@@ -137,7 +137,7 @@ impl Datagram {
     }
 
     // Adds a Datagram / Field length tag to the end of the datagram.
-    pub fn add_size(&mut self, v: globals::DgSize) -> globals::DgResult {
+    pub fn add_size(&mut self, v: globals::DgSizeTag) -> globals::DgResult {
         self.add_u16(v)
     }
 
@@ -222,10 +222,10 @@ impl Datagram {
     }
 
     // Reserves an amount of bytes in the datagram buffer.
-    pub fn add_buffer(&mut self, bytes: globals::DgSize) -> globals::DgBufferResult {
+    pub fn add_buffer(&mut self, bytes: globals::DgSizeTag) -> globals::DgBufferResult {
         self.check_add_length(bytes)?;
         // get start length (before push)
-        let start: globals::DgSize = self.index as globals::DgSize;
+        let start: globals::DgSizeTag = self.index as globals::DgSizeTag;
         for _n in 1..bytes {
             self.buffer.push(0_u8);
         }
@@ -268,7 +268,7 @@ impl Datagram {
         Ok(())
     }
 
-    pub fn size(&mut self) -> globals::DgSize {
+    pub fn size(&mut self) -> globals::DgSizeTag {
         self.buffer.len().try_into().unwrap()
     }
 
@@ -298,8 +298,8 @@ impl DatagramIterator {
         }
     }
 
-    pub fn check_read_length(&mut self, bytes: globals::DgSize) -> globals::DgResult {
-        let new_index: globals::DgSize = self.index as globals::DgSize + bytes;
+    pub fn check_read_length(&mut self, bytes: globals::DgSizeTag) -> globals::DgResult {
+        let new_index: globals::DgSizeTag = self.index as globals::DgSizeTag + bytes;
 
         if new_index > self.datagram.size() {
             // FIXME: error!("The DatagramIterator tried to read past the end of the buffer!");
@@ -309,30 +309,30 @@ impl DatagramIterator {
     }
 
     // Returns the value of `self.index` in bytes.
-    pub fn tell(&mut self) -> globals::DgSize {
-        self.index as globals::DgSize
+    pub fn tell(&mut self) -> globals::DgSizeTag {
+        self.index as globals::DgSizeTag
     }
 
     // Manually sets the buffer_offset position.
-    pub fn seek(&mut self, to: globals::DgSize) {
+    pub fn seek(&mut self, to: globals::DgSizeTag) {
         self.index = to as usize;
     }
 
     // Increments the buffer_offset by `bytes` length.
     // Returns DgError.DatagramIteratorEOF if it's past the end of the buffer.
-    pub fn skip(&mut self, bytes: globals::DgSize) -> globals::DgResult {
+    pub fn skip(&mut self, bytes: globals::DgSizeTag) -> globals::DgResult {
         self.check_read_length(bytes)?;
         self.index += bytes as usize;
         Ok(())
     }
 
     // Returns the number of unread bytes left in the datagram
-    pub fn get_remaining(&mut self) -> globals::DgSize {
-        self.datagram.size() - self.index as globals::DgSize
+    pub fn get_remaining(&mut self) -> globals::DgSizeTag {
+        self.datagram.size() - self.index as globals::DgSizeTag
     }
 
     // Reads the next number of bytes in the datagram.
-    pub fn read_data(&mut self, bytes: globals::DgSize) -> Vec<u8> {
+    pub fn read_data(&mut self, bytes: globals::DgSizeTag) -> Vec<u8> {
         let data: Vec<u8> = self.datagram.get_data();
 
         let mut new_data: Vec<u8> = vec![];
@@ -448,8 +448,8 @@ impl DatagramIterator {
         data == 1
     }
 
-    pub fn read_size(&mut self) -> globals::DgSize {
-        self.read_u16() as globals::DgSize
+    pub fn read_size(&mut self) -> globals::DgSizeTag {
+        self.read_u16() as globals::DgSizeTag
     }
 
     pub fn read_channel(&mut self) -> globals::Channel {
@@ -555,7 +555,7 @@ mod unit_testing {
         for dg_res in &results {
             assert!(dg_res.is_ok());
         }
-        let dg_size: globals::DgSize = dg.size();
+        let dg_size: globals::DgSizeTag = dg.size();
         let dg_buffer: Vec<u8> = dg.get_data();
 
         assert_eq!(dg_buffer.len() as u16, dg_size); // verify buffer length
@@ -572,7 +572,7 @@ mod unit_testing {
         assert!(dg_2.add_blob(vec![0, 125, u8::MAX]).is_ok());
         assert!(dg.add_datagram(&mut dg_2).is_ok());
 
-        let dg_size: globals::DgSize = dg.size();
+        let dg_size: globals::DgSizeTag = dg.size();
         let dg_buffer: Vec<u8> = dg.get_data();
 
         assert_eq!(dg_buffer.len() as u16, dg_size);
@@ -600,7 +600,7 @@ mod unit_testing {
         for dg_res in &results {
             assert!(dg_res.is_ok());
         }
-        let dg_size: globals::DgSize = dg.size();
+        let dg_size: globals::DgSizeTag = dg.size();
         let dg_buffer: Vec<u8> = dg.get_data();
 
         assert_eq!(dg_buffer.len() as u16, dg_size);
@@ -666,7 +666,7 @@ mod unit_testing {
         let mut dgi: datagram::DatagramIterator = datagram::DatagramIterator::new(dg);
 
         // Read blob type length
-        let res_tag: globals::DgSize = dgi.read_u16();
+        let res_tag: globals::DgSizeTag = dgi.read_u16();
         // Unsigned integers
         let res_u8: u8 = dgi.read_u8();
         let res_u16: u16 = dgi.read_u16();
@@ -714,7 +714,7 @@ mod unit_testing {
         let mut dgi: datagram::DatagramIterator = datagram::DatagramIterator::new(dg);
 
         // Size Tag
-        let res_size: globals::DgSize = dgi.read_size();
+        let res_size: globals::DgSizeTag = dgi.read_size();
         // Boolean
         let res_bool_false: bool = dgi.read_bool();
         let res_bool_true: bool = dgi.read_bool();

@@ -56,14 +56,21 @@ pub trait DCFileInterface {
     fn generate_hash(&mut self, hashgen: &mut DCHashGenerator);
     fn get_pretty_hash(&mut self) -> String;
     fn add_field(&mut self, field: DCField); // assigns unique ID for the whole DC file
+
     // Python Imports
     fn get_num_imports(&mut self) -> usize;
     fn get_python_import(&mut self, index: usize) -> DCImport;
     fn add_python_import(&mut self, import: DCImport);
+
     // DC Keyword
     fn get_num_keywords(&self) -> usize;
     fn get_keyword(&self, index: usize) -> Arc<DCKeyword>;
+    fn has_keyword(&self, keyword: String) -> bool;
     fn add_keyword(&mut self, keyword: DCKeyword);
+
+    // Type Definition
+    fn add_typedef(&mut self, name: String) -> Result<(), ()>;
+
     // Distributed Class
     fn get_num_dclasses(&mut self) -> usize;
     fn get_next_dclass_id(&mut self) -> globals::DClassId;
@@ -71,6 +78,7 @@ pub trait DCFileInterface {
     fn get_dclass_by_id(&mut self, id: globals::DClassId) -> Arc<Mutex<DClass>>;
     fn get_dclass_by_name(&mut self, name: &str) -> Arc<Mutex<DClass>>;
     fn add_dclass(&mut self, dclass: DClass);
+
     // DC Struct
     fn get_num_structs(&mut self) -> usize;
     fn get_struct(&mut self, index: usize) -> Arc<Mutex<DCStruct>>;
@@ -153,8 +161,18 @@ impl DCFileInterface for DCFile {
         todo!();
     }
 
+    fn has_keyword(&self, keyword: String) -> bool {
+        todo!();
+    }
+
     fn add_keyword(&mut self, keyword: DCKeyword) {
         () // TODO!
+    }
+
+    // ---------- DC Type Definition ---------- //
+
+    fn add_typedef(&mut self, name: String) -> Result<(), ()> {
+        todo!();
     }
 
     // ---------- Distributed Class ---------- //
