@@ -17,7 +17,11 @@
 
 use crate::globals::DgSizeTag;
 use crate::hashgen::DCHashGenerator;
+use multimap::MultiMap;
 
+/* The enum variants defined below have assigned u8 values
+ * to keep compatibility with Astron's DC hash inputs.
+ */
 #[repr(u8)] // 8-bit alignment, unsigned
 #[derive(Clone)]
 #[rustfmt::skip]
@@ -30,16 +34,12 @@ pub enum DCTypedefType {
     // Sized Data Types (Array Types)
     TString = 11, // a string with a fixed byte length
     TVarString = 12, // a string with a variable byte length
-    TBlob = 13,
-    TVarBlob = 14,
-    TBlob32 = 19,
-    TVarBlob32 = 20,
-    TArray = 15,
-    TVarArray = 16,
+    TBlob = 13, TVarBlob = 14,
+    TBlob32 = 19, TVarBlob32 = 20,
+    TArray = 15, TVarArray = 16,
 
     // Complex DC Types
-    TStruct = 17,
-    TMethod = 18,
+    TStruct = 17, TMethod = 18,
     TInvalid = 21,
 }
 
@@ -60,9 +60,6 @@ pub trait DCTypeDefinitionInterface {
     fn has_alias(&self) -> bool;
     fn get_alias(&self) -> Result<String, ()>;
     fn set_alias(&mut self, alias: String);
-
-    fn has_range(&self) -> bool;
-    fn within_range(&self, data: Vec<u8>, length: u64) -> bool;
 }
 
 impl DCTypeDefinitionInterface for DCTypeDefinition {
@@ -108,12 +105,47 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
     fn set_alias(&mut self, alias: String) {
         self.alias = Some(alias);
     }
+}
 
-    fn has_range(&self) -> bool {
-        false
-    }
+// ---------- Numeric Type ---------- //
 
-    fn within_range(&self, data: Vec<u8>, length: u64) -> bool {
-        todo!();
+struct DCNumericType {
+    parent: DCTypeDefinition,
+    divisor: u16,
+    data2number: MultiMap<bool, u8>, // TODO: u8 to Number struct
+    // These are the original range and modulus values from the file, unscaled by the divisor.
+    orig_modulus: f64,
+    orig_range: Option<u8>, // TODO!
+    // These are the range and modulus values after scaling by the divisor.
+    modulus: Option<u8>, // TODO!
+    range: Option<u8>,   // TODO!
+}
+
+trait DCNumericTypeInterface {
+    fn new(base_type: DCTypeDefinition) -> DCNumericType;
+
+    fn has_modulus(&self) -> bool;
+    fn has_range(&self) -> bool;
+
+    fn get_divisor(&self) -> u16;
+    fn get_modulus(&self) -> f64;
+
+    fn set_divisor(&mut self, divisor: u16) -> Result<(), ()>;
+    fn set_modulus(&mut self, modulus: f64) -> Result<(), ()>;
+}
+
+/* By implementing the standard library 'Deref' trait to
+ * our 'child' struct, we can implicitly cast pointers to
+ * the parent struct, as pointers to the child struct,
+ * therefore making them one just like marriage.
+ */
+impl std::ops::Deref for DCNumericType {
+    type Target = DCTypeDefinition;
+    fn deref(&self) -> &Self::Target {
+        &self.parent
     }
 }
+
+// ---------- Array Type ---------- //
+
+// ---------- Method Type ---------- //

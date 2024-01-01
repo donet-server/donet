@@ -24,6 +24,6 @@ pub mod dclass;
 pub mod dclexer;
 pub mod dcparser;
 pub mod dcstruct;
-pub mod dctypedef;
+pub mod dctype;
 pub mod globals;
 pub mod hashgen;
