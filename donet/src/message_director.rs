@@ -1,5 +1,5 @@
 // DONET SOFTWARE
-// Copyright (c) 2023, Donet Authors.
+// Copyright (c) 2024, Donet Authors.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License version 3.
