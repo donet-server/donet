@@ -37,32 +37,42 @@ pub enum DCReadError {
 }
 pub type DCReadResult = Result<dcfile::DCFile, DCReadError>;
 
-/* Simple interface to our DC file parser; Handles reading
- * the DC files, creating the lexer and parser, and either
+/* Easy to use interface for the DC file parser; Handles reading
+ * the DC files, instantiating the lexer and parser, and either
  * returns the DCFile object or a Parse/File error.
  */
-pub fn read_dc_file(file_path: &String) -> DCReadResult {
+pub fn read_dc_files(file_paths: Vec<String>) -> DCReadResult {
     use crate::dclexer::Lexer;
     use crate::dcparser::parse;
     use std::fs::File;
     use std::io::Read;
 
-    // Synchronous read of file to string, then lex and parse.
-    let file_read: Result<File, std::io::Error> = File::open(file_path);
+    let mut file_results: Vec<Result<File, std::io::Error>> = vec![];
+    let mut lexer_input: String = String::new();
 
-    if let Ok(mut dc_file) = file_read {
-        let mut contents: String = String::new();
-        let _ = dc_file.read_to_string(&mut contents);
+    for file_path in &file_paths {
+        file_results.push(File::open(file_path));
+    }
 
-        let lexer: Lexer<'_> = Lexer::new(&contents);
-        let res: Result<dcfile::DCFile, globals::ParseError> = parse(lexer);
-
-        if let Ok(res_ok) = res {
-            Ok(res_ok)
+    for io_result in file_results {
+        if let Ok(mut dcf) = io_result {
+            let res: std::io::Result<usize> = dcf.read_to_string(&mut lexer_input);
+            if res.is_err() {
+                // DC file content may not be in proper UTF-8 encoding.
+                return Err(DCReadError::FileError(res.unwrap_err()));
+            }
         } else {
-            Err(DCReadError::ParseError(res.unwrap_err()))
+            // Failed to open one of the DC files. (most likely permission error)
+            return Err(DCReadError::FileError(io_result.unwrap_err()));
         }
+    }
+
+    let lexer: Lexer<'_> = Lexer::new(&lexer_input);
+    let res: Result<dcfile::DCFile, globals::ParseError> = parse(lexer);
+
+    if let Ok(res_ok) = res {
+        Ok(res_ok)
     } else {
-        Err(DCReadError::FileError(file_read.unwrap_err()))
+        Err(DCReadError::ParseError(res.unwrap_err()))
     }
 }

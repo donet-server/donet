@@ -27,7 +27,7 @@ pub mod utils;
 fn main() -> std::io::Result<()> {
     use config::*;
     use libdonet::dcfile::DCFileInterface;
-    use libdonet::{read_dc_file, DCReadResult};
+    use libdonet::{read_dc_files, DCReadResult};
     use log::{error, info};
     use service_factory::*;
     use std::fs::File;
@@ -86,19 +86,19 @@ fn main() -> std::io::Result<()> {
     logger::initialize_logger()?;
 
     if want_dc_check {
-        if dc_check_file.is_none() {
+        if let Some(dc_file) = dc_check_file {
+            let dc_read: DCReadResult = read_dc_files(vec![dc_file.to_string()]);
+
+            if let Ok(mut dc_file) = dc_read {
+                info!("No issues found. DC File Hash: {}", dc_file.get_pretty_hash());
+                return Ok(());
+            }
+            error!("Failed to parse DC file: {:?}", dc_read.unwrap_err());
+            return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
+        } else {
             error!("No DC filename provided. Cannot do DC read.");
             return Err(Error::new(ErrorKind::InvalidInput, "No DC file given."));
         }
-
-        let dc_read: DCReadResult = read_dc_file(dc_check_file.unwrap());
-
-        if let Ok(mut dc_file) = dc_read {
-            info!("No issues found. DC File Hash: {}", dc_file.get_pretty_hash());
-            return Ok(());
-        }
-        error!("Failed to parse DC file: {:?}", dc_read.unwrap_err());
-        return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
     }
 
     // Read the daemon configuration file
