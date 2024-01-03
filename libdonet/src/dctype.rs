@@ -1,5 +1,5 @@
 // DONET SOFTWARE
-// Copyright (c) 2023, Donet Authors.
+// Copyright (c) 2024, Donet Authors.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License version 3.
@@ -18,7 +18,6 @@
 use crate::datagram::{Datagram, DatagramIterator};
 use crate::globals::DgSizeTag;
 use crate::hashgen::DCHashGenerator;
-use multimap::MultiMap;
 use strum_macros::EnumIs;
 
 /* The enum variants defined below have assigned u8 values
@@ -266,6 +265,8 @@ trait DCNumericTypeInterface {
     fn set_divisor(&mut self, divisor: u16) -> Result<(), ()>;
     fn set_modulus(&mut self, modulus: f64) -> Result<(), ()>;
     fn set_range(&mut self, range: DCNumericRange) -> Result<(), ()>;
+
+    fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), ()>;
 }
 
 impl DCNumericType {
@@ -302,9 +303,25 @@ impl DCNumericTypeInterface for DCNumericType {
     fn new(base_type: DCTypeDefinition) -> DCNumericType {
         todo!();
     }
+
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        todo!();
+        self.parent.generate_hash(hashgen);
+        hashgen.add_int(u32::from(self.divisor));
+
+        if self.has_modulus() {
+            // unsafe block required for accessing unions
+            unsafe {
+                hashgen.add_int(self.modulus.value.integer.try_into().unwrap());
+            }
+        }
+        if self.has_range() {
+            unsafe {
+                hashgen.add_int(self.range.min.value.integer.try_into().unwrap());
+                hashgen.add_int(self.range.max.value.integer.try_into().unwrap());
+            }
+        }
     }
+
     fn has_modulus(&self) -> bool {
         self.orig_modulus != 0.0
     }
@@ -320,13 +337,28 @@ impl DCNumericTypeInterface for DCNumericType {
     fn get_range(&self) -> DCNumericRange {
         self.orig_range.clone()
     }
+
     fn set_divisor(&mut self, divisor: u16) -> Result<(), ()> {
-        todo!();
+        if divisor == 0 {
+            return Err(());
+        }
+        self.divisor = divisor;
+        if self.has_range() {
+            self.set_range(self.orig_range.clone())?;
+        }
+        if self.has_modulus() {
+            self.set_modulus(self.orig_modulus.clone())?;
+        }
+        Ok(())
     }
+
     fn set_modulus(&mut self, modulus: f64) -> Result<(), ()> {
         todo!();
     }
     fn set_range(&mut self, range: DCNumericRange) -> Result<(), ()> {
+        todo!();
+    }
+    fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), ()> {
         todo!();
     }
 }

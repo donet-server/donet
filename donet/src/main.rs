@@ -26,10 +26,8 @@ pub mod utils;
 
 fn main() -> std::io::Result<()> {
     use config::*;
-    use libdonet::dcfile::{DCFile, DCFileInterface};
-    use libdonet::dclexer::Lexer;
-    use libdonet::dcparser::parse;
-    use libdonet::globals::ParseError;
+    use libdonet::dcfile::DCFileInterface;
+    use libdonet::{read_dc_file, DCReadResult};
     use log::{error, info};
     use service_factory::*;
     use std::fs::File;
@@ -92,19 +90,14 @@ fn main() -> std::io::Result<()> {
             error!("No DC filename provided. Cannot do DC read.");
             return Err(Error::new(ErrorKind::InvalidInput, "No DC file given."));
         }
-        // Synchronous read of file to string, then lex and parse.
-        let mut dc_file: File = File::open(dc_check_file.unwrap())?;
-        let mut contents: String = String::new();
-        dc_file.read_to_string(&mut contents)?;
 
-        let lexer = Lexer::new(&contents);
-        let parser_res: Result<DCFile, ParseError> = parse(lexer);
+        let dc_read: DCReadResult = read_dc_file(dc_check_file.unwrap());
 
-        if let Ok(mut dc_file) = parser_res {
+        if let Ok(mut dc_file) = dc_read {
             info!("No issues found. DC File Hash: {}", dc_file.get_pretty_hash());
             return Ok(());
         }
-        error!("Failed to parse DC file: {:?}", parser_res.unwrap_err());
+        error!("Failed to parse DC file: {:?}", dc_read.unwrap_err());
         return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
     }
 

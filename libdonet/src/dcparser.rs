@@ -22,7 +22,6 @@
 #![allow(clippy::type_complexity, clippy::redundant_field_names, clippy::ptr_arg)]
 #![allow(clippy::redundant_closure_call, clippy::enum_variant_names)]
 
-use crate::dcfield;
 use crate::dcfile::{DCFile, DCFileInterface, DCImport};
 use crate::dckeyword;
 use crate::dclass;
