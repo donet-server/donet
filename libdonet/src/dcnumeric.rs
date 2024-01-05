@@ -24,7 +24,7 @@ use crate::hashgen::DCHashGenerator;
  * withing constraints of array, string, or blob sized types.
  */
 #[derive(Clone)]
-struct DCNumericRange {
+pub struct DCNumericRange {
     range_type: DCNumberType,
     min: DCNumber,
     max: DCNumber,
@@ -98,7 +98,7 @@ impl DCNumericRange {
 
 // ---------- Numeric Type ---------- //
 
-struct DCNumericType {
+pub struct DCNumericType {
     parent: DCTypeDefinition,
     divisor: u16,
     // These are the original range and modulus values from the file, unscaled by the divisor.
@@ -109,7 +109,7 @@ struct DCNumericType {
     range: DCNumericRange,
 }
 
-trait DCNumericTypeInterface {
+pub trait DCNumericTypeInterface {
     fn new(base_type: DCTypeDefinition) -> DCNumericType;
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
