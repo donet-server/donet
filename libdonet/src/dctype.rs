@@ -25,7 +25,7 @@ use strum_macros::EnumIs;
 #[repr(u8)] // 8-bit alignment, unsigned
 #[derive(Clone)]
 #[rustfmt::skip]
-pub enum DCTypedefType {
+pub enum DCTypeEnum {
     // Numeric Types
     TInt8 = 0, TInt16 = 1, TInt32 = 2, TInt64 = 3,
     TUInt8 = 4, TChar = 8, TUInt16 = 5, TUInt32 = 6, TUInt64 = 7,
@@ -43,9 +43,10 @@ pub enum DCTypedefType {
     TInvalid = 21,
 }
 
+#[derive(Clone)]
 pub struct DCTypeDefinition {
     alias: Option<String>,
-    pub data_type: DCTypedefType,
+    pub data_type: DCTypeEnum,
     pub size: DgSizeTag,
 }
 
@@ -53,7 +54,7 @@ pub trait DCTypeDefinitionInterface {
     fn new() -> DCTypeDefinition;
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
-    fn get_dc_type(&self) -> DCTypedefType;
+    fn get_dc_type(&self) -> DCTypeEnum;
     fn is_variable_length(&self) -> bool;
     fn get_size(&self) -> DgSizeTag;
 
@@ -66,7 +67,7 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
     fn new() -> DCTypeDefinition {
         DCTypeDefinition {
             alias: None,
-            data_type: DCTypedefType::TInvalid,
+            data_type: DCTypeEnum::TInvalid,
             size: 0_u16,
         }
     }
@@ -78,7 +79,7 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
         }
     }
 
-    fn get_dc_type(&self) -> DCTypedefType {
+    fn get_dc_type(&self) -> DCTypeEnum {
         self.data_type.clone()
     }
 

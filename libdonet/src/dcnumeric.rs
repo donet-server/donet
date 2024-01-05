@@ -18,6 +18,7 @@
 use crate::datagram::{Datagram, DatagramIterator};
 use crate::dctype::*;
 use crate::hashgen::DCHashGenerator;
+use std::mem::size_of;
 
 /* Numeric Range structs are used to represent a range of signed/unsigned
  * integers or floating point numbers. Used for enforcing numeric limits
@@ -110,7 +111,7 @@ pub struct DCNumericType {
 }
 
 pub trait DCNumericTypeInterface {
-    fn new(base_type: DCTypeDefinition) -> DCNumericType;
+    fn new(base_type: DCTypeEnum) -> DCNumericType;
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn has_modulus(&self) -> bool;
@@ -140,26 +141,64 @@ impl DCNumericType {
         let mut dgi = DatagramIterator::new(dg);
 
         match self.data_type {
-            DCTypedefType::TInt8 => (true, DCNumber::new_integer(i64::from(dgi.read_i8()))),
-            DCTypedefType::TInt16 => (true, DCNumber::new_integer(i64::from(dgi.read_i16()))),
-            DCTypedefType::TInt32 => (true, DCNumber::new_integer(i64::from(dgi.read_i32()))),
-            DCTypedefType::TInt64 => (true, DCNumber::new_integer(dgi.read_i64())),
-            DCTypedefType::TChar | DCTypedefType::TUInt8 => {
+            DCTypeEnum::TInt8 => (true, DCNumber::new_integer(i64::from(dgi.read_i8()))),
+            DCTypeEnum::TInt16 => (true, DCNumber::new_integer(i64::from(dgi.read_i16()))),
+            DCTypeEnum::TInt32 => (true, DCNumber::new_integer(i64::from(dgi.read_i32()))),
+            DCTypeEnum::TInt64 => (true, DCNumber::new_integer(dgi.read_i64())),
+            DCTypeEnum::TChar | DCTypeEnum::TUInt8 => {
                 (true, DCNumber::new_unsigned_integer(u64::from(dgi.read_u8())))
             }
-            DCTypedefType::TUInt16 => (true, DCNumber::new_unsigned_integer(u64::from(dgi.read_u16()))),
-            DCTypedefType::TUInt32 => (true, DCNumber::new_unsigned_integer(u64::from(dgi.read_u32()))),
-            DCTypedefType::TUInt64 => (true, DCNumber::new_unsigned_integer(dgi.read_u64())),
-            DCTypedefType::TFloat32 => (true, DCNumber::new_floating_point(f64::from(dgi.read_f32()))),
-            DCTypedefType::TFloat64 => (true, DCNumber::new_floating_point(dgi.read_f64())),
+            DCTypeEnum::TUInt16 => (true, DCNumber::new_unsigned_integer(u64::from(dgi.read_u16()))),
+            DCTypeEnum::TUInt32 => (true, DCNumber::new_unsigned_integer(u64::from(dgi.read_u32()))),
+            DCTypeEnum::TUInt64 => (true, DCNumber::new_unsigned_integer(dgi.read_u64())),
+            DCTypeEnum::TFloat32 => (true, DCNumber::new_floating_point(f64::from(dgi.read_f32()))),
+            DCTypeEnum::TFloat64 => (true, DCNumber::new_floating_point(dgi.read_f64())),
             _ => (false, DCNumber::new_integer(0_i64)),
         }
     }
 }
 
 impl DCNumericTypeInterface for DCNumericType {
-    fn new(base_type: DCTypeDefinition) -> DCNumericType {
-        todo!();
+    fn new(base_type: DCTypeEnum) -> DCNumericType {
+        DCNumericType {
+            parent: {
+                let mut parent_struct = DCTypeDefinition::new();
+                parent_struct.data_type = base_type;
+
+                macro_rules! set_parent_size {
+                    ($t:ty) => {
+                        parent_struct.size = size_of::<$t>().try_into().unwrap()
+                    };
+                }
+                match parent_struct.data_type {
+                    DCTypeEnum::TChar | DCTypeEnum::TInt8 | DCTypeEnum::TUInt8 => {
+                        set_parent_size!(u8)
+                    }
+                    DCTypeEnum::TInt16 | DCTypeEnum::TUInt16 => {
+                        set_parent_size!(u16)
+                    }
+                    DCTypeEnum::TInt32 | DCTypeEnum::TUInt32 => {
+                        set_parent_size!(u32)
+                    }
+                    DCTypeEnum::TInt64 | DCTypeEnum::TUInt64 => {
+                        set_parent_size!(u64)
+                    }
+                    DCTypeEnum::TFloat32 => {
+                        set_parent_size!(f32)
+                    }
+                    DCTypeEnum::TFloat64 => {
+                        set_parent_size!(f64)
+                    }
+                    _ => parent_struct.data_type = DCTypeEnum::TInvalid,
+                }
+                parent_struct
+            },
+            divisor: 1_u16,
+            orig_modulus: 0.0_f64,
+            orig_range: DCNumericRange::new(),
+            modulus: DCNumber::new(),
+            range: DCNumericRange::new(),
+        }
     }
 
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
