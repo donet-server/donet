@@ -24,6 +24,7 @@ pub mod dcfile;
 pub mod dckeyword;
 pub mod dclass;
 pub mod dclexer;
+pub mod dcnumeric;
 pub mod dcparser;
 pub mod dcstruct;
 pub mod dctype;
