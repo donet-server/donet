@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["read_dc_files"],"mod":["byte_order","datagram","dcarray","dcfield","dcfile","dckeyword","dclass","dclexer","dcnumeric","dcparser","dcstruct","dctype","globals"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DCNumberType","DCTypeEnum"],"struct":["DCNumber","DCTypeDefinition"],"trait":["DCTypeDefinitionInterface"],"union":["DCNumberValueUnion"]};

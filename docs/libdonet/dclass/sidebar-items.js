@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["DClass"],"trait":["DClassInterface"],"type":["FieldId2Field","FieldName2Field"]};
