@@ -35,6 +35,10 @@ and how the engine works.
 
 If you have any questions, feel free to join [our community Discord server](https://discord.gg/T6jGjEutfy).
 
+## Documentation
+Currently there is not much documentation on Donet, as libdonet is still under development.
+For the libdonet rust library documentation, visit [libdonet.rs](https://libdonet.rs).
+
 ## Software License
 The Donet engine is released under the GNU Affero General Public License, version 3.0 (AGPL-3.0), which 
 is a copyleft open source software license. The terms of this license are available in the 
