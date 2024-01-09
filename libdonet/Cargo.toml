@@ -11,9 +11,16 @@ readme = "README.md"
 [lib]
 name = "libdonet"
 
+[features]
+default = ["datagram", "dcfile"]
+full = ["datagram", "dcfile"]
+datagram = ["serde", "strum"]
+dcfile = ["plex", "multimap"]
+
 [dependencies]
-serde = { version = "1", features = ["derive"] }
-strum = { version = "0.25", features = ["derive"] }
+serde = { version = "1", features = ["derive"], optional = true }
+strum = { version = "0.25", features = ["derive"], optional = true }
 strum_macros = { version = "0.25" }
-plex = { version = "0.3" }
-multimap = { version = "0.9" }
+plex = { version = "0.3", optional = true}
+multimap = { version = "0.9", optional = true}
+cfg-if = { version = "1.0.0" }

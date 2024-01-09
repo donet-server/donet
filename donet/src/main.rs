@@ -1,19 +1,35 @@
-// DONET SOFTWARE
-// Copyright (c) 2024, Donet Authors.
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License version 3.
-// You should have received a copy of this license along
-// with this source code in a file named "LICENSE."
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program; if not, write to the Free Software Foundation,
-// Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+//! DONET SOFTWARE
+//!
+//! Copyright (c) 2024, Donet Authors.
+//!
+//! This program is free software; you can redistribute it and/or modify
+//! it under the terms of the GNU Affero General Public License version 3.
+//! You should have received a copy of this license along
+//! with this source code in a file named "LICENSE."
+//!
+//! This program is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+//! GNU General Public License for more details.
+//!
+//! You should have received a copy of the GNU Affero General Public License
+//! along with this program; if not, write to the Free Software Foundation,
+//! Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+//!
+//! <img src="https://github.com/donet-server/donet/blob/master/logo/donet_banner.png?raw=true" height=10%>
+//!
+//! # donet
+//! Donet is a free and open source network engine designed after the Distributed Networking
+//! protocol, as defined in the high-level networking API of the [Panda3D](https://panda3d.org)
+//! game engine, which was originally developed by Disney Interactive (*formerly known as Disney
+//! VR Studios*) to connect with their in-house server technology, the OTP (*Online Theme Park*)
+//! server, which was used to power their massive multiplayer online games, such as Toontown
+//! Online and Pirates of the Caribbean Online, from 2001 to 2013.
+//!
+//! See the project source on [Github](https://github.com/donet-server/donet). Feel free
+//! to also visit the website, [donet-server.org](https://www.donet-server.org).
+//!
+//! If you're looking for the documentation of **libdonet**, click [here](https://libdonet.rs).
 
 pub mod channel_map;
 pub mod config;
@@ -27,7 +43,8 @@ pub mod utils;
 fn main() -> std::io::Result<()> {
     use config::*;
     use libdonet::dcfile::DCFileInterface;
-    use libdonet::{read_dc_files, DCReadResult};
+    use libdonet::globals::DCReadResult;
+    use libdonet::read_dc_files;
     use log::{error, info};
     use service_factory::*;
     use std::fs::File;

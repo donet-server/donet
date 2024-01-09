@@ -15,7 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use crate::globals::{DC_KEYWORDS, DC_VIEW_SUFFIXES};
+use crate::globals::{DC_VIEW_SUFFIXES, HISTORICAL_DC_KEYWORDS};
 use plex::lexer;
 
 #[rustfmt::skip]
@@ -181,7 +181,7 @@ lexer! {
 
     r#"[a-zA-Z_][a-zA-Z0-9_]*"# => {
         // Decide whether this is an identifier, keyword, or view suffix.
-        if DC_KEYWORDS.contains(&text) {
+        if HISTORICAL_DC_KEYWORDS.contains(&text) {
             (DCToken::DCKeyword(text.to_owned()), text)
         } else if DC_VIEW_SUFFIXES.contains(&text) {
             (DCToken::ViewSuffix(text.to_owned()), text)

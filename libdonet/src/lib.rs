@@ -1,4 +1,5 @@
 //! DONET SOFTWARE
+//!
 //! Copyright (c) 2024, Donet Authors.
 //!
 //! This program is free software; you can redistribute it and/or modify
@@ -10,40 +11,69 @@
 //! but WITHOUT ANY WARRANTY; without even the implied warranty of
 //! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 //! GNU General Public License for more details.
-//
+//!
 //! You should have received a copy of the GNU Affero General Public License
 //! along with this program; if not, write to the Free Software Foundation,
 //! Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+//!
+//! <img src="https://github.com/donet-server/donet/blob/master/logo/donet_banner.png?raw=true" height=10%>
+//!
+//! # libdonet
+//! Provides the necessary utilities and definitions for using the Donet networking protocol.
+//!
+//! These utilities include a lexer, parser, and high-level representation of the parsed DC
+//! file, as well as creating datagrams, iterating through datagrams, and the definition of
+//! every message type in the Donet protocol.
+//!
+//! ### Getting Started
+//! The recommended way to get started is to enable all features.
+//! Do this by enabling the `full` feature flag:
+//! ```toml
+//! libdonet = { version = "0.1.0", features = ["full"] }
+//! ```
+//!
+//! ### Feature Flags
+//! The crate provides a set of feature flags to reduce the amount of compiled code.
+//! It is possible to just enable certain features over others.
+//! Below is a list of the available feature flags.
+//!
+//! - **`full`**: Enables all feature flags available for libdonet.
+//! - **`datagram`**: Includes Datagram / Datagram Iterator source for writing network packets.
+//! - **`dcfile`**: Includes the DC file lexer, parser, and DC element structures.
 
 #![warn(unused_extern_crates)]
-
-pub mod byte_order;
-pub mod datagram;
-pub mod dcarray;
-pub mod dcfield;
-pub mod dcfile;
-pub mod dckeyword;
-pub mod dclass;
-pub mod dclexer;
-pub mod dcnumeric;
-pub mod dcparser;
-pub mod dcstruct;
-pub mod dctype;
 pub mod globals;
-mod hashgen;
 
-#[derive(Debug)]
-pub enum DCReadError {
-    ParseError(globals::ParseError),
-    FileError(std::io::Error),
+#[macro_use]
+extern crate cfg_if;
+
+cfg_if! {
+    if #[cfg(feature = "datagram")] {
+        pub mod byte_order;
+        pub mod datagram;
+    }
 }
-pub type DCReadResult = Result<dcfile::DCFile, DCReadError>;
+cfg_if! {
+    if #[cfg(feature = "dcfile")] {
+        pub mod dcarray;
+        pub mod dcfield;
+        pub mod dcfile;
+        pub mod dckeyword;
+        pub mod dclass;
+        pub mod dclexer;
+        pub mod dcnumeric;
+        pub mod dcparser;
+        pub mod dcstruct;
+        pub mod dctype;
+        mod hashgen;
+    }
+}
 
-/* Easy to use interface for the DC file parser; Handles reading
- * the DC files, instantiating the lexer and parser, and either
- * returns the DCFile object or a Parse/File error.
- */
-pub fn read_dc_files(file_paths: Vec<String>) -> DCReadResult {
+/// Easy to use interface for the DC file parser. Handles reading
+/// the DC files, instantiating the lexer and parser, and either
+/// returns the DCFile object or a Parse/File error.
+#[cfg(feature = "dcfile")]
+pub fn read_dc_files(file_paths: Vec<String>) -> globals::DCReadResult {
     use crate::dclexer::Lexer;
     use crate::dcparser::parse;
     use std::fs::File;
@@ -61,11 +91,11 @@ pub fn read_dc_files(file_paths: Vec<String>) -> DCReadResult {
             let res: std::io::Result<usize> = dcf.read_to_string(&mut lexer_input);
             if res.is_err() {
                 // DC file content may not be in proper UTF-8 encoding.
-                return Err(DCReadError::FileError(res.unwrap_err()));
+                return Err(globals::DCReadError::FileError(res.unwrap_err()));
             }
         } else {
             // Failed to open one of the DC files. (most likely permission error)
-            return Err(DCReadError::FileError(io_result.unwrap_err()));
+            return Err(globals::DCReadError::FileError(io_result.unwrap_err()));
         }
     }
 
@@ -75,6 +105,6 @@ pub fn read_dc_files(file_paths: Vec<String>) -> DCReadResult {
     if let Ok(res_ok) = res {
         Ok(res_ok)
     } else {
-        Err(DCReadError::ParseError(res.unwrap_err()))
+        Err(globals::DCReadError::ParseError(res.unwrap_err()))
     }
 }

@@ -15,9 +15,13 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#[cfg(feature = "dcfile")]
+use crate::dcfile;
+#[cfg(feature = "dcfile")]
 use crate::dclexer::{DCToken, Span};
+use cfg_if::cfg_if;
 use std::mem;
-use std::result::Result; // not to be confused with std::io::Result
+use std::result::Result;
 use strum_macros::EnumIter;
 
 // Type Definitions
@@ -47,30 +51,54 @@ pub const BCHAN_CLIENTS: Channel = 10;
 pub const BCHAN_STATESERVERS: Channel = 12;
 pub const BCHAN_DBSERVERS: Channel = 13;
 
-// DC File Constants
-pub static DC_KEYWORDS: &[&str] = &[
-    "ram", "required", "db", "airecv", "ownrecv", "clrecv", "broadcast", "ownsend", "clsend",
-];
-pub static DC_VIEW_SUFFIXES: &[&str] = &["AI", "OV", "UD"];
-pub static DC_MULTIPLE_INHERITANCE: bool = true;
-pub static DC_VIRTUAL_INHERITANCE: bool = true;
-pub static DC_SORT_INHERITANCE_BY_FILE: bool = false;
-pub static MAX_PRIME_NUMBERS: u16 = 1000;
+// ---------- DC File Feature ---------- //
 
-// Error type returned by DC parser
-pub type ParseError = (Option<(DCToken, Span)>, &'static str);
+cfg_if! {
+    if #[cfg(feature = "dcfile")] {
 
-// All possible errors that can be returned by
-// the Datagram and DatagramIterator implementations.
-#[derive(Debug, PartialEq)]
-pub enum DgError {
-    DatagramOverflow,
-    DatagramIteratorEOF,
-    //FieldConstraintViolation,
+        // DC File Constants
+        pub static HISTORICAL_DC_KEYWORDS: &[&str] = &[
+            "ram", "required", "db", "airecv", "ownrecv",
+            "clrecv", "broadcast", "ownsend", "clsend",
+        ];
+        pub static DC_VIEW_SUFFIXES: &[&str] = &["AI", "OV", "UD"];
+        pub static DC_MULTIPLE_INHERITANCE: bool = true;
+        pub static DC_VIRTUAL_INHERITANCE: bool = true;
+        pub static DC_SORT_INHERITANCE_BY_FILE: bool = false;
+        pub static MAX_PRIME_NUMBERS: u16 = 1000;
+
+        // DC Parser Return Types
+        pub type ParseError = (Option<(DCToken, Span)>, &'static str);
+
+        #[derive(Debug)]
+        pub enum DCReadError {
+            ParseError(ParseError),
+            FileError(std::io::Error),
+        }
+        pub type DCReadResult = Result<dcfile::DCFile, DCReadError>;
+    }
 }
 
-pub type DgResult = Result<(), DgError>;
-pub type DgBufferResult = Result<DgSizeTag, DgError>;
+// ---------- Datagram Feature ---------- //
+
+cfg_if! {
+    if #[cfg(feature = "datagram")] {
+
+        // All possible errors that can be returned by
+        // the Datagram and DatagramIterator implementations.
+        #[derive(Debug, PartialEq)]
+        pub enum DgError {
+            DatagramOverflow,
+            DatagramIteratorEOF,
+            //FieldConstraintViolation,
+        }
+
+        pub type DgResult = Result<(), DgError>;
+        pub type DgBufferResult = Result<DgSizeTag, DgError>;
+    }
+}
+
+// ---------- Network Protocol ---------- //
 
 // Utility for converting protocol enumerator to u16 (MsgType)
 pub fn msg_type(proto_enum: Protocol) -> MsgType {
