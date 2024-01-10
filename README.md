@@ -30,6 +30,10 @@ the benefits of safety with Rust, we do our best to guarantee the integrity of t
 We welcome with open arms new contributors to share in the development of Donet.
 
 ## Getting Started
+The Donet repository houses two different Rust projects:
+- **donet** - The Donet daemon source, which includes all the Donet services. See [donet-server.org](https://www.donet-server.org).
+- **libdonet** - The core utilities for Donet services, including Datagrams and the DC file parser. See [libdonet.rs](https://libdonet.rs).
+
 Please read the [introduction to Donet](./docs/01-Introduction.md) for an overview of the project 
 and how the engine works.
 
@@ -37,6 +41,7 @@ If you have any questions, feel free to join [our community Discord server](http
 
 ## Documentation
 Currently there is not much documentation on Donet, as libdonet is still under development.
+
 For the libdonet rust library documentation, visit [libdonet.rs](https://libdonet.rs).
 
 ## Software License
