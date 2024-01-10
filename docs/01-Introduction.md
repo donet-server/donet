@@ -26,11 +26,15 @@ the Donet protocol.
 Distributed Networking is the high-level network API of the Panda3D engine. When a 
 distributed object is created, all interested clients will automatically create a 
 copy of that object. Updates to the object will automatically propagate to the copies.
+Field updates can be culled according to the rules applied to object fields via keywords[^2].
+
+[^2]: Modifies behavior of object fields, such as permissions or culling.
+Refer to the DC file documentation for more information.
 
 The distributed network is composed of several layers: The DC file (*.dc), which defines 
-the communication, or the 'contract', the Donet cluster which handles communication between 
-clients, ClientRepositories which interact and manage the Distributed Objects, 
-and the Distributed Objects themselves.
+the communication, or the network [contract](https://en.wikipedia.org/wiki/Design_by_contract),
+the Donet cluster which handles communication between clients, Client/AI Repositories which
+interact and manage the Distributed Objects, and the Distributed Objects themselves.
 
 The architecture of a Donet server cluster is made up of 6 different kinds of services:
 
@@ -44,9 +48,9 @@ The architecture of a Donet server cluster is made up of 6 different kinds of se
   clients that conform to the communication 'contract' defined in the DC file. It also checks 
   for other details, such as the clients' ownership over Distributed Objects and the visibility 
   (or location) of Distributed Objects. The Client Agent acts as the border between the untrusted 
-  clients and the internal server network's 'safe zone'[^2].
+  clients and the internal server network's 'safe zone'[^3].
 
-[^2]: See the example diagram in this document for context.
+[^3]: See the example diagram in this document for context.
   
 ### **[MD] - Message Director**
   
@@ -74,7 +78,9 @@ The architecture of a Donet server cluster is made up of 6 different kinds of se
   The Database Server service is responsible for the long-term persistence of Distributed Object 
   **fields** that are marked in the DC file with a **"db" keyword**, which tells the Database 
   Server to store them on disk. It stores these fields in a **SQL database**, and can **update or 
-  query** the Distributed Object's field's value.
+  query** the Distributed Object's field's value. The game/application developer does not need to
+  handle Database transactions with the help of this service. The successor of this component is
+  the Database State Server.
   
 ### **[DBSS] - Database State Server**
   
@@ -87,7 +93,7 @@ The architecture of a Donet server cluster is made up of 6 different kinds of se
   useful if you have an avatar object that is currently offline and stored on the database. 
   If you would like to award a prize to the avatar while they're offline, the DBSS allows 
   you to query and manipulate the object even though it is not currently needed in memory 
-  as the avatar is not actively 'present' in the visibility tree.
+  as the avatar is not actively 'present' in the State Server's visibility tree.
   
 ### **[EL] - Event Logger**
   
@@ -96,6 +102,7 @@ The architecture of a Donet server cluster is made up of 6 different kinds of se
   a Message Director instance, which then routes it to the Event Logger. The Event Logger 
   is a useful tool for providing instrumentation to your server cluster and allows the 
   developer to analyze data in the game, depending on what the developer chooses to log.
+  The Event Logger is the only service that uses the UDP protocol.
 
 <br>
 
@@ -103,14 +110,14 @@ The following diagram shows an example of a Donet cluster:
 
 <img src="./images/cluster_diagram.png" width=50% />
 
-Donet can be configured to serve as all these services under one daemon[^3], which is 
+Donet can be configured to serve as all these services under one daemon[^4], which is 
 handy for development on your local machine. For a production environment, many instances
 of Donet can be running on different machines and configured to serve as one service each. 
 This configuration would be in a **.toml file** that the Donet daemon would read on startup.
 The program will look for a `daemon.toml` file by default, but you can specify a different
-file name via argument. (See `donet --help` for more information.)
+file name via argument. (See `donetd --help` for more information.)
 
-[^3]: Note in the diagram that every service requires its own Message Director service.
+[^4]: Note in the diagram that every service requires its own Message Director service.
 All of the services' MDs make connections to the 'upstream MD', which in this case would
 be directly to the master message director. In some instances, such as in development 
 environments, all services will make a direct connection to the master message director.
@@ -138,7 +145,7 @@ list below to learn and understand the different concepts and terms used in Done
 - **DoId**
   
   Distributed Object Identifier. This is a **32-bit long identifier** that is generated
-  at runtime to identify a Distributed Object that exists in the State Server.
+  by the server at runtime to identify a Distributed Object that exists in the State Server.
 
 - **DC**
   
@@ -151,7 +158,7 @@ list below to learn and understand the different concepts and terms used in Done
   Artificial Intelligence. The name for this is arbitrary, as it is not in any way 
   related to the field of machine learning. An AI is a process on the server cluster's 
   internal network that acts as a client connected directly to a Message Director instance. 
-  This means that all AI clients bypass the Client Agent, as they are inside of the 'trusted zone.' 
+  This means that all AI clients bypass the Client Agent, as they are inside of the 'trusted zone[^3].' 
   AI processes have **authority over Distributed Objects** and host the game/application's logic.
   
 - **UD**
