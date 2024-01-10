@@ -6,4 +6,4 @@ rm -rf ../docs
 echo "<meta http-equiv=\"refresh\" content=\"0; url=libdonet\">" > ../target/doc/index.html
 cp -r ../target/doc ../docs
 touch ../docs/CNAME
-echo "libdonet.rs" > ../docs
+echo "libdonet.rs" > ../docs/CNAME
