@@ -17,7 +17,7 @@ export function createValidator() {
     return class Validator extends CommitValidator {
         static rx_parser = new RegExp('^(.*): (.*)$')
         static rx_category = new RegExp('^|(?:[a-z0-9]{2,}[_|-]?)+$')
-        static rx_description = new RegExp('^[A-Z0-9]\\S*(?:\\s\\S*)+[^.!?,\\s]$')
+        static rx_description = new RegExp('^[A-Za-z0-9]\\S*(?:\\s\\S*)+[^.!?,\\s]$')
 
         validate_message(summary, _description) {
             const match = Validator.rx_parser.exec(summary)
@@ -37,7 +37,7 @@ export function createValidator() {
             if (!Validator.rx_description.test(match[2])) {
                 return new Result(
                     Status.Failure,
-                    'Invalid description. It should start with an uppercase letter or number, ' +
+                    'Invalid description. It should start with a letter or number, ' +
                     'should be not be too short and should not end with punctuation.'
                 )
             }

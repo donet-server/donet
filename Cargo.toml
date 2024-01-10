@@ -12,13 +12,13 @@ resolver = "2"
 [workspace.package]
 license = "AGPL-3.0-only"
 authors = [
-    "maxrdz <me@maxrdz.com>"
+    "Max Rodriguez <me@maxrdz.com>"
 ]
 homepage = "https://github.com/donet-server/donet/"
 repository = "https://github.com/donet-server/donet/"
 
 [profile.release]
-codegen-units = 1 # Won't affect GH workflow times
+codegen-units = 1 # Best LLVM optimization
 panic = "abort" # Remove unwind code on release
 opt-level = 3
 lto = true

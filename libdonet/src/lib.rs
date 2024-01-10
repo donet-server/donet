@@ -41,7 +41,9 @@
 //! - **`datagram`**: Includes Datagram / Datagram Iterator source for writing network packets.
 //! - **`dcfile`**: Includes the DC file lexer, parser, and DC element structures.
 
+#![doc(html_logo_url = "https://raw.githubusercontent.com/donet-server/donet/master/logo/donet_logo_v3.png")]
 #![warn(unused_extern_crates)]
+
 pub mod globals;
 
 #[macro_use]

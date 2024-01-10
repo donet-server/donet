@@ -1,7 +1,0 @@
-[build]
-jobs = 2
-rustc = "rustc"
-target-dir = "target"
-
-[cargo-new]
-vcs = "git"
