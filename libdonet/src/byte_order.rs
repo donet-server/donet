@@ -15,12 +15,18 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-// Detect system endianness (byte order)
+//! Utils for swapping little-endian bytes to the compiling
+//! processor's native endianness (byte order).
+
+/// Swaps 2 bytes in little endian byte order to big endian.
+/// Returns the input if the processor is little endian.
 #[cfg(target_endian = "big")]
 pub fn swap_le_16(v: u16) -> u16 {
     return (v & 0x00ff) << 8 | (v & 0xff00) >> 8;
 }
 
+/// Swaps 4 bytes in little endian byte order to big endian.
+/// Returns the input if the processor is little endian.
 #[rustfmt::skip]
 #[cfg(target_endian = "big")]
 pub fn swap_le_32(v: u32) -> u32 {
@@ -30,7 +36,10 @@ pub fn swap_le_32(v: u32) -> u32 {
         | (v & 0xff000000) >> 24;
 }
 
+/// Swaps 8 bytes in little endian byte order to big endian.
+/// Returns the input if the processor is little endian.
 #[cfg(target_endian = "big")]
+#[rustdoc::doc(hidden)]
 pub fn swap_le_64(v: u64) -> u64 {
     return (v & 0x00000000000000ff) << 56
         | (v & 0x000000000000ff00) << 40
@@ -42,16 +51,22 @@ pub fn swap_le_64(v: u64) -> u64 {
         | (v & 0xff00000000000000) >> 56;
 }
 
+/// Swaps 2 bytes in little endian byte order to big endian.
+/// Returns the input if the processor is little endian.
 #[cfg(target_endian = "little")]
 pub fn swap_le_16(v: u16) -> u16 {
     v // no need to swap bytes
 }
 
+/// Swaps 4 bytes in little endian byte order to big endian.
+/// Returns the input if the processor is little endian.
 #[cfg(target_endian = "little")]
 pub fn swap_le_32(v: u32) -> u32 {
     v
 }
 
+/// Swaps 8 bytes in little endian byte order to big endian.
+/// Returns the input if the processor is little endian.
 #[cfg(target_endian = "little")]
 pub fn swap_le_64(v: u64) -> u64 {
     v
