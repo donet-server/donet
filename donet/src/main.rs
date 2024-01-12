@@ -104,7 +104,7 @@ fn main() -> std::io::Result<()> {
 
     if want_dc_check {
         if let Some(dc_file) = dc_check_file {
-            let dc_read: DCReadResult = read_dc_files(vec![dc_file.to_string()]);
+            let dc_read: DCReadResult = read_dc_files(vec![dc_file.to_owned()]);
 
             if let Ok(mut dc_file) = dc_read {
                 info!("No issues found. DC File Hash: {}", dc_file.get_pretty_hash());

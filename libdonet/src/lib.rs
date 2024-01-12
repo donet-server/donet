@@ -75,6 +75,61 @@ cfg_if! {
 /// Easy to use interface for the DC file parser. Handles reading
 /// the DC files, instantiating the lexer and parser, and either
 /// returns the DCFile object or a Parse/File error.
+///
+/// ## Example Usage
+/// The following is an example of parsing a simple DC file string,
+/// printing its DC hash in hexadecimal notation, and accessing
+/// the elements of a defined Distributed Class:
+/// ```rust
+/// use libdonet::dcfile::DCFileInterface;
+/// use libdonet::dclass::{DClass, DClassInterface};
+/// use libdonet::globals::DCReadResult;
+/// use libdonet::read_dc_files;
+///
+/// // All elements in a DC File object are thread-safe!
+/// use std::sync::{Arc, Mutex, MutexGuard};
+///
+/// let dc_file: &str = "from game.ai import AnonymousContact/UD
+///                      from game.ai import LoginManager/AI
+///                      from game.world import DistributedWorld/AI
+///                      from game.avatar import DistributedAvatar/AI/OV
+///
+///                      dclass AnonymousContact {
+///                        login(string username, string password) clsend airecv;
+///                      };
+///
+///                      dclass LoginManager {
+///                        login(channel client, string username, string password) airecv;
+///                      };
+///
+///                      dclass DistributedWorld {
+///                        create_avatar(channel client) airecv;
+///                      };
+///
+///                      dclass DistributedAvatar {
+///                        set_xyzh(int16 x, int16 y, int16 z, int16 h) broadcast required;
+///                        indicate_intent(int16 / 10, int16 / 10) ownsend airecv;
+///                      };";
+///
+/// let dc_read: DCReadResult = read_dc_files(vec![dc_file.into()]);
+///
+/// if let Ok(mut dc_file) = dc_read {
+///     println!("{}", dc_file.get_pretty_hash()); // Print the DC File Hash
+///     
+///     let avatar_class: Arc<Mutex<DClass>> = dc_file.get_dclass_by_id(3);
+///     let mut locked_class: MutexGuard<'_, DClass> = avatar_class.lock().unwrap();
+///
+///     println!("{}", locked_class.get_name());
+/// }
+/// ```
+///
+/// The output of the program would be the following:
+/// ```txt
+/// 0x01a5Fb0c
+/// DistributedAvatar
+/// ```
+/// <br><img src="https://c.tenor.com/myQHgyWQQ9sAAAAd/tenor.gif">
+///
 #[cfg(feature = "dcfile")]
 pub fn read_dc_files(file_paths: Vec<String>) -> globals::DCReadResult {
     use crate::dclexer::Lexer;
