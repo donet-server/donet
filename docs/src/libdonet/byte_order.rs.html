@@ -105,6 +105,21 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#103" id="103">103</a>
 <a href="#104" id="104">104</a>
 <a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
 </pre></div><pre class="rust"><code><span class="comment">// DONET SOFTWARE
 // Copyright (c) 2024, Donet Authors.
 //
@@ -122,13 +137,19 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-// Detect system endianness (byte order)
+</span><span class="doccomment">//! Utils for swapping little-endian bytes to the compiling
+//! processor&#39;s native endianness (byte order).
+
+/// Swaps 2 bytes in little endian byte order to big endian.
+/// Returns the input if the processor is little endian.
 </span><span class="attr">#[cfg(target_endian = <span class="string">&quot;big&quot;</span>)]
 </span><span class="kw">pub fn </span>swap_le_16(v: u16) -&gt; u16 {
     <span class="kw">return </span>(v &amp; <span class="number">0x00ff</span>) &lt;&lt; <span class="number">8 </span>| (v &amp; <span class="number">0xff00</span>) &gt;&gt; <span class="number">8</span>;
 }
 
-<span class="attr">#[rustfmt::skip]
+<span class="doccomment">/// Swaps 4 bytes in little endian byte order to big endian.
+/// Returns the input if the processor is little endian.
+</span><span class="attr">#[rustfmt::skip]
 #[cfg(target_endian = <span class="string">&quot;big&quot;</span>)]
 </span><span class="kw">pub fn </span>swap_le_32(v: u32) -&gt; u32 {
     <span class="kw">return </span>(v &amp; <span class="number">0x000000ff</span>) &lt;&lt; <span class="number">24
@@ -137,7 +158,10 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         </span>| (v &amp; <span class="number">0xff000000</span>) &gt;&gt; <span class="number">24</span>;
 }
 
-<span class="attr">#[cfg(target_endian = <span class="string">&quot;big&quot;</span>)]
+<span class="doccomment">/// Swaps 8 bytes in little endian byte order to big endian.
+/// Returns the input if the processor is little endian.
+</span><span class="attr">#[cfg(target_endian = <span class="string">&quot;big&quot;</span>)]
+#[rustdoc::doc(hidden)]
 </span><span class="kw">pub fn </span>swap_le_64(v: u64) -&gt; u64 {
     <span class="kw">return </span>(v &amp; <span class="number">0x00000000000000ff</span>) &lt;&lt; <span class="number">56
         </span>| (v &amp; <span class="number">0x000000000000ff00</span>) &lt;&lt; <span class="number">40
@@ -149,17 +173,23 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         </span>| (v &amp; <span class="number">0xff00000000000000</span>) &gt;&gt; <span class="number">56</span>;
 }
 
-<span class="attr">#[cfg(target_endian = <span class="string">&quot;little&quot;</span>)]
+<span class="doccomment">/// Swaps 2 bytes in little endian byte order to big endian.
+/// Returns the input if the processor is little endian.
+</span><span class="attr">#[cfg(target_endian = <span class="string">&quot;little&quot;</span>)]
 </span><span class="kw">pub fn </span>swap_le_16(v: u16) -&gt; u16 {
     v <span class="comment">// no need to swap bytes
 </span>}
 
-<span class="attr">#[cfg(target_endian = <span class="string">&quot;little&quot;</span>)]
+<span class="doccomment">/// Swaps 4 bytes in little endian byte order to big endian.
+/// Returns the input if the processor is little endian.
+</span><span class="attr">#[cfg(target_endian = <span class="string">&quot;little&quot;</span>)]
 </span><span class="kw">pub fn </span>swap_le_32(v: u32) -&gt; u32 {
     v
 }
 
-<span class="attr">#[cfg(target_endian = <span class="string">&quot;little&quot;</span>)]
+<span class="doccomment">/// Swaps 8 bytes in little endian byte order to big endian.
+/// Returns the input if the processor is little endian.
+</span><span class="attr">#[cfg(target_endian = <span class="string">&quot;little&quot;</span>)]
 </span><span class="kw">pub fn </span>swap_le_64(v: u64) -&gt; u64 {
     v
 }
