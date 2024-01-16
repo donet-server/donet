@@ -23,7 +23,7 @@ use strum_macros::EnumIs;
  * to keep compatibility with Astron's DC hash inputs.
  */
 #[repr(u8)] // 8-bit alignment, unsigned
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 #[rustfmt::skip]
 pub enum DCTypeEnum {
     // Numeric Types
@@ -52,7 +52,7 @@ pub struct DCTypeDefinition {
 
 pub trait DCTypeDefinitionInterface {
     fn new() -> DCTypeDefinition;
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
+    fn dctype_generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn get_dc_type(&self) -> DCTypeEnum;
     fn is_variable_length(&self) -> bool;
@@ -72,7 +72,11 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
         }
     }
 
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+    /// Generates the hash for this DC Type element.
+    /// Method is prefixed with 'dctype_' to avoid collisions
+    /// with fake 'child' structs, that 'inherit' DC Type via
+    /// overriding the default Deref/DerefMut traits.
+    fn dctype_generate_hash(&self, hashgen: &mut DCHashGenerator) {
         hashgen.add_int(u32::from(self.data_type.clone() as u8));
         if self.alias.is_some() {
             hashgen.add_string(self.alias.clone().unwrap())
@@ -111,7 +115,7 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
 // ---------- DC Number ---------- //
 
 #[rustfmt::skip]
-#[derive(Clone, EnumIs)]
+#[derive(Clone, PartialEq, EnumIs)]
 pub enum DCNumberType {
     None = 0, Int, UInt, Float,
 }
@@ -128,6 +132,17 @@ pub union DCNumberValueUnion {
 pub struct DCNumber {
     pub number_type: DCNumberType,
     pub value: DCNumberValueUnion,
+}
+
+// We have to manually implement the 'PartialEq' trait
+// due to the usage of a union data type.
+impl PartialEq for DCNumber {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.number_type == rhs.number_type
+    }
+    fn ne(&self, rhs: &Self) -> bool {
+        self.number_type != rhs.number_type
+    }
 }
 
 impl DCNumber {

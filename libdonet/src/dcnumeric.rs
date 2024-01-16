@@ -27,12 +27,12 @@ use std::mem::size_of;
 #[derive(Clone)]
 pub struct DCNumericRange {
     range_type: DCNumberType,
-    min: DCNumber,
-    max: DCNumber,
+    pub min: DCNumber,
+    pub max: DCNumber,
 }
 
 impl DCNumericRange {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut default_min: DCNumber = DCNumber::new_floating_point(f64::NEG_INFINITY);
         let mut default_max: DCNumber = DCNumber::new_floating_point(f64::INFINITY);
 
@@ -46,7 +46,7 @@ impl DCNumericRange {
         }
     }
 
-    fn new_integer_range(min: i64, max: i64) -> Self {
+    pub fn new_integer_range(min: i64, max: i64) -> Self {
         Self {
             range_type: DCNumberType::Int,
             min: DCNumber::new_integer(min),
@@ -54,7 +54,7 @@ impl DCNumericRange {
         }
     }
 
-    fn new_unsigned_integer_range(min: u64, max: u64) -> Self {
+    pub fn new_unsigned_integer_range(min: u64, max: u64) -> Self {
         Self {
             range_type: DCNumberType::UInt,
             min: DCNumber::new_unsigned_integer(min),
@@ -62,7 +62,7 @@ impl DCNumericRange {
         }
     }
 
-    fn new_floating_point_range(min: f64, max: f64) -> Self {
+    pub fn new_floating_point_range(min: f64, max: f64) -> Self {
         Self {
             range_type: DCNumberType::Float,
             min: DCNumber::new_floating_point(min),
@@ -70,7 +70,7 @@ impl DCNumericRange {
         }
     }
 
-    fn contains(&self, num: DCNumber) -> bool {
+    pub fn contains(&self, num: DCNumber) -> bool {
         match self.min.number_type {
             DCNumberType::None => true,
             DCNumberType::Int => unsafe {
@@ -92,7 +92,7 @@ impl DCNumericRange {
         }
     }
 
-    fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.range_type.is_none() // using strum macro
     }
 }
@@ -202,7 +202,7 @@ impl DCNumericTypeInterface for DCNumericType {
     }
 
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self.parent.generate_hash(hashgen);
+        self.dctype_generate_hash(hashgen);
         hashgen.add_int(u32::from(self.divisor));
 
         if self.has_modulus() {
