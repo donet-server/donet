@@ -15,11 +15,11 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct DCStruct {}
 
 impl DCStruct {
-    pub fn new() -> DCStruct {
-        DCStruct {}
+    pub fn new() -> Self {
+        Self::default()
     }
 }

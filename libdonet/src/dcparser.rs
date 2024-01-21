@@ -19,8 +19,14 @@
  * as they go off in the parser grammar definitions, which we are writing
  * just as the plex crate readme says we should, so everything is okay.
  */
-#![allow(clippy::type_complexity, clippy::redundant_field_names, clippy::ptr_arg)]
-#![allow(clippy::redundant_closure_call, clippy::enum_variant_names)]
+#![allow(
+    clippy::type_complexity,
+    clippy::redundant_field_names,
+    clippy::ptr_arg,
+    clippy::redundant_closure_call,
+    clippy::enum_variant_names,
+    clippy::let_unit_value
+)]
 
 use crate::dcfile::{DCFile, DCFileInterface, DCImport};
 use crate::dckeyword;

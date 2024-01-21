@@ -51,7 +51,7 @@ pub struct DCTypeDefinition {
 }
 
 pub trait DCTypeDefinitionInterface {
-    fn new() -> DCTypeDefinition;
+    fn new() -> Self;
     fn dctype_generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn get_dc_type(&self) -> DCTypeEnum;
@@ -64,8 +64,8 @@ pub trait DCTypeDefinitionInterface {
 }
 
 impl DCTypeDefinitionInterface for DCTypeDefinition {
-    fn new() -> DCTypeDefinition {
-        DCTypeDefinition {
+    fn new() -> Self {
+        Self {
             alias: None,
             data_type: DCTypeEnum::TInvalid,
             size: 0_u16,
@@ -92,7 +92,7 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
     }
 
     fn get_size(&self) -> DgSizeTag {
-        self.size.clone()
+        self.size
     }
 
     fn has_alias(&self) -> bool {
@@ -140,17 +140,20 @@ impl PartialEq for DCNumber {
     fn eq(&self, rhs: &Self) -> bool {
         self.number_type == rhs.number_type
     }
-    fn ne(&self, rhs: &Self) -> bool {
-        self.number_type != rhs.number_type
+}
+
+impl Default for DCNumber {
+    fn default() -> Self {
+        Self {
+            number_type: DCNumberType::None,
+            value: DCNumberValueUnion { integer: 0_i64 },
+        }
     }
 }
 
 impl DCNumber {
     pub fn new() -> Self {
-        Self {
-            number_type: DCNumberType::None,
-            value: DCNumberValueUnion { integer: 0_i64 },
-        }
+        Self::default()
     }
     pub fn new_integer(num: i64) -> Self {
         Self {

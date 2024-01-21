@@ -104,10 +104,14 @@ fn main() -> std::io::Result<()> {
 
     if want_dc_check {
         if let Some(dc_file) = dc_check_file {
+            info!("libdonet: DC read of {}", dc_file);
             let dc_read: DCReadResult = read_dc_files(vec![dc_file.to_owned()]);
 
             if let Ok(mut dc_file) = dc_read {
-                info!("No issues found. DC File Hash: {}", dc_file.get_pretty_hash());
+                let h: u32 = dc_file.get_hash();
+                let sh: i32 = h as i32;
+                let ph: String = dc_file.get_pretty_hash();
+                info!("No issues found. File hash is {} (signed {}, hex {})", h, sh, ph);
                 return Ok(());
             }
             error!("Failed to parse DC file: {:?}", dc_read.unwrap_err());
@@ -216,7 +220,7 @@ fn main() -> std::io::Result<()> {
 
 fn print_help_page(config_path: &str) {
     println!(
-        "Usage:    donet [options] ... [CONFIG_FILE]\n\
+        "Usage:    donetd [options] ... [CONFIG_FILE]\n\
         \n\
         Donet - Distributed Object Network Engine.\n\
         This binary will look for a configuration file (.toml)\n\
@@ -224,7 +228,7 @@ fn print_help_page(config_path: &str) {
         \n\
         -h, --help      Print the help page.\n\
         -v, --version   Print Donet binary build version & info.\n\
-        -c, --check-dc  Run the DC parser on the given DC file.\n",
+        -c, --check-dc  Run the libdonet DC parser on the given DC file.\n",
         config_path
     );
 }

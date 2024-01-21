@@ -61,13 +61,19 @@ impl PrimeNumberGenerator {
     }
 }
 
-impl DCHashGenerator {
-    pub fn new() -> DCHashGenerator {
-        DCHashGenerator {
+impl Default for DCHashGenerator {
+    fn default() -> Self {
+        Self {
             hash: 0_u32,
             index: 0_u16,
             primes: PrimeNumberGenerator::new(),
         }
+    }
+}
+
+impl DCHashGenerator {
+    pub fn new() -> Self {
+        Self::default()
     }
     // Adds another integer to the hash so far.
     pub fn add_int(&mut self, number: u32) {
@@ -89,7 +95,7 @@ impl DCHashGenerator {
     }
 
     pub const fn get_hash(&self) -> DCFileHash {
-        self.hash & 0xffffffff
+        self.hash
     }
 }
 

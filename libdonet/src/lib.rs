@@ -147,9 +147,9 @@ pub fn read_dc_files(file_paths: Vec<String>) -> globals::DCReadResult {
     for io_result in file_results {
         if let Ok(mut dcf) = io_result {
             let res: std::io::Result<usize> = dcf.read_to_string(&mut lexer_input);
-            if res.is_err() {
+            if let Err(res_err) = res {
                 // DC file content may not be in proper UTF-8 encoding.
-                return Err(globals::DCReadError::FileError(res.unwrap_err()));
+                return Err(globals::DCReadError::FileError(res_err));
             }
         } else {
             // Failed to open one of the DC files. (most likely permission error)

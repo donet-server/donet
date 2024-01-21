@@ -42,7 +42,7 @@ impl DCArrayTypeInterface for DCArrayType {
         let mut new_array_type: DCArrayType = DCArrayType {
             parent: DCTypeDefinition::new(),
             element_type: element_type,
-            array_size: 0_16,
+            array_size: 0_u16,
             array_range: size,
         };
 
