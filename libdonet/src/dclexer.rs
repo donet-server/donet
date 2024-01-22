@@ -142,7 +142,8 @@ lexer! {
     // Rust doesn't support lookahead/lookbehind regex, so for character literals
     // we match the entire ''x'' and extract the second (nth(1)) character.
     r#"'.'"# => (DCToken::CharacterLiteral(text.chars().nth(1).unwrap()), text),
-    r#"\"[^\"]+\""# => (DCToken::StringLiteral(text.to_owned().replace('\"', "")), text),
+    // Note that there is no need to escape double quotes in rust regex.
+    r#""[^"]*""# => (DCToken::StringLiteral(text.to_owned().replace('\"', "")), text),
 
     // Signed/unsigned integer data types *could* be a single token,
     // but parsing is easier if they are all individual lexical tokens.
@@ -209,7 +210,7 @@ lexer! {
     r#"\="# => (DCToken::Equals, text),
     r#"\:"# => (DCToken::Colon, text),
     r#"."# => {
-        panic!("dclexer: Found an unexpected character: {}", text);
+        panic!("dclexer: Found an unexpected character: '{}'", text);
     }
 }
 

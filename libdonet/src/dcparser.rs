@@ -550,6 +550,7 @@ parser! {
     type_value: () {
         DecimalLiteral(_) => {},
         CharacterLiteral(_) => {},
+        StringLiteral(_) => {},
         HexLiteral(_) => {},
         signed_integer[_] => {},
         array_value => {},
