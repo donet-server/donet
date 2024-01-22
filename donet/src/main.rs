@@ -40,6 +40,15 @@ pub mod network;
 pub mod service_factory;
 pub mod utils;
 
+#[derive(Clone, Copy)]
+enum FlagArguments {
+    DCFilePath,
+}
+static BIN_NAME: &str = "donetd";
+static VERSION_STRING: &str = "0.1.0";
+static DEFAULT_TOML: &str = "daemon.toml";
+static GIT_SHA1: &str = env!("GIT_SHA1");
+
 fn main() -> std::io::Result<()> {
     use config::*;
     use libdonet::dcfile::DCFileInterface;
@@ -52,74 +61,81 @@ fn main() -> std::io::Result<()> {
     use tokio::runtime::{Builder, Runtime};
     use tokio::task::JoinHandle;
 
-    static VERSION_STRING: &str = "0.1.0";
-    static GIT_SHA1: &str = env!("GIT_SHA1");
-    let mut config_file: &str = "daemon.toml"; // default
     let args: Vec<String> = std::env::args().collect();
-
+    let mut config_file: &str = DEFAULT_TOML;
     let mut want_dc_check: bool = false;
-    let mut dc_check_file: Option<&String> = None;
-    let mut consumed_next_arg: bool = false;
+    let mut dc_check_files: Vec<String> = vec![];
+    let mut expecting_flag_argument: Option<FlagArguments> = None;
 
     if args.len() > 1 {
         for item in args.iter().enumerate() {
             let (index, argument): (usize, &String) = item;
-            if (index == 0) || consumed_next_arg {
-                consumed_next_arg = false;
-                continue;
+            if index == 0 {
+                continue; // skip invoked binary name
             }
             if argument.starts_with('-') {
                 if argument == "-h" || argument == "--help" {
-                    print_help_page(config_file);
+                    print_help_page();
                     return Ok(());
                 } else if argument == "-v" || argument == "--version" {
                     print_version(VERSION_STRING, GIT_SHA1);
                     return Ok(());
                 } else if argument == "-c" || argument == "--check-dc" {
-                    // Consume extra argument, catch error if out of arguments.
-                    if let Some(dc_filename) = args.get(index + 1) {
-                        consumed_next_arg = true;
-                        want_dc_check = true;
-                        dc_check_file = Some(dc_filename);
-                    } else {
-                        println!("donet: {}: Missing filename argument.\n", argument);
-                        print_help_page(config_file);
-                        return Ok(());
-                    }
+                    want_dc_check = true;
+                    expecting_flag_argument = Some(FlagArguments::DCFilePath);
                     continue;
                 } else {
-                    println!("donet: {}: Invalid argument.\n", argument);
-                    print_help_page(config_file);
+                    println!("{}: {}: Invalid flag.\n", BIN_NAME, argument);
+                    print_help_page();
                     return Ok(());
                 }
+            } else if let Some(expect_flag_arg) = expecting_flag_argument {
+                match expect_flag_arg {
+                    FlagArguments::DCFilePath => {
+                        dc_check_files.push(argument.to_owned());
+
+                        // Look ahead to see if we should expect more args.
+                        if let Some(lookahead) = args.get(index + 1) {
+                            if !lookahead.ends_with(".dc") {
+                                expecting_flag_argument = None;
+                            }
+                            continue;
+                        }
+                        expecting_flag_argument = None;
+                    }
+                }
             } else if index == (args.len() - 1) {
-                // last argument given & doesn't match any of the above,
+                // last argument given & we're not expecting more arguments,
                 // so it must be the configuration file path given.
                 config_file = argument.as_str();
                 break;
+            } else {
+                println!("{}: {}: Invalid argument.\n", BIN_NAME, argument);
+                print_help_page();
+                return Ok(());
             }
+        }
+        if expecting_flag_argument.is_some() {
+            println!("{}: Expected more arguments.\n", BIN_NAME);
+            print_help_page();
+            return Ok(());
         }
     }
     logger::initialize_logger()?;
 
     if want_dc_check {
-        if let Some(dc_file) = dc_check_file {
-            info!("libdonet: DC read of {}", dc_file);
-            let dc_read: DCReadResult = read_dc_files(vec![dc_file.to_owned()]);
+        info!("libdonet: DC read of {:?}", dc_check_files);
+        let dc_read: DCReadResult = read_dc_files(dc_check_files.to_owned());
 
-            if let Ok(mut dc_file) = dc_read {
-                let h: u32 = dc_file.get_hash();
-                let sh: i32 = h as i32;
-                let ph: String = dc_file.get_pretty_hash();
-                info!("No issues found. File hash is {} (signed {}, hex {})", h, sh, ph);
-                return Ok(());
-            }
-            error!("Failed to parse DC file: {:?}", dc_read.unwrap_err());
-            return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
-        } else {
-            error!("No DC filename provided. Cannot do DC read.");
-            return Err(Error::new(ErrorKind::InvalidInput, "No DC file given."));
+        if let Ok(mut dc_file) = dc_read {
+            let h: u32 = dc_file.get_hash();
+            let sh: i32 = h as i32;
+            let ph: String = dc_file.get_pretty_hash();
+            info!("No issues found. File hash is {} (signed {}, hex {})", h, sh, ph);
+            return Ok(());
         }
+        error!("Failed to parse DC file: {:?}", dc_read.unwrap_err());
+        return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
     }
 
     // Read the daemon configuration file
@@ -218,9 +234,9 @@ fn main() -> std::io::Result<()> {
     tokio_runtime.block_on(daemon_main)
 }
 
-fn print_help_page(config_path: &str) {
+fn print_help_page() {
     println!(
-        "Usage:    donetd [options] ... [CONFIG_FILE]\n\
+        "Usage:    {} [options] ... [CONFIG_FILE]\n\
         \n\
         Donet - Distributed Object Network Engine.\n\
         This binary will look for a configuration file (.toml)\n\
@@ -229,7 +245,7 @@ fn print_help_page(config_path: &str) {
         -h, --help      Print the help page.\n\
         -v, --version   Print Donet binary build version & info.\n\
         -c, --check-dc  Run the libdonet DC parser on the given DC file.\n",
-        config_path
+        BIN_NAME, DEFAULT_TOML
     );
 }
 
