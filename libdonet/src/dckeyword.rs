@@ -15,6 +15,10 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+use crate::hashgen::DCHashGenerator;
+use multimap::MultiMap;
+use std::sync::{Arc, Mutex};
+
 pub type HistoricalFlag = u16;
 
 #[derive(Debug)]
@@ -58,5 +62,42 @@ impl DCKeywordInterface for DCKeyword {
 
     fn clear_historical_flag(&mut self) {
         self.historical_flag = !0;
+    }
+}
+
+pub struct DCKeywordList {
+    keywords: Vec<Mutex<DCKeyword>>,
+    keywords_by_name: MultiMap<String, Arc<Mutex<DCKeyword>>>,
+    flags: HistoricalFlag,
+}
+
+pub enum HasKeyword {
+    ByStruct(DCKeyword),
+    ByName(String),
+}
+
+pub trait DCKeywordListInterface {
+    fn new() -> DCKeywordList;
+    fn dckeywordlist_generate_hash(&self, hashgen: &mut DCHashGenerator);
+
+    fn add_keyword(&mut self, keyword: DCKeyword) -> Result<(), ()>;
+    fn get_num_keywords(&self) -> u16;
+
+    fn has_keyword(&self, kw: HasKeyword) -> bool;
+
+    fn get_keyword(&self, index: u16) -> Arc<Mutex<DCKeyword>>;
+    fn get_keyword_by_name(&self, name: String) -> Arc<Mutex<DCKeyword>>;
+
+    fn compare_keyword(&self, target: DCKeyword) -> bool;
+    fn clear_keywords(&mut self);
+}
+
+impl Default for DCKeywordList {
+    fn default() -> Self {
+        Self {
+            keywords: vec![],
+            keywords_by_name: MultiMap::new(),
+            flags: !0_u16,
+        }
     }
 }
