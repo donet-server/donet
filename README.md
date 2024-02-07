@@ -37,7 +37,25 @@ The Donet repository houses two different Rust projects:
 Please read the [introduction to Donet](./docs/01-Introduction.md) for an overview of the project 
 and how the engine works.
 
-If you have any questions, feel free to join [our community Discord server](https://discord.gg/T6jGjEutfy).
+Before starting your own contribution to Donet, please read over the [Contributing Guidelines](./CONTRIBUTING.md). If you are a first
+time contributor to the project, please add your name and Git email address to the [CONTRIBUTORS.md](./CONTRIBUTORS.md) markdown file.
+You may also use your GitHub username as your name. If your contribution includes modifications to source code, please add your
+name and Git email in the [Cargo.toml](./Cargo.toml) file as an author of this project.
+
+To build Donet, run the following under the project directory:
+```sh
+cargo build --release
+```
+
+If you are working on a contribution to either the Donet daemon or libdonet, please run code linting and unit testing before pushing:
+```sh
+cargo clippy
+cargo fmt --all -- --check
+cargo test
+```
+These checks should go over all source files in both `donet/` and `libdonet/` source directories.
+
+If you have any further questions, feel free to join [our community Discord server](https://discord.gg/T6jGjEutfy).
 
 ## Documentation
 Currently there is not much documentation on Donet, as libdonet is still under development.
