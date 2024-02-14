@@ -19,14 +19,16 @@ use crate::hashgen::DCHashGenerator;
 use multimap::MultiMap;
 use std::sync::{Arc, Mutex};
 
-pub type HistoricalFlag = u16;
+/// This is a flag bitmask for historical keywords.
+/// Panda uses a C/C++ 'int' for this, which is stored
+/// as 4 bytes in modern 32-bit and 64-bit C/C++ compilers.
+pub type HistoricalFlag = u32;
 
 #[derive(Debug)]
 pub struct DCKeyword {
     name: String,
-    /* This flag is only kept for historical reasons, so we can
-     * preserve the DC file's hash code if no new flags are in use.
-     */
+    // This flag is only kept for historical reasons, so we can
+    // preserve the DC file's hash code if no new flags are in use.
     historical_flag: HistoricalFlag,
 }
 
@@ -65,15 +67,21 @@ impl DCKeywordInterface for DCKeyword {
     }
 }
 
-pub struct DCKeywordList {
-    keywords: Vec<Mutex<DCKeyword>>,
-    keywords_by_name: MultiMap<String, Arc<Mutex<DCKeyword>>>,
-    flags: HistoricalFlag,
-}
+/// A map of key/value pairs mapping keyword names to DCKeyword struct pointers.
+pub type KeywordName2Keyword = MultiMap<String, Arc<Mutex<DCKeyword>>>;
 
-pub enum HasKeyword {
+/// Represents the two types of inputs that `DCKeywordList.has_keyword``
+/// accepts for looking up a Keyword. In Panda and Astron, the
+/// `has_keyword` method is overloaded instead.
+pub enum IdentifyKeyword {
     ByStruct(DCKeyword),
     ByName(String),
+}
+
+pub struct DCKeywordList {
+    keywords: Vec<Arc<Mutex<DCKeyword>>>,
+    kw_name_2_keyword: KeywordName2Keyword,
+    flags: HistoricalFlag,
 }
 
 pub trait DCKeywordListInterface {
@@ -81,14 +89,15 @@ pub trait DCKeywordListInterface {
     fn dckeywordlist_generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn add_keyword(&mut self, keyword: DCKeyword) -> Result<(), ()>;
-    fn get_num_keywords(&self) -> u16;
+    fn get_num_keywords(&self) -> usize;
 
-    fn has_keyword(&self, kw: HasKeyword) -> bool;
+    fn has_keyword(&self, kw: IdentifyKeyword) -> bool;
 
-    fn get_keyword(&self, index: u16) -> Arc<Mutex<DCKeyword>>;
-    fn get_keyword_by_name(&self, name: String) -> Arc<Mutex<DCKeyword>>;
+    fn get_keyword(&self, index: usize) -> Option<Arc<Mutex<DCKeyword>>>;
+    fn get_keyword_by_name(&self, name: String) -> Option<Arc<Mutex<DCKeyword>>>;
+    fn _get_keywords_by_name_map(&self) -> KeywordName2Keyword;
 
-    fn compare_keyword(&self, target: DCKeyword) -> bool;
+    fn compare_with(&self, target: &DCKeywordList) -> bool;
     fn clear_keywords(&mut self);
 }
 
@@ -96,8 +105,100 @@ impl Default for DCKeywordList {
     fn default() -> Self {
         Self {
             keywords: vec![],
-            keywords_by_name: MultiMap::new(),
-            flags: !0_u16,
+            kw_name_2_keyword: MultiMap::new(),
+            flags: 0_u32,
         }
+    }
+}
+
+impl DCKeywordListInterface for DCKeywordList {
+    fn new() -> DCKeywordList {
+        DCKeywordList::default()
+    }
+
+    fn dckeywordlist_generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        if self.flags != !0 {
+            // All of the flags are historical flags only, so add just the flags
+            // bitmask to keep the hash code the same as it has historically been.
+            hashgen.add_int(u32::from(self.flags));
+        } else {
+            hashgen.add_int(self.keywords.len().try_into().unwrap());
+            // TODO: add all keywords to the hash
+        }
+    }
+
+    fn add_keyword(&mut self, keyword: DCKeyword) -> Result<(), ()> {
+        let kw_name: String = keyword.name.clone(); // avoid moving 'name'
+
+        if let Some(_) = self.kw_name_2_keyword.get(&kw_name) {
+            return Err(()); // keyword is already in our list!
+        }
+
+        // Mixes the bitmask of this keyword into our KW list flags bitmask.
+        self.flags |= keyword.get_historical_flag();
+
+        self.keywords.push(Arc::new(Mutex::new(keyword)));
+        self.kw_name_2_keyword
+            .insert(kw_name, self.keywords.last().unwrap().clone());
+        Ok(())
+    }
+
+    fn get_num_keywords(&self) -> usize {
+        self.keywords.len()
+    }
+
+    fn has_keyword(&self, kw: IdentifyKeyword) -> bool {
+        match kw {
+            IdentifyKeyword::ByName(kw_id) => self.get_keyword_by_name(kw_id).is_some(),
+            IdentifyKeyword::ByStruct(_kw_obj) => {
+                todo!() // TODO!
+            }
+        }
+    }
+
+    fn get_keyword(&self, index: usize) -> Option<Arc<Mutex<DCKeyword>>> {
+        match self.keywords.get(index) {
+            Some(pointer) => Some(pointer.clone()), // make a new rc pointer
+            None => None,
+        }
+    }
+
+    fn get_keyword_by_name(&self, name: String) -> Option<Arc<Mutex<DCKeyword>>> {
+        match self.kw_name_2_keyword.get(&name) {
+            Some(pointer) => Some(pointer.clone()),
+            None => None,
+        }
+    }
+
+    /// Returns a clone of this object's keyword name map.
+    fn _get_keywords_by_name_map(&self) -> KeywordName2Keyword {
+        self.kw_name_2_keyword.clone()
+    }
+
+    /// Compares this Keyword List with another DCKeywordList object.
+    fn compare_with(&self, target: &DCKeywordList) -> bool {
+        let target_kw_map: KeywordName2Keyword = target._get_keywords_by_name_map();
+
+        // If our maps are different sizes, they are already not the same.
+        if self.kw_name_2_keyword.len() != target_kw_map.len() {
+            return false;
+        }
+
+        // Since MultiMap does not implement the Eq trait,
+        // we have to iterate through both maps and compare.
+        for key in self.kw_name_2_keyword.keys() {
+            if !target_kw_map.contains_key(key) {
+                return false;
+            }
+        }
+        true // no differences found
+    }
+
+    /// Clears the DCKeywords array, keyword name map, and
+    /// historical flags bitmask from this DCKeywordList struct.
+    fn clear_keywords(&mut self) {
+        self.keywords.clear();
+        self.kw_name_2_keyword.clear();
+        self.flags = 0_u32;
     }
 }
