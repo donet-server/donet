@@ -85,6 +85,7 @@ pub enum IdentifyKeyword {
     ByName(String),
 }
 
+#[derive(Debug)]
 pub struct DCKeywordList {
     keywords: Vec<Arc<Mutex<DCKeyword>>>,
     kw_name_2_keyword: KeywordName2Keyword,

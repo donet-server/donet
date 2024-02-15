@@ -87,14 +87,17 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
         self.data_type.clone()
     }
 
+    #[inline(always)]
     fn is_variable_length(&self) -> bool {
         self.size == 0_u16
     }
 
+    #[inline(always)]
     fn get_size(&self) -> DgSizeTag {
         self.size
     }
 
+    #[inline(always)]
     fn has_alias(&self) -> bool {
         self.alias.is_some()
     }
