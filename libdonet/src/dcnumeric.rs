@@ -111,7 +111,7 @@ pub struct DCNumericType {
 }
 
 pub trait DCNumericTypeInterface {
-    fn new(base_type: DCTypeEnum) -> DCNumericType;
+    fn new(base_type: DCTypeEnum) -> Self;
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn has_modulus(&self) -> bool;
@@ -159,8 +159,8 @@ impl DCNumericType {
 }
 
 impl DCNumericTypeInterface for DCNumericType {
-    fn new(base_type: DCTypeEnum) -> DCNumericType {
-        DCNumericType {
+    fn new(base_type: DCTypeEnum) -> Self {
+        Self {
             parent: {
                 let mut parent_struct = DCTypeDefinition::new();
                 parent_struct.data_type = base_type;
@@ -226,10 +226,10 @@ impl DCNumericTypeInterface for DCNumericType {
         self.orig_range.is_empty()
     }
     fn get_divisor(&self) -> u16 {
-        self.divisor.clone()
+        self.divisor
     }
     fn get_modulus(&self) -> f64 {
-        self.orig_modulus.clone()
+        self.orig_modulus
     }
     fn get_range(&self) -> DCNumericRange {
         self.orig_range.clone()
@@ -244,7 +244,7 @@ impl DCNumericTypeInterface for DCNumericType {
             self.set_range(self.orig_range.clone())?;
         }
         if self.has_modulus() {
-            self.set_modulus(self.orig_modulus.clone())?;
+            self.set_modulus(self.orig_modulus)?;
         }
         Ok(())
     }

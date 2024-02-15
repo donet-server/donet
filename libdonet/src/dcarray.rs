@@ -27,7 +27,7 @@ pub struct DCArrayType {
 }
 
 pub trait DCArrayTypeInterface {
-    fn new(element_type: Option<DCTypeDefinition>, range: Option<DCNumericRange>) -> DCArrayType;
+    fn new(element_type: Option<DCTypeDefinition>, range: Option<DCNumericRange>) -> Self;
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn has_range(&self) -> bool;
@@ -38,8 +38,8 @@ pub trait DCArrayTypeInterface {
 }
 
 impl DCArrayTypeInterface for DCArrayType {
-    fn new(element_type: Option<DCTypeDefinition>, size: Option<DCNumericRange>) -> DCArrayType {
-        let mut new_array_type: DCArrayType = DCArrayType {
+    fn new(element_type: Option<DCTypeDefinition>, size: Option<DCNumericRange>) -> Self {
+        let mut new_array_type: Self = Self {
             parent: DCTypeDefinition::new(),
             element_type: element_type,
             array_size: 0_u16,
@@ -116,7 +116,7 @@ impl DCArrayTypeInterface for DCArrayType {
     }
 
     fn get_array_size(&self) -> u16 {
-        self.size.clone()
+        self.size
     }
     fn get_element_type(&self) -> Option<DCTypeDefinition> {
         self.element_type.clone()

@@ -159,7 +159,7 @@ parser! {
 
             // Handles e.g. "from module/AI/OV/UD import DistributedThing/AI/OV/UD"
             if mvs_opt.is_some() {
-                let mut c_symbol: String = class_symbols.get(0).unwrap().clone();
+                let mut c_symbol: String = class_symbols.first().unwrap().clone();
 
                 result_vec.push(DCImport::new(m.clone(), vec![c_symbol]));
 

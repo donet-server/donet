@@ -34,7 +34,7 @@ pub struct DCKeyword {
 }
 
 pub trait DCKeywordInterface {
-    fn new(name: String, historical_flag: Option<HistoricalFlag>) -> DCKeyword;
+    fn new(name: String, historical_flag: Option<HistoricalFlag>) -> Self;
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn get_name(&self) -> String;
@@ -43,14 +43,14 @@ pub trait DCKeywordInterface {
 }
 
 impl DCKeywordInterface for DCKeyword {
-    fn new(name: String, historical_flag: Option<HistoricalFlag>) -> DCKeyword {
+    fn new(name: String, historical_flag: Option<HistoricalFlag>) -> Self {
         if let Some(h_flag) = historical_flag {
-            DCKeyword {
+            Self {
                 name: name,
                 historical_flag: h_flag,
             }
         } else {
-            DCKeyword {
+            Self {
                 name: name,
                 historical_flag: !0, // bitwise complement
             }
@@ -93,7 +93,7 @@ pub struct DCKeywordList {
 }
 
 pub trait DCKeywordListInterface {
-    fn new() -> DCKeywordList;
+    fn new() -> Self;
     fn dckeywordlist_generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn add_keyword(&mut self, keyword: DCKeyword) -> Result<(), ()>;
@@ -122,15 +122,15 @@ impl Default for DCKeywordList {
 }
 
 impl DCKeywordListInterface for DCKeywordList {
-    fn new() -> DCKeywordList {
-        DCKeywordList::default()
+    fn new() -> Self {
+        Self::default()
     }
 
     fn dckeywordlist_generate_hash(&self, hashgen: &mut DCHashGenerator) {
         if self.flags != !0 {
             // All of the flags are historical flags only, so add just the flags
             // bitmask to keep the hash code the same as it has historically been.
-            hashgen.add_int(u32::from(self.flags));
+            hashgen.add_int(self.flags);
         } else {
             hashgen.add_int(self.keywords.len().try_into().unwrap());
 
@@ -149,7 +149,7 @@ impl DCKeywordListInterface for DCKeywordList {
     fn add_keyword(&mut self, keyword: DCKeyword) -> Result<(), ()> {
         let kw_name: String = keyword.name.clone(); // avoid moving 'name'
 
-        if let Some(_) = self.kw_name_2_keyword.get(&kw_name) {
+        if self.kw_name_2_keyword.get(&kw_name).is_some() {
             return Err(()); // keyword is already in our list!
         }
 

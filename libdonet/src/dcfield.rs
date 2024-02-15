@@ -37,7 +37,7 @@ pub struct DCField {
 }
 
 pub trait DCFieldInterface {
-    fn new(name: &str, id: globals::FieldId) -> DCField;
+    fn new(name: &str, id: globals::FieldId) -> Self;
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn set_field_id(&mut self, id: globals::FieldId);
@@ -59,8 +59,8 @@ pub trait DCFieldInterface {
 }
 
 impl DCFieldInterface for DCField {
-    fn new(name: &str, id: globals::FieldId) -> DCField {
-        DCField {
+    fn new(name: &str, id: globals::FieldId) -> Self {
+        Self {
             parent: DCKeywordList::new(),
             class: None,
             _struct: None,
