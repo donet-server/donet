@@ -17,14 +17,15 @@
 
 use crate::hashgen::DCHashGenerator;
 use multimap::MultiMap;
-use std::sync::{Arc, Mutex};
+use std::ops::Deref;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 /// This is a flag bitmask for historical keywords.
 /// Panda uses a C/C++ 'int' for this, which is stored
 /// as 4 bytes in modern 32-bit and 64-bit C/C++ compilers.
 pub type HistoricalFlag = u32;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct DCKeyword {
     name: String,
     // This flag is only kept for historical reasons, so we can
@@ -34,6 +35,8 @@ pub struct DCKeyword {
 
 pub trait DCKeywordInterface {
     fn new(name: String, historical_flag: Option<HistoricalFlag>) -> DCKeyword;
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
+
     fn get_name(&self) -> String;
     fn get_historical_flag(&self) -> HistoricalFlag;
     fn clear_historical_flag(&mut self);
@@ -52,6 +55,10 @@ impl DCKeywordInterface for DCKeyword {
                 historical_flag: !0, // bitwise complement
             }
         }
+    }
+
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        hashgen.add_string(self.name.clone());
     }
 
     fn get_name(&self) -> String {
@@ -95,9 +102,11 @@ pub trait DCKeywordListInterface {
 
     fn get_keyword(&self, index: usize) -> Option<Arc<Mutex<DCKeyword>>>;
     fn get_keyword_by_name(&self, name: String) -> Option<Arc<Mutex<DCKeyword>>>;
+    fn _get_keyword_list(&self) -> Vec<Arc<Mutex<DCKeyword>>>;
     fn _get_keywords_by_name_map(&self) -> KeywordName2Keyword;
 
     fn compare_with(&self, target: &DCKeywordList) -> bool;
+    fn copy_keywords(&mut self, target: &DCKeywordList);
     fn clear_keywords(&mut self);
 }
 
@@ -123,7 +132,16 @@ impl DCKeywordListInterface for DCKeywordList {
             hashgen.add_int(u32::from(self.flags));
         } else {
             hashgen.add_int(self.keywords.len().try_into().unwrap());
-            // TODO: add all keywords to the hash
+
+            for kw_ptr in &self.keywords {
+                // We sort of need to unravel our DCKeyword structures
+                // from their Arc pointer and Mutex wrapper before comparing...
+                let new_ptr: Arc<Mutex<DCKeyword>> = kw_ptr.clone();
+                let mutex_ref: &Mutex<DCKeyword> = new_ptr.deref();
+                let keyword: MutexGuard<'_, DCKeyword> = mutex_ref.lock().unwrap();
+
+                keyword.generate_hash(hashgen);
+            }
         }
     }
 
@@ -150,8 +168,17 @@ impl DCKeywordListInterface for DCKeywordList {
     fn has_keyword(&self, kw: IdentifyKeyword) -> bool {
         match kw {
             IdentifyKeyword::ByName(kw_id) => self.get_keyword_by_name(kw_id).is_some(),
-            IdentifyKeyword::ByStruct(_kw_obj) => {
-                todo!() // TODO!
+            IdentifyKeyword::ByStruct(kw_obj) => {
+                for kw_ptr in &self.keywords {
+                    let new_ptr: Arc<Mutex<DCKeyword>> = kw_ptr.clone();
+                    let mutex_ref: &Mutex<DCKeyword> = new_ptr.deref();
+                    let keyword: MutexGuard<'_, DCKeyword> = mutex_ref.lock().unwrap();
+
+                    if *keyword == kw_obj {
+                        return true;
+                    }
+                }
+                false // no match found :(
             }
         }
     }
@@ -168,6 +195,11 @@ impl DCKeywordListInterface for DCKeywordList {
             Some(pointer) => Some(pointer.clone()),
             None => None,
         }
+    }
+
+    /// Returns a clone of this object's keyword array.
+    fn _get_keyword_list(&self) -> Vec<Arc<Mutex<DCKeyword>>> {
+        self.keywords.clone()
     }
 
     /// Returns a clone of this object's keyword name map.
@@ -192,6 +224,15 @@ impl DCKeywordListInterface for DCKeywordList {
             }
         }
         true // no differences found
+    }
+
+    /// Overwrites the DCKeywords of this list with the target's DCKeywords.
+    fn copy_keywords(&mut self, target: &DCKeywordList) {
+        let target_kw_array: Vec<Arc<Mutex<DCKeyword>>> = target._get_keyword_list();
+        let target_kw_map: KeywordName2Keyword = target._get_keywords_by_name_map();
+
+        self.keywords = target_kw_array; // old vec will be dropped from memory
+        self.kw_name_2_keyword = target_kw_map;
     }
 
     /// Clears the DCKeywords array, keyword name map, and
