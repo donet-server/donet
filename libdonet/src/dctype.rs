@@ -23,7 +23,7 @@ use strum_macros::EnumIs;
  * to keep compatibility with Astron's DC hash inputs.
  */
 #[repr(u8)] // 8-bit alignment, unsigned
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[rustfmt::skip]
 pub enum DCTypeEnum {
     // Numeric Types
@@ -43,7 +43,7 @@ pub enum DCTypeEnum {
     TInvalid = 21,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct DCTypeDefinition {
     alias: Option<String>,
     pub data_type: DCTypeEnum,

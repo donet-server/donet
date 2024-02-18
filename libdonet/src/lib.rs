@@ -59,12 +59,15 @@ cfg_if! {
 cfg_if! {
     if #[cfg(feature = "dcfile")] {
         pub mod dcarray;
+        pub mod dcatomic;
         pub mod dcfield;
         pub mod dcfile;
         pub mod dckeyword;
         pub mod dclass;
         pub mod dclexer;
+        pub mod dcmolecular;
         pub mod dcnumeric;
+        pub mod dcparameter;
         pub mod dcparser;
         pub mod dcstruct;
         pub mod dctype;

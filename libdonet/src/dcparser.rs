@@ -97,7 +97,7 @@ parser! {
                         use dclass::DClassInterface;
 
                         let next_class_id: usize = dc_file.get_num_dclasses();
-                        dclass.set_class_id(next_class_id.try_into().unwrap());
+                        dclass.set_dclass_id(next_class_id.try_into().unwrap());
 
                         dc_file.add_dclass(dclass);
                     },

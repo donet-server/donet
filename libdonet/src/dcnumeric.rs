@@ -100,7 +100,7 @@ impl DCNumericRange {
 // ---------- Numeric Type ---------- //
 
 pub struct DCNumericType {
-    parent: DCTypeDefinition,
+    _dcnumeric_parent: DCTypeDefinition,
     divisor: u16,
     // These are the original range and modulus values from the file, unscaled by the divisor.
     orig_modulus: f64,
@@ -161,7 +161,7 @@ impl DCNumericType {
 impl DCNumericTypeInterface for DCNumericType {
     fn new(base_type: DCTypeEnum) -> Self {
         Self {
-            parent: {
+            _dcnumeric_parent: {
                 let mut parent_struct = DCTypeDefinition::new();
                 parent_struct.data_type = base_type;
 
@@ -269,6 +269,6 @@ impl DCNumericTypeInterface for DCNumericType {
 impl std::ops::Deref for DCNumericType {
     type Target = DCTypeDefinition;
     fn deref(&self) -> &Self::Target {
-        &self.parent
+        &self._dcnumeric_parent
     }
 }

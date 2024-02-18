@@ -46,8 +46,8 @@ pub trait DClassInterface {
     fn set_parent(&mut self, parent: Arc<Mutex<DClass>>);
 
     fn get_name(&mut self) -> String;
-    fn get_class_id(&mut self) -> globals::DClassId;
-    fn set_class_id(&mut self, id: globals::DClassId);
+    fn get_dclass_id(&mut self) -> globals::DClassId;
+    fn set_dclass_id(&mut self, id: globals::DClassId);
     fn get_num_parents(&mut self) -> usize;
     fn get_parent(&mut self, index: usize) -> Option<Arc<Mutex<DClass>>>;
     fn has_constructor(&mut self) -> bool;
@@ -82,11 +82,11 @@ impl DClassInterface for DClass {
         self.class_name.clone()
     }
 
-    fn get_class_id(&mut self) -> globals::DClassId {
+    fn get_dclass_id(&mut self) -> globals::DClassId {
         self.class_id
     }
 
-    fn set_class_id(&mut self, id: globals::DClassId) {
+    fn set_dclass_id(&mut self, id: globals::DClassId) {
         self.class_id = id;
     }
 

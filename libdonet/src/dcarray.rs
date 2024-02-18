@@ -20,7 +20,7 @@ use crate::dctype::{DCTypeDefinition, DCTypeDefinitionInterface, DCTypeEnum};
 use crate::hashgen::DCHashGenerator;
 
 pub struct DCArrayType {
-    parent: DCTypeDefinition,
+    _dcarray_parent: DCTypeDefinition,
     element_type: Option<DCTypeDefinition>,
     array_size: u16,
     array_range: Option<DCNumericRange>,
@@ -40,7 +40,7 @@ pub trait DCArrayTypeInterface {
 impl DCArrayTypeInterface for DCArrayType {
     fn new(element_type: Option<DCTypeDefinition>, size: Option<DCNumericRange>) -> Self {
         let mut new_array_type: Self = Self {
-            parent: DCTypeDefinition::new(),
+            _dcarray_parent: DCTypeDefinition::new(),
             element_type: element_type,
             array_size: 0_u16,
             array_range: size,
@@ -137,11 +137,11 @@ impl DCArrayTypeInterface for DCArrayType {
 impl std::ops::Deref for DCArrayType {
     type Target = DCTypeDefinition;
     fn deref(&self) -> &Self::Target {
-        &self.parent
+        &self._dcarray_parent
     }
 }
 impl std::ops::DerefMut for DCArrayType {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.parent
+        &mut self._dcarray_parent
     }
 }
