@@ -17,7 +17,7 @@
 
 use crate::dcfield::DCField;
 
-struct DCParameterField {
+pub struct DCParameterField {
     _dcparameterfield_parent: DCField,
 }
 

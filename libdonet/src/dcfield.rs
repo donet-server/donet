@@ -43,7 +43,7 @@ pub struct DCField {
 }
 
 pub trait DCFieldInterface {
-    fn new(name: &str, id: globals::FieldId) -> Self;
+    fn new(name: &str, dtype: DCTypeDefinition) -> Self;
     fn dcfield_generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn get_field_id(&self) -> globals::FieldId;
@@ -53,6 +53,7 @@ pub trait DCFieldInterface {
     fn set_field_name(&mut self, name: String);
     fn set_field_type(&mut self, dtype: DCTypeDefinition);
     fn set_default_value(&mut self, value: Vec<u8>);
+    fn set_bogus_field(&mut self, is_bogus: bool);
 
     fn set_parent_struct(&mut self, parent: Arc<Mutex<DCStruct>>);
     fn set_parent_dclass(&mut self, parent: Arc<Mutex<DClass>>);
@@ -80,14 +81,14 @@ impl DCField {
 }
 
 impl DCFieldInterface for DCField {
-    fn new(name: &str, id: globals::FieldId) -> Self {
+    fn new(name: &str, dtype: DCTypeDefinition) -> Self {
         Self {
             _dcfield_parent: DCKeywordList::new(),
             dclass: None,
             _struct: None,
             field_name: name.to_owned(),
-            field_id: id,
-            field_type: DCTypeDefinition::new(),
+            field_id: 0_u16,
+            field_type: dtype,
             parent_is_dclass: false,
             default_value_stale: false,
             has_default_value: false,
@@ -141,6 +142,10 @@ impl DCFieldInterface for DCField {
         self.default_value = value;
         self.has_default_value = true;
         self.default_value_stale = false;
+    }
+
+    fn set_bogus_field(&mut self, is_bogus: bool) {
+        self.bogus_field = is_bogus
     }
 
     fn set_parent_struct(&mut self, parent: Arc<Mutex<DCStruct>>) {

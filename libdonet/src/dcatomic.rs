@@ -15,10 +15,63 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use crate::dcfield::DCField;
+use crate::dcfield::{DCField, DCFieldInterface};
+use crate::dclass::DClass;
+use crate::dcparameter::DCParameterField;
+use crate::dctype::{DCTypeDefinition, DCTypeDefinitionInterface};
+use crate::hashgen::DCHashGenerator;
+use std::sync::{Arc, Mutex};
 
-struct DCAtomicField {
+/// Represents an atomic field of a Distributed Class.
+/// This defines the interface to a DClass object, and is
+/// always implemented as a remote procedure call (RPC).
+pub struct DCAtomicField {
     _dcatomicfield_parent: DCField,
+    elements: Vec<Arc<Mutex<DCParameterField>>>,
+}
+
+pub trait DCAtomicFieldInterface {
+    fn new(name: &str, dclass: Arc<Mutex<DClass>>, bogus_field: bool) -> Self;
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
+
+    fn get_num_elements(&self) -> usize;
+    fn get_element(&self, index: usize) -> Option<Arc<Mutex<DCParameterField>>>;
+
+    fn add_element(&mut self, element: DCParameterField);
+}
+
+impl DCAtomicFieldInterface for DCAtomicField {
+    fn new(name: &str, dclass: Arc<Mutex<DClass>>, bogus_field: bool) -> Self {
+        Self {
+            _dcatomicfield_parent: {
+                let mut new_dcfield = DCField::new(name, DCTypeDefinition::new());
+                new_dcfield.set_parent_dclass(dclass);
+                new_dcfield.set_bogus_field(bogus_field);
+                new_dcfield
+            },
+            elements: vec![],
+        }
+    }
+
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        self._dcatomicfield_parent.dcfield_generate_hash(hashgen);
+        // TODO!
+    }
+
+    fn get_num_elements(&self) -> usize {
+        self.elements.len()
+    }
+
+    fn get_element(&self, index: usize) -> Option<Arc<Mutex<DCParameterField>>> {
+        match self.elements.get(index) {
+            Some(pointer) => Some(pointer.clone()), // make a new rc pointer
+            None => None,
+        }
+    }
+
+    fn add_element(&mut self, element: DCParameterField) {
+        self.elements.push(Arc::new(Mutex::new(element)));
+    }
 }
 
 /// See issue #22.
