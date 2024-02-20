@@ -51,6 +51,7 @@ pub trait DCFieldInterface {
 
     fn set_field_id(&mut self, id: globals::FieldId);
     fn set_field_name(&mut self, name: String);
+    fn set_field_type(&mut self, dtype: DCTypeDefinition);
     fn set_default_value(&mut self, value: Vec<u8>);
 
     fn set_parent_struct(&mut self, parent: Arc<Mutex<DCStruct>>);
@@ -60,6 +61,7 @@ pub trait DCFieldInterface {
     fn validate_ranges(&self, packed_data: &Datagram) -> bool;
 
     // Inline functions for Panda historical keywords
+    fn is_bogus_field(&self) -> bool;
     fn is_required(&self) -> bool;
     fn is_broadcast(&self) -> bool;
     fn is_ram(&self) -> bool;
@@ -96,45 +98,73 @@ impl DCFieldInterface for DCField {
 
     fn dcfield_generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.dckeywordlist_generate_hash(hashgen);
-        // TODO!
-    }
-
-    fn get_field_id(&self) -> globals::FieldId {
-        todo!()
-    }
-
-    fn get_dclass(&self) -> Arc<Mutex<DClass>> {
-        todo!()
+        // It shouldn't be necessary to explicitly add the field ID
+        // to the hash--this is computed based on the relative
+        // position of this field with the other fields, so
+        // adding it explicitly will be redundant.  However,
+        // the field name is significant.
+        hashgen.add_string(self.field_name.clone());
+        // The field ID is added to the hash here, since we need to ensure
+        // the hash code comes out different in the DC_MULTIPLE_INHERITANCE case.
+        if globals::DC_MULTIPLE_INHERITANCE {
+            hashgen.add_int(u32::from(self.field_id));
+        }
+        self.field_type.dctype_generate_hash(hashgen);
     }
 
     #[inline(always)]
+    fn get_field_id(&self) -> globals::FieldId {
+        self.field_id
+    }
+
+    fn get_dclass(&self) -> Arc<Mutex<DClass>> {
+        assert!(self.parent_is_dclass);
+        // clone option to unwrap w/o move, and clone Arc to return
+        self.dclass.clone().unwrap().clone()
+    }
+
     fn set_field_id(&mut self, id: globals::FieldId) {
         self.field_id = id
     }
 
-    #[inline(always)]
     fn set_field_name(&mut self, name: String) {
         self.field_name = name
     }
 
+    fn set_field_type(&mut self, dtype: DCTypeDefinition) {
+        self.field_type = dtype;
+        self.has_default_value = false;
+        self.default_value = vec![];
+    }
+
     fn set_default_value(&mut self, value: Vec<u8>) {
-        todo!()
+        self.default_value = value;
+        self.has_default_value = true;
+        self.default_value_stale = false;
     }
 
     fn set_parent_struct(&mut self, parent: Arc<Mutex<DCStruct>>) {
-        todo!()
+        assert!(self.dclass.is_none());
+        self._struct = Some(parent);
     }
 
     fn set_parent_dclass(&mut self, parent: Arc<Mutex<DClass>>) {
-        todo!()
+        assert!(self._struct.is_none());
+        self.dclass = Some(parent);
     }
 
+    #[inline(always)]
     fn has_default_value(&self) -> bool {
-        todo!()
+        self.has_default_value
     }
 
     fn validate_ranges(&self, packed_data: &Datagram) -> bool {
         todo!()
+    }
+
+    #[inline(always)]
+    fn is_bogus_field(&self) -> bool {
+        self.bogus_field
     }
 
     #[inline(always)]
