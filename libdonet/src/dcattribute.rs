@@ -15,7 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use crate::dcfield::DCField;
+use crate::dcfield::{DCField, DCFieldInterface};
+use crate::dctype::DCTypeDefinition;
+use crate::hashgen::DCHashGenerator;
 
 /// A DC Attribute Field is a type of DC Field which can be found
 /// in DC Structs and Distributed Classes.
@@ -26,13 +28,22 @@ use crate::dcfield::DCField;
 /// do not carry DC Keywords, but their corresponding DC Atomic Field does.
 #[derive(Debug)]
 pub struct DCAttributeField {
-    _dcattributefield_parent: DCField,
+    base_field: DCField,
 }
 
-/// See issue #22.
-impl std::ops::Deref for DCAttributeField {
-    type Target = DCField;
-    fn deref(&self) -> &Self::Target {
-        &self._dcattributefield_parent
+pub trait DCAttributeFieldInterface {
+    fn new(name: &str, dtype: DCTypeDefinition) -> Self;
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
+}
+
+impl DCAttributeFieldInterface for DCAttributeField {
+    fn new(name: &str, dtype: DCTypeDefinition) -> Self {
+        Self {
+            base_field: DCField::new(name, dtype),
+        }
+    }
+
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        self.base_field.generate_hash(hashgen);
     }
 }

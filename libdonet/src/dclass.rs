@@ -16,6 +16,7 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 use crate::dcatomic::{DCAtomicField, DCAtomicFieldInterface};
+use crate::dcattribute::DCAttributeFieldInterface;
 use crate::dcfield::ClassField;
 use crate::globals;
 use crate::hashgen::DCHashGenerator;
@@ -97,7 +98,7 @@ impl DClassInterface for DClass {
             let field: MutexGuard<'_, ClassField> = new_ptr.deref().lock().unwrap();
 
             match &field.deref() {
-                ClassField::Attribute(_) => todo!(),
+                ClassField::Attribute(attribute) => attribute.generate_hash(hashgen),
                 ClassField::Atomic(atomic) => atomic.generate_hash(hashgen),
                 ClassField::Molecular(_) => todo!(),
             }

@@ -94,7 +94,7 @@ pub struct DCKeywordList {
 
 pub trait DCKeywordListInterface {
     fn new() -> Self;
-    fn dckeywordlist_generate_hash(&self, hashgen: &mut DCHashGenerator);
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn add_keyword(&mut self, keyword: DCKeyword) -> Result<(), ()>;
     fn get_num_keywords(&self) -> usize;
@@ -126,7 +126,7 @@ impl DCKeywordListInterface for DCKeywordList {
         Self::default()
     }
 
-    fn dckeywordlist_generate_hash(&self, hashgen: &mut DCHashGenerator) {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         if self.flags != !0 {
             // All of the flags are historical flags only, so add just the flags
             // bitmask to keep the hash code the same as it has historically been.

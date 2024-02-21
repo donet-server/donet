@@ -20,7 +20,7 @@ use crate::dctype::{DCTypeDefinition, DCTypeDefinitionInterface, DCTypeEnum};
 use crate::hashgen::DCHashGenerator;
 
 pub struct DCArrayType {
-    _dcarray_parent: DCTypeDefinition,
+    base_type: DCTypeDefinition,
     element_type: Option<DCTypeDefinition>,
     array_size: u16,
     array_range: Option<DCNumericRange>,
@@ -40,7 +40,7 @@ pub trait DCArrayTypeInterface {
 impl DCArrayTypeInterface for DCArrayType {
     fn new(element_type: Option<DCTypeDefinition>, size: Option<DCNumericRange>) -> Self {
         let mut new_array_type: Self = Self {
-            _dcarray_parent: DCTypeDefinition::new(),
+            base_type: DCTypeDefinition::new(),
             element_type: element_type,
             array_size: 0_u16,
             array_range: size,
@@ -65,27 +65,27 @@ impl DCArrayTypeInterface for DCArrayType {
         if new_array_type.element_type.is_some() {
             let e_type: DCTypeDefinition = new_array_type.element_type.clone().unwrap();
 
-            if !e_type.is_variable_length() && new_array_type.size > 0 {
-                new_array_type.data_type = DCTypeEnum::TArray;
-                new_array_type.size = new_array_type.array_size * e_type.get_size();
+            if !e_type.is_variable_length() && new_array_type.base_type.size > 0 {
+                new_array_type.base_type.data_type = DCTypeEnum::TArray;
+                new_array_type.base_type.size = new_array_type.array_size * e_type.get_size();
             } else {
-                new_array_type.data_type = DCTypeEnum::TVarArray;
-                new_array_type.size = 0_u16;
+                new_array_type.base_type.data_type = DCTypeEnum::TVarArray;
+                new_array_type.base_type.size = 0_u16;
             }
 
             match e_type.get_dc_type() {
                 DCTypeEnum::TChar => {
-                    if new_array_type.data_type == DCTypeEnum::TArray {
-                        new_array_type.data_type = DCTypeEnum::TString;
+                    if new_array_type.base_type.data_type == DCTypeEnum::TArray {
+                        new_array_type.base_type.data_type = DCTypeEnum::TString;
                     } else {
-                        new_array_type.data_type = DCTypeEnum::TVarString;
+                        new_array_type.base_type.data_type = DCTypeEnum::TVarString;
                     }
                 }
                 DCTypeEnum::TUInt8 => {
-                    if new_array_type.data_type == DCTypeEnum::TArray {
-                        new_array_type.data_type = DCTypeEnum::TBlob;
+                    if new_array_type.base_type.data_type == DCTypeEnum::TArray {
+                        new_array_type.base_type.data_type = DCTypeEnum::TBlob;
                     } else {
-                        new_array_type.data_type = DCTypeEnum::TVarBlob;
+                        new_array_type.base_type.data_type = DCTypeEnum::TVarBlob;
                     }
                 }
                 _ => {}
@@ -95,17 +95,17 @@ impl DCArrayTypeInterface for DCArrayType {
     }
 
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self.dctype_generate_hash(hashgen);
+        self.base_type.generate_hash(hashgen);
 
         if let Some(element_type) = self.element_type.clone() {
-            element_type.dctype_generate_hash(hashgen);
+            element_type.generate_hash(hashgen);
         } else {
             // Since we don't have an element type (representing
             // an 'invalid' element type, if comparing to Astron src)
             // we just make a new empty DCTypeDefinition, since that
             // is what Astron's DistributedType::invalid equals to.
             let empty_dc_type: DCTypeDefinition = DCTypeDefinition::new();
-            empty_dc_type.dctype_generate_hash(hashgen);
+            empty_dc_type.generate_hash(hashgen);
         }
         if self.has_range() {
             // TODO!
@@ -116,7 +116,7 @@ impl DCArrayTypeInterface for DCArrayType {
     }
 
     fn get_array_size(&self) -> u16 {
-        self.size
+        self.base_type.size
     }
     fn get_element_type(&self) -> Option<DCTypeDefinition> {
         self.element_type.clone()
@@ -126,22 +126,5 @@ impl DCArrayTypeInterface for DCArrayType {
     }
     fn has_range(&self) -> bool {
         self.array_range.is_some()
-    }
-}
-
-/// By manually implementing/overriding the standard
-/// library's 'Deref' trait of our 'child' struct, we
-/// can implicitly cast pointers to the parent struct,
-/// as pointers to the child struct, which gives us a
-/// nice 'cheat' for the feel of inheritance.
-impl std::ops::Deref for DCArrayType {
-    type Target = DCTypeDefinition;
-    fn deref(&self) -> &Self::Target {
-        &self._dcarray_parent
-    }
-}
-impl std::ops::DerefMut for DCArrayType {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self._dcarray_parent
     }
 }

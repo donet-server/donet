@@ -27,7 +27,7 @@ use std::sync::{Arc, Mutex};
 /// always implemented as a remote procedure call (RPC).
 #[derive(Debug)]
 pub struct DCAtomicField {
-    _dcatomicfield_parent: DCField,
+    base_field: DCField,
     elements: Vec<Arc<Mutex<DCParameter>>>,
 }
 
@@ -44,7 +44,7 @@ pub trait DCAtomicFieldInterface {
 impl DCAtomicFieldInterface for DCAtomicField {
     fn new(name: &str, dclass: Arc<Mutex<DClass>>, bogus_field: bool) -> Self {
         Self {
-            _dcatomicfield_parent: {
+            base_field: {
                 let mut new_dcfield = DCField::new(name, DCTypeDefinition::new());
                 new_dcfield.set_parent_dclass(dclass);
                 new_dcfield.set_bogus_field(bogus_field);
@@ -55,7 +55,7 @@ impl DCAtomicFieldInterface for DCAtomicField {
     }
 
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self._dcatomicfield_parent.dcfield_generate_hash(hashgen);
+        self.base_field.generate_hash(hashgen);
         // TODO!
     }
 
@@ -72,13 +72,5 @@ impl DCAtomicFieldInterface for DCAtomicField {
 
     fn add_element(&mut self, element: DCParameter) {
         self.elements.push(Arc::new(Mutex::new(element)));
-    }
-}
-
-/// See issue #22.
-impl std::ops::Deref for DCAtomicField {
-    type Target = DCField;
-    fn deref(&self) -> &Self::Target {
-        &self._dcatomicfield_parent
     }
 }

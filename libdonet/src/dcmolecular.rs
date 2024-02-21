@@ -19,13 +19,5 @@ use crate::dcfield::DCField;
 
 #[derive(Debug)]
 pub struct DCMolecularField {
-    _dcmolecularfield_parent: DCField,
-}
-
-/// See issue #22.
-impl std::ops::Deref for DCMolecularField {
-    type Target = DCField;
-    fn deref(&self) -> &Self::Target {
-        &self._dcmolecularfield_parent
-    }
+    base_field: DCField,
 }

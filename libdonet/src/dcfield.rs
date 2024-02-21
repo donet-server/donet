@@ -32,7 +32,7 @@ use std::sync::{Arc, Mutex};
 /// of field declarations, which are: attribute, atomic, and molecular.
 #[derive(Debug)]
 pub struct DCField {
-    _dcfield_parent: DCKeywordList,
+    keyword_list: DCKeywordList,
     dclass: Option<Arc<Mutex<DClass>>>,
     _struct: Option<Arc<Mutex<DCStruct>>>, // needs '_' due to reserved keyword
     field_name: String,
@@ -77,7 +77,7 @@ pub enum StructField {
 
 pub trait DCFieldInterface {
     fn new(name: &str, dtype: DCTypeDefinition) -> Self;
-    fn dcfield_generate_hash(&self, hashgen: &mut DCHashGenerator);
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn get_field_id(&self) -> globals::FieldId;
     fn get_dclass(&self) -> Arc<Mutex<DClass>>;
@@ -113,10 +113,19 @@ impl DCField {
     }
 }
 
+/// Macro for Panda historical keywords inline functions.
+macro_rules! has_keyword {
+    ($self:ident, $i:literal) => {
+        $self
+            .keyword_list
+            .has_keyword(IdentifyKeyword::ByName($i.to_owned()))
+    };
+}
+
 impl DCFieldInterface for DCField {
     fn new(name: &str, dtype: DCTypeDefinition) -> Self {
         Self {
-            _dcfield_parent: DCKeywordList::new(),
+            keyword_list: DCKeywordList::new(),
             dclass: None,
             _struct: None,
             field_name: name.to_owned(),
@@ -130,20 +139,22 @@ impl DCFieldInterface for DCField {
         }
     }
 
-    fn dcfield_generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self.dckeywordlist_generate_hash(hashgen);
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        self.keyword_list.generate_hash(hashgen);
+        self.field_type.generate_hash(hashgen);
+
         // It shouldn't be necessary to explicitly add the field ID
         // to the hash--this is computed based on the relative
         // position of this field with the other fields, so
         // adding it explicitly will be redundant.  However,
         // the field name is significant.
         hashgen.add_string(self.field_name.clone());
+
         // The field ID is added to the hash here, since we need to ensure
         // the hash code comes out different in the DC_MULTIPLE_INHERITANCE case.
         if globals::DC_MULTIPLE_INHERITANCE {
             hashgen.add_int(u32::from(self.field_id));
         }
-        self.field_type.dctype_generate_hash(hashgen);
     }
 
     #[inline(always)]
@@ -207,55 +218,46 @@ impl DCFieldInterface for DCField {
 
     #[inline(always)]
     fn is_required(&self) -> bool {
-        self.has_keyword(IdentifyKeyword::ByName("required".to_owned()))
+        has_keyword!(self, "required")
     }
 
     #[inline(always)]
     fn is_broadcast(&self) -> bool {
-        self.has_keyword(IdentifyKeyword::ByName("broadcast".to_owned()))
+        has_keyword!(self, "broadcast")
     }
 
     #[inline(always)]
     fn is_ram(&self) -> bool {
-        self.has_keyword(IdentifyKeyword::ByName("ram".to_owned()))
+        has_keyword!(self, "ram")
     }
 
     #[inline(always)]
     fn is_db(&self) -> bool {
-        self.has_keyword(IdentifyKeyword::ByName("db".to_owned()))
+        has_keyword!(self, "db")
     }
 
     #[inline(always)]
     fn is_clsend(&self) -> bool {
-        self.has_keyword(IdentifyKeyword::ByName("clsend".to_owned()))
+        has_keyword!(self, "clsend")
     }
 
     #[inline(always)]
     fn is_clrecv(&self) -> bool {
-        self.has_keyword(IdentifyKeyword::ByName("clrecv".to_owned()))
+        has_keyword!(self, "clrecv")
     }
 
     #[inline(always)]
     fn is_ownsend(&self) -> bool {
-        self.has_keyword(IdentifyKeyword::ByName("ownsend".to_owned()))
+        has_keyword!(self, "ownsend")
     }
 
     #[inline(always)]
     fn is_ownrecv(&self) -> bool {
-        self.has_keyword(IdentifyKeyword::ByName("ownrecv".to_owned()))
+        has_keyword!(self, "ownrecv")
     }
 
     #[inline(always)]
     fn is_airecv(&self) -> bool {
-        self.has_keyword(IdentifyKeyword::ByName("airecv".to_owned()))
-    }
-}
-
-/// 'Fake' inheritance of DCKeywordList object.
-/// See issue #22.
-impl std::ops::Deref for DCField {
-    type Target = DCKeywordList;
-    fn deref(&self) -> &Self::Target {
-        &self._dcfield_parent
+        has_keyword!(self, "airecv")
     }
 }

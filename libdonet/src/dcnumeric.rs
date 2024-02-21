@@ -100,7 +100,7 @@ impl DCNumericRange {
 // ---------- Numeric Type ---------- //
 
 pub struct DCNumericType {
-    _dcnumeric_parent: DCTypeDefinition,
+    base_type: DCTypeDefinition,
     divisor: u16,
     // These are the original range and modulus values from the file, unscaled by the divisor.
     orig_modulus: f64,
@@ -132,7 +132,7 @@ impl DCNumericType {
     fn data_to_number(&self, data: Vec<u8>) -> (bool, DCNumber) {
         // NOTE: See 'Deref' trait implementation for 'DCNumericType' below
         // on how we're using self.parent.size as self.size.
-        if self.size != data.len().try_into().unwrap() {
+        if self.base_type.size != data.len().try_into().unwrap() {
             return (false, DCNumber::new_integer(0_i64));
         }
 
@@ -140,7 +140,7 @@ impl DCNumericType {
         let _ = dg.add_data(data);
         let mut dgi = DatagramIterator::new(dg);
 
-        match self.data_type {
+        match self.base_type.data_type {
             DCTypeEnum::TInt8 => (true, DCNumber::new_integer(i64::from(dgi.read_i8()))),
             DCTypeEnum::TInt16 => (true, DCNumber::new_integer(i64::from(dgi.read_i16()))),
             DCTypeEnum::TInt32 => (true, DCNumber::new_integer(i64::from(dgi.read_i32()))),
@@ -161,7 +161,7 @@ impl DCNumericType {
 impl DCNumericTypeInterface for DCNumericType {
     fn new(base_type: DCTypeEnum) -> Self {
         Self {
-            _dcnumeric_parent: {
+            base_type: {
                 let mut parent_struct = DCTypeDefinition::new();
                 parent_struct.data_type = base_type;
 
@@ -202,7 +202,7 @@ impl DCNumericTypeInterface for DCNumericType {
     }
 
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self.dctype_generate_hash(hashgen);
+        self.base_type.generate_hash(hashgen);
         hashgen.add_int(u32::from(self.divisor));
 
         if self.has_modulus() {
@@ -257,18 +257,5 @@ impl DCNumericTypeInterface for DCNumericType {
     }
     fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), ()> {
         todo!();
-    }
-}
-
-/* By manually implementing/overriding the standard
- * library's 'Deref' trait of our 'child' struct, we
- * can implicitly cast pointers to the parent struct,
- * as pointers to the child struct, which gives us a
- * nice 'cheat' for the feel of inheritance.
- */
-impl std::ops::Deref for DCNumericType {
-    type Target = DCTypeDefinition;
-    fn deref(&self) -> &Self::Target {
-        &self._dcnumeric_parent
     }
 }

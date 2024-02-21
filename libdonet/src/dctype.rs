@@ -52,7 +52,7 @@ pub struct DCTypeDefinition {
 
 pub trait DCTypeDefinitionInterface {
     fn new() -> Self;
-    fn dctype_generate_hash(&self, hashgen: &mut DCHashGenerator);
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn get_dc_type(&self) -> DCTypeEnum;
     fn is_variable_length(&self) -> bool;
@@ -73,11 +73,9 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
     }
 
     /// Generates the hash for this DC Type element.
-    /// Method is prefixed with 'dctype_' to avoid collisions
-    /// with fake 'child' structs, that 'inherit' DC Type via
-    /// overriding the default Deref/DerefMut traits.
-    fn dctype_generate_hash(&self, hashgen: &mut DCHashGenerator) {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         hashgen.add_int(u32::from(self.data_type.clone() as u8));
+
         if self.alias.is_some() {
             hashgen.add_string(self.alias.clone().unwrap())
         }
