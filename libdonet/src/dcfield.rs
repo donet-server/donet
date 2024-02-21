@@ -16,8 +16,11 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 use crate::datagram::Datagram;
+use crate::dcatomic::DCAtomicField;
+use crate::dcattribute::DCAttributeField;
 use crate::dckeyword::{DCKeywordList, DCKeywordListInterface, IdentifyKeyword};
 use crate::dclass::DClass;
+use crate::dcmolecular::DCMolecularField;
 use crate::dcstruct::DCStruct;
 use crate::dctype::{DCTypeDefinition, DCTypeDefinitionInterface};
 use crate::globals;
@@ -26,7 +29,7 @@ use std::sync::{Arc, Mutex};
 
 /// A field of a Distributed Class. The DCField struct is a base for
 /// struct and dclass fields. In the DC language, there are three types
-/// of field declarations, which are: parameter, atomic, and molecular.
+/// of field declarations, which are: attribute, atomic, and molecular.
 #[derive(Debug)]
 pub struct DCField {
     _dcfield_parent: DCKeywordList,
@@ -40,6 +43,36 @@ pub struct DCField {
     has_default_value: bool,
     default_value: Vec<u8>, // stored as byte array
     bogus_field: bool,
+}
+
+/// Enumerator representing the 3 types of fields that inherit DC Field,
+/// which can legally be declared within a Distributed Class.
+///
+/// DC Attribute Fields represent a property, or member, of a structure
+/// or class. Attribute fields have a data type assigned to them.
+///
+/// DC Atomic Fields represent a method of a Distributed Class, which
+/// is always implemented as a remote procedure call (RPC). Unlike
+/// attribute fields, atomic fields cannot be declared within structs.
+///
+/// DC Molecular Fields represent a collection of DC Attribute or
+/// DC Atomic Fields as one field under one identifier. The parameters
+/// of a molecular field are the parameters of all the fields it
+/// represents, joined together in the order in which they were declared
+/// when the molecular field was declared.
+#[derive(Debug)]
+pub enum ClassField {
+    Attribute(DCAttributeField),
+    Atomic(DCAtomicField),
+    Molecular(DCMolecularField),
+}
+
+/// A different enumerator representing DC Field types used
+/// for DC Structs, since they cannot contain DC Atomic Fields.
+#[derive(Debug)]
+pub enum StructField {
+    Attribute(DCAttributeField),
+    Molecular(DCMolecularField),
 }
 
 pub trait DCFieldInterface {

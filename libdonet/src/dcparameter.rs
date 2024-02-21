@@ -15,16 +15,5 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use crate::dcfield::DCField;
-
-pub struct DCParameterField {
-    _dcparameterfield_parent: DCField,
-}
-
-/// See issue #22.
-impl std::ops::Deref for DCParameterField {
-    type Target = DCField;
-    fn deref(&self) -> &Self::Target {
-        &self._dcparameterfield_parent
-    }
-}
+#[derive(Debug)]
+pub struct DCParameter {}

@@ -17,7 +17,7 @@
 
 use crate::dcfield::{DCField, DCFieldInterface};
 use crate::dclass::DClass;
-use crate::dcparameter::DCParameterField;
+use crate::dcparameter::DCParameter;
 use crate::dctype::{DCTypeDefinition, DCTypeDefinitionInterface};
 use crate::hashgen::DCHashGenerator;
 use std::sync::{Arc, Mutex};
@@ -25,9 +25,10 @@ use std::sync::{Arc, Mutex};
 /// Represents an atomic field of a Distributed Class.
 /// This defines the interface to a DClass object, and is
 /// always implemented as a remote procedure call (RPC).
+#[derive(Debug)]
 pub struct DCAtomicField {
     _dcatomicfield_parent: DCField,
-    elements: Vec<Arc<Mutex<DCParameterField>>>,
+    elements: Vec<Arc<Mutex<DCParameter>>>,
 }
 
 pub trait DCAtomicFieldInterface {
@@ -35,9 +36,9 @@ pub trait DCAtomicFieldInterface {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn get_num_elements(&self) -> usize;
-    fn get_element(&self, index: usize) -> Option<Arc<Mutex<DCParameterField>>>;
+    fn get_element(&self, index: usize) -> Option<Arc<Mutex<DCParameter>>>;
 
-    fn add_element(&mut self, element: DCParameterField);
+    fn add_element(&mut self, element: DCParameter);
 }
 
 impl DCAtomicFieldInterface for DCAtomicField {
@@ -62,14 +63,14 @@ impl DCAtomicFieldInterface for DCAtomicField {
         self.elements.len()
     }
 
-    fn get_element(&self, index: usize) -> Option<Arc<Mutex<DCParameterField>>> {
+    fn get_element(&self, index: usize) -> Option<Arc<Mutex<DCParameter>>> {
         match self.elements.get(index) {
             Some(pointer) => Some(pointer.clone()), // make a new rc pointer
             None => None,
         }
     }
 
-    fn add_element(&mut self, element: DCParameterField) {
+    fn add_element(&mut self, element: DCParameter) {
         self.elements.push(Arc::new(Mutex::new(element)));
     }
 }

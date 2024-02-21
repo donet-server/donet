@@ -17,15 +17,22 @@
 
 use crate::dcfield::DCField;
 
+/// A DC Attribute Field is a type of DC Field which can be found
+/// in DC Structs and Distributed Classes.
+///
+/// Unlike the Panda source, structure elements are called attributes,
+/// instead of parameters, as it raises confusion with DC Atomic Field's
+/// elements, which are a simpler form of Panda's DC Parameters, as they
+/// do not carry DC Keywords, but their corresponding DC Atomic Field does.
 #[derive(Debug)]
-pub struct DCMolecularField {
-    _dcmolecularfield_parent: DCField,
+pub struct DCAttributeField {
+    _dcattributefield_parent: DCField,
 }
 
 /// See issue #22.
-impl std::ops::Deref for DCMolecularField {
+impl std::ops::Deref for DCAttributeField {
     type Target = DCField;
     fn deref(&self) -> &Self::Target {
-        &self._dcmolecularfield_parent
+        &self._dcattributefield_parent
     }
 }
