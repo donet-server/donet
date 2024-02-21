@@ -152,7 +152,7 @@ impl DCFieldInterface for DCField {
         // The field ID is added to the hash here, since we need to ensure
         // the hash code comes out different in the DC_MULTIPLE_INHERITANCE case.
         if globals::DC_MULTIPLE_INHERITANCE {
-            hashgen.add_int(u32::from(self.field_id));
+            hashgen.add_int(i32::from(self.field_id));
         }
     }
 

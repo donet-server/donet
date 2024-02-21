@@ -23,7 +23,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 /// This is a flag bitmask for historical keywords.
 /// Panda uses a C/C++ 'int' for this, which is stored
 /// as 4 bytes in modern 32-bit and 64-bit C/C++ compilers.
-pub type HistoricalFlag = u32;
+pub type HistoricalFlag = i32;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct DCKeyword {
@@ -116,7 +116,7 @@ impl Default for DCKeywordList {
         Self {
             keywords: vec![],
             kw_name_2_keyword: MultiMap::new(),
-            flags: 0_u32,
+            flags: 0_i32,
         }
     }
 }
@@ -241,6 +241,6 @@ impl DCKeywordListInterface for DCKeywordList {
     fn clear_keywords(&mut self) {
         self.keywords.clear();
         self.kw_name_2_keyword.clear();
-        self.flags = 0_u32;
+        self.flags = 0_i32;
     }
 }

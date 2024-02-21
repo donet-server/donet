@@ -74,7 +74,7 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
 
     /// Generates the hash for this DC Type element.
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        hashgen.add_int(u32::from(self.data_type.clone() as u8));
+        hashgen.add_int(i32::from(self.data_type.clone() as u8));
 
         if self.alias.is_some() {
             hashgen.add_string(self.alias.clone().unwrap())

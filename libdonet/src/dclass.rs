@@ -80,7 +80,7 @@ impl DClassInterface for DClass {
                 let new_ptr: Arc<Mutex<DClass>> = parent_ptr.clone();
                 let mut parent: MutexGuard<'_, DClass> = new_ptr.deref().lock().unwrap();
 
-                hashgen.add_int(u32::from(parent.get_dclass_id()));
+                hashgen.add_int(i32::from(parent.get_dclass_id()));
             }
 
             if let Some(constructor_ptr) = &self.constructor {

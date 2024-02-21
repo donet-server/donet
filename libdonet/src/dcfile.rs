@@ -115,9 +115,9 @@ impl DCFileInterface for DCFile {
         if globals::DC_VIRTUAL_INHERITANCE {
             // Just to change the hash output in this case.
             if globals::DC_SORT_INHERITANCE_BY_FILE {
-                hashgen.add_int(1_u32);
+                hashgen.add_int(1_i32);
             } else {
-                hashgen.add_int(2_u32);
+                hashgen.add_int(2_i32);
             }
         }
         hashgen.add_int(self.get_num_dclasses().try_into().unwrap());

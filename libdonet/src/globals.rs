@@ -69,7 +69,7 @@ cfg_if! {
         pub static DC_MULTIPLE_INHERITANCE: bool = true;
         pub static DC_VIRTUAL_INHERITANCE: bool = true;
         pub static DC_SORT_INHERITANCE_BY_FILE: bool = false;
-        pub static MAX_PRIME_NUMBERS: u16 = 1000;
+        pub static MAX_PRIME_NUMBERS: u16 = 10000;
 
         // DC Parser Return Types
         pub type ParseError = (Option<(DCToken, Span)>, &'static str);

@@ -111,7 +111,7 @@ impl DCArrayTypeInterface for DCArrayType {
             // TODO!
             //hashgen.add_int(self.array_range.unwrap().min.value.integer)
         } else {
-            hashgen.add_int(u32::from(self.array_size))
+            hashgen.add_int(i32::from(self.array_size))
         }
     }
 

@@ -203,7 +203,7 @@ impl DCNumericTypeInterface for DCNumericType {
 
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_type.generate_hash(hashgen);
-        hashgen.add_int(u32::from(self.divisor));
+        hashgen.add_int(i32::from(self.divisor));
 
         if self.has_modulus() {
             // unsafe block required for accessing unions

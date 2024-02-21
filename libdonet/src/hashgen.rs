@@ -22,7 +22,7 @@ pub struct PrimeNumberGenerator {
 }
 
 pub struct DCHashGenerator {
-    hash: DCFileHash,
+    hash: i32,
     index: u16,
     primes: PrimeNumberGenerator,
 }
@@ -64,7 +64,7 @@ impl PrimeNumberGenerator {
 impl Default for DCHashGenerator {
     fn default() -> Self {
         Self {
-            hash: 0_u32,
+            hash: 0_i32,
             index: 0_u16,
             primes: PrimeNumberGenerator::new(),
         }
@@ -76,9 +76,9 @@ impl DCHashGenerator {
         Self::default()
     }
     /// Adds another integer to the hash so far.
-    pub fn add_int(&mut self, number: u32) {
+    pub fn add_int(&mut self, number: i32) {
         assert!(self.index < MAX_PRIME_NUMBERS);
-        self.hash += u32::from(self.primes.get_prime(self.index)) * number;
+        self.hash += i32::from(self.primes.get_prime(self.index)) * number;
         self.index = (self.index + 1) % MAX_PRIME_NUMBERS;
     }
 
@@ -86,7 +86,7 @@ impl DCHashGenerator {
     pub fn add_blob(&mut self, blob: Vec<u8>) {
         self.add_int(blob.len().try_into().unwrap());
         for byte in blob.into_iter() {
-            self.add_int(u32::from(byte));
+            self.add_int(i32::from(byte));
         }
     }
     /// Adds a string to the hash, by breaking it down into a sequence of integers.
@@ -95,7 +95,7 @@ impl DCHashGenerator {
     }
 
     pub const fn get_hash(&self) -> DCFileHash {
-        self.hash
+        self.hash as u32
     }
 }
 
