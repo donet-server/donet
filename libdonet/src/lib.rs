@@ -60,7 +60,6 @@ cfg_if! {
     if #[cfg(feature = "dcfile")] {
         pub mod dcarray;
         pub mod dcatomic;
-        pub mod dcattribute;
         pub mod dcfield;
         pub mod dcfile;
         pub mod dckeyword;

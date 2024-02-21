@@ -17,7 +17,6 @@
 
 use crate::datagram::Datagram;
 use crate::dcatomic::DCAtomicField;
-use crate::dcattribute::DCAttributeField;
 use crate::dckeyword::{DCKeywordList, DCKeywordListInterface, IdentifyKeyword};
 use crate::dclass::DClass;
 use crate::dcmolecular::DCMolecularField;
@@ -29,7 +28,7 @@ use std::sync::{Arc, Mutex};
 
 /// A field of a Distributed Class. The DCField struct is a base for
 /// struct and dclass fields. In the DC language, there are three types
-/// of field declarations, which are: attribute, atomic, and molecular.
+/// of field declarations, which are: plain fields, atomic, and molecular.
 #[derive(Debug)]
 pub struct DCField {
     keyword_list: DCKeywordList,
@@ -48,8 +47,8 @@ pub struct DCField {
 /// Enumerator representing the 3 types of fields that inherit DC Field,
 /// which can legally be declared within a Distributed Class.
 ///
-/// DC Attribute Fields represent a property, or member, of a structure
-/// or class. Attribute fields have a data type assigned to them.
+/// Plain DC Fields represent a property, or member, of a structure
+/// or class. DC fields have a data type assigned to them.
 ///
 /// DC Atomic Fields represent a method of a Distributed Class, which
 /// is always implemented as a remote procedure call (RPC). Unlike
@@ -62,7 +61,7 @@ pub struct DCField {
 /// when the molecular field was declared.
 #[derive(Debug)]
 pub enum ClassField {
-    Attribute(DCAttributeField),
+    Field(DCField),
     Atomic(DCAtomicField),
     Molecular(DCMolecularField),
 }
@@ -71,7 +70,7 @@ pub enum ClassField {
 /// for DC Structs, since they cannot contain DC Atomic Fields.
 #[derive(Debug)]
 pub enum StructField {
-    Attribute(DCAttributeField),
+    Field(DCField),
     Molecular(DCMolecularField),
 }
 
