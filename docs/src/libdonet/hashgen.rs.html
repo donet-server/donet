@@ -119,6 +119,12 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#117" id="117">117</a>
 <a href="#118" id="118">118</a>
 <a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
 </pre></div><pre class="rust"><code><span class="comment">// DONET SOFTWARE
 // Copyright (c) 2024, Donet Authors.
 //
@@ -143,7 +149,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 }
 
 <span class="kw">pub struct </span>DCHashGenerator {
-    hash: DCFileHash,
+    hash: i32,
     index: u16,
     primes: PrimeNumberGenerator,
 }
@@ -182,36 +188,42 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     }
 }
 
-<span class="kw">impl </span>DCHashGenerator {
-    <span class="kw">pub fn </span>new() -&gt; DCHashGenerator {
-        DCHashGenerator {
-            hash: <span class="number">0_u32</span>,
+<span class="kw">impl </span>Default <span class="kw">for </span>DCHashGenerator {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            hash: <span class="number">0_i32</span>,
             index: <span class="number">0_u16</span>,
             primes: PrimeNumberGenerator::new(),
         }
     }
-    <span class="comment">// Adds another integer to the hash so far.
-    </span><span class="kw">pub fn </span>add_int(<span class="kw-2">&amp;mut </span><span class="self">self</span>, number: u32) {
+}
+
+<span class="kw">impl </span>DCHashGenerator {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::default()
+    }
+    <span class="doccomment">/// Adds another integer to the hash so far.
+    </span><span class="kw">pub fn </span>add_int(<span class="kw-2">&amp;mut </span><span class="self">self</span>, number: i32) {
         <span class="macro">assert!</span>(<span class="self">self</span>.index &lt; MAX_PRIME_NUMBERS);
-        <span class="self">self</span>.hash += u32::from(<span class="self">self</span>.primes.get_prime(<span class="self">self</span>.index)) * number;
+        <span class="self">self</span>.hash += i32::from(<span class="self">self</span>.primes.get_prime(<span class="self">self</span>.index)) * number;
         <span class="self">self</span>.index = (<span class="self">self</span>.index + <span class="number">1</span>) % MAX_PRIME_NUMBERS;
     }
 
-    <span class="comment">// Adds a blob to the hash, by breaking it down into a sequence of integers.
+    <span class="doccomment">/// Adds a blob to the hash, by breaking it down into a sequence of integers.
     </span><span class="kw">pub fn </span>add_blob(<span class="kw-2">&amp;mut </span><span class="self">self</span>, blob: Vec&lt;u8&gt;) {
         <span class="self">self</span>.add_int(blob.len().try_into().unwrap());
         <span class="kw">for </span>byte <span class="kw">in </span>blob.into_iter() {
-            <span class="self">self</span>.add_int(u32::from(byte));
+            <span class="self">self</span>.add_int(i32::from(byte));
         }
     }
-    <span class="comment">// Adds a string to the hash, by breaking it down into a sequence of integers.
+    <span class="doccomment">/// Adds a string to the hash, by breaking it down into a sequence of integers.
     </span><span class="kw">pub fn </span>add_string(<span class="kw-2">&amp;mut </span><span class="self">self</span>, string: String) {
         <span class="self">self</span>.add_blob(string.into_bytes());
     }
 
     <span class="kw">pub const fn </span>get_hash(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; DCFileHash {
-        <span class="self">self</span>.hash &amp; <span class="number">0xffffffff
-    </span>}
+        <span class="self">self</span>.hash <span class="kw">as </span>u32
+    }
 }
 
 <span class="attr">#[cfg(test)]
@@ -220,7 +232,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>prime_number_generator_integrity() {
-        <span class="kw">let </span><span class="kw-2">mut </span>pmg: PrimeNumberGenerator = PrimeNumberGenerator::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>png: PrimeNumberGenerator = PrimeNumberGenerator::new();
 
         <span class="kw">let </span>prime_numbers: Vec&lt;u16&gt; = <span class="macro">vec!</span>[
             <span class="number">2</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">11</span>, <span class="number">13</span>, <span class="number">17</span>, <span class="number">19</span>, <span class="number">23</span>, <span class="number">29</span>, <span class="number">31</span>, <span class="number">37</span>, <span class="number">41</span>, <span class="number">43</span>, <span class="number">47</span>, <span class="number">53</span>, <span class="number">59</span>, <span class="number">61</span>, <span class="number">67</span>, <span class="number">71</span>, <span class="number">73</span>, <span class="number">79</span>, <span class="number">83</span>, <span class="number">89</span>, <span class="number">97</span>,
@@ -234,7 +246,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         ];
 
         <span class="kw">for </span>(i, target_prime) <span class="kw">in </span>prime_numbers.into_iter().enumerate() {
-            <span class="macro">assert_eq!</span>(target_prime, pmg.get_prime(i.try_into().unwrap()));
+            <span class="macro">assert_eq!</span>(target_prime, png.get_prime(i.try_into().unwrap()));
         }
     }
 }

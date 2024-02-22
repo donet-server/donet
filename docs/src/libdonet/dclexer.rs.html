@@ -514,6 +514,10 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#512" id="512">512</a>
 <a href="#513" id="513">513</a>
 <a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
 </pre></div><pre class="rust"><code><span class="comment">// DONET SOFTWARE
 // Copyright (c) 2024, Donet Authors.
 //
@@ -530,6 +534,9 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 // You should have received a copy of the GNU Affero General Public License
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+</span><span class="doccomment">//! Definition of the Lexer machine to process raw DC file
+//! string data into a stream of lexical tokens for the DC parser.
 
 </span><span class="kw">use </span><span class="kw">crate</span>::globals::{DC_VIEW_SUFFIXES, HISTORICAL_DC_KEYWORDS};
 <span class="kw">use </span>plex::lexer;
@@ -658,7 +665,8 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     <span class="comment">// Rust doesn&#39;t support lookahead/lookbehind regex, so for character literals
     // we match the entire &#39;&#39;x&#39;&#39; and extract the second (nth(1)) character.
     </span><span class="string">r#&quot;&#39;.&#39;&quot;# </span>=&gt; (DCToken::CharacterLiteral(text.chars().nth(<span class="number">1</span>).unwrap()), text),
-    <span class="string">r#&quot;\&quot;[^\&quot;]+\&quot;&quot;# </span>=&gt; (DCToken::StringLiteral(text.to_owned().replace(<span class="string">&#39;\&quot;&#39;</span>, <span class="string">&quot;&quot;</span>)), text),
+    <span class="comment">// Note that there is no need to escape double quotes in rust regex.
+    </span><span class="string">r#&quot;&quot;[^&quot;]*&quot;&quot;# </span>=&gt; (DCToken::StringLiteral(text.to_owned().replace(<span class="string">&#39;\&quot;&#39;</span>, <span class="string">&quot;&quot;</span>)), text),
 
     <span class="comment">// Signed/unsigned integer data types *could* be a single token,
     // but parsing is easier if they are all individual lexical tokens.
@@ -725,7 +733,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     <span class="string">r#&quot;\=&quot;# </span>=&gt; (DCToken::Equals, text),
     <span class="string">r#&quot;\:&quot;# </span>=&gt; (DCToken::Colon, text),
     <span class="string">r#&quot;.&quot;# </span>=&gt; {
-        <span class="macro">panic!</span>(<span class="string">&quot;dclexer: Found an unexpected character: {}&quot;</span>, text);
+        <span class="macro">panic!</span>(<span class="string">&quot;dclexer: Found an unexpected character: &#39;{}&#39;&quot;</span>, text);
     }
 }
 

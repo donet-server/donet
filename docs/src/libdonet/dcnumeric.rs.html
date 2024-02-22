@@ -263,17 +263,6 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#261" id="261">261</a>
 <a href="#262" id="262">262</a>
 <a href="#263" id="263">263</a>
-<a href="#264" id="264">264</a>
-<a href="#265" id="265">265</a>
-<a href="#266" id="266">266</a>
-<a href="#267" id="267">267</a>
-<a href="#268" id="268">268</a>
-<a href="#269" id="269">269</a>
-<a href="#270" id="270">270</a>
-<a href="#271" id="271">271</a>
-<a href="#272" id="272">272</a>
-<a href="#273" id="273">273</a>
-<a href="#274" id="274">274</a>
 </pre></div><pre class="rust"><code><span class="comment">// DONET SOFTWARE
 // Copyright (c) 2024, Donet Authors.
 //
@@ -291,24 +280,26 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+</span><span class="doccomment">//! Structure representing data types supported in the DC
+//! language and enforcing numeric limits through constraints.
+
 </span><span class="kw">use </span><span class="kw">crate</span>::datagram::{Datagram, DatagramIterator};
 <span class="kw">use </span><span class="kw">crate</span>::dctype::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::hashgen::DCHashGenerator;
 <span class="kw">use </span>std::mem::size_of;
 
-<span class="comment">/* Numeric Range structs are used to represent a range of signed/unsigned
- * integers or floating point numbers. Used for enforcing numeric limits
- * withing constraints of array, string, or blob sized types.
- */
+<span class="doccomment">/// Numeric Range structs are used to represent a range of signed/unsigned
+/// integers or floating point numbers. Used for enforcing numeric limits
+/// within constraints of array, string, or blob sized types.
 </span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>DCNumericRange {
     range_type: DCNumberType,
-    min: DCNumber,
-    max: DCNumber,
+    <span class="kw">pub </span>min: DCNumber,
+    <span class="kw">pub </span>max: DCNumber,
 }
 
 <span class="kw">impl </span>DCNumericRange {
-    <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>default_min: DCNumber = DCNumber::new_floating_point(f64::NEG_INFINITY);
         <span class="kw">let </span><span class="kw-2">mut </span>default_max: DCNumber = DCNumber::new_floating_point(f64::INFINITY);
 
@@ -322,7 +313,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         }
     }
 
-    <span class="kw">fn </span>new_integer_range(min: i64, max: i64) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new_integer_range(min: i64, max: i64) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             range_type: DCNumberType::Int,
             min: DCNumber::new_integer(min),
@@ -330,7 +321,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         }
     }
 
-    <span class="kw">fn </span>new_unsigned_integer_range(min: u64, max: u64) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new_unsigned_integer_range(min: u64, max: u64) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             range_type: DCNumberType::UInt,
             min: DCNumber::new_unsigned_integer(min),
@@ -338,7 +329,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         }
     }
 
-    <span class="kw">fn </span>new_floating_point_range(min: f64, max: f64) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new_floating_point_range(min: f64, max: f64) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             range_type: DCNumberType::Float,
             min: DCNumber::new_floating_point(min),
@@ -346,7 +337,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         }
     }
 
-    <span class="kw">fn </span>contains(<span class="kw-2">&amp;</span><span class="self">self</span>, num: DCNumber) -&gt; bool {
+    <span class="kw">pub fn </span>contains(<span class="kw-2">&amp;</span><span class="self">self</span>, num: DCNumber) -&gt; bool {
         <span class="kw">match </span><span class="self">self</span>.min.number_type {
             DCNumberType::None =&gt; <span class="bool-val">true</span>,
             DCNumberType::Int =&gt; <span class="kw">unsafe </span>{
@@ -368,7 +359,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         }
     }
 
-    <span class="kw">fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    <span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.range_type.is_none() <span class="comment">// using strum macro
     </span>}
 }
@@ -376,7 +367,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <span class="comment">// ---------- Numeric Type ---------- //
 
 </span><span class="kw">pub struct </span>DCNumericType {
-    parent: DCTypeDefinition,
+    base_type: DCTypeDefinition,
     divisor: u16,
     <span class="comment">// These are the original range and modulus values from the file, unscaled by the divisor.
     </span>orig_modulus: f64,
@@ -387,7 +378,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 }
 
 <span class="kw">pub trait </span>DCNumericTypeInterface {
-    <span class="kw">fn </span>new(base_type: DCTypeEnum) -&gt; DCNumericType;
+    <span class="kw">fn </span>new(base_type: DCTypeEnum) -&gt; <span class="self">Self</span>;
     <span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator);
 
     <span class="kw">fn </span>has_modulus(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool;
@@ -408,7 +399,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     <span class="kw">fn </span>data_to_number(<span class="kw-2">&amp;</span><span class="self">self</span>, data: Vec&lt;u8&gt;) -&gt; (bool, DCNumber) {
         <span class="comment">// NOTE: See &#39;Deref&#39; trait implementation for &#39;DCNumericType&#39; below
         // on how we&#39;re using self.parent.size as self.size.
-        </span><span class="kw">if </span><span class="self">self</span>.size != data.len().try_into().unwrap() {
+        </span><span class="kw">if </span><span class="self">self</span>.base_type.size != data.len().try_into().unwrap() {
             <span class="kw">return </span>(<span class="bool-val">false</span>, DCNumber::new_integer(<span class="number">0_i64</span>));
         }
 
@@ -416,7 +407,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="kw">let _ </span>= dg.add_data(data);
         <span class="kw">let </span><span class="kw-2">mut </span>dgi = DatagramIterator::new(dg);
 
-        <span class="kw">match </span><span class="self">self</span>.data_type {
+        <span class="kw">match </span><span class="self">self</span>.base_type.data_type {
             DCTypeEnum::TInt8 =&gt; (<span class="bool-val">true</span>, DCNumber::new_integer(i64::from(dgi.read_i8()))),
             DCTypeEnum::TInt16 =&gt; (<span class="bool-val">true</span>, DCNumber::new_integer(i64::from(dgi.read_i16()))),
             DCTypeEnum::TInt32 =&gt; (<span class="bool-val">true</span>, DCNumber::new_integer(i64::from(dgi.read_i32()))),
@@ -435,9 +426,9 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 }
 
 <span class="kw">impl </span>DCNumericTypeInterface <span class="kw">for </span>DCNumericType {
-    <span class="kw">fn </span>new(base_type: DCTypeEnum) -&gt; DCNumericType {
-        DCNumericType {
-            parent: {
+    <span class="kw">fn </span>new(base_type: DCTypeEnum) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            base_type: {
                 <span class="kw">let </span><span class="kw-2">mut </span>parent_struct = DCTypeDefinition::new();
                 parent_struct.data_type = base_type;
 
@@ -478,8 +469,8 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     }
 
     <span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator) {
-        <span class="self">self</span>.parent.generate_hash(hashgen);
-        hashgen.add_int(u32::from(<span class="self">self</span>.divisor));
+        <span class="self">self</span>.base_type.generate_hash(hashgen);
+        hashgen.add_int(i32::from(<span class="self">self</span>.divisor));
 
         <span class="kw">if </span><span class="self">self</span>.has_modulus() {
             <span class="comment">// unsafe block required for accessing unions
@@ -502,10 +493,10 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="self">self</span>.orig_range.is_empty()
     }
     <span class="kw">fn </span>get_divisor(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
-        <span class="self">self</span>.divisor.clone()
+        <span class="self">self</span>.divisor
     }
     <span class="kw">fn </span>get_modulus(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f64 {
-        <span class="self">self</span>.orig_modulus.clone()
+        <span class="self">self</span>.orig_modulus
     }
     <span class="kw">fn </span>get_range(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; DCNumericRange {
         <span class="self">self</span>.orig_range.clone()
@@ -520,7 +511,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
             <span class="self">self</span>.set_range(<span class="self">self</span>.orig_range.clone())<span class="question-mark">?</span>;
         }
         <span class="kw">if </span><span class="self">self</span>.has_modulus() {
-            <span class="self">self</span>.set_modulus(<span class="self">self</span>.orig_modulus.clone())<span class="question-mark">?</span>;
+            <span class="self">self</span>.set_modulus(<span class="self">self</span>.orig_modulus)<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -533,19 +524,6 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     }
     <span class="kw">fn </span>within_range(<span class="kw-2">&amp;</span><span class="self">self</span>, data: Vec&lt;u8&gt;, length: u64) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt; {
         <span class="macro">todo!</span>();
-    }
-}
-
-<span class="comment">/* By manually implementing/overriding the standard
- * library&#39;s &#39;Deref&#39; trait of our &#39;child&#39; struct, we
- * can implicitly cast pointers to the parent struct,
- * as pointers to the child struct, which gives us a
- * nice &#39;cheat&#39; for the feel of inheritance.
- */
-</span><span class="kw">impl </span>std::ops::Deref <span class="kw">for </span>DCNumericType {
-    <span class="kw">type </span>Target = DCTypeDefinition;
-    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Target {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.parent
     }
 }
 </code></pre></div></section></main></body></html>

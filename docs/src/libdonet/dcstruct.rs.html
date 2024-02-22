@@ -25,6 +25,8 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#23" id="23">23</a>
 <a href="#24" id="24">24</a>
 <a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
 </pre></div><pre class="rust"><code><span class="comment">// DONET SOFTWARE
 // Copyright (c) 2024, Donet Authors.
 //
@@ -42,12 +44,14 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-</span><span class="attr">#[derive(Debug, PartialEq)]
+</span><span class="doccomment">//! Data model representing a DC Struct element.
+
+</span><span class="attr">#[derive(Debug, Default, PartialEq)]
 </span><span class="kw">pub struct </span>DCStruct {}
 
 <span class="kw">impl </span>DCStruct {
-    <span class="kw">pub fn </span>new() -&gt; DCStruct {
-        DCStruct {}
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::default()
     }
 }
 </code></pre></div></section></main></body></html>

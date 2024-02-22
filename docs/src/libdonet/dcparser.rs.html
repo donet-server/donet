@@ -881,6 +881,16 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#879" id="879">879</a>
 <a href="#880" id="880">880</a>
 <a href="#881" id="881">881</a>
+<a href="#882" id="882">882</a>
+<a href="#883" id="883">883</a>
+<a href="#884" id="884">884</a>
+<a href="#885" id="885">885</a>
+<a href="#886" id="886">886</a>
+<a href="#887" id="887">887</a>
+<a href="#888" id="888">888</a>
+<a href="#889" id="889">889</a>
+<a href="#890" id="890">890</a>
+<a href="#891" id="891">891</a>
 </pre></div><pre class="rust"><code><span class="comment">// DONET SOFTWARE
 // Copyright (c) 2024, Donet Authors.
 //
@@ -898,12 +908,21 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-/* The following suppress linting warnings, which are okay to ignore
+</span><span class="doccomment">//! Definition of the DC language context free grammar for the
+//! LALR(1) parser processing the stream of lexical tokens.
+
+</span><span class="comment">/* The following suppress linting warnings, which are okay to ignore
  * as they go off in the parser grammar definitions, which we are writing
  * just as the plex crate readme says we should, so everything is okay.
  */
-</span><span class="attr">#![allow(clippy::type_complexity, clippy::redundant_field_names, clippy::ptr_arg)]
-#![allow(clippy::redundant_closure_call, clippy::enum_variant_names)]
+</span><span class="attr">#![allow(
+    clippy::type_complexity,
+    clippy::redundant_field_names,
+    clippy::ptr_arg,
+    clippy::redundant_closure_call,
+    clippy::enum_variant_names,
+    clippy::let_unit_value
+)]
 
 </span><span class="kw">use </span><span class="kw">crate</span>::dcfile::{DCFile, DCFileInterface, DCImport};
 <span class="kw">use </span><span class="kw">crate</span>::dckeyword;
@@ -974,7 +993,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
                         <span class="kw">use </span>dclass::DClassInterface;
 
                         <span class="kw">let </span>next_class_id: usize = dc_file.get_num_dclasses();
-                        dclass.set_class_id(next_class_id.try_into().unwrap());
+                        dclass.set_dclass_id(next_class_id.try_into().unwrap());
 
                         dc_file.add_dclass(dclass);
                     },
@@ -1036,7 +1055,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 
             <span class="comment">// Handles e.g. &quot;from module/AI/OV/UD import DistributedThing/AI/OV/UD&quot;
             </span><span class="kw">if </span>mvs_opt.is_some() {
-                <span class="kw">let </span><span class="kw-2">mut </span>c_symbol: String = class_symbols.get(<span class="number">0</span>).unwrap().clone();
+                <span class="kw">let </span><span class="kw-2">mut </span>c_symbol: String = class_symbols.first().unwrap().clone();
 
                 result_vec.push(DCImport::new(m.clone(), <span class="macro">vec!</span>[c_symbol]));
 
@@ -1427,6 +1446,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     type_value: () {
         DecimalLiteral(<span class="kw">_</span>) =&gt; {},
         CharacterLiteral(<span class="kw">_</span>) =&gt; {},
+        StringLiteral(<span class="kw">_</span>) =&gt; {},
         HexLiteral(<span class="kw">_</span>) =&gt; {},
         signed_integer[<span class="kw">_</span>] =&gt; {},
         array_value =&gt; {},

@@ -160,6 +160,28 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
 <a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
 </pre></div><pre class="rust"><code><span class="comment">// DONET SOFTWARE
 // Copyright (c) 2024, Donet Authors.
 //
@@ -177,6 +199,9 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+</span><span class="doccomment">//! Represents all data types supported by the DC language
+//! and developer-defined type alias definitions.
+
 </span><span class="kw">use </span><span class="kw">crate</span>::globals::DgSizeTag;
 <span class="kw">use </span><span class="kw">crate</span>::hashgen::DCHashGenerator;
 <span class="kw">use </span>strum_macros::EnumIs;
@@ -185,7 +210,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
  * to keep compatibility with Astron&#39;s DC hash inputs.
  */
 </span><span class="attr">#[repr(u8)] </span><span class="comment">// 8-bit alignment, unsigned
-</span><span class="attr">#[derive(Clone)]
+</span><span class="attr">#[derive(Debug, Clone, PartialEq)]
 #[rustfmt::skip]
 </span><span class="kw">pub enum </span>DCTypeEnum {
     <span class="comment">// Numeric Types
@@ -205,7 +230,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     TInvalid = <span class="number">21</span>,
 }
 
-<span class="attr">#[derive(Clone)]
+<span class="attr">#[derive(Debug, Clone)]
 </span><span class="kw">pub struct </span>DCTypeDefinition {
     alias: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="kw">pub </span>data_type: DCTypeEnum,
@@ -213,7 +238,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 }
 
 <span class="kw">pub trait </span>DCTypeDefinitionInterface {
-    <span class="kw">fn </span>new() -&gt; DCTypeDefinition;
+    <span class="kw">fn </span>new() -&gt; <span class="self">Self</span>;
     <span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator);
 
     <span class="kw">fn </span>get_dc_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; DCTypeEnum;
@@ -226,16 +251,18 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 }
 
 <span class="kw">impl </span>DCTypeDefinitionInterface <span class="kw">for </span>DCTypeDefinition {
-    <span class="kw">fn </span>new() -&gt; DCTypeDefinition {
-        DCTypeDefinition {
+    <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
             alias: <span class="prelude-val">None</span>,
             data_type: DCTypeEnum::TInvalid,
             size: <span class="number">0_u16</span>,
         }
     }
 
-    <span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator) {
-        hashgen.add_int(u32::from(<span class="self">self</span>.data_type.clone() <span class="kw">as </span>u8));
+    <span class="doccomment">/// Generates the hash for this DC Type element.
+    </span><span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator) {
+        hashgen.add_int(i32::from(<span class="self">self</span>.data_type.clone() <span class="kw">as </span>u8));
+
         <span class="kw">if </span><span class="self">self</span>.alias.is_some() {
             hashgen.add_string(<span class="self">self</span>.alias.clone().unwrap())
         }
@@ -245,15 +272,18 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="self">self</span>.data_type.clone()
     }
 
-    <span class="kw">fn </span>is_variable_length(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>is_variable_length(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.size == <span class="number">0_u16
     </span>}
 
-    <span class="kw">fn </span>get_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; DgSizeTag {
-        <span class="self">self</span>.size.clone()
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>get_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; DgSizeTag {
+        <span class="self">self</span>.size
     }
 
-    <span class="kw">fn </span>has_alias(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>has_alias(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.alias.is_some()
     }
 
@@ -273,7 +303,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <span class="comment">// ---------- DC Number ---------- //
 
 </span><span class="attr">#[rustfmt::skip]
-#[derive(Clone, EnumIs)]
+#[derive(Clone, PartialEq, EnumIs)]
 </span><span class="kw">pub enum </span>DCNumberType {
     <span class="prelude-val">None </span>= <span class="number">0</span>, Int, UInt, Float,
 }
@@ -292,12 +322,26 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     <span class="kw">pub </span>value: DCNumberValueUnion,
 }
 
-<span class="kw">impl </span>DCNumber {
-    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+<span class="comment">// We have to manually implement the &#39;PartialEq&#39; trait
+// due to the usage of a union data type.
+</span><span class="kw">impl </span>PartialEq <span class="kw">for </span>DCNumber {
+    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, rhs: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+        <span class="self">self</span>.number_type == rhs.number_type
+    }
+}
+
+<span class="kw">impl </span>Default <span class="kw">for </span>DCNumber {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             number_type: DCNumberType::None,
             value: DCNumberValueUnion { integer: <span class="number">0_i64 </span>},
         }
+    }
+}
+
+<span class="kw">impl </span>DCNumber {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::default()
     }
     <span class="kw">pub fn </span>new_integer(num: i64) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{

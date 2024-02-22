@@ -758,6 +758,9 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#756" id="756">756</a>
 <a href="#757" id="757">757</a>
 <a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
 </pre></div><pre class="rust"><code><span class="comment">// DONET SOFTWARE
 // Copyright (c) 2024, Donet Authors.
 //
@@ -774,6 +777,9 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 // You should have received a copy of the GNU Affero General Public License
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+</span><span class="doccomment">//! Provides structures to write network datagrams and tools
+//! for iterating over datagram data.
 
 </span><span class="kw">use </span><span class="kw">crate</span>::byte_order <span class="kw">as </span>endianness;
 <span class="kw">use </span><span class="kw">crate</span>::globals;
@@ -800,7 +806,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         }
     }
 
-    <span class="comment">// Checks if we can add `length` number of bytes to the datagram.
+    <span class="doccomment">/// Checks if we can add `length` number of bytes to the datagram.
     </span><span class="kw">fn </span>check_add_length(<span class="kw-2">&amp;mut </span><span class="self">self</span>, length: globals::DgSizeTag) -&gt; globals::DgResult {
         <span class="kw">let </span>new_index: usize = <span class="self">self</span>.index + usize::from(length);
 
@@ -811,8 +817,8 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="comment">// Adds an unsigned 8-bit integer to the datagram that is
-    // guaranteed to be one of the values 0x00 (false) or 0x01 (true).
+    <span class="doccomment">/// Adds an unsigned 8-bit integer to the datagram that is
+    /// guaranteed to be one of the values 0x00 (false) or 0x01 (true).
     </span><span class="kw">pub fn </span>add_bool(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: bool) -&gt; globals::DgResult {
         <span class="self">self</span>.check_add_length(<span class="number">1</span>)<span class="question-mark">?</span>;
         <span class="kw">if </span>v {
@@ -823,7 +829,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="comment">// Adds an unsigned 8-bit integer value to the datagram.
+    <span class="doccomment">/// Adds an unsigned 8-bit integer value to the datagram.
     </span><span class="kw">pub fn </span>add_u8(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: u8) -&gt; globals::DgResult {
         <span class="self">self</span>.check_add_length(<span class="number">1</span>)<span class="question-mark">?</span>;
         <span class="self">self</span>.buffer.push(v);
@@ -886,45 +892,45 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="self">self</span>.add_u64(v <span class="kw">as </span>u64)
     }
 
-    <span class="comment">// 32-bit IEEE 754 floating point. same bitwise operations.
+    <span class="doccomment">/// 32-bit IEEE 754 floating point. same bitwise operations.
     </span><span class="kw">pub fn </span>add_f32(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: f32) -&gt; globals::DgResult {
         <span class="self">self</span>.add_u32(v <span class="kw">as </span>u32)
     }
 
-    <span class="comment">// 64-bit IEEE 754 floating point. same bitwise operations.
+    <span class="doccomment">/// 64-bit IEEE 754 floating point. same bitwise operations.
     </span><span class="kw">pub fn </span>add_f64(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: f64) -&gt; globals::DgResult {
         <span class="self">self</span>.add_u64(v <span class="kw">as </span>u64)
     }
 
-    <span class="comment">// Adds a Datagram / Field length tag to the end of the datagram.
+    <span class="doccomment">/// Adds a Datagram / Field length tag to the end of the datagram.
     </span><span class="kw">pub fn </span>add_size(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: globals::DgSizeTag) -&gt; globals::DgResult {
         <span class="self">self</span>.add_u16(v)
     }
 
-    <span class="comment">// Adds a 64-bit channel ID to the end of the datagram.
+    <span class="doccomment">/// Adds a 64-bit channel ID to the end of the datagram.
     </span><span class="kw">pub fn </span>add_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: globals::Channel) -&gt; globals::DgResult {
         <span class="self">self</span>.add_u64(v)
     }
 
-    <span class="comment">// Adds a 32-bit Distributed Object ID to the end of the datagram.
+    <span class="doccomment">/// Adds a 32-bit Distributed Object ID to the end of the datagram.
     </span><span class="kw">pub fn </span>add_doid(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: globals::DoId) -&gt; globals::DgResult {
         <span class="self">self</span>.add_u32(v)
     }
 
-    <span class="comment">// Adds a 32-bit zone ID to the end of the datagram.
+    <span class="doccomment">/// Adds a 32-bit zone ID to the end of the datagram.
     </span><span class="kw">pub fn </span>add_zone(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: globals::Zone) -&gt; globals::DgResult {
         <span class="self">self</span>.add_u32(v)
     }
 
-    <span class="comment">// Added for convenience, but also better performance
-    // than adding the parent and the zone separately.
+    <span class="doccomment">/// Added for convenience, but also better performance
+    /// than adding the parent and the zone separately.
     </span><span class="kw">pub fn </span>add_location(<span class="kw-2">&amp;mut </span><span class="self">self</span>, parent: globals::DoId, zone: globals::Zone) -&gt; globals::DgResult {
         <span class="self">self</span>.add_u32(parent)<span class="question-mark">?</span>;
         <span class="self">self</span>.add_u32(zone)
     }
 
-    <span class="comment">// Adds raw bytes to the datagram via an unsigned 8-bit integer vector.
-    // NOTE: not to be confused with add_blob(), which adds a dclass blob to the datagram.
+    <span class="doccomment">/// Adds raw bytes to the datagram via an unsigned 8-bit integer vector.
+    /// NOTE: not to be confused with add_blob(), which adds a dclass blob to the datagram.
     </span><span class="kw">pub fn </span>add_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>v: Vec&lt;u8&gt;) -&gt; globals::DgResult {
         <span class="kw">if </span>v.len() &gt; globals::DG_SIZE_MAX.into() {
             <span class="comment">// check input to avoid panic at .try_into() below
@@ -936,7 +942,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="comment">// Appends another datagram&#39;s binary data to this datagram.
+    <span class="doccomment">/// Appends another datagram&#39;s binary data to this datagram.
     </span><span class="kw">pub fn </span>add_datagram(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dg: <span class="kw-2">&amp;mut </span>Datagram) -&gt; globals::DgResult {
         <span class="kw">let </span>dg_buffer: Vec&lt;u8&gt; = dg.get_data();
 
@@ -949,8 +955,8 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="self">self</span>.add_data(dg_buffer)
     }
 
-    <span class="comment">// Adds a dclass string value to the end of the datagram.
-    // A 16-bit length tag prefix with the string&#39;s size in bytes is added.
+    <span class="doccomment">/// Adds a dclass string value to the end of the datagram.
+    /// A 16-bit length tag prefix with the string&#39;s size in bytes is added.
     </span><span class="kw">pub fn </span>add_string(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>str) -&gt; globals::DgResult {
         <span class="kw">if </span>v.len() &gt; globals::DG_SIZE_MAX.into() {
             <span class="comment">// The string is too big to be described with a 16-bit length tag.
@@ -969,8 +975,8 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="comment">// Adds a dclass blob value (binary data) to the end of the datagram.
-    // A 16-bit length tag prefix with the blob&#39;s size in bytes is added.
+    <span class="doccomment">/// Adds a dclass blob value (binary data) to the end of the datagram.
+    /// A 16-bit length tag prefix with the blob&#39;s size in bytes is added.
     </span><span class="kw">pub fn </span>add_blob(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>v: Vec&lt;u8&gt;) -&gt; globals::DgResult {
         <span class="comment">// add blob size in bytes
         </span><span class="self">self</span>.add_size(v.len().try_into().unwrap())<span class="question-mark">?</span>;
@@ -981,7 +987,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="comment">// Reserves an amount of bytes in the datagram buffer.
+    <span class="doccomment">/// Reserves an amount of bytes in the datagram buffer.
     </span><span class="kw">pub fn </span>add_buffer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bytes: globals::DgSizeTag) -&gt; globals::DgBufferResult {
         <span class="self">self</span>.check_add_length(bytes)<span class="question-mark">?</span>;
         <span class="comment">// get start length (before push)
@@ -993,13 +999,13 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="prelude-val">Ok</span>(start)
     }
 
-    <span class="comment">// Appends a generic header for messages that are to be routed to
-    // one or more role instances within the server cluster.
-    // Use this method to avoid repetitive code for every internal message.
-    //
-    // The header is formatted as shown below:
-    //     (recipients: u8, recipients: Vec&lt;Channel&gt;, sender: Channel, message_type: u16)
-    //
+    <span class="doccomment">/// Appends a generic header for messages that are to be routed to
+    /// one or more role instances within the server cluster.
+    /// Use this method to avoid repetitive code for every internal message.
+    ///
+    /// The header is formatted as shown below:
+    ///     (recipients: u8, recipients: Vec&lt;Channel&gt;, sender: Channel, message_type: u16)
+    ///
     </span><span class="kw">pub fn </span>add_server_header(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         to: Vec&lt;globals::Channel&gt;,
@@ -1018,9 +1024,9 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="comment">// Appends a control header, which is very similar to a server header,
-    // but it always has only one recipient, which is the control channel,
-    // and does not require a sender (or &#39;from&#39;) channel to be provided.
+    <span class="doccomment">/// Appends a control header, which is very similar to a server header,
+    /// but it always has only one recipient, which is the control channel,
+    /// and does not require a sender (or &#39;from&#39;) channel to be provided.
     </span><span class="kw">pub fn </span>add_control_header(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg_type: globals::MsgType) -&gt; globals::DgResult {
         <span class="self">self</span>.add_u8(<span class="number">1</span>)<span class="question-mark">?</span>;
         <span class="self">self</span>.add_channel(globals::CONTROL_CHANNEL)<span class="question-mark">?</span>;
@@ -1044,7 +1050,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     }
 }
 
-<span class="comment">// Utility for iterating value by value of a datagram message.
+<span class="doccomment">/// Utility for iterating value by value of a datagram message.
 </span><span class="kw">pub struct </span>DatagramIterator {
     datagram: Datagram,
     index: usize,
@@ -1068,30 +1074,30 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="comment">// Returns the value of `self.index` in bytes.
+    <span class="doccomment">/// Returns the value of `self.index` in bytes.
     </span><span class="kw">pub fn </span>tell(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; globals::DgSizeTag {
         <span class="self">self</span>.index <span class="kw">as </span>globals::DgSizeTag
     }
 
-    <span class="comment">// Manually sets the buffer_offset position.
+    <span class="doccomment">/// Manually sets the buffer_offset position.
     </span><span class="kw">pub fn </span>seek(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: globals::DgSizeTag) {
         <span class="self">self</span>.index = to <span class="kw">as </span>usize;
     }
 
-    <span class="comment">// Increments the buffer_offset by `bytes` length.
-    // Returns DgError.DatagramIteratorEOF if it&#39;s past the end of the buffer.
+    <span class="doccomment">/// Increments the buffer_offset by `bytes` length.
+    /// Returns DgError.DatagramIteratorEOF if it&#39;s past the end of the buffer.
     </span><span class="kw">pub fn </span>skip(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bytes: globals::DgSizeTag) -&gt; globals::DgResult {
         <span class="self">self</span>.check_read_length(bytes)<span class="question-mark">?</span>;
         <span class="self">self</span>.index += bytes <span class="kw">as </span>usize;
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="comment">// Returns the number of unread bytes left in the datagram
+    <span class="doccomment">/// Returns the number of unread bytes left in the datagram
     </span><span class="kw">pub fn </span>get_remaining(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; globals::DgSizeTag {
         <span class="self">self</span>.datagram.size() - <span class="self">self</span>.index <span class="kw">as </span>globals::DgSizeTag
     }
 
-    <span class="comment">// Reads the next number of bytes in the datagram.
+    <span class="doccomment">/// Reads the next number of bytes in the datagram.
     </span><span class="kw">pub fn </span>read_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bytes: globals::DgSizeTag) -&gt; Vec&lt;u8&gt; {
         <span class="kw">let </span>data: Vec&lt;u8&gt; = <span class="self">self</span>.datagram.get_data();
 
@@ -1193,12 +1199,12 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="self">self</span>.read_u64() <span class="kw">as </span>i64
     }
 
-    <span class="comment">// 32-bit IEEE 754 floating point in native endianness.
+    <span class="doccomment">/// 32-bit IEEE 754 floating point in native endianness.
     </span><span class="kw">pub fn </span>read_f32(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; f32 {
         <span class="self">self</span>.read_u32() <span class="kw">as </span>f32
     }
 
-    <span class="comment">// 64-bit IEEE 754 floating point in native endianness.
+    <span class="doccomment">/// 64-bit IEEE 754 floating point in native endianness.
     </span><span class="kw">pub fn </span>read_f64(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; f64 {
         <span class="self">self</span>.read_u64() <span class="kw">as </span>f64
     }
@@ -1224,8 +1230,8 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="self">self</span>.read_u32() <span class="kw">as </span>globals::Zone
     }
 
-    <span class="comment">// Get the recipient count in a datagram message.
-    // Does not advance the DatagramIterator index.
+    <span class="doccomment">/// Get the recipient count in a datagram message.
+    /// Does not advance the DatagramIterator index.
     </span><span class="kw">pub fn </span>read_recipient_count(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; u8 {
         <span class="kw">if </span><span class="self">self</span>.datagram.size() == <span class="number">0 </span>{
             <span class="comment">// FIXME: error!(&quot;Cannot read from an empty datagram!&quot;);
@@ -1238,9 +1244,9 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         value
     }
 
-    <span class="comment">// Returns the datagram&#39;s message type. Does not advance the index.
-    // Useful for if index needs to be saved or if next field isn&#39;t msg type.
-    // If iterating through a fresh datagram, use read_u16.
+    <span class="doccomment">/// Returns the datagram&#39;s message type. Does not advance the index.
+    /// Useful for if index needs to be saved or if next field isn&#39;t msg type.
+    /// If iterating through a fresh datagram, use read_u16.
     </span><span class="kw">pub fn </span>read_msg_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; globals::Protocol {
         <span class="kw">let </span>start_index: usize = <span class="self">self</span>.index;
 

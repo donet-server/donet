@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["DCField"],"trait":["DCFieldInterface"]};
+window.SIDEBAR_ITEMS = {"enum":["ClassField","StructField"],"struct":["DCField"],"trait":["DCFieldInterface"]};

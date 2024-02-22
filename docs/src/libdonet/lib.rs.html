@@ -168,6 +168,9 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
 <a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! DONET SOFTWARE
 //!
 //! Copyright (c) 2024, Donet Authors.
@@ -229,12 +232,15 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <span class="macro">cfg_if! </span>{
     <span class="kw">if </span><span class="attr">#[cfg(feature = <span class="string">&quot;dcfile&quot;</span>)] </span>{
         <span class="kw">pub mod </span>dcarray;
+        <span class="kw">pub mod </span>dcatomic;
         <span class="kw">pub mod </span>dcfield;
         <span class="kw">pub mod </span>dcfile;
         <span class="kw">pub mod </span>dckeyword;
         <span class="kw">pub mod </span>dclass;
         <span class="kw">pub mod </span>dclexer;
+        <span class="kw">pub mod </span>dcmolecular;
         <span class="kw">pub mod </span>dcnumeric;
+        <span class="kw">pub mod </span>dcparameter;
         <span class="kw">pub mod </span>dcparser;
         <span class="kw">pub mod </span>dcstruct;
         <span class="kw">pub mod </span>dctype;
@@ -317,9 +323,9 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     <span class="kw">for </span>io_result <span class="kw">in </span>file_results {
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>dcf) = io_result {
             <span class="kw">let </span>res: std::io::Result&lt;usize&gt; = dcf.read_to_string(<span class="kw-2">&amp;mut </span>lexer_input);
-            <span class="kw">if </span>res.is_err() {
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(res_err) = res {
                 <span class="comment">// DC file content may not be in proper UTF-8 encoding.
-                </span><span class="kw">return </span><span class="prelude-val">Err</span>(globals::DCReadError::FileError(res.unwrap_err()));
+                </span><span class="kw">return </span><span class="prelude-val">Err</span>(globals::DCReadError::FileError(res_err));
             }
         } <span class="kw">else </span>{
             <span class="comment">// Failed to open one of the DC files. (most likely permission error)

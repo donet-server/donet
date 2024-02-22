@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["DCKeyword"],"trait":["DCKeywordInterface"],"type":["HistoricalFlag"]};
+window.SIDEBAR_ITEMS = {"enum":["IdentifyKeyword"],"struct":["DCKeyword","DCKeywordList"],"trait":["DCKeywordInterface","DCKeywordListInterface"],"type":["HistoricalFlag","KeywordName2Keyword"]};

@@ -221,6 +221,11 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#219" id="219">219</a>
 <a href="#220" id="220">220</a>
 <a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
 </pre></div><pre class="rust"><code><span class="comment">// DONET SOFTWARE
 // Copyright (c) 2024, Donet Authors.
 //
@@ -237,6 +242,9 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 // You should have received a copy of the GNU Affero General Public License
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+</span><span class="doccomment">//! Root structure that stores the collection of DC elements
+//! in memory. Provides functions for manipulating the tree.
 
 </span><span class="kw">use </span><span class="kw">crate</span>::dckeyword::DCKeyword;
 <span class="kw">use </span><span class="kw">crate</span>::dclass::DClass;
@@ -261,7 +269,10 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     }
 }
 
-<span class="attr">#[derive(Debug)]
+<span class="doccomment">/// Data model that provides a high level representation of a single,
+/// or collection, of DC files and their elements such as class imports,
+/// type definitions, structures, and Distributed Classes.
+</span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>DCFile {
     structs: Vec&lt;Mutex&lt;DCStruct&gt;&gt;,
     dclasses: Vec&lt;Mutex&lt;DClass&gt;&gt;,
@@ -323,24 +334,23 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 }
 
 <span class="kw">impl </span>DCFileInterface <span class="kw">for </span>DCFile {
-    <span class="comment">/* Returns a 32-bit hash index associated with this file.  This number is
-     * guaranteed to be consistent if the contents of the file have not changed,
-     * and it is very likely to be different if the contents of the file do change.
-     */
+    <span class="doccomment">/// Returns a 32-bit hash index associated with this file.  This number is
+    /// guaranteed to be consistent if the contents of the file have not changed,
+    /// and it is very likely to be different if the contents of the file do change.
     </span><span class="kw">fn </span>get_hash(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; globals::DCFileHash {
         <span class="kw">let </span><span class="kw-2">mut </span>hashgen: DCHashGenerator = DCHashGenerator::new();
         <span class="self">self</span>.generate_hash(<span class="kw-2">&amp;mut </span>hashgen);
         hashgen.get_hash()
     }
 
-    <span class="comment">// Accumulates the elements of the DC file into the hash.
+    <span class="doccomment">/// Accumulates the elements of the DC file into the hash.
     </span><span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;mut </span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator) {
         <span class="kw">if </span>globals::DC_VIRTUAL_INHERITANCE {
             <span class="comment">// Just to change the hash output in this case.
             </span><span class="kw">if </span>globals::DC_SORT_INHERITANCE_BY_FILE {
-                hashgen.add_int(<span class="number">1_u32</span>);
+                hashgen.add_int(<span class="number">1_i32</span>);
             } <span class="kw">else </span>{
-                hashgen.add_int(<span class="number">2_u32</span>);
+                hashgen.add_int(<span class="number">2_i32</span>);
             }
         }
         hashgen.add_int(<span class="self">self</span>.get_num_dclasses().try_into().unwrap());
@@ -351,7 +361,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         }
     }
 
-    <span class="comment">// Returns a string with the hash as a pretty format hexadecimal.
+    <span class="doccomment">/// Returns a string with the hash as a pretty format hexadecimal.
     </span><span class="kw">fn </span>get_pretty_hash(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; String {
         <span class="macro">format!</span>(<span class="string">&quot;0x{:0width$x}&quot;</span>, <span class="self">self</span>.get_hash(), width = <span class="number">8</span>) <span class="comment">// 2 hex / byte = 8 hex
     </span>}
