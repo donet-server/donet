@@ -22,7 +22,7 @@ pub struct PrimeNumberGenerator {
 }
 
 pub struct DCHashGenerator {
-    hash: DCFileHash,
+    hash: i32,
     index: u16,
     primes: PrimeNumberGenerator,
 }
@@ -61,35 +61,41 @@ impl PrimeNumberGenerator {
     }
 }
 
-impl DCHashGenerator {
-    pub fn new() -> DCHashGenerator {
-        DCHashGenerator {
-            hash: 0_u32,
+impl Default for DCHashGenerator {
+    fn default() -> Self {
+        Self {
+            hash: 0_i32,
             index: 0_u16,
             primes: PrimeNumberGenerator::new(),
         }
     }
-    // Adds another integer to the hash so far.
-    pub fn add_int(&mut self, number: u32) {
+}
+
+impl DCHashGenerator {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    /// Adds another integer to the hash so far.
+    pub fn add_int(&mut self, number: i32) {
         assert!(self.index < MAX_PRIME_NUMBERS);
-        self.hash += u32::from(self.primes.get_prime(self.index)) * number;
+        self.hash += i32::from(self.primes.get_prime(self.index)) * number;
         self.index = (self.index + 1) % MAX_PRIME_NUMBERS;
     }
 
-    // Adds a blob to the hash, by breaking it down into a sequence of integers.
+    /// Adds a blob to the hash, by breaking it down into a sequence of integers.
     pub fn add_blob(&mut self, blob: Vec<u8>) {
         self.add_int(blob.len().try_into().unwrap());
         for byte in blob.into_iter() {
-            self.add_int(u32::from(byte));
+            self.add_int(i32::from(byte));
         }
     }
-    // Adds a string to the hash, by breaking it down into a sequence of integers.
+    /// Adds a string to the hash, by breaking it down into a sequence of integers.
     pub fn add_string(&mut self, string: String) {
         self.add_blob(string.into_bytes());
     }
 
     pub const fn get_hash(&self) -> DCFileHash {
-        self.hash & 0xffffffff
+        self.hash as u32
     }
 }
 
@@ -99,7 +105,7 @@ mod unit_testing {
 
     #[test]
     fn prime_number_generator_integrity() {
-        let mut pmg: PrimeNumberGenerator = PrimeNumberGenerator::new();
+        let mut png: PrimeNumberGenerator = PrimeNumberGenerator::new();
 
         let prime_numbers: Vec<u16> = vec![
             2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,
@@ -113,7 +119,7 @@ mod unit_testing {
         ];
 
         for (i, target_prime) in prime_numbers.into_iter().enumerate() {
-            assert_eq!(target_prime, pmg.get_prime(i.try_into().unwrap()));
+            assert_eq!(target_prime, png.get_prime(i.try_into().unwrap()));
         }
     }
 }

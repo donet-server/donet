@@ -15,6 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Represents all data types supported by the DC language
+//! and developer-defined type alias definitions.
+
 use crate::globals::DgSizeTag;
 use crate::hashgen::DCHashGenerator;
 use strum_macros::EnumIs;
@@ -23,7 +26,7 @@ use strum_macros::EnumIs;
  * to keep compatibility with Astron's DC hash inputs.
  */
 #[repr(u8)] // 8-bit alignment, unsigned
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[rustfmt::skip]
 pub enum DCTypeEnum {
     // Numeric Types
@@ -43,7 +46,7 @@ pub enum DCTypeEnum {
     TInvalid = 21,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct DCTypeDefinition {
     alias: Option<String>,
     pub data_type: DCTypeEnum,
@@ -51,7 +54,7 @@ pub struct DCTypeDefinition {
 }
 
 pub trait DCTypeDefinitionInterface {
-    fn new() -> DCTypeDefinition;
+    fn new() -> Self;
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn get_dc_type(&self) -> DCTypeEnum;
@@ -64,16 +67,18 @@ pub trait DCTypeDefinitionInterface {
 }
 
 impl DCTypeDefinitionInterface for DCTypeDefinition {
-    fn new() -> DCTypeDefinition {
-        DCTypeDefinition {
+    fn new() -> Self {
+        Self {
             alias: None,
             data_type: DCTypeEnum::TInvalid,
             size: 0_u16,
         }
     }
 
+    /// Generates the hash for this DC Type element.
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        hashgen.add_int(u32::from(self.data_type.clone() as u8));
+        hashgen.add_int(i32::from(self.data_type.clone() as u8));
+
         if self.alias.is_some() {
             hashgen.add_string(self.alias.clone().unwrap())
         }
@@ -83,14 +88,17 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
         self.data_type.clone()
     }
 
+    #[inline(always)]
     fn is_variable_length(&self) -> bool {
         self.size == 0_u16
     }
 
+    #[inline(always)]
     fn get_size(&self) -> DgSizeTag {
-        self.size.clone()
+        self.size
     }
 
+    #[inline(always)]
     fn has_alias(&self) -> bool {
         self.alias.is_some()
     }
@@ -111,7 +119,7 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
 // ---------- DC Number ---------- //
 
 #[rustfmt::skip]
-#[derive(Clone, EnumIs)]
+#[derive(Clone, PartialEq, EnumIs)]
 pub enum DCNumberType {
     None = 0, Int, UInt, Float,
 }
@@ -130,12 +138,26 @@ pub struct DCNumber {
     pub value: DCNumberValueUnion,
 }
 
-impl DCNumber {
-    pub fn new() -> Self {
+// We have to manually implement the 'PartialEq' trait
+// due to the usage of a union data type.
+impl PartialEq for DCNumber {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.number_type == rhs.number_type
+    }
+}
+
+impl Default for DCNumber {
+    fn default() -> Self {
         Self {
             number_type: DCNumberType::None,
             value: DCNumberValueUnion { integer: 0_i64 },
         }
+    }
+}
+
+impl DCNumber {
+    pub fn new() -> Self {
+        Self::default()
     }
     pub fn new_integer(num: i64) -> Self {
         Self {

@@ -15,12 +15,21 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Definition of the DC language context free grammar for the
+//! LALR(1) parser processing the stream of lexical tokens.
+
 /* The following suppress linting warnings, which are okay to ignore
  * as they go off in the parser grammar definitions, which we are writing
  * just as the plex crate readme says we should, so everything is okay.
  */
-#![allow(clippy::type_complexity, clippy::redundant_field_names, clippy::ptr_arg)]
-#![allow(clippy::redundant_closure_call, clippy::enum_variant_names)]
+#![allow(
+    clippy::type_complexity,
+    clippy::redundant_field_names,
+    clippy::ptr_arg,
+    clippy::redundant_closure_call,
+    clippy::enum_variant_names,
+    clippy::let_unit_value
+)]
 
 use crate::dcfile::{DCFile, DCFileInterface, DCImport};
 use crate::dckeyword;
@@ -91,7 +100,7 @@ parser! {
                         use dclass::DClassInterface;
 
                         let next_class_id: usize = dc_file.get_num_dclasses();
-                        dclass.set_class_id(next_class_id.try_into().unwrap());
+                        dclass.set_dclass_id(next_class_id.try_into().unwrap());
 
                         dc_file.add_dclass(dclass);
                     },
@@ -153,7 +162,7 @@ parser! {
 
             // Handles e.g. "from module/AI/OV/UD import DistributedThing/AI/OV/UD"
             if mvs_opt.is_some() {
-                let mut c_symbol: String = class_symbols.get(0).unwrap().clone();
+                let mut c_symbol: String = class_symbols.first().unwrap().clone();
 
                 result_vec.push(DCImport::new(m.clone(), vec![c_symbol]));
 
@@ -544,6 +553,7 @@ parser! {
     type_value: () {
         DecimalLiteral(_) => {},
         CharacterLiteral(_) => {},
+        StringLiteral(_) => {},
         HexLiteral(_) => {},
         signed_integer[_] => {},
         array_value => {},

@@ -15,24 +15,26 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Structure representing data types supported in the DC
+//! language and enforcing numeric limits through constraints.
+
 use crate::datagram::{Datagram, DatagramIterator};
 use crate::dctype::*;
 use crate::hashgen::DCHashGenerator;
 use std::mem::size_of;
 
-/* Numeric Range structs are used to represent a range of signed/unsigned
- * integers or floating point numbers. Used for enforcing numeric limits
- * withing constraints of array, string, or blob sized types.
- */
+/// Numeric Range structs are used to represent a range of signed/unsigned
+/// integers or floating point numbers. Used for enforcing numeric limits
+/// within constraints of array, string, or blob sized types.
 #[derive(Clone)]
 pub struct DCNumericRange {
     range_type: DCNumberType,
-    min: DCNumber,
-    max: DCNumber,
+    pub min: DCNumber,
+    pub max: DCNumber,
 }
 
 impl DCNumericRange {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut default_min: DCNumber = DCNumber::new_floating_point(f64::NEG_INFINITY);
         let mut default_max: DCNumber = DCNumber::new_floating_point(f64::INFINITY);
 
@@ -46,7 +48,7 @@ impl DCNumericRange {
         }
     }
 
-    fn new_integer_range(min: i64, max: i64) -> Self {
+    pub fn new_integer_range(min: i64, max: i64) -> Self {
         Self {
             range_type: DCNumberType::Int,
             min: DCNumber::new_integer(min),
@@ -54,7 +56,7 @@ impl DCNumericRange {
         }
     }
 
-    fn new_unsigned_integer_range(min: u64, max: u64) -> Self {
+    pub fn new_unsigned_integer_range(min: u64, max: u64) -> Self {
         Self {
             range_type: DCNumberType::UInt,
             min: DCNumber::new_unsigned_integer(min),
@@ -62,7 +64,7 @@ impl DCNumericRange {
         }
     }
 
-    fn new_floating_point_range(min: f64, max: f64) -> Self {
+    pub fn new_floating_point_range(min: f64, max: f64) -> Self {
         Self {
             range_type: DCNumberType::Float,
             min: DCNumber::new_floating_point(min),
@@ -70,7 +72,7 @@ impl DCNumericRange {
         }
     }
 
-    fn contains(&self, num: DCNumber) -> bool {
+    pub fn contains(&self, num: DCNumber) -> bool {
         match self.min.number_type {
             DCNumberType::None => true,
             DCNumberType::Int => unsafe {
@@ -92,7 +94,7 @@ impl DCNumericRange {
         }
     }
 
-    fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.range_type.is_none() // using strum macro
     }
 }
@@ -100,7 +102,7 @@ impl DCNumericRange {
 // ---------- Numeric Type ---------- //
 
 pub struct DCNumericType {
-    parent: DCTypeDefinition,
+    base_type: DCTypeDefinition,
     divisor: u16,
     // These are the original range and modulus values from the file, unscaled by the divisor.
     orig_modulus: f64,
@@ -111,7 +113,7 @@ pub struct DCNumericType {
 }
 
 pub trait DCNumericTypeInterface {
-    fn new(base_type: DCTypeEnum) -> DCNumericType;
+    fn new(base_type: DCTypeEnum) -> Self;
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn has_modulus(&self) -> bool;
@@ -132,7 +134,7 @@ impl DCNumericType {
     fn data_to_number(&self, data: Vec<u8>) -> (bool, DCNumber) {
         // NOTE: See 'Deref' trait implementation for 'DCNumericType' below
         // on how we're using self.parent.size as self.size.
-        if self.size != data.len().try_into().unwrap() {
+        if self.base_type.size != data.len().try_into().unwrap() {
             return (false, DCNumber::new_integer(0_i64));
         }
 
@@ -140,7 +142,7 @@ impl DCNumericType {
         let _ = dg.add_data(data);
         let mut dgi = DatagramIterator::new(dg);
 
-        match self.data_type {
+        match self.base_type.data_type {
             DCTypeEnum::TInt8 => (true, DCNumber::new_integer(i64::from(dgi.read_i8()))),
             DCTypeEnum::TInt16 => (true, DCNumber::new_integer(i64::from(dgi.read_i16()))),
             DCTypeEnum::TInt32 => (true, DCNumber::new_integer(i64::from(dgi.read_i32()))),
@@ -159,9 +161,9 @@ impl DCNumericType {
 }
 
 impl DCNumericTypeInterface for DCNumericType {
-    fn new(base_type: DCTypeEnum) -> DCNumericType {
-        DCNumericType {
-            parent: {
+    fn new(base_type: DCTypeEnum) -> Self {
+        Self {
+            base_type: {
                 let mut parent_struct = DCTypeDefinition::new();
                 parent_struct.data_type = base_type;
 
@@ -202,8 +204,8 @@ impl DCNumericTypeInterface for DCNumericType {
     }
 
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self.parent.generate_hash(hashgen);
-        hashgen.add_int(u32::from(self.divisor));
+        self.base_type.generate_hash(hashgen);
+        hashgen.add_int(i32::from(self.divisor));
 
         if self.has_modulus() {
             // unsafe block required for accessing unions
@@ -226,10 +228,10 @@ impl DCNumericTypeInterface for DCNumericType {
         self.orig_range.is_empty()
     }
     fn get_divisor(&self) -> u16 {
-        self.divisor.clone()
+        self.divisor
     }
     fn get_modulus(&self) -> f64 {
-        self.orig_modulus.clone()
+        self.orig_modulus
     }
     fn get_range(&self) -> DCNumericRange {
         self.orig_range.clone()
@@ -244,7 +246,7 @@ impl DCNumericTypeInterface for DCNumericType {
             self.set_range(self.orig_range.clone())?;
         }
         if self.has_modulus() {
-            self.set_modulus(self.orig_modulus.clone())?;
+            self.set_modulus(self.orig_modulus)?;
         }
         Ok(())
     }
@@ -257,18 +259,5 @@ impl DCNumericTypeInterface for DCNumericType {
     }
     fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), ()> {
         todo!();
-    }
-}
-
-/* By manually implementing/overriding the standard
- * library's 'Deref' trait of our 'child' struct, we
- * can implicitly cast pointers to the parent struct,
- * as pointers to the child struct, which gives us a
- * nice 'cheat' for the feel of inheritance.
- */
-impl std::ops::Deref for DCNumericType {
-    type Target = DCTypeDefinition;
-    fn deref(&self) -> &Self::Target {
-        &self.parent
     }
 }

@@ -15,13 +15,12 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-//! Data model representing a DC Struct element.
+//! Data model for a DC Molecular field, which represents
+//! a form of a field 'alias' for a collection of fields.
 
-#[derive(Debug, Default, PartialEq)]
-pub struct DCStruct {}
+use crate::dcfield::DCField;
 
-impl DCStruct {
-    pub fn new() -> Self {
-        Self::default()
-    }
+#[derive(Debug)]
+pub struct DCMolecularField {
+    base_field: DCField,
 }
