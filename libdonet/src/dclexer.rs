@@ -15,6 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Definition of the Lexer machine to process raw DC file
+//! string data into a stream of lexical tokens for the DC parser.
+
 use crate::globals::{DC_VIEW_SUFFIXES, HISTORICAL_DC_KEYWORDS};
 use plex::lexer;
 

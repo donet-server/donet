@@ -15,6 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Data model for Distributed Class definitions in the DC file.
+//! Stores DC Fields and tracks class hierarchy.
+
 use crate::dcatomic::{DCAtomicField, DCAtomicFieldInterface};
 use crate::dcfield::{ClassField, DCFieldInterface};
 use crate::globals;

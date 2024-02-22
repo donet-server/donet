@@ -15,6 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Data model for a DC Atomic Field, which represents a remote
+//! procedure call method of a Distributed Class.
+
 use crate::dcfield::{DCField, DCFieldInterface};
 use crate::dclass::DClass;
 use crate::dcparameter::DCParameter;

@@ -15,6 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Root structure that stores the collection of DC elements
+//! in memory. Provides functions for manipulating the tree.
+
 use crate::dckeyword::DCKeyword;
 use crate::dclass::DClass;
 use crate::dcstruct::DCStruct;
@@ -38,6 +41,9 @@ impl DCImport {
     }
 }
 
+/// Data model that provides a high level representation of a single,
+/// or collection, of DC files and their elements such as class imports,
+/// type definitions, structures, and Distributed Classes.
 #[derive(Debug)]
 pub struct DCFile {
     structs: Vec<Mutex<DCStruct>>,
@@ -100,17 +106,16 @@ impl DCFile {
 }
 
 impl DCFileInterface for DCFile {
-    /* Returns a 32-bit hash index associated with this file.  This number is
-     * guaranteed to be consistent if the contents of the file have not changed,
-     * and it is very likely to be different if the contents of the file do change.
-     */
+    /// Returns a 32-bit hash index associated with this file.  This number is
+    /// guaranteed to be consistent if the contents of the file have not changed,
+    /// and it is very likely to be different if the contents of the file do change.
     fn get_hash(&mut self) -> globals::DCFileHash {
         let mut hashgen: DCHashGenerator = DCHashGenerator::new();
         self.generate_hash(&mut hashgen);
         hashgen.get_hash()
     }
 
-    // Accumulates the elements of the DC file into the hash.
+    /// Accumulates the elements of the DC file into the hash.
     fn generate_hash(&mut self, hashgen: &mut DCHashGenerator) {
         if globals::DC_VIRTUAL_INHERITANCE {
             // Just to change the hash output in this case.
@@ -128,7 +133,7 @@ impl DCFileInterface for DCFile {
         }
     }
 
-    // Returns a string with the hash as a pretty format hexadecimal.
+    /// Returns a string with the hash as a pretty format hexadecimal.
     fn get_pretty_hash(&mut self) -> String {
         format!("0x{:0width$x}", self.get_hash(), width = 8) // 2 hex / byte = 8 hex
     }

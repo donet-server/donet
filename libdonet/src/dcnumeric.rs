@@ -15,15 +15,17 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Structure representing data types supported in the DC
+//! language and enforcing numeric limits through constraints.
+
 use crate::datagram::{Datagram, DatagramIterator};
 use crate::dctype::*;
 use crate::hashgen::DCHashGenerator;
 use std::mem::size_of;
 
-/* Numeric Range structs are used to represent a range of signed/unsigned
- * integers or floating point numbers. Used for enforcing numeric limits
- * withing constraints of array, string, or blob sized types.
- */
+/// Numeric Range structs are used to represent a range of signed/unsigned
+/// integers or floating point numbers. Used for enforcing numeric limits
+/// within constraints of array, string, or blob sized types.
 #[derive(Clone)]
 pub struct DCNumericRange {
     range_type: DCNumberType,

@@ -15,6 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Definition of the DC language context free grammar for the
+//! LALR(1) parser processing the stream of lexical tokens.
+
 /* The following suppress linting warnings, which are okay to ignore
  * as they go off in the parser grammar definitions, which we are writing
  * just as the plex crate readme says we should, so everything is okay.

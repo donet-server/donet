@@ -15,6 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Represents all data types supported by the DC language
+//! and developer-defined type alias definitions.
+
 use crate::globals::DgSizeTag;
 use crate::hashgen::DCHashGenerator;
 use strum_macros::EnumIs;

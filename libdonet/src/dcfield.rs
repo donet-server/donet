@@ -15,6 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Base data model for DC Field elements. Alone, it represents
+//! an attribute of a structure or Distributed Class.
+
 use crate::datagram::Datagram;
 use crate::dcatomic::DCAtomicField;
 use crate::dckeyword::{DCKeywordList, DCKeywordListInterface, IdentifyKeyword};
@@ -92,9 +95,9 @@ pub trait DCFieldInterface {
 
     fn has_default_value(&self) -> bool;
     fn validate_ranges(&self, packed_data: &Datagram) -> bool;
+    fn is_bogus_field(&self) -> bool;
 
     // Inline functions for Panda historical keywords
-    fn is_bogus_field(&self) -> bool;
     fn is_required(&self) -> bool;
     fn is_broadcast(&self) -> bool;
     fn is_ram(&self) -> bool;

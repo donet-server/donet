@@ -15,6 +15,9 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Data model for a DC Molecular field, which represents
+//! a form of a field 'alias' for a collection of fields.
+
 use crate::dcfield::DCField;
 
 #[derive(Debug)]
