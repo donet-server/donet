@@ -57,7 +57,7 @@ pub struct DCField {
 /// is always implemented as a remote procedure call (RPC). Unlike
 /// attribute fields, atomic fields cannot be declared within structs.
 ///
-/// DC Molecular Fields represent a collection of DC Attribute or
+/// DC Molecular Fields represent a collection of one or more
 /// DC Atomic Fields as one field under one identifier. The parameters
 /// of a molecular field are the parameters of all the fields it
 /// represents, joined together in the order in which they were declared
@@ -141,6 +141,7 @@ impl DCFieldInterface for DCField {
         }
     }
 
+    /// Accumulates the properties of this DC element into the file hash.
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.keyword_list.generate_hash(hashgen);
         self.field_type.generate_hash(hashgen);

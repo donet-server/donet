@@ -28,7 +28,7 @@ use std::sync::Arc;
 pub struct DCParameter {
     parent: Arc<DCAtomicField>,
     base_type: DCTypeDefinition,
-    name: String,
+    identifier: String,
     type_alias: String,
     default_value: Vec<u8>,
     has_default_value: bool,
@@ -43,7 +43,7 @@ pub trait DCParameterInterface {
     fn get_default_value(&self) -> Vec<u8>;
 
     fn set_type(&mut self, dtype: DCTypeDefinition) -> Result<(), ()>;
-    fn set_name(&mut self, name: &str) -> Result<(), ()>;
+    fn set_identifier(&mut self, name: &str) -> Result<(), ()>;
     fn set_default_value(&mut self, v: Vec<u8>) -> Result<(), ()>;
 }
 
@@ -52,7 +52,7 @@ impl DCParameterInterface for DCParameter {
         Self {
             parent: method,
             base_type: dtype,
-            name: match name {
+            identifier: match name {
                 Some(n) => n.to_owned(),
                 None => String::new(),
             },
@@ -67,6 +67,7 @@ impl DCParameterInterface for DCParameter {
         self.base_type.generate_hash(hashgen);
     }
 
+    #[inline(always)]
     fn get_atomic_field(&self) -> Arc<DCAtomicField> {
         self.parent.clone() // clone new arc pointer
     }
@@ -76,6 +77,7 @@ impl DCParameterInterface for DCParameter {
         self.has_default_value
     }
 
+    #[inline(always)]
     fn get_default_value(&self) -> Vec<u8> {
         self.default_value.clone()
     }
@@ -85,8 +87,8 @@ impl DCParameterInterface for DCParameter {
         Ok(())
     }
 
-    fn set_name(&mut self, name: &str) -> Result<(), ()> {
-        self.name = name.to_owned();
+    fn set_identifier(&mut self, name: &str) -> Result<(), ()> {
+        self.identifier = name.to_owned();
         Ok(())
     }
 

@@ -74,6 +74,7 @@ impl DClassInterface for DClass {
         }
     }
 
+    /// Accumulates the properties of this DC element into the file hash.
     fn generate_hash(&mut self, hashgen: &mut DCHashGenerator) {
         hashgen.add_string(self.get_name());
         hashgen.add_int(self.get_num_parents().try_into().unwrap());
