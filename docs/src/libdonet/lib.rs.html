@@ -171,6 +171,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
 <a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! DONET SOFTWARE
 //!
 //! Copyright (c) 2024, Donet Authors.
@@ -289,10 +290,10 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 ///
 /// let dc_read: DCReadResult = read_dc_files(vec![dc_file.into()]);
 ///
-/// if let Ok(mut dc_file) = dc_read {
-///     println!(&quot;{}&quot;, dc_file.get_pretty_hash()); // Print the DC File Hash
+/// if let Ok(dc_file) = dc_read {
+///     println!(&quot;{}&quot;, dc_file.lock().unwrap().get_pretty_hash()); // Print the DC File Hash
 ///     
-///     let avatar_class: Arc&lt;Mutex&lt;DClass&gt;&gt; = dc_file.get_dclass_by_id(3);
+///     let avatar_class: Arc&lt;Mutex&lt;DClass&gt;&gt; = dc_file.lock().unwrap().get_dclass_by_id(3);
 ///     let mut locked_class: MutexGuard&lt;&#39;_, DClass&gt; = avatar_class.lock().unwrap();
 ///
 ///     println!(&quot;{}&quot;, locked_class.get_name());
@@ -312,6 +313,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     <span class="kw">use </span><span class="kw">crate</span>::dcparser::parse;
     <span class="kw">use </span>std::fs::File;
     <span class="kw">use </span>std::io::Read;
+    <span class="kw">use </span>std::sync::{Arc, Mutex};
 
     <span class="kw">let </span><span class="kw-2">mut </span>file_results: Vec&lt;<span class="prelude-ty">Result</span>&lt;File, std::io::Error&gt;&gt; = <span class="macro">vec!</span>[];
     <span class="kw">let </span><span class="kw-2">mut </span>lexer_input: String = String::new();
@@ -334,7 +336,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     }
 
     <span class="kw">let </span>lexer: Lexer&lt;<span class="lifetime">&#39;_</span>&gt; = Lexer::new(<span class="kw-2">&amp;</span>lexer_input);
-    <span class="kw">let </span>res: <span class="prelude-ty">Result</span>&lt;dcfile::DCFile, globals::ParseError&gt; = parse(lexer);
+    <span class="kw">let </span>res: <span class="prelude-ty">Result</span>&lt;Arc&lt;Mutex&lt;dcfile::DCFile&gt;&gt;, globals::ParseError&gt; = parse(lexer);
 
     <span class="kw">if let </span><span class="prelude-val">Ok</span>(res_ok) = res {
         <span class="prelude-val">Ok</span>(res_ok)

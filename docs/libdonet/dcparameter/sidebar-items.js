@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["DCParameter"]};
+window.SIDEBAR_ITEMS = {"struct":["DCParameter"],"trait":["DCParameterInterface"]};

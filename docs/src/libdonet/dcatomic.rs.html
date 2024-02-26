@@ -79,6 +79,17 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
 </pre></div><pre class="rust"><code><span class="comment">// DONET SOFTWARE
 // Copyright (c) 2024, Donet Authors.
 //
@@ -101,10 +112,11 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 
 </span><span class="kw">use </span><span class="kw">crate</span>::dcfield::{DCField, DCFieldInterface};
 <span class="kw">use </span><span class="kw">crate</span>::dclass::DClass;
-<span class="kw">use </span><span class="kw">crate</span>::dcparameter::DCParameter;
+<span class="kw">use </span><span class="kw">crate</span>::dcparameter::{DCParameter, DCParameterInterface};
 <span class="kw">use </span><span class="kw">crate</span>::dctype::{DCTypeDefinition, DCTypeDefinitionInterface};
 <span class="kw">use </span><span class="kw">crate</span>::hashgen::DCHashGenerator;
-<span class="kw">use </span>std::sync::{Arc, Mutex};
+<span class="kw">use </span>std::ops::Deref;
+<span class="kw">use </span>std::sync::{Arc, Mutex, MutexGuard};
 
 <span class="doccomment">/// Represents an atomic field of a Distributed Class.
 /// This defines the interface to a DClass object, and is
@@ -138,10 +150,20 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         }
     }
 
-    <span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator) {
+    <span class="doccomment">/// Accumulates the properties of this DC element into the file hash.
+    </span><span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator) {
         <span class="self">self</span>.base_field.generate_hash(hashgen);
-        <span class="comment">// TODO!
-    </span>}
+
+        hashgen.add_int(<span class="self">self</span>.elements.len().try_into().unwrap());
+
+        <span class="kw">for </span>param_ptr <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.elements {
+            <span class="kw">let </span>new_ptr: Arc&lt;Mutex&lt;DCParameter&gt;&gt; = param_ptr.clone();
+            <span class="kw">let </span>mutex_ref: <span class="kw-2">&amp;</span>Mutex&lt;DCParameter&gt; = new_ptr.deref();
+            <span class="kw">let </span>param: MutexGuard&lt;<span class="lifetime">&#39;_</span>, DCParameter&gt; = mutex_ref.lock().unwrap();
+
+            param.generate_hash(hashgen);
+        }
+    }
 
     <span class="kw">fn </span>get_num_elements(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.elements.len()

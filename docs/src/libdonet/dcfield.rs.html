@@ -265,6 +265,16 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#263" id="263">263</a>
 <a href="#264" id="264">264</a>
 <a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
 </pre></div><pre class="rust"><code><span class="comment">// DONET SOFTWARE
 // Copyright (c) 2024, Donet Authors.
 //
@@ -324,7 +334,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 /// is always implemented as a remote procedure call (RPC). Unlike
 /// attribute fields, atomic fields cannot be declared within structs.
 ///
-/// DC Molecular Fields represent a collection of DC Attribute or
+/// DC Molecular Fields represent a collection of one or more
 /// DC Atomic Fields as one field under one identifier. The parameters
 /// of a molecular field are the parameters of all the fields it
 /// represents, joined together in the order in which they were declared
@@ -349,6 +359,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
     <span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator);
 
     <span class="kw">fn </span>get_field_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; globals::FieldId;
+    <span class="kw">fn </span>get_field_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String;
     <span class="kw">fn </span>get_dclass(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;Mutex&lt;DClass&gt;&gt;;
 
     <span class="kw">fn </span>set_field_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: globals::FieldId);
@@ -408,7 +419,8 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         }
     }
 
-    <span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator) {
+    <span class="doccomment">/// Accumulates the properties of this DC element into the file hash.
+    </span><span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator) {
         <span class="self">self</span>.keyword_list.generate_hash(hashgen);
         <span class="self">self</span>.field_type.generate_hash(hashgen);
 
@@ -431,17 +443,24 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="self">self</span>.field_id
     }
 
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>get_field_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="self">self</span>.field_name.clone()
+    }
+
     <span class="kw">fn </span>get_dclass(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;Mutex&lt;DClass&gt;&gt; {
         <span class="macro">assert!</span>(<span class="self">self</span>.parent_is_dclass);
         <span class="comment">// clone option to unwrap w/o move, and clone Arc to return
         </span><span class="self">self</span>.dclass.clone().unwrap().clone()
     }
 
-    <span class="kw">fn </span>set_field_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: globals::FieldId) {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>set_field_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: globals::FieldId) {
         <span class="self">self</span>.field_id = id
     }
 
-    <span class="kw">fn </span>set_field_name(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: String) {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>set_field_name(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: String) {
         <span class="self">self</span>.field_name = name
     }
 
@@ -457,7 +476,8 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         <span class="self">self</span>.default_value_stale = <span class="bool-val">false</span>;
     }
 
-    <span class="kw">fn </span>set_bogus_field(<span class="kw-2">&amp;mut </span><span class="self">self</span>, is_bogus: bool) {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>set_bogus_field(<span class="kw-2">&amp;mut </span><span class="self">self</span>, is_bogus: bool) {
         <span class="self">self</span>.bogus_field = is_bogus
     }
 

@@ -226,6 +226,24 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#224" id="224">224</a>
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
 </pre></div><pre class="rust"><code><span class="comment">// DONET SOFTWARE
 // Copyright (c) 2024, Donet Authors.
 //
@@ -288,6 +306,7 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 </span><span class="kw">pub trait </span>DCFileInterface {
     <span class="kw">fn </span>get_hash(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; globals::DCFileHash;
     <span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;mut </span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator);
+    <span class="kw">fn </span>semantic_analysis(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt;;
     <span class="kw">fn </span>get_pretty_hash(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; String;
     <span class="kw">fn </span>add_field(<span class="kw-2">&amp;mut </span><span class="self">self</span>, field: DCField); <span class="comment">// assigns unique ID for the whole DC file
 
@@ -359,6 +378,23 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
             <span class="kw">let </span><span class="kw-2">mut </span>locked_dclass: MutexGuard&lt;<span class="lifetime">&#39;_</span>, DClass&gt; = dclass.lock().unwrap();
             locked_dclass.generate_hash(hashgen);
         }
+    }
+
+    <span class="doccomment">/// Performs a semantic analysis on the object and its children
+    /// DC elements. In Panda, this is done on the go as you build the
+    /// DC file tree. Due to how we build it in memory, (and the fact
+    /// that we link all the objects together until we reduce to the
+    /// root production in the CFG) we have to perform this analysis
+    /// until the very end when all the elements are in the DCF struct.
+    </span><span class="kw">fn </span>semantic_analysis(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt; {
+        <span class="comment">// Run semantic analysis chain of all distributed class objects.
+        // This should include semantic analysis for DC fields as well.
+        </span><span class="kw">for </span>dclass <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.dclasses {
+            <span class="kw">let </span>locked_dclass: MutexGuard&lt;<span class="lifetime">&#39;_</span>, DClass&gt; = dclass.lock().unwrap();
+            locked_dclass.semantic_analysis()<span class="question-mark">?</span>;
+        }
+        <span class="comment">// TODO!
+        </span><span class="prelude-val">Ok</span>(())
     }
 
     <span class="doccomment">/// Returns a string with the hash as a pretty format hexadecimal.

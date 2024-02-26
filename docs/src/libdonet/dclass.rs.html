@@ -142,6 +142,57 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
 <a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
 </pre></div><pre class="rust"><code><span class="comment">// DONET SOFTWARE
 // Copyright (c) 2024, Donet Authors.
 //
@@ -164,6 +215,8 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 
 </span><span class="kw">use </span><span class="kw">crate</span>::dcatomic::{DCAtomicField, DCAtomicFieldInterface};
 <span class="kw">use </span><span class="kw">crate</span>::dcfield::{ClassField, DCFieldInterface};
+<span class="kw">use </span><span class="kw">crate</span>::dcfile::DCFile;
+<span class="kw">use </span><span class="kw">crate</span>::dcmolecular::DCMolecularFieldInterface;
 <span class="kw">use </span><span class="kw">crate</span>::globals;
 <span class="kw">use </span><span class="kw">crate</span>::hashgen::DCHashGenerator;
 <span class="kw">use </span>multimap::MultiMap;
@@ -173,9 +226,15 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <span class="kw">pub type </span>FieldName2Field = MultiMap&lt;String, Arc&lt;Mutex&lt;ClassField&gt;&gt;&gt;;
 <span class="kw">pub type </span>FieldId2Field = MultiMap&lt;globals::FieldId, Arc&lt;Mutex&lt;ClassField&gt;&gt;&gt;;
 
-<span class="attr">#[derive(Debug)]
+<span class="doccomment">/// Represents a Distributed Class defined in the DC file.
+/// Contains a map of DC Fields, as well as atomic and
+/// molecular fields that are declared within the class.
+/// Also stores other properties such as its hierarchy.
+</span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>DClass {
-    class_name: String,
+    dcfile: Arc&lt;Mutex&lt;DCFile&gt;&gt;, <span class="comment">// read comment below. should reference REAL dcf by parse end.
+    </span>dcf_assigned: bool,         <span class="comment">// due to how the parser works, we assign it &#39;til the end.
+    </span>class_name: String,
     class_id: globals::DClassId,
     is_struct: bool,
     is_bogus_class: bool,
@@ -190,8 +249,11 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <span class="kw">pub trait </span>DClassInterface {
     <span class="kw">fn </span>new(name: <span class="kw-2">&amp;</span>str) -&gt; <span class="self">Self</span>;
     <span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;mut </span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator);
+    <span class="kw">fn </span>semantic_analysis(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt;;
 
-    <span class="kw">fn </span>set_parent(<span class="kw-2">&amp;mut </span><span class="self">self</span>, parent: Arc&lt;Mutex&lt;DClass&gt;&gt;);
+    <span class="kw">fn </span>set_dcfile(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dcf: Arc&lt;Mutex&lt;DCFile&gt;&gt;);
+    <span class="kw">fn </span>add_parent(<span class="kw-2">&amp;mut </span><span class="self">self</span>, parent: Arc&lt;Mutex&lt;DClass&gt;&gt;);
+    <span class="kw">fn </span>add_class_field(<span class="kw-2">&amp;mut </span><span class="self">self</span>, field: ClassField);
 
     <span class="kw">fn </span>get_name(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; String;
     <span class="kw">fn </span>get_dclass_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; globals::DClassId;
@@ -205,6 +267,8 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
 <span class="kw">impl </span>DClassInterface <span class="kw">for </span>DClass {
     <span class="kw">fn </span>new(name: <span class="kw-2">&amp;</span>str) -&gt; <span class="self">Self </span>{
         DClass {
+            dcfile: Arc::new(Mutex::new(DCFile::new())),
+            dcf_assigned: <span class="bool-val">false</span>,
             class_name: name.to_owned(),
             class_id: <span class="number">0</span>, <span class="comment">// assigned later
             </span>is_struct: <span class="bool-val">false</span>,
@@ -218,7 +282,8 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
         }
     }
 
-    <span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;mut </span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator) {
+    <span class="doccomment">/// Accumulates the properties of this DC element into the file hash.
+    </span><span class="kw">fn </span>generate_hash(<span class="kw-2">&amp;mut </span><span class="self">self</span>, hashgen: <span class="kw-2">&amp;mut </span>DCHashGenerator) {
         hashgen.add_string(<span class="self">self</span>.get_name());
         hashgen.add_int(<span class="self">self</span>.get_num_parents().try_into().unwrap());
 
@@ -246,41 +311,78 @@ data-use_system_theme="false"></script><meta name="rustdoc-vars" data-root-path=
             <span class="kw">match </span><span class="kw-2">&amp;</span>field.deref() {
                 ClassField::Field(field) =&gt; field.generate_hash(hashgen),
                 ClassField::Atomic(atomic) =&gt; atomic.generate_hash(hashgen),
-                ClassField::Molecular(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
+                ClassField::Molecular(molecular) =&gt; molecular.generate_hash(hashgen),
             }
         }
     }
 
-    <span class="kw">fn </span>set_parent(<span class="kw-2">&amp;mut </span><span class="self">self</span>, parent: Arc&lt;Mutex&lt;DClass&gt;&gt;) {
+    <span class="doccomment">/// Performs a semantic analysis on the object and its children.
+    </span><span class="kw">fn </span>semantic_analysis(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt; {
+        <span class="macro">assert!</span>(
+            <span class="self">self</span>.dcf_assigned,
+            <span class="string">&quot;No DC file pointer found in &#39;{}&#39; dclass!&quot;</span>,
+            <span class="self">self</span>.class_name,
+        );
+        <span class="comment">// TODO!
+        </span><span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">fn </span>set_dcfile(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dcf: Arc&lt;Mutex&lt;DCFile&gt;&gt;) {
+        <span class="macro">assert!</span>(
+            !<span class="self">self</span>.dcf_assigned,
+            <span class="string">&quot;Tried to reassign DC file pointer to &#39;{}&#39; class&quot;</span>,
+            <span class="self">self</span>.class_name
+        );
+        <span class="self">self</span>.dcfile = dcf;
+        <span class="self">self</span>.dcf_assigned = <span class="bool-val">true</span>;
+    }
+
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>add_parent(<span class="kw-2">&amp;mut </span><span class="self">self</span>, parent: Arc&lt;Mutex&lt;DClass&gt;&gt;) {
         <span class="self">self</span>.class_parents.push(parent);
     }
 
-    <span class="kw">fn </span>get_name(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; String {
+    <span class="doccomment">/// Adds a newly allocated DC field to this class. The field structure
+    /// in memory is moved into ownership of this class structure, and is
+    /// wrapped in a Mutex and an Arc pointer to pass references to other
+    /// elements, such as molecular fields.
+    </span><span class="kw">fn </span>add_class_field(<span class="kw-2">&amp;mut </span><span class="self">self</span>, field: ClassField) {
+        <span class="self">self</span>.fields.push(Arc::new(Mutex::new(field)));
+    }
+
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>get_name(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; String {
         <span class="self">self</span>.class_name.clone()
     }
 
-    <span class="kw">fn </span>get_dclass_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; globals::DClassId {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>get_dclass_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; globals::DClassId {
         <span class="self">self</span>.class_id
     }
 
-    <span class="kw">fn </span>set_dclass_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: globals::DClassId) {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>set_dclass_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: globals::DClassId) {
         <span class="self">self</span>.class_id = id;
     }
 
-    <span class="kw">fn </span>get_num_parents(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; usize {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>get_num_parents(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.class_parents.len()
     }
 
-    <span class="kw">fn </span>get_parent(<span class="kw-2">&amp;mut </span><span class="self">self</span>, index: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;Mutex&lt;DClass&gt;&gt;&gt; {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>get_parent(<span class="kw-2">&amp;mut </span><span class="self">self</span>, index: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;Mutex&lt;DClass&gt;&gt;&gt; {
         <span class="comment">// copy the reference inside the option instead of a reference to the reference
         </span><span class="self">self</span>.class_parents.get(index).cloned()
     }
 
-    <span class="kw">fn </span>has_constructor(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>has_constructor(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.constructor.is_some()
     }
 
-    <span class="kw">fn </span>get_constructor(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;Mutex&lt;DCAtomicField&gt;&gt;&gt; {
+    <span class="attr">#[inline(always)]
+    </span><span class="kw">fn </span>get_constructor(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;Mutex&lt;DCAtomicField&gt;&gt;&gt; {
         <span class="self">self</span>.constructor.clone()
     }
 }

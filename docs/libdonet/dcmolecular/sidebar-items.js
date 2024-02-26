@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["DCMolecularField"]};
+window.SIDEBAR_ITEMS = {"struct":["DCMolecularField"],"trait":["DCMolecularFieldInterface"]};
