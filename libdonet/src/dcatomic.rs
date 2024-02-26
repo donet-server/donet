@@ -20,10 +20,11 @@
 
 use crate::dcfield::{DCField, DCFieldInterface};
 use crate::dclass::DClass;
-use crate::dcparameter::DCParameter;
+use crate::dcparameter::{DCParameter, DCParameterInterface};
 use crate::dctype::{DCTypeDefinition, DCTypeDefinitionInterface};
 use crate::hashgen::DCHashGenerator;
-use std::sync::{Arc, Mutex};
+use std::ops::Deref;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 /// Represents an atomic field of a Distributed Class.
 /// This defines the interface to a DClass object, and is
@@ -57,9 +58,19 @@ impl DCAtomicFieldInterface for DCAtomicField {
         }
     }
 
+    /// Accumulates the properties of this DC element into the file hash.
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_field.generate_hash(hashgen);
-        // TODO!
+
+        hashgen.add_int(self.elements.len().try_into().unwrap());
+
+        for param_ptr in &self.elements {
+            let new_ptr: Arc<Mutex<DCParameter>> = param_ptr.clone();
+            let mutex_ref: &Mutex<DCParameter> = new_ptr.deref();
+            let param: MutexGuard<'_, DCParameter> = mutex_ref.lock().unwrap();
+
+            param.generate_hash(hashgen);
+        }
     }
 
     fn get_num_elements(&self) -> usize {

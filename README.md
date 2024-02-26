@@ -1,12 +1,10 @@
-<img src="logo/donet_banner.png" align="right" width="47%"/>
+![GitHub Build Status](https://img.shields.io/github/actions/workflow/status/donet-server/donet/build.yml?logo=github&label=Build)
+[![Coverage Status](https://codecov.io/gh/donet-server/donet/branch/master/graph/badge.svg)](https://codecov.io/gh/donet-server/donet)
+[![Discord](https://img.shields.io/discord/1066973060357443644?color=blue&label=Discord&logo=discord&logoColor=white)](https://discord.gg/T6jGjEutfy)
 
 # donet
 
-_**D**istributed **O**bject **Net**work Engine_
-
-![](https://img.shields.io/github/actions/workflow/status/donet-server/donet/build.yml?logo=github&label=Build)
-[![Coverage Status](https://codecov.io/gh/donet-server/donet/branch/master/graph/badge.svg)](https://codecov.io/gh/donet-server/donet)
-[![](https://img.shields.io/discord/1066973060357443644?color=blue&label=Discord&logo=discord&logoColor=white)](https://discord.gg/T6jGjEutfy)
+<img src="logo/donet_banner.png" alt="Donet logo artwork by honeymatsu." align="right" width="40%"/>
 
 Donet is a free and open source network engine designed after the Distributed Networking protocol, 
 as defined in the high-level networking API of the [Panda3D](https://panda3d.org) game engine,
@@ -15,24 +13,10 @@ with their in-house server technology, the OTP (*Online Theme Park*) server, whi
 their massive multiplayer online games, such as Toontown Online and Pirates of the Caribbean Online, 
 from 2001 to 2013.
 
-Donet is currently in its early stages, but it aims to be a drop-in replacement for [Astron](https://github.com/astron/astron).
-
-How is the Donet project **unique** from Astron?
-
-- Donet source is licensed under the GNU Affero General Public License, which is a **copyleft free software license** that
-classifies public network use as distribution under its terms. Astron uses the Modified BSD License, which is a permissive
-software license.
-- The libdonet core library is made to be **fully backwards compatible** with Panda's legacy DC file parser, which includes
-support for DC switch statements for more complex/dynamic fields. This is beneficial for maintaining projects with legacy code.
-- Donet development comes with **unit testing** and code coverage reports. Functional testing is also in the works. Along with
-the benefits of safety with Rust, we do our best to guarantee the integrity of the Donet server.
-- Donet is a brand new open source project! We're in **active development** and plan to make more improvements in the future.
-We welcome with open arms new contributors to share in the development of Donet.
-
 ## Getting Started
 The Donet repository houses two different Rust projects:
 - **donet** - The Donet daemon source, which includes all the Donet services. See [donet-server.org](https://www.donet-server.org).
-- **libdonet** - The core utilities for Donet services, including Datagrams and the DC file parser. See [libdonet.rs](https://libdonet.rs).
+- **libdonet** - The core utilities for Donet services, including datagram utilities and the DC file parser. See [libdonet.rs](https://libdonet.rs).
 
 Please read the [introduction to Donet](./docs/01-Introduction.md) for an overview of the project 
 and how the engine works.

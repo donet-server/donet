@@ -116,10 +116,10 @@ cfg_if! {
 ///
 /// let dc_read: DCReadResult = read_dc_files(vec![dc_file.into()]);
 ///
-/// if let Ok(mut dc_file) = dc_read {
-///     println!("{}", dc_file.get_pretty_hash()); // Print the DC File Hash
+/// if let Ok(dc_file) = dc_read {
+///     println!("{}", dc_file.lock().unwrap().get_pretty_hash()); // Print the DC File Hash
 ///     
-///     let avatar_class: Arc<Mutex<DClass>> = dc_file.get_dclass_by_id(3);
+///     let avatar_class: Arc<Mutex<DClass>> = dc_file.lock().unwrap().get_dclass_by_id(3);
 ///     let mut locked_class: MutexGuard<'_, DClass> = avatar_class.lock().unwrap();
 ///
 ///     println!("{}", locked_class.get_name());
@@ -139,6 +139,7 @@ pub fn read_dc_files(file_paths: Vec<String>) -> globals::DCReadResult {
     use crate::dcparser::parse;
     use std::fs::File;
     use std::io::Read;
+    use std::sync::{Arc, Mutex};
 
     let mut file_results: Vec<Result<File, std::io::Error>> = vec![];
     let mut lexer_input: String = String::new();
@@ -161,7 +162,7 @@ pub fn read_dc_files(file_paths: Vec<String>) -> globals::DCReadResult {
     }
 
     let lexer: Lexer<'_> = Lexer::new(&lexer_input);
-    let res: Result<dcfile::DCFile, globals::ParseError> = parse(lexer);
+    let res: Result<Arc<Mutex<dcfile::DCFile>>, globals::ParseError> = parse(lexer);
 
     if let Ok(res_ok) = res {
         Ok(res_ok)

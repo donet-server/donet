@@ -57,7 +57,7 @@ pub struct DCField {
 /// is always implemented as a remote procedure call (RPC). Unlike
 /// attribute fields, atomic fields cannot be declared within structs.
 ///
-/// DC Molecular Fields represent a collection of DC Attribute or
+/// DC Molecular Fields represent a collection of one or more
 /// DC Atomic Fields as one field under one identifier. The parameters
 /// of a molecular field are the parameters of all the fields it
 /// represents, joined together in the order in which they were declared
@@ -82,6 +82,7 @@ pub trait DCFieldInterface {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn get_field_id(&self) -> globals::FieldId;
+    fn get_field_name(&self) -> String;
     fn get_dclass(&self) -> Arc<Mutex<DClass>>;
 
     fn set_field_id(&mut self, id: globals::FieldId);
@@ -141,6 +142,7 @@ impl DCFieldInterface for DCField {
         }
     }
 
+    /// Accumulates the properties of this DC element into the file hash.
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.keyword_list.generate_hash(hashgen);
         self.field_type.generate_hash(hashgen);
@@ -164,16 +166,23 @@ impl DCFieldInterface for DCField {
         self.field_id
     }
 
+    #[inline(always)]
+    fn get_field_name(&self) -> String {
+        self.field_name.clone()
+    }
+
     fn get_dclass(&self) -> Arc<Mutex<DClass>> {
         assert!(self.parent_is_dclass);
         // clone option to unwrap w/o move, and clone Arc to return
         self.dclass.clone().unwrap().clone()
     }
 
+    #[inline(always)]
     fn set_field_id(&mut self, id: globals::FieldId) {
         self.field_id = id
     }
 
+    #[inline(always)]
     fn set_field_name(&mut self, name: String) {
         self.field_name = name
     }
@@ -190,6 +199,7 @@ impl DCFieldInterface for DCField {
         self.default_value_stale = false;
     }
 
+    #[inline(always)]
     fn set_bogus_field(&mut self, is_bogus: bool) {
         self.bogus_field = is_bogus
     }

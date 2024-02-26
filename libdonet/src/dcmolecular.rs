@@ -18,9 +18,69 @@
 //! Data model for a DC Molecular field, which represents
 //! a form of a field 'alias' for a collection of fields.
 
-use crate::dcfield::DCField;
+use crate::dcatomic::{DCAtomicField, DCAtomicFieldInterface};
+use crate::dcfield::{DCField, DCFieldInterface};
+use crate::dclass::DClass;
+use crate::dctype::{DCTypeDefinition, DCTypeDefinitionInterface};
+use crate::hashgen::DCHashGenerator;
+use std::ops::Deref;
+use std::sync::{Arc, Mutex, MutexGuard};
 
+/// An abstract field which provides an interface to access
+/// multiple atomic fields under one field and one identifier.
 #[derive(Debug)]
 pub struct DCMolecularField {
     base_field: DCField,
+    atomic_fields: Vec<Arc<Mutex<DCAtomicField>>>,
+}
+
+pub trait DCMolecularFieldInterface {
+    fn new(name: &str, parent: Arc<Mutex<DClass>>) -> Self;
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
+
+    fn add_atomic_field(&mut self, atomic_ptr: Arc<Mutex<DCAtomicField>>);
+
+    fn get_num_atomics(&self) -> usize;
+    fn get_atomic_field(&self, index: usize) -> Option<Arc<Mutex<DCAtomicField>>>;
+}
+
+impl DCMolecularFieldInterface for DCMolecularField {
+    fn new(name: &str, parent: Arc<Mutex<DClass>>) -> Self {
+        Self {
+            base_field: {
+                let mut new_field = DCField::new(name, DCTypeDefinition::new());
+                new_field.set_parent_dclass(parent);
+                new_field
+            },
+            atomic_fields: vec![],
+        }
+    }
+
+    /// Accumulates the properties of this DC element into the file hash.
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        self.base_field.generate_hash(hashgen);
+
+        hashgen.add_int(self.atomic_fields.len().try_into().unwrap());
+
+        for atomic_ptr in &self.atomic_fields {
+            let new_ptr: Arc<Mutex<DCAtomicField>> = atomic_ptr.clone();
+            let mutex_ref: &Mutex<DCAtomicField> = new_ptr.deref();
+            let atomic_field: MutexGuard<'_, DCAtomicField> = mutex_ref.lock().unwrap();
+
+            atomic_field.generate_hash(hashgen);
+        }
+    }
+
+    fn add_atomic_field(&mut self, atomic_ptr: Arc<Mutex<DCAtomicField>>) {
+        self.atomic_fields.push(atomic_ptr);
+    }
+
+    #[inline(always)]
+    fn get_num_atomics(&self) -> usize {
+        self.atomic_fields.len()
+    }
+
+    fn get_atomic_field(&self, index: usize) -> Option<Arc<Mutex<DCAtomicField>>> {
+        self.atomic_fields.get(index).cloned()
+    }
 }

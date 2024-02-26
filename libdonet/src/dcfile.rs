@@ -60,6 +60,7 @@ pub struct DCFile {
 pub trait DCFileInterface {
     fn get_hash(&mut self) -> globals::DCFileHash;
     fn generate_hash(&mut self, hashgen: &mut DCHashGenerator);
+    fn semantic_analysis(&self) -> Result<(), ()>;
     fn get_pretty_hash(&mut self) -> String;
     fn add_field(&mut self, field: DCField); // assigns unique ID for the whole DC file
 
@@ -131,6 +132,23 @@ impl DCFileInterface for DCFile {
             let mut locked_dclass: MutexGuard<'_, DClass> = dclass.lock().unwrap();
             locked_dclass.generate_hash(hashgen);
         }
+    }
+
+    /// Performs a semantic analysis on the object and its children
+    /// DC elements. In Panda, this is done on the go as you build the
+    /// DC file tree. Due to how we build it in memory, (and the fact
+    /// that we link all the objects together until we reduce to the
+    /// root production in the CFG) we have to perform this analysis
+    /// until the very end when all the elements are in the DCF struct.
+    fn semantic_analysis(&self) -> Result<(), ()> {
+        // Run semantic analysis chain of all distributed class objects.
+        // This should include semantic analysis for DC fields as well.
+        for dclass in &self.dclasses {
+            let locked_dclass: MutexGuard<'_, DClass> = dclass.lock().unwrap();
+            locked_dclass.semantic_analysis()?;
+        }
+        // TODO!
+        Ok(())
     }
 
     /// Returns a string with the hash as a pretty format hexadecimal.

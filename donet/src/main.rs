@@ -127,10 +127,10 @@ fn main() -> std::io::Result<()> {
         info!("libdonet: DC read of {:?}", dc_check_files);
         let dc_read: DCReadResult = read_dc_files(dc_check_files.to_owned());
 
-        if let Ok(mut dc_file) = dc_read {
-            let h: u32 = dc_file.get_hash();
+        if let Ok(dc_file) = dc_read {
+            let h: u32 = dc_file.lock().unwrap().get_hash();
             let sh: i32 = h as i32;
-            let ph: String = dc_file.get_pretty_hash();
+            let ph: String = dc_file.lock().unwrap().get_pretty_hash();
             info!("No issues found. File hash is {} (signed {}, hex {})", h, sh, ph);
             return Ok(());
         }
