@@ -20,6 +20,8 @@
 
 use crate::dcatomic::{DCAtomicField, DCAtomicFieldInterface};
 use crate::dcfield::{ClassField, DCFieldInterface};
+use crate::dcfile::DCFile;
+use crate::dcmolecular::DCMolecularFieldInterface;
 use crate::globals;
 use crate::hashgen::DCHashGenerator;
 use multimap::MultiMap;
@@ -29,8 +31,14 @@ use std::sync::{Arc, Mutex, MutexGuard};
 pub type FieldName2Field = MultiMap<String, Arc<Mutex<ClassField>>>;
 pub type FieldId2Field = MultiMap<globals::FieldId, Arc<Mutex<ClassField>>>;
 
+/// Represents a Distributed Class defined in the DC file.
+/// Contains a map of DC Fields, as well as atomic and
+/// molecular fields that are declared within the class.
+/// Also stores other properties such as its hierarchy.
 #[derive(Debug)]
 pub struct DClass {
+    dcfile: Arc<Mutex<DCFile>>, // read comment below. should reference REAL dcf by parse end.
+    dcf_assigned: bool,         // due to how the parser works, we assign it 'til the end.
     class_name: String,
     class_id: globals::DClassId,
     is_struct: bool,
@@ -46,8 +54,11 @@ pub struct DClass {
 pub trait DClassInterface {
     fn new(name: &str) -> Self;
     fn generate_hash(&mut self, hashgen: &mut DCHashGenerator);
+    fn semantic_analysis(&self) -> Result<(), ()>;
 
-    fn set_parent(&mut self, parent: Arc<Mutex<DClass>>);
+    fn set_dcfile(&mut self, dcf: Arc<Mutex<DCFile>>);
+    fn add_parent(&mut self, parent: Arc<Mutex<DClass>>);
+    fn add_class_field(&mut self, field: ClassField);
 
     fn get_name(&mut self) -> String;
     fn get_dclass_id(&mut self) -> globals::DClassId;
@@ -61,6 +72,8 @@ pub trait DClassInterface {
 impl DClassInterface for DClass {
     fn new(name: &str) -> Self {
         DClass {
+            dcfile: Arc::new(Mutex::new(DCFile::new())),
+            dcf_assigned: false,
             class_name: name.to_owned(),
             class_id: 0, // assigned later
             is_struct: false,
@@ -103,40 +116,77 @@ impl DClassInterface for DClass {
             match &field.deref() {
                 ClassField::Field(field) => field.generate_hash(hashgen),
                 ClassField::Atomic(atomic) => atomic.generate_hash(hashgen),
-                ClassField::Molecular(_) => todo!(),
+                ClassField::Molecular(molecular) => molecular.generate_hash(hashgen),
             }
         }
     }
 
-    fn set_parent(&mut self, parent: Arc<Mutex<DClass>>) {
+    /// Performs a semantic analysis on the object and its children.
+    fn semantic_analysis(&self) -> Result<(), ()> {
+        assert!(
+            self.dcf_assigned,
+            "No DC file pointer found in '{}' dclass!",
+            self.class_name,
+        );
+        // TODO!
+        Ok(())
+    }
+
+    fn set_dcfile(&mut self, dcf: Arc<Mutex<DCFile>>) {
+        assert!(
+            !self.dcf_assigned,
+            "Tried to reassign DC file pointer to '{}' class",
+            self.class_name
+        );
+        self.dcfile = dcf;
+        self.dcf_assigned = true;
+    }
+
+    #[inline(always)]
+    fn add_parent(&mut self, parent: Arc<Mutex<DClass>>) {
         self.class_parents.push(parent);
     }
 
+    /// Adds a newly allocated DC field to this class. The field structure
+    /// in memory is moved into ownership of this class structure, and is
+    /// wrapped in a Mutex and an Arc pointer to pass references to other
+    /// elements, such as molecular fields.
+    fn add_class_field(&mut self, field: ClassField) {
+        self.fields.push(Arc::new(Mutex::new(field)));
+    }
+
+    #[inline(always)]
     fn get_name(&mut self) -> String {
         self.class_name.clone()
     }
 
+    #[inline(always)]
     fn get_dclass_id(&mut self) -> globals::DClassId {
         self.class_id
     }
 
+    #[inline(always)]
     fn set_dclass_id(&mut self, id: globals::DClassId) {
         self.class_id = id;
     }
 
+    #[inline(always)]
     fn get_num_parents(&mut self) -> usize {
         self.class_parents.len()
     }
 
+    #[inline(always)]
     fn get_parent(&mut self, index: usize) -> Option<Arc<Mutex<DClass>>> {
         // copy the reference inside the option instead of a reference to the reference
         self.class_parents.get(index).cloned()
     }
 
+    #[inline(always)]
     fn has_constructor(&mut self) -> bool {
         self.constructor.is_some()
     }
 
+    #[inline(always)]
     fn get_constructor(&mut self) -> Option<Arc<Mutex<DCAtomicField>>> {
         self.constructor.clone()
     }

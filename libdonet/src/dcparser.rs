@@ -38,6 +38,7 @@ use crate::dclexer::DCToken::*;
 use crate::dclexer::{DCToken, Span};
 use crate::dcstruct;
 use plex::parser;
+use std::sync::{Arc, Mutex};
 
 /* To write the DC file elements to memory just as Panda and Astron do, I
  * initially stored the DCFile struct on static memory as mutable. This required
@@ -80,33 +81,40 @@ parser! {
     }
 
     // root production of the grammar
-    dc_file: DCFile {
+    dc_file: Arc<Mutex<DCFile>> {
         type_declarations[tds] => {
-            let mut dc_file: DCFile = DCFile::new();
+
+            // Allocates a DC File struct on the heap; Wrapped in a Mutex for mutability.
+            let dc_file: Arc<Mutex<DCFile>> = Arc::new(Mutex::new(DCFile::new()));
 
             for type_declaration in tds {
                 match type_declaration {
                     TypeDeclaration::PythonImport(imports) => {
                         for import in imports {
-                            dc_file.add_python_import(import);
+                            dc_file.lock().unwrap().add_python_import(import);
                         }
                     },
                     TypeDeclaration::KeywordType(keyword) => {
-                        dc_file.add_keyword(keyword);
+                        dc_file.lock().unwrap().add_keyword(keyword);
                     },
                     TypeDeclaration::StructType(_) => {},
                     TypeDeclaration::SwitchType(_) => {},
                     TypeDeclaration::DClassType(mut dclass) => {
                         use dclass::DClassInterface;
 
-                        let next_class_id: usize = dc_file.get_num_dclasses();
+                        dclass.set_dcfile(dc_file.clone());
+
+                        let next_class_id: usize = dc_file.lock().unwrap().get_num_dclasses();
                         dclass.set_dclass_id(next_class_id.try_into().unwrap());
 
-                        dc_file.add_dclass(dclass);
+                        dc_file.lock().unwrap().add_dclass(dclass);
                     },
                     TypeDeclaration::TypedefType(_) => {},
                 }
             }
+            // TODO: maybe properly handle semantic errors in the future
+            assert!(dc_file.lock().unwrap().semantic_analysis().is_ok());
+
             dc_file
         },
     }
@@ -683,19 +691,20 @@ parser! {
 
 pub fn parse<I: Iterator<Item = (DCToken, Span)>>(
     i: I,
-) -> Result<DCFile, (Option<(DCToken, Span)>, &'static str)> {
+) -> Result<Arc<Mutex<DCFile>>, (Option<(DCToken, Span)>, &'static str)> {
     parse_(i)
 }
 
 #[cfg(test)]
 mod unit_testing {
     use super::parse;
+    use super::{Arc, Mutex};
     use crate::dcfile::*;
     use crate::dclexer::Lexer;
 
-    fn parse_dcfile_string(input: &str) -> DCFile {
+    fn parse_dcfile_string(input: &str) -> Arc<Mutex<DCFile>> {
         let lexer = Lexer::new(input).inspect(|tok| eprintln!("token: {:?}", tok));
-        let dc_file: DCFile = parse(lexer).unwrap();
+        let dc_file: Arc<Mutex<DCFile>> = parse(lexer).unwrap();
         eprintln!("{:#?}", dc_file); // pretty print DC element tree to stderr
         dc_file
     }
@@ -711,14 +720,14 @@ mod unit_testing {
                               * that may be lexed as tokens other than Id/Module.
                               */
                              from db.char import DistributedDonut\n";
-        let mut dc_file = parse_dcfile_string(dc_file);
+        let dc_file = parse_dcfile_string(dc_file);
 
         let expected_num_imports: usize = 10;
         let mut imports: Vec<DCImport> = vec![];
-        assert_eq!(dc_file.get_num_imports(), expected_num_imports);
+        assert_eq!(dc_file.lock().unwrap().get_num_imports(), expected_num_imports);
 
         for i in 0..expected_num_imports {
-            imports.push(dc_file.get_python_import(i));
+            imports.push(dc_file.lock().unwrap().get_python_import(i));
         }
 
         assert_eq!(imports[0].python_module, "example_views");

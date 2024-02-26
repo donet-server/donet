@@ -82,6 +82,7 @@ pub trait DCFieldInterface {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn get_field_id(&self) -> globals::FieldId;
+    fn get_field_name(&self) -> String;
     fn get_dclass(&self) -> Arc<Mutex<DClass>>;
 
     fn set_field_id(&mut self, id: globals::FieldId);
@@ -165,16 +166,23 @@ impl DCFieldInterface for DCField {
         self.field_id
     }
 
+    #[inline(always)]
+    fn get_field_name(&self) -> String {
+        self.field_name.clone()
+    }
+
     fn get_dclass(&self) -> Arc<Mutex<DClass>> {
         assert!(self.parent_is_dclass);
         // clone option to unwrap w/o move, and clone Arc to return
         self.dclass.clone().unwrap().clone()
     }
 
+    #[inline(always)]
     fn set_field_id(&mut self, id: globals::FieldId) {
         self.field_id = id
     }
 
+    #[inline(always)]
     fn set_field_name(&mut self, name: String) {
         self.field_name = name
     }
@@ -191,6 +199,7 @@ impl DCFieldInterface for DCField {
         self.default_value_stale = false;
     }
 
+    #[inline(always)]
     fn set_bogus_field(&mut self, is_bogus: bool) {
         self.bogus_field = is_bogus
     }
