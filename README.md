@@ -1,5 +1,6 @@
 ![GitHub Build Status](https://img.shields.io/github/actions/workflow/status/donet-server/donet/build.yml?logo=github&label=Build)
 [![Coverage Status](https://codecov.io/gh/donet-server/donet/branch/master/graph/badge.svg)](https://codecov.io/gh/donet-server/donet)
+![Lines of code](https://tokei.rs/b1/github/donet-server/donet)
 [![Discord](https://img.shields.io/discord/1066973060357443644?color=blue&label=Discord&logo=discord&logoColor=white)](https://discord.gg/T6jGjEutfy)
 
 # donet
@@ -14,9 +15,11 @@ their massive multiplayer online games, such as Toontown Online and Pirates of t
 from 2001 to 2013.
 
 ## Getting Started
-The Donet repository houses two different Rust projects:
+The Donet repository houses three different Rust projects:
 - **donet** - The Donet daemon source, which includes all the Donet services. See [donet-server.org](https://www.donet-server.org).
-- **libdonet** - The core utilities for Donet services, including datagram utilities and the DC file parser. See [libdonet.rs](https://libdonet.rs).
+- **libdonet** - The core utilities for Donet services, including datagram utilities and the DC language parser. See [libdonet.rs](https://libdonet.rs).
+- **bevy_donet** - A Bevy plugin for the [Bevy game engine](https://bevyengine.org) that provides the client-side implementation for Donet.
+This integrates Donet to the engine by translating network field updates to Bevy ECS operations.
 
 Please read the [introduction to Donet](./docs/01-Introduction.md) for an overview of the project 
 and how the engine works.
@@ -42,7 +45,7 @@ These checks should go over all source files in both `donet/` and `libdonet/` so
 If you have any further questions, feel free to join [our community Discord server](https://discord.gg/T6jGjEutfy).
 
 ## Documentation
-Currently there is not much documentation on Donet, as libdonet is still under development.
+Currently the Donet server is still under heavy development.
 
 For the libdonet rust library documentation, visit [libdonet.rs](https://libdonet.rs).
 
