@@ -612,6 +612,7 @@ parser! {
 
     numeric_type_token: DCToken {
         CharT => CharT,
+        BoolT => BoolT,
         signed_integer_type[tok] => tok,
         unsigned_integer_type[tok] => tok,
         Float32T => Float32T,

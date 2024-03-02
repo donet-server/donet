@@ -60,6 +60,7 @@ pub enum DCToken {
     Int32T,            // "int32"
     Int64T,            // "int64"
     UInt8T,            // "uint8"
+    BoolT,             // "bool"
     UInt16T,           // "uint16"
     UInt32T,           // "uint32"
     UInt64T,           // "uint64"
@@ -156,6 +157,7 @@ lexer! {
     r#"int32"# => (DCToken::Int32T, text),
     r#"int64"# => (DCToken::Int64T, text),
     r#"uint8"# => (DCToken::UInt8T, text),
+    r#"bool"# => (DCToken::BoolT, text),
     r#"uint16"# => (DCToken::UInt16T, text),
     r#"uint32"# => (DCToken::UInt32T, text),
     r#"uint64"# => (DCToken::UInt64T, text),
@@ -424,6 +426,7 @@ mod unit_testing {
         #[rustfmt::skip]
         let target: Vec<DCToken> = vec![
             DCToken::CharT,
+            DCToken::BoolT,
             // Signed / Unsigned Integers
             DCToken::Int8T, DCToken::Int16T, DCToken::Int32T, DCToken::Int64T,
             DCToken::UInt8T, DCToken::UInt16T, DCToken::UInt32T, DCToken::UInt64T,
@@ -440,7 +443,7 @@ mod unit_testing {
             DCToken::Blob32T,
         ];
         lexer_test_for_target(
-            "char \
+            "char bool \
             int8 int16 int32 int64 \
             uint8 uint16 uint32 uint64 \
             int8array int16array int32array \
