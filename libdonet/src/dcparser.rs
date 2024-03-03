@@ -409,6 +409,7 @@ parser! {
 
     atomic_fields: () {
         epsilon => {},
+        // FIXME: this doesnt look right lol. revisit later.
         atomic_fields Comma atomic_field => {},
     }
 
@@ -440,7 +441,7 @@ parser! {
     nonmethod_type_no_array: () {
         #[no_reduce(OpenBrackets)]
         Identifier(_) => {
-            // TODO: check if it is a defined type.
+            // TODO: check if it is a defined type, such as an alias / struct.
         },
         #[no_reduce(OpenBrackets)]
         numeric_type => {},
@@ -570,6 +571,7 @@ parser! {
 
     numeric_type: () {
         numeric_type_token[_] => {},
+        numeric_with_explicit_cast[_] => {},
         numeric_with_modulus[_] => {},
         numeric_with_divisor[_] => {},
         numeric_with_range[_] => {},
@@ -577,17 +579,38 @@ parser! {
 
     numeric_with_range: () {
         numeric_type_token[_] OpenParenthesis numeric_range CloseParenthesis => {},
+        numeric_with_explicit_cast[_] OpenParenthesis numeric_range CloseParenthesis => {},
         numeric_with_modulus[_] OpenParenthesis numeric_range CloseParenthesis => {},
         numeric_with_divisor[_] OpenParenthesis numeric_range CloseParenthesis => {},
     }
 
     numeric_with_divisor: () {
         numeric_type_token[_] ForwardSlash number[_] => {},
+        numeric_with_explicit_cast[_] ForwardSlash number[_] => {},
         numeric_with_modulus[_] ForwardSlash number[_] => {},
     }
 
     numeric_with_modulus: () {
         numeric_type_token[_] Percent number[_] => {},
+        numeric_with_explicit_cast[_] Percent number[_] => {},
+    }
+
+    // This is unique to Donet, and a new addition to the historic DC language.
+    // Originally, the DC system was used with Python clients, which do not need
+    // strict type annotations as Python is a dynamically typed language.
+    //
+    // Since we are supporting the Bevy engine, which is built on Rust, we need
+    // to explicitly tell the client what data type to cast to when we perform these
+    // operations on numeric types after they are received from the network.
+    numeric_with_explicit_cast: () {
+        // Explicit casts do not use the `numeric_type_token` non-terminal, because
+        // there is zero need to cast any numeric data type to a Char or Bool, since
+        // this is used for types that have arithmetic operations applied, such as division.
+        //
+        // Also because it is 2:27 AM and its giving me a shift-reduce conflict again.
+        numeric_type_token[_] OpenParenthesis signed_integer_type[_] CloseParenthesis => {},
+        numeric_type_token[_] OpenParenthesis unsigned_integer_type[_] CloseParenthesis => {},
+        numeric_type_token[_] OpenParenthesis floating_point_type[_] CloseParenthesis => {},
     }
 
     numeric_range: () {
@@ -615,8 +638,7 @@ parser! {
         BoolT => BoolT,
         signed_integer_type[tok] => tok,
         unsigned_integer_type[tok] => tok,
-        Float32T => Float32T,
-        Float64T => Float64T,
+        floating_point_type[tok] => tok,
     }
 
     char_or_number: () {
@@ -656,6 +678,11 @@ parser! {
         }
     }
 
+    floating_point_type: DCToken {
+        Float32T => Float32T,
+        Float64T => Float64T,
+    }
+
     signed_integer_type: DCToken {
         Int8T => Int8T,
         Int16T => Int16T,
@@ -686,7 +713,7 @@ parser! {
     }
 
     epsilon: () {
-        => {}, // alias for 'epsilon', or 'none', syntax
+        => {}, // alias for 'epsilon', a.k.a 'none' in GNU Bison
     }
 }
 
@@ -873,7 +900,9 @@ mod unit_testing {
                                  int32%360/1000 floatingPointAngle;\n\
                                  int32/1000 efficientFloatIn32Bits;\n\
                                  float32 waitIsntAstronsFloat32TheSame;\n\
+                                 int16(float32)%360/10 forTheStaticallyTypedLanguages;\n\
                                  int8(0-1) thisIsLiterallyABoolean;\n\
+                                 bool thisIsLiterallyJustAn8BitInt;\n\
                                  uint16/1000(0-1) youCanStackThemToo;\n\
                                  int64/10000(+50-+999) [] thisIsValid;\n\
                                  int8%10(0-10) anotherOne;\n\
