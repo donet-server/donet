@@ -389,6 +389,12 @@ parser! {
 
     type_definition: () {
         Typedef nonmethod_type_with_name => {},
+        // This rule handles a specific piece of illegal grammar that is legal in Panda.
+        // The parser will panic with a useful message describing the issue.
+        Typedef UInt8T BoolT => panic!("\n\"typedef uint8 bool;\" is deprecated!\n\n\
+        Cannot declare type alias for uint8 as 'bool', as it is a reserved identifier \
+        in the DC language.\nDonet introduces the 'bool' data type, which is an alias \
+        for uint8 under the hood.\n"),
         type_definition OpenBrackets array_range CloseBrackets => {},
     }
 

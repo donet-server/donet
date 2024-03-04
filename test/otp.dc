@@ -29,7 +29,7 @@ from otp.status import StatusDatabase/UD
 from otp.avatar import AvatarHandle
 from otp.login import AstronLoginManager/UD
 
-typedef uint8 bool;
+//typedef uint8 bool; // 'bool' is a valid data type in Donet's DC language.
 
 typedef uint32 DoId;
 
