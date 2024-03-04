@@ -18,10 +18,9 @@
 //! Definition of the DC language context free grammar for the
 //! LALR(1) parser processing the stream of lexical tokens.
 
-/* The following suppress linting warnings, which are okay to ignore
- * as they go off in the parser grammar definitions, which we are writing
- * just as the plex crate readme says we should, so everything is okay.
- */
+// The following suppress linting warnings, which are okay to ignore
+// as they go off in the parser grammar definitions, which we are writing
+// just as the plex crate readme says we should, so everything is okay.
 #![allow(
     clippy::type_complexity,
     clippy::redundant_field_names,
@@ -31,33 +30,40 @@
     clippy::let_unit_value
 )]
 
-use crate::dcfile::{DCFile, DCFileInterface, DCImport};
-use crate::dckeyword;
-use crate::dclass;
+use crate::dcarray::*;
+use crate::dcatomic::*;
+use crate::dcfield::*;
+use crate::dcfile::*;
+use crate::dckeyword; // Avoid wildcard import due to conflict with DCToken variant.
+use crate::dclass; // Same reason as comment above.
 use crate::dclexer::DCToken::*;
 use crate::dclexer::{DCToken, Span};
+use crate::dcmolecular::*;
+use crate::dcnumeric::*;
+use crate::dcparameter::*;
 use crate::dcstruct;
+use crate::dctype::*;
 use plex::parser;
+use std::mem::discriminant;
 use std::sync::{Arc, Mutex};
 
-/* To write the DC file elements to memory just as Panda and Astron do, I
- * initially stored the DCFile struct on static memory as mutable. This required
- * the unsafe block { } whenever it was accessed or modified, but it did not cause
- * undefined behavior ... until unit testing. Of course, it is ideal to not use
- * unsafe techniques from the beginning, so I decided to make use of Plex's features
- * by assigning types to the grammar's non-terminals and propogating the elements
- * bottom-up. (as LALR(1) parsers are 'bottom-up' parsers, where they start by
- * producing the 'edge' productions, until the parser reduces all non-terminals
- * to the root production of the language grammar.)
- *
- * Since we are propogating elements from the bottom of the parse tree and upwards,
- * the return types of non-terminals closer to the root production get bigger and bigger,
- * as they're carrying more and more of the total elements in the DC file until they are
- * all 'plugged in together' into the DC file struct once we reduce to the root production.
- *
- * Even though it may *appear* visually ugly, this is the safest, and cleanest,
- * approach to assembling the DC file structure in memory using Plex.
- */
+// To write the DC file elements to memory just as Panda and Astron do, I
+// initially stored the DCFile struct on static memory as mutable. This required
+// the unsafe block { } whenever it was accessed or modified, but it did not cause
+// undefined behavior ... until unit testing. Of course, it is ideal to not use
+// unsafe techniques from the beginning, so I decided to make use of Plex's features
+// by assigning types to the grammar's non-terminals and propogating the elements
+// bottom-up. (as LALR(1) parsers are 'bottom-up' parsers, where they start by
+// producing the 'edge', or 'leaf', productions, until the parser reduces all
+// non-terminals to the root production of the language grammar.)
+//
+// Since we are propogating elements from the bottom of the parse tree and upwards,
+// the return types of non-terminals closer to the root production get bigger and bigger,
+// as they're carrying more and more of the total elements in the DC file until they are
+// all 'plugged in together' into the DC file struct once we reduce to the root production.
+//
+// Even though it may *appear* visually ugly, this is the safest, and cleanest,
+// approach to assembling the DC file structure in memory.
 
 enum TypeDeclaration {
     PythonImport(Vec<DCImport>),
@@ -65,7 +71,22 @@ enum TypeDeclaration {
     StructType(dcstruct::DCStruct),
     SwitchType(Option<u8>),
     DClassType(dclass::DClass),
-    TypedefType(Option<u8>),
+    TypedefType(DCTypeDefinition),
+}
+
+/// Paired with the `char_or_u16` production.
+#[derive(Clone, Copy)]
+enum CharOrU16 {
+    Char(char),
+    U16(u16),
+}
+
+/// Paired with the `char_or_number` production.
+#[derive(Clone, Copy)]
+enum CharOrNumber {
+    Char(char),
+    I64(i64),
+    F64(f64),
 }
 
 parser! {
@@ -134,7 +155,7 @@ parser! {
         struct_type[strct] => TypeDeclaration::StructType(strct),
         switch_type => TypeDeclaration::SwitchType(None),
         distributed_class_type[dclass] => TypeDeclaration::DClassType(dclass),
-        type_definition => TypeDeclaration::TypedefType(None),
+        type_definition => TypeDeclaration::TypedefType(DCTypeDefinition::new()),
     }
 
     // ---------- Python-style Imports ---------- //
@@ -613,16 +634,65 @@ parser! {
         numeric_type_token[_] OpenParenthesis floating_point_type[_] CloseParenthesis => {},
     }
 
-    numeric_range: () {
-        epsilon => {},
-        char_or_number => {},
-        char_or_number Hyphen char_or_number => {},
+    numeric_range: Option<DCNumericRange> {
+        epsilon => None,
+
+        char_or_number[v] => match v {
+            CharOrNumber::Char(c) => {
+                let min_max: u64 = u64::from(c);
+                Some(DCNumericRange::new_unsigned_integer_range(min_max, min_max))
+            },
+            CharOrNumber::I64(i) => Some(DCNumericRange::new_integer_range(i, i)),
+            CharOrNumber::F64(f) => Some(DCNumericRange::new_floating_point_range(f, f)),
+        },
+
+        char_or_number[min] Hyphen char_or_number[max] => {
+            assert!(
+                discriminant(&min) == discriminant(&max),
+                "Cannot define a numeric range with a min and max of different data types!",
+            );
+
+            match min {
+                CharOrNumber::Char(min_c) => {
+                    let min_u64: u64 = u64::from(min_c);
+                    let max_u64: u64 = match max {
+                        CharOrNumber::Char(max_c) => u64::from(max_c),
+                        _ => panic!("This isn't possible."),
+                    };
+                    Some(DCNumericRange::new_unsigned_integer_range(min_u64, max_u64))
+                },
+                CharOrNumber::I64(min_i) => Some(DCNumericRange::new_integer_range(min_i, match max {
+                    CharOrNumber::I64(max_i) => max_i,
+                    _ => panic!("This isn't possible."),
+                })),
+                CharOrNumber::F64(min_f) => Some(DCNumericRange::new_floating_point_range(min_f, match max {
+                    CharOrNumber::F64(max_f) => max_f,
+                    _ => panic!("This isn't possible."),
+                })),
+            }
+        },
     }
 
-    array_range: () {
-        epsilon => {},
-        char_or_u16 => {},
-        char_or_u16 Hyphen char_or_u16 => {},
+    array_range: Option<DCNumericRange> {
+        epsilon => None,
+        char_or_u16[v] => match v {
+            CharOrU16::Char(c) => Some(DCNumericRange::new_unsigned_integer_range(u64::from(c), u64::from(c))),
+            CharOrU16::U16(u) => Some(DCNumericRange::new_unsigned_integer_range(u64::from(u), u64::from(u))),
+        },
+        char_or_u16[min] Hyphen char_or_u16[max] => {
+            let min_uint: u64;
+            let max_uint: u64;
+
+            match min {
+                CharOrU16::Char(c) => min_uint = u64::from(c),
+                CharOrU16::U16(u) => min_uint = u64::from(u),
+            }
+            match max {
+                CharOrU16::Char(c) => max_uint = u64::from(c),
+                CharOrU16::U16(u) => max_uint = u64::from(u),
+            }
+            Some(DCNumericRange::new_unsigned_integer_range(min_uint, max_uint))
+        },
     }
 
     // Both of these types represent a sized type (aka, array type)
@@ -641,10 +711,15 @@ parser! {
         floating_point_type[tok] => tok,
     }
 
-    char_or_number: () {
-        CharT => {},
-        signed_integer[_] => {},
-        number[_] => {},
+    char_or_number: CharOrNumber {
+        CharacterLiteral(c) => CharOrNumber::Char(c),
+        signed_integer[v] => CharOrNumber::I64(v),
+
+        number[tok] => match tok {
+            DecimalLiteral(dl) => CharOrNumber::I64(dl),
+            FloatLiteral(fl) => CharOrNumber::F64(fl),
+            _ => panic!("'number' non-terminal returned an unexpected DC token!"),
+        },
     }
 
     signed_integer: i64 {
@@ -657,15 +732,14 @@ parser! {
         FloatLiteral(fl) => FloatLiteral(fl),
     }
 
-    char_or_u16: () {
-        CharT => {},
-        unsigned_16_bit_int[_] => {},
+    char_or_u16: CharOrU16 {
+        CharacterLiteral(cl) => CharOrU16::Char(cl),
+        unsigned_16_bit_int[u] => CharOrU16::U16(u),
     }
 
-    /* In Panda's parser, this production is known as 'small_unsigned_integer'.
-     * C++ standard for an 'unsigned int' size is at least 16 bits.
-     * 16 bits for LP32 data model; ILP32, LLP64, & LP64 are 32 bits.
-     */
+    // In Panda's parser, this production is known as 'small_unsigned_integer'.
+    // C++ standard for an 'unsigned int' size is at least 16 bits.
+    // 16 bits for LP32 data model; ILP32, LLP64, & LP64 are 32 bits.
     unsigned_16_bit_int: u16 {
         DecimalLiteral(v) => {
             match u16::try_from(v) {
