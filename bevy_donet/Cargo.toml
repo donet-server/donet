@@ -1,0 +1,15 @@
+[package]
+name = "bevy_donet"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords = ["donet", "dc", "networking", "client", "mmo", "bevy"]
+readme = "README.md"
+publish = false
+
+[dependencies]
+libdonet = { path = "../libdonet", version = "0.1.0", default-features = true }
+bevy = { version = "0.13" }

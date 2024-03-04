@@ -34,13 +34,24 @@ To build Donet, run the following under the project directory:
 cargo build --release
 ```
 
+> [!NOTE]
+> The `bevy_donet` crate is not a *default* member of the main cargo project workspace.
+> Only the `donet` and `libdonet` crates are default members of the workspace as they
+> are both required to build the server daemon binary.
+>
+> To build the `bevy_donet` crate, run:
+> ```sh
+> cargo build --package bevy_donet
+> ```
+
+
 If you are working on a contribution to either the Donet daemon or libdonet, please run code linting and unit testing before pushing:
 ```sh
 cargo clippy
 cargo fmt --all -- --check
 cargo test
 ```
-These checks should go over all source files in both `donet/` and `libdonet/` source directories.
+These checks should go over all source files in the `bevy_donet/`, `donet/`, and `libdonet/` source directories.
 
 If you have any further questions, feel free to join [our community Discord server](https://discord.gg/T6jGjEutfy).
 

@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "libdonet",
+    "bevy_donet",
     "donet"
 ]
 default-members = [
