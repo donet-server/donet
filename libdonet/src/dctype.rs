@@ -22,9 +22,8 @@ use crate::globals::DgSizeTag;
 use crate::hashgen::DCHashGenerator;
 use strum_macros::EnumIs;
 
-/* The enum variants defined below have assigned u8 values
- * to keep compatibility with Astron's DC hash inputs.
- */
+/// The DCTypeEnum variants have assigned u8 values
+/// to keep compatibility with Astron's DC hash inputs.
 #[repr(u8)] // 8-bit alignment, unsigned
 #[derive(Debug, Clone, PartialEq)]
 #[rustfmt::skip]

@@ -123,11 +123,11 @@ pub trait DCNumericTypeInterface {
     fn get_modulus(&self) -> f64;
     fn get_range(&self) -> DCNumericRange;
 
-    fn set_divisor(&mut self, divisor: u16) -> Result<(), ()>;
-    fn set_modulus(&mut self, modulus: f64) -> Result<(), ()>;
-    fn set_range(&mut self, range: DCNumericRange) -> Result<(), ()>;
+    fn set_divisor(&mut self, divisor: u16) -> Result<(), String>;
+    fn set_modulus(&mut self, modulus: f64) -> Result<(), String>;
+    fn set_range(&mut self, range: DCNumericRange) -> Result<(), String>;
 
-    fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), ()>;
+    fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), String>;
 }
 
 impl DCNumericType {
@@ -237,9 +237,9 @@ impl DCNumericTypeInterface for DCNumericType {
         self.orig_range.clone()
     }
 
-    fn set_divisor(&mut self, divisor: u16) -> Result<(), ()> {
+    fn set_divisor(&mut self, divisor: u16) -> Result<(), String> {
         if divisor == 0 {
-            return Err(());
+            return Err("Cannot set the divisor to 0.".to_owned());
         }
         self.divisor = divisor;
         if self.has_range() {
@@ -251,13 +251,21 @@ impl DCNumericTypeInterface for DCNumericType {
         Ok(())
     }
 
-    fn set_modulus(&mut self, modulus: f64) -> Result<(), ()> {
-        todo!();
+    fn set_modulus(&mut self, modulus: f64) -> Result<(), String> {
+        if modulus <= 0.0_f64 {
+            return Err("Modulus value cannot be less than or equal to 0.0.".to_owned());
+        }
+        self.orig_modulus = modulus;
+        self.modulus.value.floating_point = modulus * f64::from(self.divisor);
+        Ok(()) // TODO: properly validate modulus range
     }
-    fn set_range(&mut self, range: DCNumericRange) -> Result<(), ()> {
-        todo!();
+
+    fn set_range(&mut self, range: DCNumericRange) -> Result<(), String> {
+        self.range = range; // TODO: validate
+        Ok(())
     }
-    fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), ()> {
+
+    fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), String> {
         todo!();
     }
 }

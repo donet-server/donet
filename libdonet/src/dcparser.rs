@@ -18,9 +18,7 @@
 //! Definition of the DC language context free grammar for the
 //! LALR(1) parser processing the stream of lexical tokens.
 
-// The following suppress linting warnings, which are okay to ignore
-// as they go off in the parser grammar definitions, which we are writing
-// just as the plex crate readme says we should, so everything is okay.
+// Please see plex issue #45. https://github.com/goffrie/plex/issues/45
 #![allow(
     clippy::type_complexity,
     clippy::redundant_field_names,
@@ -101,7 +99,8 @@ parser! {
         }
     }
 
-    // root production of the grammar
+    // The 'dc_file' production is the root production of the grammar.
+    // Plex knows this is the start symbol of our grammar as it is declared first.
     dc_file: Arc<Mutex<DCFile>> {
         type_declarations[tds] => {
 
@@ -391,10 +390,10 @@ parser! {
         Typedef nonmethod_type_with_name => {},
         // This rule handles a specific piece of illegal grammar that is legal in Panda.
         // The parser will panic with a useful message describing the issue.
-        Typedef UInt8T BoolT => panic!("\n\"typedef uint8 bool;\" is deprecated!\n\n\
+        Typedef UInt8T BoolT => panic!("{:?}\n\n\"typedef uint8 bool;\" is deprecated!\n\n\
         Cannot declare type alias for uint8 as 'bool', as it is a reserved identifier \
         in the DC language.\nDonet introduces the 'bool' data type, which is an alias \
-        for uint8 under the hood.\n"),
+        for uint8 under the hood.\n", span!()),
         type_definition OpenBrackets array_range CloseBrackets => {},
     }
 
@@ -549,10 +548,10 @@ parser! {
 
     array_expansion: () {
         type_value => {},
-        signed_integer[_] Star unsigned_16_bit_int[_] => {},
-        DecimalLiteral(_) Star unsigned_16_bit_int[_] => {},
-        HexLiteral(_) Star unsigned_16_bit_int[_] => {},
-        StringT Star unsigned_16_bit_int[_] => {},
+        signed_integer[_] Star unsigned_32_bit_int[_] => {},
+        DecimalLiteral(_) Star unsigned_32_bit_int[_] => {},
+        HexLiteral(_) Star unsigned_32_bit_int[_] => {},
+        StringT Star unsigned_32_bit_int[_] => {},
     }
 
     element_values: () {
@@ -596,30 +595,64 @@ parser! {
         struct_value => {},
     }
 
-    numeric_type: () {
-        numeric_type_token[_] => {},
-        numeric_with_explicit_cast[_] => {},
-        numeric_with_modulus[_] => {},
-        numeric_with_divisor[_] => {},
-        numeric_with_range[_] => {},
+    numeric_type: DCNumericType {
+        numeric_type_token[nt] => nt,
+        numeric_with_explicit_cast[nt] => nt,
+        numeric_with_modulus[nt] => nt,
+        numeric_with_divisor[nt] => nt,
+        numeric_with_range[nt] => nt,
     }
 
-    numeric_with_range: () {
-        numeric_type_token[_] OpenParenthesis numeric_range CloseParenthesis => {},
-        numeric_with_explicit_cast[_] OpenParenthesis numeric_range CloseParenthesis => {},
-        numeric_with_modulus[_] OpenParenthesis numeric_range CloseParenthesis => {},
-        numeric_with_divisor[_] OpenParenthesis numeric_range CloseParenthesis => {},
+    numeric_with_range: DCNumericType {
+        numeric_type_token[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
+        numeric_with_explicit_cast[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
+        numeric_with_modulus[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
+        numeric_with_divisor[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
     }
 
-    numeric_with_divisor: () {
-        numeric_type_token[_] ForwardSlash number[_] => {},
-        numeric_with_explicit_cast[_] ForwardSlash number[_] => {},
-        numeric_with_modulus[_] ForwardSlash number[_] => {},
+    numeric_with_divisor: DCNumericType {
+        numeric_type_token[nt] ForwardSlash number[_] => nt,
+        numeric_with_explicit_cast[nt] ForwardSlash number[_] => nt,
+        numeric_with_modulus[nt] ForwardSlash number[_] => nt,
     }
 
-    numeric_with_modulus: () {
-        numeric_type_token[_] Percent number[_] => {},
-        numeric_with_explicit_cast[_] Percent number[_] => {},
+    numeric_with_modulus: DCNumericType {
+        numeric_type_token[mut nt] Percent number[n] => {
+            match n {
+                DCToken::DecimalLiteral(m) => {
+                    if let Err(msg) = nt.set_modulus(m as f64) {
+                        panic!("{:?}\n{}", span!(), msg);
+                    }
+                    nt
+                },
+                DCToken::FloatLiteral(m) => {
+                    if let Err(msg) = nt.set_modulus(m) {
+                        panic!("{:?}\n{}", span!(), msg);
+                    }
+                    nt
+                },
+                _ => panic!("{:?}\nThis shouldn't be possible.", span!()),
+            }
+        },
+        // FIXME: See if plex has a feature to use **one** block
+        // for multiple production rules.
+        numeric_with_explicit_cast[mut nt] Percent number[n] => {
+            match n {
+                DCToken::DecimalLiteral(m) => {
+                    if let Err(msg) = nt.set_modulus(m as f64) {
+                        panic!("{:?}\n{}", span!(), msg);
+                    }
+                    nt
+                },
+                DCToken::FloatLiteral(m) => {
+                    if let Err(msg) = nt.set_modulus(m) {
+                        panic!("{:?}\n{}", span!(), msg);
+                    }
+                    nt
+                },
+                _ => panic!("{:?}\nThis shouldn't be possible.", span!()),
+            }
+        },
     }
 
     // This is unique to Donet, and a new addition to the historic DC language.
@@ -629,15 +662,15 @@ parser! {
     // Since we are supporting the Bevy engine, which is built on Rust, we need
     // to explicitly tell the client what data type to cast to when we perform these
     // operations on numeric types after they are received from the network.
-    numeric_with_explicit_cast: () {
+    numeric_with_explicit_cast: DCNumericType {
         // Explicit casts do not use the `numeric_type_token` non-terminal, because
         // there is zero need to cast any numeric data type to a Char or Bool, since
         // this is used for types that have arithmetic operations applied, such as division.
         //
         // Also because it is 2:27 AM and its giving me a shift-reduce conflict again.
-        numeric_type_token[_] OpenParenthesis signed_integer_type[_] CloseParenthesis => {},
-        numeric_type_token[_] OpenParenthesis unsigned_integer_type[_] CloseParenthesis => {},
-        numeric_type_token[_] OpenParenthesis floating_point_type[_] CloseParenthesis => {},
+        numeric_type_token[nt] OpenParenthesis signed_integer_type[_] CloseParenthesis => nt,
+        numeric_type_token[nt] OpenParenthesis unsigned_integer_type[_] CloseParenthesis => nt,
+        numeric_type_token[nt] OpenParenthesis floating_point_type[_] CloseParenthesis => nt,
     }
 
     numeric_range: Option<DCNumericRange> {
@@ -706,15 +739,15 @@ parser! {
         StringT => StringT,
         BlobT => BlobT,
         Blob32T => Blob32T,
-        array_data_type[tok] => tok,
+        array_data_type[(tok, _)] => tok,
     }
 
-    numeric_type_token: DCToken {
-        CharT => CharT,
-        BoolT => BoolT,
-        signed_integer_type[tok] => tok,
-        unsigned_integer_type[tok] => tok,
-        floating_point_type[tok] => tok,
+    numeric_type_token: DCNumericType {
+        CharT => DCNumericType::new(DCTypeEnum::TChar),
+        BoolT => DCNumericType::new(DCTypeEnum::TUInt8), // 'bool' is an alias for uint8
+        signed_integer_type[(_, dct)] => DCNumericType::new(dct),
+        unsigned_integer_type[(_, dct)] => DCNumericType::new(dct),
+        floating_point_type[(_, dct)] => DCNumericType::new(dct),
     }
 
     char_or_number: CharOrNumber {
@@ -740,51 +773,52 @@ parser! {
 
     char_or_u16: CharOrU16 {
         CharacterLiteral(cl) => CharOrU16::Char(cl),
-        unsigned_16_bit_int[u] => CharOrU16::U16(u),
+        unsigned_32_bit_int[u] => CharOrU16::U16(u as u16),
     }
 
     // In Panda's parser, this production is known as 'small_unsigned_integer'.
     // C++ standard for an 'unsigned int' size is at least 16 bits.
     // 16 bits for LP32 data model; ILP32, LLP64, & LP64 are 32 bits.
-    unsigned_16_bit_int: u16 {
+    // Most C/C++ compilers store 'unsigned int' types with 32 bits.
+    unsigned_32_bit_int: u32 {
         DecimalLiteral(v) => {
-            match u16::try_from(v) {
+            match u32::try_from(v) {
                 Ok(n) => { n },
                 Err(err) => {
                     // Downcast failed, number must be out of range.
-                    panic!("Number out of range.\n{}", err);
+                    panic!("{:?}\nNumber out of range for u32.\n{}", span!(), err);
                 },
             }
         }
     }
 
-    floating_point_type: DCToken {
-        Float32T => Float32T,
-        Float64T => Float64T,
+    floating_point_type: (DCToken, DCTypeEnum) {
+        Float32T => (Float32T, DCTypeEnum::TFloat32),
+        Float64T => (Float64T, DCTypeEnum::TFloat64),
     }
 
-    signed_integer_type: DCToken {
-        Int8T => Int8T,
-        Int16T => Int16T,
-        Int32T => Int32T,
-        Int64T => Int64T,
+    signed_integer_type: (DCToken, DCTypeEnum) {
+        Int8T => (Int8T, DCTypeEnum::TInt8),
+        Int16T => (Int16T, DCTypeEnum::TInt16),
+        Int32T => (Int32T, DCTypeEnum::TInt32),
+        Int64T => (Int64T, DCTypeEnum::TInt64),
     }
 
-    unsigned_integer_type: DCToken {
-        UInt8T => UInt8T,
-        UInt16T => UInt16T,
-        UInt32T => UInt32T,
-        UInt64T => UInt64T,
+    unsigned_integer_type: (DCToken, DCTypeEnum) {
+        UInt8T => (UInt8T, DCTypeEnum::TUInt8),
+        UInt16T => (UInt16T, DCTypeEnum::TUInt16),
+        UInt32T => (UInt32T, DCTypeEnum::TUInt32),
+        UInt64T => (UInt64T, DCTypeEnum::TUInt64),
     }
 
-    array_data_type: DCToken {
-        Int8ArrayT => Int8ArrayT,
-        Int16ArrayT => Int16ArrayT,
-        Int32ArrayT => Int32ArrayT,
-        UInt8ArrayT => UInt8ArrayT,
-        UInt16ArrayT => UInt16ArrayT,
-        UInt32ArrayT => UInt32ArrayT,
-        UInt32UInt8ArrayT => UInt32UInt8ArrayT,
+    array_data_type: (DCToken, DCTypeEnum) {
+        Int8ArrayT => (Int8ArrayT, DCTypeEnum::TArray),
+        Int16ArrayT => (Int16ArrayT, DCTypeEnum::TArray),
+        Int32ArrayT => (Int32ArrayT, DCTypeEnum::TArray),
+        UInt8ArrayT => (UInt8ArrayT, DCTypeEnum::TArray),
+        UInt16ArrayT => (UInt16ArrayT, DCTypeEnum::TArray),
+        UInt32ArrayT => (UInt32ArrayT, DCTypeEnum::TArray),
+        UInt32UInt8ArrayT => (UInt32UInt8ArrayT, DCTypeEnum::TArray),
     }
 
     optional_name: Option<String> {
