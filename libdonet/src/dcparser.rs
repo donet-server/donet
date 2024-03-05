@@ -730,7 +730,7 @@ parser! {
 
     signed_integer: i64 {
         Plus DecimalLiteral(dl) => dl,
-        Hyphen DecimalLiteral(dl) => dl,
+        Hyphen DecimalLiteral(dl) => dl * -1, // hyphen consumed by lexer, so its parsed as positive
     }
 
     number: DCToken {

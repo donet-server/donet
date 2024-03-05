@@ -60,7 +60,7 @@ pub enum DCToken {
     Int32T,            // "int32"
     Int64T,            // "int64"
     UInt8T,            // "uint8"
-    BoolT,             // "bool"
+    BoolT,             // "bool" (unique to donet. alias for uint8)
     UInt16T,           // "uint16"
     UInt32T,           // "uint32"
     UInt64T,           // "uint64"
