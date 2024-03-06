@@ -25,7 +25,7 @@ use strum_macros::EnumIs;
 /// The DCTypeEnum variants have assigned u8 values
 /// to keep compatibility with Astron's DC hash inputs.
 #[repr(u8)] // 8-bit alignment, unsigned
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[rustfmt::skip]
 pub enum DCTypeEnum {
     // Numeric Types
@@ -45,7 +45,7 @@ pub enum DCTypeEnum {
     TInvalid = 21,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DCTypeDefinition {
     alias: Option<String>,
     pub data_type: DCTypeEnum,
@@ -54,6 +54,7 @@ pub struct DCTypeDefinition {
 
 pub trait DCTypeDefinitionInterface {
     fn new() -> Self;
+    fn new_with_type(dt: DCTypeEnum) -> Self;
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn get_dc_type(&self) -> DCTypeEnum;
@@ -66,10 +67,20 @@ pub trait DCTypeDefinitionInterface {
 }
 
 impl DCTypeDefinitionInterface for DCTypeDefinition {
+    /// Creates a new empty DCTypeDefinition struct.
     fn new() -> Self {
         Self {
             alias: None,
             data_type: DCTypeEnum::TInvalid,
+            size: 0_u16,
+        }
+    }
+
+    /// Creates a new DCTypeDefinition struct with a DC type set.
+    fn new_with_type(dt: DCTypeEnum) -> Self {
+        Self {
+            alias: None,
+            data_type: dt,
             size: 0_u16,
         }
     }

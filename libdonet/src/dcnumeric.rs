@@ -110,6 +110,8 @@ pub struct DCNumericType {
     // These are the range and modulus values after scaling by the divisor.
     modulus: DCNumber,
     range: DCNumericRange,
+    // Specific to Donet's DC language
+    explicit_cast: Option<DCTypeDefinition>,
 }
 
 pub trait DCNumericTypeInterface {
@@ -122,10 +124,12 @@ pub trait DCNumericTypeInterface {
     fn get_divisor(&self) -> u16;
     fn get_modulus(&self) -> f64;
     fn get_range(&self) -> DCNumericRange;
+    fn get_explicit_cast(&self) -> Option<DCTypeDefinition>;
 
     fn set_divisor(&mut self, divisor: u16) -> Result<(), String>;
     fn set_modulus(&mut self, modulus: f64) -> Result<(), String>;
     fn set_range(&mut self, range: DCNumericRange) -> Result<(), String>;
+    fn set_explicit_cast(&mut self, dtype: DCTypeDefinition) -> Result<(), String>;
 
     fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), String>;
 }
@@ -200,6 +204,7 @@ impl DCNumericTypeInterface for DCNumericType {
             orig_range: DCNumericRange::new(),
             modulus: DCNumber::new(),
             range: DCNumericRange::new(),
+            explicit_cast: None,
         }
     }
 
@@ -221,20 +226,29 @@ impl DCNumericTypeInterface for DCNumericType {
         }
     }
 
+    #[inline]
     fn has_modulus(&self) -> bool {
         self.orig_modulus != 0.0
     }
+    #[inline]
     fn has_range(&self) -> bool {
         self.orig_range.is_empty()
     }
+    #[inline]
     fn get_divisor(&self) -> u16 {
         self.divisor
     }
+    #[inline]
     fn get_modulus(&self) -> f64 {
         self.orig_modulus
     }
+    #[inline]
     fn get_range(&self) -> DCNumericRange {
         self.orig_range.clone()
+    }
+    #[inline]
+    fn get_explicit_cast(&self) -> Option<DCTypeDefinition> {
+        self.explicit_cast.clone()
     }
 
     fn set_divisor(&mut self, divisor: u16) -> Result<(), String> {
@@ -263,6 +277,11 @@ impl DCNumericTypeInterface for DCNumericType {
     fn set_range(&mut self, range: DCNumericRange) -> Result<(), String> {
         self.range = range; // TODO: validate
         Ok(())
+    }
+
+    fn set_explicit_cast(&mut self, dtype: DCTypeDefinition) -> Result<(), String> {
+        self.explicit_cast = Some(dtype);
+        Ok(()) // TODO: do some sort of type check
     }
 
     fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), String> {

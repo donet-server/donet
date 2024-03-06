@@ -668,9 +668,21 @@ parser! {
         // this is used for types that have arithmetic operations applied, such as division.
         //
         // Also because it is 2:27 AM and its giving me a shift-reduce conflict again.
-        numeric_type_token[nt] OpenParenthesis signed_integer_type[_] CloseParenthesis => nt,
-        numeric_type_token[nt] OpenParenthesis unsigned_integer_type[_] CloseParenthesis => nt,
-        numeric_type_token[nt] OpenParenthesis floating_point_type[_] CloseParenthesis => nt,
+        numeric_type_token[mut nt]
+        OpenParenthesis signed_integer_type[(_, dct)] CloseParenthesis => {
+            let _ = nt.set_explicit_cast(DCTypeDefinition::new_with_type(dct));
+            nt
+        },
+        numeric_type_token[mut nt]
+        OpenParenthesis unsigned_integer_type[(_, dct)] CloseParenthesis => {
+            let _ = nt.set_explicit_cast(DCTypeDefinition::new_with_type(dct));
+            nt
+        },
+        numeric_type_token[mut nt]
+        OpenParenthesis floating_point_type[(_, dct)] CloseParenthesis => {
+            let _ = nt.set_explicit_cast(DCTypeDefinition::new_with_type(dct));
+            nt
+        },
     }
 
     numeric_range: Option<DCNumericRange> {
