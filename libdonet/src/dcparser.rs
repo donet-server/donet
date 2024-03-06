@@ -350,19 +350,24 @@ parser! {
 
     class_field: () {
         // e.g. "setPos(float64 x, float64 y, float64 z) ram broadcast"
-        named_field dc_keyword_list => {},
+        named_field dc_keyword_list[_] => {},
         // e.g. "setStats : setAvatarCount, setNewAvatarCount"
         molecular_field => {},
     }
 
-    dc_keyword_list: Vec<String> {
-        epsilon => vec![],
+    dc_keyword_list: dckeyword::DCKeywordList {
+        epsilon => dckeyword::DCKeywordList::default(),
+
         dc_keyword_list[mut kl] Identifier(k) => {
-            kl.push(k);
+            use dckeyword::{DCKeywordInterface, DCKeywordListInterface};
+
+            let _ = kl.add_keyword(dckeyword::DCKeyword::new(k, None));
             kl
         }
         dc_keyword_list[mut kl] DCKeyword(k) => {
-            kl.push(k);
+            use dckeyword::{DCKeywordInterface, DCKeywordListInterface};
+
+            let _ = kl.add_keyword(dckeyword::DCKeyword::new(k, None));
             kl
         }
     }
@@ -370,7 +375,6 @@ parser! {
     optional_inheritance: Option<Vec<String>> {
         epsilon => None,
         Colon Identifier(parent) class_parents[mut cp] => {
-            // TODO: Check if identifier is a defined class.
             cp.insert(0, parent);
             Some(cp)
         },
