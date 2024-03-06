@@ -60,18 +60,24 @@ impl DCKeywordInterface for DCKeyword {
         }
     }
 
+    /// Accumulates the properties of this DC element into the file hash.
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         hashgen.add_string(self.name.clone());
     }
 
+    #[inline]
     fn get_name(&self) -> String {
         self.name.clone()
     }
 
+    #[inline]
     fn get_historical_flag(&self) -> HistoricalFlag {
         self.historical_flag.clone()
     }
 
+    /// Sets the historical flag bitmask to the bitwise complement of 0
+    /// (!0 in Rust, or ~0 in C/C++), as if the keyword were not one
+    /// of the historically defined keywords.
     fn clear_historical_flag(&mut self) {
         self.historical_flag = !0;
     }
@@ -119,6 +125,9 @@ impl Default for DCKeywordList {
         Self {
             keywords: vec![],
             kw_name_2_keyword: MultiMap::new(),
+            // Panda initializes its keyword list class with the flags bitmask
+            // set to 0 as a regular int (signed). But, it still confuses me why
+            // since a clear bitmask (no historical kw flags) is the bitwise complement of 0.
             flags: 0_i32,
         }
     }

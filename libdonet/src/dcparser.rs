@@ -72,6 +72,14 @@ enum TypeDeclaration {
     TypedefType(DCTypeDefinition),
 }
 
+/// Paired with the `type_value` production.
+enum TypeValue {
+    I64(i64),
+    Char(char),
+    String(String),
+    ArrayValue(Vec<(TypeValue, u32)>),
+}
+
 /// Paired with the `char_or_u16` production.
 #[derive(Clone, Copy)]
 enum CharOrU16 {
@@ -302,12 +310,14 @@ parser! {
     keyword_type: dckeyword::DCKeyword {
         Keyword Identifier(id) => {
             use dckeyword::DCKeywordInterface;
+
             // TODO: register keyword identifier in DC file
             dckeyword::DCKeyword::new(id, None)
         },
         Keyword DCKeyword(historic) => {
             // This is already a legacy keyword.
             use dckeyword::DCKeywordInterface;
+
             dckeyword::DCKeyword::new(historic, None)
         }
     }
@@ -393,8 +403,9 @@ parser! {
     type_definition: () {
         Typedef nonmethod_type_with_name => {},
         // This rule handles a specific piece of illegal grammar that is legal in Panda.
-        // The parser will panic with a useful message describing the issue.
-        Typedef UInt8T BoolT => panic!("{:?}\n\n\"typedef uint8 bool;\" is deprecated!\n\n\
+        // The parser will print a useful message to stdout describing the issue,
+        // and will ignore this grammar and continue without a panic.
+        Typedef UInt8T BoolT => println!("{:?}\n\n\"typedef uint8 bool;\" is deprecated!\n\n\
         Cannot declare type alias for uint8 as 'bool', as it is a reserved identifier \
         in the DC language.\nDonet introduces the 'bool' data type, which is an alias \
         for uint8 under the hood.\n", span!()),
@@ -550,22 +561,26 @@ parser! {
         sized_type_token[_] OpenParenthesis array_range CloseParenthesis => {},
     }
 
-    array_expansion: () {
-        type_value => {},
-        signed_integer[_] Star unsigned_32_bit_int[_] => {},
-        DecimalLiteral(_) Star unsigned_32_bit_int[_] => {},
-        HexLiteral(_) Star unsigned_32_bit_int[_] => {},
-        StringT Star unsigned_32_bit_int[_] => {},
+    // e.g. "blob = [0 * 14]"
+    array_expansion: (TypeValue, u32) {
+        type_value[tv] => (tv, 1_u32), // factor of 1 by default
+        signed_integer[i] Star unsigned_32_bit_int[f] => (TypeValue::I64(i), f),
+        DecimalLiteral(i) Star unsigned_32_bit_int[f] => (TypeValue::I64(i), f),
+        HexLiteral(hs) Star unsigned_32_bit_int[f] => (TypeValue::String(hs), f),
+        StringLiteral(s) Star unsigned_32_bit_int[f] => (TypeValue::String(s), f),
     }
 
-    element_values: () {
-        array_expansion => {},
-        element_values Comma array_expansion => {},
+    element_values: Vec<(TypeValue, u32)> {
+        array_expansion[ae] => vec![ae],
+        element_values[mut ev] Comma array_expansion[ae] => {
+            ev.push(ae);
+            ev
+        },
     }
 
-    array_value: () {
-        OpenBrackets CloseBrackets => {},
-        OpenBrackets element_values CloseBrackets => {},
+    array_value: Vec<(TypeValue, u32)> {
+        OpenBrackets CloseBrackets => vec![],
+        OpenBrackets element_values[ev] CloseBrackets => ev,
     }
 
     struct_value: () {
@@ -589,14 +604,14 @@ parser! {
         sized_type_token[_] => {},
     }
 
-    type_value: () {
-        DecimalLiteral(_) => {},
-        CharacterLiteral(_) => {},
-        StringLiteral(_) => {},
-        HexLiteral(_) => {},
-        signed_integer[_] => {},
-        array_value => {},
-        struct_value => {},
+    type_value: TypeValue {
+        DecimalLiteral(i) => TypeValue::I64(i),
+        CharacterLiteral(c) => TypeValue::Char(c),
+        StringLiteral(s) => TypeValue::String(s),
+        HexLiteral(hs) => TypeValue::String(hs),
+        signed_integer[i] => TypeValue::I64(i),
+        array_value[av] => TypeValue::ArrayValue(av),
+        struct_value[_] => todo!(),
     }
 
     numeric_type: DCNumericType {
@@ -607,6 +622,7 @@ parser! {
         numeric_with_range[nt] => nt,
     }
 
+    // TODO!
     numeric_with_range: DCNumericType {
         numeric_type_token[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
         numeric_with_explicit_cast[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
@@ -614,6 +630,7 @@ parser! {
         numeric_with_divisor[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
     }
 
+    // TODO!
     numeric_with_divisor: DCNumericType {
         numeric_type_token[nt] ForwardSlash number[_] => nt,
         numeric_with_explicit_cast[nt] ForwardSlash number[_] => nt,
@@ -674,17 +691,23 @@ parser! {
         // Also because it is 2:27 AM and its giving me a shift-reduce conflict again.
         numeric_type_token[mut nt]
         OpenParenthesis signed_integer_type[(_, dct)] CloseParenthesis => {
-            let _ = nt.set_explicit_cast(DCTypeDefinition::new_with_type(dct));
+            if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dct)) {
+                panic!("{:?}\n{}", span!(), msg);
+            }
             nt
         },
         numeric_type_token[mut nt]
         OpenParenthesis unsigned_integer_type[(_, dct)] CloseParenthesis => {
-            let _ = nt.set_explicit_cast(DCTypeDefinition::new_with_type(dct));
+            if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dct)) {
+                panic!("{:?}\n{}", span!(), msg);
+            }
             nt
         },
         numeric_type_token[mut nt]
         OpenParenthesis floating_point_type[(_, dct)] CloseParenthesis => {
-            let _ = nt.set_explicit_cast(DCTypeDefinition::new_with_type(dct));
+            if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dct)) {
+                panic!("{:?}\n{}", span!(), msg);
+            }
             nt
         },
     }
@@ -704,7 +727,8 @@ parser! {
         char_or_number[min] Hyphen char_or_number[max] => {
             assert!(
                 discriminant(&min) == discriminant(&max),
-                "Cannot define a numeric range with a min and max of different data types!",
+                "{:?}\nCannot define a numeric range with a min and max of different data types!",
+                span!()
             );
 
             match min {
