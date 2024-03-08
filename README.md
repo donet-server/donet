@@ -1,6 +1,5 @@
 ![GitHub Build Status](https://img.shields.io/github/actions/workflow/status/donet-server/donet/build.yml?logo=github&label=Build)
 [![Coverage Status](https://codecov.io/gh/donet-server/donet/branch/master/graph/badge.svg)](https://codecov.io/gh/donet-server/donet)
-![Lines of code](https://tokei.rs/b1/github/donet-server/donet)
 [![Discord](https://img.shields.io/discord/1066973060357443644?color=blue&label=Discord&logo=discord&logoColor=white)](https://discord.gg/T6jGjEutfy)
 
 # donet
