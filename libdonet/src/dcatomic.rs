@@ -19,6 +19,7 @@
 //! procedure call method of a Distributed Class.
 
 use crate::dcfield::{DCField, DCFieldInterface};
+use crate::dckeyword::DCKeywordList;
 use crate::dclass::DClass;
 use crate::dcparameter::{DCParameter, DCParameterInterface};
 use crate::dctype::{DCTypeDefinition, DCTypeDefinitionInterface};
@@ -36,21 +37,21 @@ pub struct DCAtomicField {
 }
 
 pub trait DCAtomicFieldInterface {
-    fn new(name: &str, dclass: Arc<Mutex<DClass>>, bogus_field: bool) -> Self;
+    fn new(name: &str, bogus_field: bool) -> Self;
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 
     fn get_num_elements(&self) -> usize;
     fn get_element(&self, index: usize) -> Option<Arc<Mutex<DCParameter>>>;
 
+    fn set_keyword_list(&mut self, kw_list: DCKeywordList);
     fn add_element(&mut self, element: DCParameter);
 }
 
 impl DCAtomicFieldInterface for DCAtomicField {
-    fn new(name: &str, dclass: Arc<Mutex<DClass>>, bogus_field: bool) -> Self {
+    fn new(name: &str, bogus_field: bool) -> Self {
         Self {
             base_field: {
                 let mut new_dcfield = DCField::new(name, DCTypeDefinition::new());
-                new_dcfield.set_parent_dclass(dclass);
                 new_dcfield.set_bogus_field(bogus_field);
                 new_dcfield
             },
@@ -82,6 +83,10 @@ impl DCAtomicFieldInterface for DCAtomicField {
             Some(pointer) => Some(pointer.clone()), // make a new rc pointer
             None => None,
         }
+    }
+
+    fn set_keyword_list(&mut self, kw_list: DCKeywordList) {
+        self.base_field.set_field_keyword_list(kw_list)
     }
 
     fn add_element(&mut self, element: DCParameter) {

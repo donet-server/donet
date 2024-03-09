@@ -88,6 +88,7 @@ pub trait DCFieldInterface {
     fn set_field_id(&mut self, id: globals::FieldId);
     fn set_field_name(&mut self, name: String);
     fn set_field_type(&mut self, dtype: DCTypeDefinition);
+    fn set_field_keyword_list(&mut self, kw_list: DCKeywordList);
     fn set_default_value(&mut self, value: Vec<u8>);
     fn set_bogus_field(&mut self, is_bogus: bool);
 
@@ -191,6 +192,10 @@ impl DCFieldInterface for DCField {
         self.field_type = dtype;
         self.has_default_value = false;
         self.default_value = vec![];
+    }
+
+    fn set_field_keyword_list(&mut self, kw_list: DCKeywordList) {
+        self.keyword_list = kw_list;
     }
 
     fn set_default_value(&mut self, value: Vec<u8>) {

@@ -41,9 +41,11 @@ use crate::dcnumeric::*;
 use crate::dcparameter::*;
 use crate::dcstruct;
 use crate::dctype::*;
+
 use plex::parser;
 use std::mem::discriminant;
-use std::sync::{Arc, Mutex};
+use std::ops::Deref;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 // To write the DC file elements to memory just as Panda and Astron do, I
 // initially stored the DCFile struct on static memory as mutable. This required
@@ -345,24 +347,77 @@ parser! {
     // ---------- Distributed Class ---------- //
 
     distributed_class_type: dclass::DClass {
-        DClass Identifier(id) optional_inheritance[_] OpenBraces
-        optional_class_fields CloseBraces => {
+        DClass Identifier(id) optional_inheritance[oi] OpenBraces
+        optional_class_fields[ocf] CloseBraces => {
             use dclass::DClassInterface;
-            dclass::DClass::new(&id)
+
+            let mut dclss: dclass::DClass = dclass::DClass::new(&id);
+
+            // TODO: dclass parents
+
+            // .add_class_field() sets `is_bogus_class` to false,
+            // so if this for loop doesn't have 1 iteration, bogus stays true.
+            for cf in ocf {
+                match cf {
+                    ClassField::Molecular(mut mf) => {
+                        // All molecular fields in the `ocf` vector are storing
+                        // their atomic field names in memory, waiting to receive
+                        // their **real** atomic field smart pointers. Now that we
+                        // have them in the dclass, we can give them the references.
+                        for id in &mf._get_atomic_names() {
+                            if let Some(f_ptr) = dclss.get_field_by_name(&id) {
+
+                                let new_ptr: Arc<Mutex<ClassField>> = f_ptr.clone();
+                                let mutex_ref: &Mutex<ClassField> = new_ptr.deref();
+                                let cfield: MutexGuard<'_, ClassField> = mutex_ref.lock().unwrap();
+
+                                match *cfield {
+                                    ClassField::Atomic(_) => {},
+                                    // FIXME: The span! macro will return the span at the point
+                                    // of the dclass declaration, and not the molecular field.
+                                    // We could fix this by storing spans for each DC element,
+                                    // but I don't want more unnecessary memory usage.
+                                    _ => panic!("{:?}\n\nA molecular field can only \
+                                    contain atomic field names.", span!()),
+                                }
+                            } else {
+                                // TODO: uncomment panic below once fields are done.
+                                // TODO: AND write unit tests for these checks
+                                //panic!("{:?}\n\nMolecular field atom '{}' is \
+                                //not declared.", span!(), id);
+                            }
+                        }
+                        mf._drop_atomic_names();
+
+                        dclss.add_class_field(ClassField::Molecular(mf))
+                    },
+                    _ => dclss.add_class_field(cf),
+                }
+            }
+            dclss
         }
     }
 
-    optional_class_fields: () {
-        epsilon => {},
-        optional_class_fields Semicolon => {},
-        optional_class_fields class_field Semicolon => {},
+    optional_class_fields: Vec<ClassField> {
+        epsilon => vec![],
+        optional_class_fields[ocf] Semicolon => ocf,
+        optional_class_fields[mut ocf] class_field[cf] Semicolon => {
+            ocf.push(cf);
+            ocf
+        },
     }
 
-    class_field: () {
+    class_field: ClassField {
         // e.g. "setPos(float64 x, float64 y, float64 z) ram broadcast"
-        named_field dc_keyword_list[_] => {},
+        named_field[nf] dc_keyword_list[kl] => {
+            let mut f: DCAtomicField = DCAtomicField::new("", true); // TODO!
+            f.set_keyword_list(kl);
+            ClassField::Atomic(f)
+        },
         // e.g. "setStats : setAvatarCount, setNewAvatarCount"
-        molecular_field => {},
+        molecular_field[mf] => {
+            ClassField::Molecular(mf)
+        },
     }
 
     dc_keyword_list: dckeyword::DCKeywordList {
@@ -382,11 +437,11 @@ parser! {
         }
     }
 
-    optional_inheritance: Option<Vec<String>> {
-        epsilon => None,
+    optional_inheritance: Vec<String> {
+        epsilon => vec![],
         Colon Identifier(parent) class_parents[mut cp] => {
             cp.insert(0, parent);
-            Some(cp)
+            cp
         },
     }
 
@@ -415,7 +470,7 @@ parser! {
     // ---------- Panda DC Switch Statements ---------- //
 
     switch_type: () {
-        Switch optional_name[_] OpenParenthesis parameter_or_atomic
+        Switch optional_name[_] OpenParenthesis parameter
         CloseParenthesis OpenBraces switch_fields CloseBraces => {
             // TODO: create new switch
         }
@@ -434,29 +489,32 @@ parser! {
         Default Colon => {},
     }
 
-    parameter_or_atomic: () {
-        parameter => {},
-        atomic_field => {},
-    }
-
     // ---------- Molecular Field ---------- //
 
-    molecular_field: () {
-        Identifier(_) Colon atomic_field[_] atomic_fields[_] => {},
-        Identifier(_) Colon parameter_field[_] parameter_fields[_] => {},
+    molecular_field: DCMolecularField {
+        Identifier(id) Colon Identifier(atom1) molecular_atom_list[mut mal] => {
+            // Molecular fields require at least one atomic name.
+            // They **should** require a minimum of two as suggested in Astron
+            // docs and Panda source comments, but one atomic name is historically legal.
+            //
+            // Insert the required atomic name into the beginning of the array.
+            mal.insert(0, atom1);
+
+            // We need to pass the array of atomic names up the parse tree
+            // until we have access to assembled atomic field structures.
+            //
+            // We do so by giving the array to the constructor, and it stores it for us,
+            // so we don't have to pollute the return types of the productions here.
+            DCMolecularField::new(&id, mal)
+        },
     }
 
-    // ---------- Atomic Field ---------- //
-
-    atomic_fields: () {
-        epsilon => {},
-        // FIXME: this doesnt look right lol. revisit later.
-        atomic_fields Comma atomic_field => {},
-    }
-
-    atomic_field: () {
-        Identifier(_) OpenParenthesis parameters[_]
-        CloseParenthesis dc_keyword_list[_] Semicolon => {},
+    molecular_atom_list: Vec<String> {
+        epsilon => vec![],
+        molecular_atom_list[mut mal] Comma Identifier(atomic_name) => {
+            mal.push(atomic_name);
+            mal
+        },
     }
 
     // ---------- Method ---------- //

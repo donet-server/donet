@@ -41,7 +41,6 @@ pub struct DClass {
     dcf_assigned: bool,         // due to how the parser works, we assign it 'til the end.
     class_name: String,
     class_id: globals::DClassId,
-    is_struct: bool,
     is_bogus_class: bool,
     class_parents: Vec<Arc<Mutex<DClass>>>,
     constructor: Option<Arc<Mutex<DCAtomicField>>>,
@@ -60,11 +59,15 @@ pub trait DClassInterface {
     fn add_parent(&mut self, parent: Arc<Mutex<DClass>>);
     fn add_class_field(&mut self, field: ClassField);
 
+    fn get_field_by_name(&mut self, name: &str) -> Option<Arc<Mutex<ClassField>>>;
+
     fn get_name(&mut self) -> String;
     fn get_dclass_id(&mut self) -> globals::DClassId;
     fn set_dclass_id(&mut self, id: globals::DClassId);
+
     fn get_num_parents(&mut self) -> usize;
     fn get_parent(&mut self, index: usize) -> Option<Arc<Mutex<DClass>>>;
+
     fn has_constructor(&mut self) -> bool;
     fn get_constructor(&mut self) -> Option<Arc<Mutex<DCAtomicField>>>;
 }
@@ -76,7 +79,6 @@ impl DClassInterface for DClass {
             dcf_assigned: false,
             class_name: name.to_owned(),
             class_id: 0, // assigned later
-            is_struct: false,
             is_bogus_class: true,
             class_parents: vec![],
             constructor: None,
@@ -152,7 +154,15 @@ impl DClassInterface for DClass {
     /// wrapped in a Mutex and an Arc pointer to pass references to other
     /// elements, such as molecular fields.
     fn add_class_field(&mut self, field: ClassField) {
+        self.is_bogus_class = false;
         self.fields.push(Arc::new(Mutex::new(field)));
+    }
+
+    fn get_field_by_name(&mut self, name: &str) -> Option<Arc<Mutex<ClassField>>> {
+        match self.field_name_2_field.get(name) {
+            Some(pointer) => Some(pointer.clone()),
+            None => None,
+        }
     }
 
     #[inline(always)]
