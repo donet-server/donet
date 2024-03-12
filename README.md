@@ -80,3 +80,10 @@ Resources for more info on Panda's Distributed Networking (Sources listed in chr
 Donet logo artwork created by [honeymatsu](https://honeymatsu.carrd.co/). 🍩
 
 Older revisions of the Donet logo created and designed by [Karla Valeria Rodriguez](https://github.com/karla-valeria). 🍩
+
+## Legal
+"we", "us", and "our" refer to the Github organization, "Donet".
+
+“Disney” may refer to The Walt Disney Company, or any of its subsidiaries.
+
+The Donet project and organization is **not** in any way endorsed by, or affiliated with, the Toontown: Corporate Clash non-profit game studio registered in the United States. We are not affiliated with Disney.
