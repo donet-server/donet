@@ -33,7 +33,8 @@ To build Donet, run the following under the project directory:
 cargo build --release
 ```
 
-> [!NOTE]
+> **NOTE**
+>
 > The `bevy_donet` crate is not a *default* member of the main cargo project workspace.
 > Only the `donet` and `libdonet` crates are default members of the workspace as they
 > are both required to build the server daemon binary.
@@ -87,7 +88,7 @@ Copyright © 2023-2024 Max Rodriguez <me@maxrdz.com>
 
 "Donet" can be found at https://gitlab.com/donet-server/donet
 
-"Donet" is distributed under the terms of the GNU General Public
+"Donet" is distributed under the terms of the GNU Affero General Public
 License, either version 3.0 or, at your option, any later
 version WITHOUT ANY WARRANTY. You can read the full copy of
 the software license in the COPYING file.
