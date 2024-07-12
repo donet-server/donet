@@ -81,7 +81,19 @@ Donet logo artwork created by [honeymatsu](https://honeymatsu.carrd.co/). 🍩
 
 Older revisions of the Donet logo created and designed by [Karla Valeria Rodriguez](https://github.com/karla-valeria). 🍩
 
+## Copyright and License
+
+Copyright © 2023-2024 Max Rodriguez <me@maxrdz.com>
+
+"Donet" can be found at https://gitlab.com/donet-server/donet
+
+"Donet" is distributed under the terms of the GNU General Public
+License, either version 3.0 or, at your option, any later
+version WITHOUT ANY WARRANTY. You can read the full copy of
+the software license in the COPYING file.
+
 ## Legal
+
 "we", "us", and "our" refer to the Github organization, "Donet".
 
 “Disney” may refer to The Walt Disney Company, or any of its subsidiaries.
