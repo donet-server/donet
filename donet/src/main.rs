@@ -270,7 +270,7 @@ fn print_version(version_string: &str, git_sha1: &str) {
         "{}Donet{}, version {} ({} {}-{})\n\
         Revision (Git SHA1): {}\n\n\
         Released under the AGPL-3.0 license. <https://www.gnu.org/licenses/agpl-3.0.html>\n\
-        View the source code on GitHub: https://github.com/donet-server/donet\n",
+        View the source code on GitLab: https://gitlab.com/donet-server/donet\n",
         logger::_ANSI_MAGENTA, logger::_ANSI_RESET,
         version_string, bin_arch, bin_platform, bin_env, git_sha1
     );
