@@ -1,7 +1,3 @@
-![GitHub Build Status](https://img.shields.io/github/actions/workflow/status/donet-server/donet/build.yml?logo=github&label=Build)
-[![Coverage Status](https://codecov.io/gh/donet-server/donet/branch/master/graph/badge.svg)](https://codecov.io/gh/donet-server/donet)
-[![Discord](https://img.shields.io/discord/1066973060357443644?color=blue&label=Discord&logo=discord&logoColor=white)](https://discord.gg/T6jGjEutfy)
-
 # donet
 
 <img src="logo/donet_banner.png" alt="Donet logo artwork by honeymatsu." align="right" width="40%"/>
@@ -23,10 +19,7 @@ This integrates Donet to the engine by translating network field updates to Bevy
 Please read the [introduction to Donet](./docs/01-Introduction.md) for an overview of the project 
 and how the engine works.
 
-Before starting your own contribution to Donet, please read over the [Contributing Guidelines](./CONTRIBUTING.md). If you are a first
-time contributor to the project, please add your name and Git email address to the [CONTRIBUTORS.md](./CONTRIBUTORS.md) markdown file.
-You may also use your GitHub username as your name. If your contribution includes modifications to source code, please add your
-name and Git email in the [Cargo.toml](./Cargo.toml) file as an author of this project.
+Before starting your own contribution to Donet, please read over the [Contributing Guidelines](./CONTRIBUTING.md).
 
 To build Donet, run the following under the project directory:
 ```sh
@@ -53,17 +46,10 @@ cargo test
 ```
 These checks should go over all source files in the `bevy_donet/`, `donet/`, and `libdonet/` source directories.
 
-If you have any further questions, feel free to join [our community Discord server](https://discord.gg/T6jGjEutfy).
-
 ## Documentation
-Currently the Donet server is still under heavy development.
+Currently the Donet engine is still under heavy development.
 
 For the libdonet rust library documentation, visit [libdonet.rs](https://libdonet.rs).
-
-## Software License
-The Donet engine is released under the GNU Affero General Public License, version 3.0 (AGPL-3.0), which 
-is a copyleft open source software license. The terms of this license are available in the 
-"[LICENSE](./LICENSE)" file.
 
 ### Distributed Networking architecture resources
 
@@ -78,20 +64,21 @@ Resources for more info on Panda's Distributed Networking (Sources listed in chr
 
 <br>
 
-Donet logo artwork created by [honeymatsu](https://honeymatsu.carrd.co/). 🍩
-
-Older revisions of the Donet logo created and designed by [Karla Valeria Rodriguez](https://github.com/karla-valeria). 🍩
-
 ## Copyright and License
 
-Copyright © 2023-2024 Max Rodriguez <me@maxrdz.com>
+Copyright © 2023-2024 Donet Authors
 
 "Donet" can be found at https://gitlab.com/donet-server/donet
 
 "Donet" is distributed under the terms of the GNU Affero General Public
 License, either version 3.0 or, at your option, any later
 version WITHOUT ANY WARRANTY. You can read the full copy of
-the software license in the COPYING file.
+the software license in the COPYING file. The terms of this license are
+available in the "[COPYING](./COPYING)" file.
+
+Donet logo artwork created by [honeymatsu](https://honeymatsu.carrd.co/). 🍩
+
+Older revisions of the Donet logo created and designed by [Karla Valeria Rodriguez](https://github.com/karla-valeria). 🍩
 
 ## Legal
 
