@@ -82,7 +82,7 @@ Older revisions of the Donet logo created and designed by [Karla Valeria Rodrigu
 
 ## Legal
 
-"we", "us", and "our" refer to the Github organization, "Donet".
+"we", "us", and "our" refer to the authors of the Donet engine.
 
 “Disney” may refer to The Walt Disney Company, or any of its subsidiaries.
 
