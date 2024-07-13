@@ -35,19 +35,18 @@ pub mod channel_map;
 pub mod config;
 pub mod dbserver;
 pub mod logger;
+pub mod meson;
 pub mod message_director;
 pub mod network;
 pub mod service_factory;
 pub mod utils;
 
+use meson::*;
+
 #[derive(Clone, Copy)]
 enum FlagArguments {
     DCFilePath,
 }
-static BIN_NAME: &str = "donetd";
-static VERSION_STRING: &str = "0.1.0";
-static DEFAULT_TOML: &str = "daemon.toml";
-static GIT_SHA1: &str = env!("GIT_SHA1");
 
 fn main() -> std::io::Result<()> {
     use config::*;
@@ -78,14 +77,14 @@ fn main() -> std::io::Result<()> {
                     print_help_page();
                     return Ok(());
                 } else if argument == "-v" || argument == "--version" {
-                    print_version(VERSION_STRING, GIT_SHA1);
+                    print_version();
                     return Ok(());
                 } else if argument == "-c" || argument == "--check-dc" {
                     want_dc_check = true;
                     expecting_flag_argument = Some(FlagArguments::DCFilePath);
                     continue;
                 } else {
-                    println!("{}: {}: Invalid flag.\n", BIN_NAME, argument);
+                    println!("{}: {}: Invalid flag.\n", BINARY, argument);
                     print_help_page();
                     return Ok(());
                 }
@@ -110,13 +109,13 @@ fn main() -> std::io::Result<()> {
                 config_file = argument.as_str();
                 break;
             } else {
-                println!("{}: {}: Invalid argument.\n", BIN_NAME, argument);
+                println!("{}: {}: Invalid argument.\n", BINARY, argument);
                 print_help_page();
                 return Ok(());
             }
         }
         if expecting_flag_argument.is_some() {
-            println!("{}: Expected more arguments.\n", BIN_NAME);
+            println!("{}: Expected more arguments.\n", BINARY);
             print_help_page();
             return Ok(());
         }
@@ -245,12 +244,12 @@ fn print_help_page() {
         -h, --help      Print the help page.\n\
         -v, --version   Print Donet binary build version & info.\n\
         -c, --check-dc  Run the libdonet DC parser on the given DC file.\n",
-        BIN_NAME, DEFAULT_TOML
+        BINARY, DEFAULT_TOML
     );
 }
 
 #[rustfmt::skip]
-fn print_version(version_string: &str, git_sha1: &str) {
+fn print_version() {
     let bin_arch: &str = if cfg!(target_arch = "x86") { "x86" }
     else if cfg!(target_arch = "x86_64") { "x86_64" }
     else if cfg!(target_arch = "aarch64") { "aarch64" }
@@ -270,8 +269,8 @@ fn print_version(version_string: &str, git_sha1: &str) {
         "{}Donet{}, version {} ({} {}-{})\n\
         Revision (Git SHA1): {}\n\n\
         Released under the AGPL-3.0 license. <https://www.gnu.org/licenses/agpl-3.0.html>\n\
-        View the source code on GitLab: https://gitlab.com/donet-server/donet\n",
+        Get the source code from: {}\n",
         logger::_ANSI_MAGENTA, logger::_ANSI_RESET,
-        version_string, bin_arch, bin_platform, bin_env, git_sha1
+        VERSION, bin_arch, bin_platform, bin_env, VCS_TAG, GIT_URL
     );
 }

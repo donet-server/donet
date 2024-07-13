@@ -23,7 +23,8 @@ Before starting your own contribution to Donet, please read over the [Contributi
 
 To build Donet, run the following under the project directory:
 ```sh
-cargo build --release
+meson setup build
+meson compile -C build
 ```
 
 > **NOTE**
@@ -40,9 +41,8 @@ cargo build --release
 
 If you are working on a contribution to either the Donet daemon or libdonet, please run code linting and unit testing before pushing:
 ```sh
-cargo clippy
-cargo fmt --all -- --check
-cargo test
+meson compile linting -C build
+meson compile tests -C build
 ```
 These checks should go over all source files in the `bevy_donet/`, `donet/`, and `libdonet/` source directories.
 
