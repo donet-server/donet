@@ -1,0 +1,10 @@
+option(
+  'profile',
+  type: 'combo',
+  choices: [
+    'release',
+    'debug'
+  ],
+  value: 'release',
+  description: 'The build profile for Donet. `release` or `debug`.'
+)

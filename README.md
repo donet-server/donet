@@ -24,7 +24,7 @@ Before starting your own contribution to Donet, please read over the [Contributi
 To build Donet, run the following under the project directory:
 ```sh
 meson setup build
-meson compile -C build
+meson compile -C build -Dprofile=debug
 ```
 
 > **NOTE**
