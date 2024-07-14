@@ -10,7 +10,7 @@ their massive multiplayer online games, such as Toontown Online and Pirates of t
 from 2001 to 2013.
 
 ## Getting Started
-The Donet repository houses three different Rust projects:
+The Donet repository is a monorepo that houses three different Rust projects:
 - **donet** - The Donet daemon source, which includes all the Donet services. See [donet-server.org](https://www.donet-server.org).
 - **libdonet** - The core utilities for Donet services, including datagram utilities and the DC language parser. See [libdonet.rs](https://libdonet.rs).
 - **bevy_donet** - A Bevy plugin for the [Bevy game engine](https://bevyengine.org) that provides the client-side implementation for Donet.
