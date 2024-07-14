@@ -30,7 +30,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 #[derive(Debug)]
 pub struct DCMolecularField {
     base_field: DCField,
-    atomic_names: Vec<String>, // used to propogate IDs up parse tree to then assign AFs
+    atomic_names: Vec<String>, // used to propagate IDs up parse tree to then assign AFs
     atomic_fields: Vec<Arc<Mutex<DCAtomicField>>>,
 }
 

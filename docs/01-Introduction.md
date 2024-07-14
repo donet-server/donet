@@ -64,9 +64,9 @@ The architecture of a Donet server cluster is made up of 6 different kinds of se
   
 ### **[SS] - State Server**
   
-  The State Server service is responsible of coordinating the short-term existance of Distributed 
+  The State Server service is responsible of coordinating the short-term existence of Distributed 
   Objects and their **states**. This component provides one of the main features in a Donet server 
-  cluster, which is **short-term persistance**. All Distributed Objects in a State Server exist 
+  cluster, which is **short-term persistence**. All Distributed Objects in a State Server exist 
   in memory and are part of a graph hierarchy called the **visibility tree**. The State Server has 
   data stored for each Distributed Object such as the class of the object, what its Distributed 
   Object ID (DoId) is, and where it is located in the visibility tree. Other services in a Donet 

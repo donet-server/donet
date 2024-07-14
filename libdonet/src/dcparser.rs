@@ -52,12 +52,12 @@ use std::sync::{Arc, Mutex, MutexGuard};
 // the unsafe block { } whenever it was accessed or modified, but it did not cause
 // undefined behavior ... until unit testing. Of course, it is ideal to not use
 // unsafe techniques from the beginning, so I decided to make use of Plex's features
-// by assigning types to the grammar's non-terminals and propogating the elements
+// by assigning types to the grammar's non-terminals and propagating the elements
 // bottom-up. (as LALR(1) parsers are 'bottom-up' parsers, where they start by
 // producing the 'edge', or 'leaf', productions, until the parser reduces all
 // non-terminals to the root production of the language grammar.)
 //
-// Since we are propogating elements from the bottom of the parse tree and upwards,
+// Since we are propagating elements from the bottom of the parse tree and upwards,
 // the return types of non-terminals closer to the root production get bigger and bigger,
 // as they're carrying more and more of the total elements in the DC file until they are
 // all 'plugged in together' into the DC file struct once we reduce to the root production.
