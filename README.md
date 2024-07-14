@@ -10,11 +10,9 @@ their massive multiplayer online games, such as Toontown Online and Pirates of t
 from 2001 to 2013.
 
 ## Getting Started
-The Donet repository is a monorepo that houses three different Rust projects:
+The Donet repository is a monorepo that houses two different Rust projects:
 - **donet** - The Donet daemon source, which includes all the Donet services. See [donet-server.org](https://www.donet-server.org).
 - **libdonet** - The core utilities for Donet services, including datagram utilities and the DC language parser. See [libdonet.rs](https://libdonet.rs).
-- **bevy_donet** - A Bevy plugin for the [Bevy game engine](https://bevyengine.org) that provides the client-side implementation for Donet.
-This integrates Donet to the engine by translating network field updates to Bevy ECS operations.
 
 Please read the [introduction to Donet](./docs/01-Introduction.md) for an overview of the project 
 and how the engine works.
@@ -27,24 +25,12 @@ meson setup build
 meson compile -C build -Dprofile=debug
 ```
 
-> **NOTE**
->
-> The `bevy_donet` crate is not a *default* member of the main cargo project workspace.
-> Only the `donet` and `libdonet` crates are default members of the workspace as they
-> are both required to build the server daemon binary.
->
-> To build the `bevy_donet` crate, run:
-> ```sh
-> cargo build --package bevy_donet
-> ```
-
-
 If you are working on a contribution to either the Donet daemon or libdonet, please run code linting and unit testing before pushing:
 ```sh
 meson compile linting -C build
 meson compile tests -C build
 ```
-These checks should go over all source files in the `bevy_donet/`, `donet/`, and `libdonet/` source directories.
+These checks should go over all source files in the `donet/` and `libdonet/` source directories.
 
 ## Documentation
 Currently the Donet engine is still under heavy development.

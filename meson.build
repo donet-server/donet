@@ -13,7 +13,6 @@ vcs_tag = run_command(git_bin, 'rev-parse', 'HEAD', check: false).stdout().strip
 
 subdir('libdonet')
 subdir('donet')
-subdir('bevy_donet')
 
 cargo_opts = [ '--manifest-path', meson.project_source_root() / 'Cargo.toml' ]
 cargo_opts += [ '--target-dir', meson.project_build_root()  / 'target' ]
