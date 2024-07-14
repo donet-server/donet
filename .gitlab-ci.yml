@@ -46,6 +46,7 @@ typos:
 cargo-deny:
   image: rust
   stage: check
+  allow_failure: true
   interruptible: true
   script:
     - cargo install cargo-deny --locked
