@@ -15,8 +15,8 @@ license = "AGPL-3.0-only"
 authors = [
     "Max Rodriguez <me@maxrdz.com>"
 ]
-homepage = "https://github.com/donet-server/donet/"
-repository = "https://github.com/donet-server/donet/"
+homepage = "https://gitlab.com/donet-server/donet/"
+repository = "https://gitlab.com/donet-server/donet/"
 
 [profile.release]
 codegen-units = 1 # Best LLVM optimization
