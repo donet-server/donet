@@ -8,17 +8,27 @@ git_bin = find_program('git', required: true)
 cargo_bin  = find_program('cargo', required: true)
 find_program('ninja', required: true)
 
+daemon_bin = meson.project_name() + 'd'
 git_url = 'https://gitlab.com/donet-server/donet'
 vcs_tag = run_command(git_bin, 'rev-parse', 'HEAD', check: false).stdout().strip()
-
-subdir('libdonet')
-subdir('donet')
 
 cargo_opts = [ '--manifest-path', meson.project_source_root() / 'Cargo.toml' ]
 cargo_opts += [ '--target-dir', meson.project_build_root()  / 'target' ]
 
 cargo_doc_opts = ['--no-deps', '--document-private-items']
 cargo_doc_opts += ['--config', 'build.rustdocflags="--default-theme=ayu"']
+
+if get_option('profile') == 'release'
+  cargo_opts += [ '--release' ]
+  rust_target = 'release'
+  message('Building Donet for Release.')
+else
+  rust_target = 'debug'
+  message('Building Donet for Debug.')
+endif
+
+subdir('libdonet')
+subdir('donet')
 
 cargo_build = custom_target(
   'cargo-build',
@@ -28,7 +38,10 @@ cargo_build = custom_target(
   console: true,
   command: [
     cargo_bin, 'build',
-    cargo_opts
+    cargo_opts,
+    # Replace below with `--out-dir` once stable.
+    # Issue: https://github.com/rust-lang/cargo/issues/6790#issuecomment-655728327=
+    '&&', 'cp', 'target' / rust_target / daemon_bin, '@OUTPUT@',
   ]
 )
 

@@ -1,7 +1,5 @@
-bin_name = meson.project_name() + 'd'
-
 conf = configuration_data()
-conf.set_quoted('BINARY', bin_name)
+conf.set_quoted('BINARY', daemon_bin)
 conf.set_quoted('VERSION', meson.project_version())
 conf.set_quoted('GIT_URL', git_url)
 conf.set_quoted('VCS_TAG', vcs_tag)
