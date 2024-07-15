@@ -69,6 +69,7 @@ build:
   image: rust
   stage: build
   script:
+    - rustup component add clippy
     # Install Meson build system
     - apt-get update
     - apt-get install -y meson
