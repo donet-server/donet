@@ -59,8 +59,7 @@ Copyright © 2023-2024 Donet Authors
 "Donet" is distributed under the terms of the GNU Affero General Public
 License, either version 3.0 or, at your option, any later
 version WITHOUT ANY WARRANTY. You can read the full copy of
-the software license in the COPYING file. The terms of this license are
-available in the "[COPYING](./COPYING)" file.
+the software license in the [COPYING](./COPYING) file.
 
 Donet logo artwork created by [honeymatsu](https://honeymatsu.carrd.co/). 🍩
 
