@@ -61,7 +61,7 @@ run_target(
   'linting',
   command: [
     cargo_bin, 'clippy', cargo_opts, '&&',
-    cargo_bin, 'fmt', '--all', '--', '--check',
+    cargo_bin, 'fmt', '--all', '--', '--color=always', '--check',
   ],
 )
 
@@ -76,7 +76,7 @@ test(
   'cargo-test',
   cargo_bin,
   args: [
-    'test',
+    'test', '--color=always',
     cargo_opts,
   ],
   is_parallel: false,

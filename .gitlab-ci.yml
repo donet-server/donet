@@ -65,5 +65,28 @@ cargo-fmt:
     - cargo fmt --version
     - cargo fmt --all -- --color=always --check
 
+build:
+  image: rust
+  stage: build
+  script:
+    # Install Meson build system
+    - apt-get update
+    - apt-get install -y meson
+    # Compile source and run code linting
+    - meson setup build -Dprofile=debug
+    - meson compile -C build
+    - meson compile linting -C build
+
+unit-tests:
+  image: rust
+  stage: test
+  script:
+    # Install Meson build system
+    - apt-get update
+    - apt-get install -y meson
+    # Run unit tests
+    - meson setup build -Dprofile=debug
+    - meson compile tests -C build
+
 sast:
   stage: test
