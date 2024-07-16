@@ -11,7 +11,7 @@ variables:
     GCP_PROJECT_ID: "196424286082"
     GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID: "gitlab-pool" # IAM WIF Pool
     GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID: "gitlab-provider" # Provider from Pool
-    GCP_CODECOV_TOKEN_SECRET: "CODECOV_TOKEN" # This is the name of the secret defined in GCP Secret Manager
+    GCP_CODECOV_TOKEN_SECRET_NAME: "CODECOV_TOKEN" # This is the name of the secret defined in GCP Secret Manager
 
 stages:
   - check
@@ -130,7 +130,7 @@ codecov-upload:
   secrets:
     CODECOV_TOKEN:
       gcp_secret_manager:
-        name: ${GCP_CODECOV_TOKEN_SECRET}
+        name: $GCP_CODECOV_TOKEN_SECRET_NAME
         version: latest
       file: false
       token: $GCP_CODECOV_TOKEN
