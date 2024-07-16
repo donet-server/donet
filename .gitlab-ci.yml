@@ -76,9 +76,9 @@ build:
     - meson compile -C build
     - meson compile linting -C build
 
-unit-tests:
+unit-testing:
   image: rust
-  stage: test
+  stage: build
   interruptible: true
   script:
     - *install-meson
@@ -93,7 +93,7 @@ cargo-tarpaulin:
   image: rust
   stage: test
   dependencies:
-    - unit-tests
+    - unit-testing
   artifacts:
     expire_in: 1 week
     name: 'Code Coverage'
@@ -134,13 +134,15 @@ codecov-upload:
     - curl -Os ${CODECOV_CLI_UPSTREAM}
     # Integrity check
     - curl https://keybase.io/codecovsecurity/pgp_keys.asc | gpg --no-default-keyring --keyring trustedkeys.gpg --import # One-time step
-    - curl -Os ${CODECOV_CLI_UPSTREAM}
-    - curl -Os ${CODECOV_CLI_UPSTREAM}.SHA256SUM
-    - curl -Os ${CODECOV_CLI_UPSTREAM}.SHA256SUM.sig
-    - gpgv codecov.SHA256SUM.sig codecov.SHA256SUM
+    # Print out updated GPG keyring
+    - gpg --keyring trustedkeys.gpg --list-keys
+    # Download sha256sum and signed hash sum
+    - curl -Os ${CODECOV_CLI_UPSTREAM}.SHA256SUM --output SHA256SUM
+    - curl -Os ${CODECOV_CLI_UPSTREAM}.SHA256SUM.sig --output SHA256SUM.sig
+    - gpg --verify SHA256SUM.sig SHA256SUM
     # Verify hash sum and test
-    - shasum -a 256 -c codecov.SHA256SUM
+    - shasum -a 256 -c SHA256SUM
     - sudo chmod +x codecov
-    - ./codecov --help
-    # Upload cobertura.xml from cargo-tarpaulin to codecov.io
+    - ./codecov --version
+    # Upload cargo-tarpaulin artifacts to codecov.io
     - ./codecov upload-process --dir tarpaulin -t $CODECOV_TOKEN
