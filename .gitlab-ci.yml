@@ -131,6 +131,7 @@ codecov-upload:
     CODECOV_TOKEN:
       gcp_secret_manager:
         name: ${GCP_CODECOV_TOKEN_SECRET}
+        version: latest
       file: false
       token: $GCP_CODECOV_TOKEN
   script:
@@ -150,4 +151,4 @@ codecov-upload:
     - chmod +x codecov
     - ./codecov --version
     # Upload cargo-tarpaulin artifacts to codecov.io
-    - ./codecov upload-process --dir tarpaulin -t $CODECOV_TOKEN
+    - ./codecov upload-process --dir tarpaulin -t ${CODECOV_TOKEN}
