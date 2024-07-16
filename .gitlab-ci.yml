@@ -80,6 +80,11 @@ unit-testing:
   image: rust
   stage: build
   interruptible: true
+  artifacts:
+    expire_in: 1 hour
+    name: 'Meson Debug Build Configuration'
+    paths:
+      - build
   script:
     - *install-meson
     # Run unit tests
@@ -101,7 +106,6 @@ cargo-tarpaulin:
       - tarpaulin
   script:
     - *install-meson
-    - meson setup build -Dprofile=debug
     - meson compile code-coverage -C build
     - mkdir tarpaulin
     - chmod -R a=rwx tarpaulin
