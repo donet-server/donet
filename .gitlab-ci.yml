@@ -131,17 +131,17 @@ codecov-upload:
   script:
     - apk add --no-cache curl gnupg
     # Download Codecov CLI
-    - curl -Os ${CODECOV_CLI_UPSTREAM}
+    - curl -O ${CODECOV_CLI_UPSTREAM}
     # Integrity check
     - curl https://keybase.io/codecovsecurity/pgp_keys.asc | gpg --no-default-keyring --keyring trustedkeys.gpg --import # One-time step
     # Print out updated GPG keyring
     - gpg --keyring trustedkeys.gpg --list-keys
     # Download sha256sum and signed hash sum
-    - curl -Os ${CODECOV_CLI_UPSTREAM}.SHA256SUM --output SHA256SUM
-    - curl -Os ${CODECOV_CLI_UPSTREAM}.SHA256SUM.sig --output SHA256SUM.sig
-    - gpg --verify SHA256SUM.sig SHA256SUM
+    - curl -O ${CODECOV_CLI_UPSTREAM}.SHA256SUM
+    - curl -O ${CODECOV_CLI_UPSTREAM}.SHA256SUM.sig
+    - gpg --verify codecov.SHA256SUM.sig codecov.SHA256SUM
     # Verify hash sum and test
-    - shasum -a 256 -c SHA256SUM
+    - shasum -a 256 -c codecov.SHA256SUM
     - sudo chmod +x codecov
     - ./codecov --version
     # Upload cargo-tarpaulin artifacts to codecov.io
