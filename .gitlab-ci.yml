@@ -5,25 +5,24 @@ include:
 variables:
   TYPOS_UPSTREAM: "https://github.com/crate-ci/typos/releases/download/v1.22.7/typos-v1.22.7-x86_64-unknown-linux-musl.tar.gz"
 
+.codecov_variables:
+  variables:
+    CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
+    GCP_PROJECT_ID: "196424286082"
+    GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID: "gitlab-pool" # IAM WIF Pool
+    GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID: "gitlab-provider" # Provider from Pool
+    GCP_CODECOV_TOKEN_SECRET: "CODECOV_TOKEN" # This is the name of the secret defined in GCP Secret Manager
+
 stages:
   - check
   - build
   - test
   - deploy
 
-.setup-codecov-cli: &setup-codecov-cli
-  # download Codecov CLI
-  - curl -Os https://cli.codecov.io/latest/linux/codecov
-  # integrity check
-  - curl https://keybase.io/codecovsecurity/pgp_keys.asc | gpg --no-default-keyring --keyring trustedkeys.gpg --import # One-time step
-  - curl -Os https://cli.codecov.io/latest/linux/codecov
-  - curl -Os https://cli.codecov.io/latest/linux/codecov.SHA256SUM
-  - curl -Os https://cli.codecov.io/latest/linux/codecov.SHA256SUM.sig
-  - gpgv codecov.SHA256SUM.sig codecov.SHA256SUM
-  # verify hash sum and test
-  - shasum -a 256 -c codecov.SHA256SUM
-  - sudo chmod +x codecov
-  - ./codecov --help
+.install-meson: &install-meson
+  # Install Meson build system
+  - apt-get update
+  - apt-get install -y meson
 
 commit-validation:
   image: 'python:3.12-alpine'
@@ -68,11 +67,10 @@ cargo-fmt:
 build:
   image: rust
   stage: build
+  interruptible: true
   script:
+    - *install-meson
     - rustup component add clippy rustfmt
-    # Install Meson build system
-    - apt-get update
-    - apt-get install -y meson
     # Compile source and run code linting
     - meson setup build -Dprofile=debug
     - meson compile -C build
@@ -81,13 +79,67 @@ build:
 unit-tests:
   image: rust
   stage: test
+  interruptible: true
   script:
-    # Install Meson build system
-    - apt-get update
-    - apt-get install -y meson
+    - *install-meson
     # Run unit tests
     - meson setup build -Dprofile=debug
     - meson compile tests -C build
 
 sast:
   stage: test
+
+cargo-tarpaulin:
+  image: rust
+  stage: test
+  dependencies:
+    - unit-tests
+  artifacts:
+    expire_in: 1 week
+    name: 'Code Coverage'
+    paths:
+      - tarpaulin
+  script:
+    - *install-meson
+    - meson setup build -Dprofile=debug
+    - meson compile code-coverage -C build
+    - mkdir tarpaulin
+    - chmod -R a=rwx tarpaulin
+    # Copy artifacts to tarpaulin folder (coverage.json, cobertura.xml)
+    - cp -r build/target/tarpaulin tarpaulin
+
+codecov-upload:
+  extends: ['.codecov_variables']
+  image: alpine
+  stage: deploy
+  dependencies:
+    - cargo-tarpaulin
+  allow_failure: true
+  retry: 2
+  interruptible: true
+  rules:
+    - if: ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == "master")
+  id_tokens:
+    GCP_CODECOV_TOKEN:
+      # Must match the audience defined in the WIF Identity Pool!
+      aud: https://iam.googleapis.com/projects/${GCP_PROJECT_NUMBER}/locations/global/workloadIdentityPools/${GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID}/providers/${GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID}
+  secrets:
+    CODECOV_TOKEN:
+      gcp_secret_manager:
+        name: ${GCP_CODECOV_TOKEN_SECRET}
+      token: $GCP_CODECOV_TOKEN
+  script:
+    # Download Codecov CLI
+    - curl -Os ${CODECOV_CLI_UPSTREAM}
+    # Integrity check
+    - curl https://keybase.io/codecovsecurity/pgp_keys.asc | gpg --no-default-keyring --keyring trustedkeys.gpg --import # One-time step
+    - curl -Os ${CODECOV_CLI_UPSTREAM}
+    - curl -Os ${CODECOV_CLI_UPSTREAM}.SHA256SUM
+    - curl -Os ${CODECOV_CLI_UPSTREAM}.SHA256SUM.sig
+    - gpgv codecov.SHA256SUM.sig codecov.SHA256SUM
+    # Verify hash sum and test
+    - shasum -a 256 -c codecov.SHA256SUM
+    - sudo chmod +x codecov
+    - ./codecov --help
+    # Upload cobertura.xml from cargo-tarpaulin to codecov.io
+    - ./codecov upload-process --dir tarpaulin -t $CODECOV_TOKEN

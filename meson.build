@@ -65,6 +65,18 @@ run_target(
   ],
 )
 
+# Runs cargo-tarpaulin to create code coverage JSON and XML files,
+# which is used by the GitLab CI/CD job to upload to codecov.io.
+run_target(
+  'code-coverage',
+  command: [
+    cargo_bin, 'install', 'cargo-tarpaulin',
+    '&&', cargo_bin, 'tarpaulin', '--out', 'xml',
+    '--output-dir', meson.project_build_root() / 'target' / 'tarpaulin',
+    cargo_opts
+  ],
+)
+
 # Wrapper for `meson test`, but adds the `--verbose`
 # flag so it actually outputs `cargo test` stdout/stderr.
 run_target(
