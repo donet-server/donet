@@ -131,6 +131,7 @@ codecov-upload:
     CODECOV_TOKEN:
       gcp_secret_manager:
         name: ${GCP_CODECOV_TOKEN_SECRET}
+      file: false
       token: $GCP_CODECOV_TOKEN
   script:
     - apk add --no-cache curl gnupg
