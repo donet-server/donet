@@ -145,7 +145,7 @@ codecov-upload:
     - curl -O ${CODECOV_CLI_UPSTREAM}.SHA256SUM.sig
     - gpg --verify codecov.SHA256SUM.sig codecov.SHA256SUM
     # Verify hash sum and test
-    - shasum -a 256 -c codecov.SHA256SUM
+    - sha256sum -c codecov.SHA256SUM
     - sudo chmod +x codecov
     - ./codecov --version
     # Upload cargo-tarpaulin artifacts to codecov.io
