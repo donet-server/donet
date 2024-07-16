@@ -129,6 +129,7 @@ codecov-upload:
         name: ${GCP_CODECOV_TOKEN_SECRET}
       token: $GCP_CODECOV_TOKEN
   script:
+    - apk add --no-cache curl
     # Download Codecov CLI
     - curl -Os ${CODECOV_CLI_UPSTREAM}
     # Integrity check
