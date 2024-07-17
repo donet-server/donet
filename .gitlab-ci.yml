@@ -140,11 +140,11 @@ codecov-upload:
   id_tokens:
     GCP_CODECOV_TOKEN:
       # Must match the audience defined in the WIF Identity Pool!
-      aud: https://iam.googleapis.com/projects/$GCP_PROJECT_NUMBER/locations/global/workloadIdentityPools/$GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID/providers/$GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID
+      aud: https://iam.googleapis.com/projects/$GCP_PROJECT_ID/locations/global/workloadIdentityPools/$GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID/providers/$GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID
   secrets:
     CODECOV_TOKEN:
       gcp_secret_manager:
-        name: projects/$GCP_PROJECT_NUMBER/secrets/$GCP_CODECOV_TOKEN_SECRET_NAME
+        name: projects/$GCP_PROJECT_ID/secrets/$GCP_CODECOV_TOKEN_SECRET_NAME
         version: latest
       file: false
       token: $GCP_CODECOV_TOKEN
