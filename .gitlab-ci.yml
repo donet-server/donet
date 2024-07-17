@@ -125,8 +125,8 @@ codecov-upload:
   variables:
     CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
     GCP_PROJECT_NUMBER: 196424286082
-    GCP_WIF_POOL_ID: "donet-gitlab-ci-pool" # IAM WIF Pool
-    GCP_WIF_PROVIDER_ID: "donet-gitlab-ci-provider" # Provider from Pool
+    GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID: "donet-gitlab-ci-pool" # IAM WIF Pool
+    GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID: "donet-gitlab-ci-provider" # Provider from Pool
     GCP_CODECOV_TOKEN_SECRET_NAME: "CODECOV_TOKEN" # This is the name of the secret defined in GCP Secret Manager
   image: alpine
   stage: deploy
@@ -138,16 +138,16 @@ codecov-upload:
   rules:
     - if: ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == "master")
   id_tokens:
-    GCP_CODECOV_TOKEN:
+    GCP_ID_TOKEN:
       # Must match the audience defined in the WIF Identity Pool!
-      aud: https://iam.googleapis.com/projects/${GCP_PROJECT_NUMBER}/locations/global/workloadIdentityPools/${GCP_WIF_POOL_ID}/providers/${GCP_WIF_PROVIDER_ID}
+      aud: https://iam.googleapis.com/projects/${GCP_PROJECT_NUMBER}/locations/global/workloadIdentityPools/${GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID}/providers/${GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID}
   secrets:
     CODECOV_TOKEN:
       gcp_secret_manager:
         name: $GCP_CODECOV_TOKEN_SECRET_NAME
         version: 1
       file: false
-      token: $GCP_CODECOV_TOKEN
+      token: $GCP_ID_TOKEN
   script:
     - apk add --no-cache curl gnupg
     # Download Codecov CLI
