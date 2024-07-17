@@ -124,9 +124,9 @@ cargo-tarpaulin:
 codecov-upload:
   variables:
     CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
-    GCP_PROJECT_ID: 196424286082
-    GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID: "gitlab-pool" # IAM WIF Pool
-    GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID: "gitlab-provider" # Provider from Pool
+    GCP_PROJECT_NUMBER: 196424286082
+    GCP_WIF_POOL_ID: "gitlab-pool" # IAM WIF Pool
+    GCP_WIF_PROVIDER_ID: "gitlab-provider" # Provider from Pool
     GCP_CODECOV_TOKEN_SECRET_NAME: "CODECOV_TOKEN" # This is the name of the secret defined in GCP Secret Manager
   image: alpine
   stage: deploy
@@ -140,12 +140,12 @@ codecov-upload:
   id_tokens:
     GCP_CODECOV_TOKEN:
       # Must match the audience defined in the WIF Identity Pool!
-      aud: https://iam.googleapis.com/projects/196424286082/locations/global/workloadIdentityPools/gitlab-pool/providers/gitlab-provider
+      aud: https://iam.googleapis.com/projects/${GCP_PROJECT_NUMBER}/locations/global/workloadIdentityPools/${GCP_WIF_POOL_ID}/providers/${GCP_WIF_PROVIDER_ID}
   secrets:
     CODECOV_TOKEN:
       gcp_secret_manager:
-        name: projects/$GCP_PROJECT_ID/secrets/$GCP_CODECOV_TOKEN_SECRET_NAME
-        version: latest
+        name: projects/${GCP_PROJECT_NUMBER}/secrets/${GCP_CODECOV_TOKEN_SECRET_NAME}
+        version: 1
       file: false
       token: $GCP_CODECOV_TOKEN
   script:
