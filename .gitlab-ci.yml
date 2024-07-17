@@ -51,6 +51,7 @@ cargo-deny:
     key: meson-cache-deny-$CI_COMMIT_BRANCH
     paths:
       - build
+    when: 'always'
   script:
     - *install-meson
     - meson setup build -Dprofile=debug
@@ -77,6 +78,7 @@ build:
     key: meson-cache-build-$CI_COMMIT_BRANCH
     paths:
       - build
+    when: 'always'
   script:
     - *install-meson
     - rustup component add clippy rustfmt
@@ -93,6 +95,7 @@ unit-testing:
     key: meson-cache-testing-$CI_COMMIT_BRANCH
     paths:
       - build
+    when: 'always'
   script:
     - *install-meson
     # Run unit tests
@@ -111,6 +114,7 @@ cargo-tarpaulin:
     key: meson-cache-tarpaulin-$CI_COMMIT_BRANCH
     paths:
       - build
+    when: 'always'
   artifacts:
     expire_in: 1 week
     name: 'Code Coverage'
