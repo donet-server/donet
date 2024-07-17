@@ -165,4 +165,4 @@ codecov-upload:
     - chmod +x codecov
     - ./codecov --version
     # Upload cargo-tarpaulin artifacts to codecov.io
-    - ./codecov upload-process -v --dir tarpaulin --git-service gitlab -t ${CODECOV_TOKEN}
+    - ./codecov -v upload-process --dir tarpaulin --git-service gitlab -t ${CODECOV_TOKEN}
