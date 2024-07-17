@@ -5,14 +5,6 @@ include:
 variables:
   TYPOS_UPSTREAM: "https://github.com/crate-ci/typos/releases/download/v1.22.7/typos-v1.22.7-x86_64-unknown-linux-musl.tar.gz"
 
-.codecov_variables:
-  variables:
-    CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
-    GCP_PROJECT_ID: "196424286082"
-    GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID: "gitlab-pool" # IAM WIF Pool
-    GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID: "gitlab-provider" # Provider from Pool
-    GCP_CODECOV_TOKEN_SECRET_NAME: "CODECOV_TOKEN" # This is the name of the secret defined in GCP Secret Manager
-
 stages:
   - check
   - build
@@ -130,7 +122,12 @@ cargo-tarpaulin:
     - cp -r build/target/tarpaulin tarpaulin
 
 codecov-upload:
-  extends: ['.codecov_variables']
+  variables:
+    CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
+    GCP_PROJECT_ID: "196424286082"
+    GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID: "gitlab-pool" # IAM WIF Pool
+    GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID: "gitlab-provider" # Provider from Pool
+    GCP_CODECOV_TOKEN_SECRET_NAME: "CODECOV_TOKEN" # This is the name of the secret defined in GCP Secret Manager
   image: alpine
   stage: deploy
   dependencies:
@@ -143,7 +140,7 @@ codecov-upload:
   id_tokens:
     GCP_CODECOV_TOKEN:
       # Must match the audience defined in the WIF Identity Pool!
-      aud: https://iam.googleapis.com/projects/${GCP_PROJECT_NUMBER}/locations/global/workloadIdentityPools/${GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID}/providers/${GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID}
+      aud: https://iam.googleapis.com/projects/$GCP_PROJECT_NUMBER/locations/global/workloadIdentityPools/$GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID/providers/$GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID
   secrets:
     CODECOV_TOKEN:
       gcp_secret_manager:
