@@ -125,8 +125,8 @@ codecov-upload:
   variables:
     CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
     GCP_PROJECT_NUMBER: 196424286082
-    GCP_WIF_POOL_ID: "gitlab-pool" # IAM WIF Pool
-    GCP_WIF_PROVIDER_ID: "gitlab-provider" # Provider from Pool
+    GCP_WIF_POOL_ID: "donet-gitlab-ci-pool" # IAM WIF Pool
+    GCP_WIF_PROVIDER_ID: "donet-gitlab-ci-provider" # Provider from Pool
     GCP_CODECOV_TOKEN_SECRET_NAME: "CODECOV_TOKEN" # This is the name of the secret defined in GCP Secret Manager
   image: alpine
   stage: deploy
@@ -144,7 +144,7 @@ codecov-upload:
   secrets:
     CODECOV_TOKEN:
       gcp_secret_manager:
-        name: projects/${GCP_PROJECT_NUMBER}/secrets/${GCP_CODECOV_TOKEN_SECRET_NAME}
+        name: $GCP_CODECOV_TOKEN_SECRET_NAME
         version: 1
       file: false
       token: $GCP_CODECOV_TOKEN
