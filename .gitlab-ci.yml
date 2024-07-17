@@ -68,6 +68,10 @@ build:
   image: rust
   stage: build
   interruptible: true
+  cache:
+    key: meson-cache-$CI_COMMIT_BRANCH
+    paths:
+      - build
   script:
     - *install-meson
     - rustup component add clippy rustfmt
@@ -80,9 +84,8 @@ unit-testing:
   image: rust
   stage: build
   interruptible: true
-  artifacts:
-    expire_in: 1 hour
-    name: 'Meson Debug Build Configuration'
+  cache:
+    key: meson-cache-$CI_COMMIT_BRANCH
     paths:
       - build
   script:
@@ -99,6 +102,10 @@ cargo-tarpaulin:
   stage: test
   dependencies:
     - unit-testing
+  cache:
+    key: meson-cache-$CI_COMMIT_BRANCH
+    paths:
+      - build
   artifacts:
     expire_in: 1 week
     name: 'Code Coverage'
@@ -130,7 +137,7 @@ codecov-upload:
   secrets:
     CODECOV_TOKEN:
       gcp_secret_manager:
-        name: $GCP_CODECOV_TOKEN_SECRET_NAME
+        name: projects/$GCP_PROJECT_NUMBER/secrets/$GCP_CODECOV_TOKEN_SECRET_NAME
         version: latest
       file: false
       token: $GCP_CODECOV_TOKEN
