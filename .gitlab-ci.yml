@@ -4,6 +4,12 @@ include:
 
 variables:
   TYPOS_UPSTREAM: "https://github.com/crate-ci/typos/releases/download/v1.22.7/typos-v1.22.7-x86_64-unknown-linux-musl.tar.gz"
+  CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
+  GCP_PROJECT_NUMBER: 196424286082
+  GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID: "donet-gitlab-ci-pool" # IAM WIF Pool
+  GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID: "donet-gitlab-ci-provider" # Provider from Pool
+  GCP_CODECOV_TOKEN_SECRET_NAME: "CODECOV_TOKEN" # This is the name of the secret defined in GCP Secret Manager
+  GCP_GIT_ACCESS_KEY_SECRET_NAME: "GIT_ACCESS_KEY"
 
 stages:
   - check
@@ -15,6 +21,44 @@ stages:
   # Install Meson build system
   - apt-get update
   - apt-get install -y meson
+
+sync-mirror:
+  image: alpine
+  stage: check
+  allow_failure: true
+  retry: 2
+  interruptible: true
+  rules:
+    - if: ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == "master")
+  id_tokens:
+    GCP_ID_TOKEN:
+      # Must match the audience defined in the WIF Identity Pool!
+      aud: https://iam.googleapis.com/projects/${GCP_PROJECT_NUMBER}/locations/global/workloadIdentityPools/${GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID}/providers/${GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID}
+  secrets:
+    GIT_PRIVATE_KEY_FILE:
+      gcp_secret_manager:
+        name: $GCP_GIT_ACCESS_KEY_SECRET_NAME
+        version: 1
+      file: true
+      token: $GCP_ID_TOKEN
+  variables:
+    MIRROR_HOST: "github.com"
+    ORGANIZATION_NAME: "donet-server"
+    PROJECT_NAME: "donet"
+  script:
+    - apk add --no-cache git openssh
+    # Setup SSH key for mirror push access
+    - mkdir ~/.ssh
+    - touch ~/.ssh/privatekey
+    - chmod 600 ~/.ssh/privatekey
+    - cat ${GIT_PRIVATE_KEY_FILE} > ~/.ssh/privatekey
+    # Setup known hosts beforehand to avoid interactive prompt
+    - ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+    - ssh-keyscan ${MIRROR_HOST} >> ~/.ssh/known_hosts
+    # Clone repository and push to mirror remote
+    - git clone --mirror https://gitlab.com/${ORGANIZATION_NAME}/${PROJECT_NAME}.git/
+    - cd ${PROJECT_NAME}.git
+    - ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push -v --mirror git@github.com:${ORGANIZATION_NAME}/${PROJECT_NAME}'
 
 commit-validation:
   image: 'python:3.12-alpine'
@@ -122,12 +166,6 @@ cargo-tarpaulin:
     - cp -r build/target/tarpaulin tarpaulin
 
 codecov-upload:
-  variables:
-    CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
-    GCP_PROJECT_NUMBER: 196424286082
-    GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID: "donet-gitlab-ci-pool" # IAM WIF Pool
-    GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID: "donet-gitlab-ci-provider" # Provider from Pool
-    GCP_CODECOV_TOKEN_SECRET_NAME: "CODECOV_TOKEN" # This is the name of the secret defined in GCP Secret Manager
   image: alpine
   stage: deploy
   dependencies:
