@@ -48,6 +48,7 @@ sync-mirror:
   script:
     - apk add --no-cache git openssh
     # Setup SSH key for mirror push access
+    - echo ${GIT_PRIVATE_KEY_FILE} # debug
     - mkdir ~/.ssh
     - echo "-----BEGIN OPENSSH PRIVATE KEY-----" > ~/.ssh/privatekey
     - cat ${GIT_PRIVATE_KEY_FILE} >> ~/.ssh/privatekey
