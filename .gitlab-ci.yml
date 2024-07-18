@@ -49,7 +49,9 @@ sync-mirror:
     - apk add --no-cache git openssh
     # Setup SSH key for mirror push access
     - mkdir ~/.ssh
-    - cat ${GIT_PRIVATE_KEY_FILE} > ~/.ssh/privatekey
+    - echo "-----BEGIN OPENSSH PRIVATE KEY-----" > ~/.ssh/privatekey
+    - cat ${GIT_PRIVATE_KEY_FILE} >> ~/.ssh/privatekey
+    - echo "-----END OPENSSH PRIVATE KEY-----" >> ~/.ssh/privatekey
     - chmod 600 ~/.ssh/privatekey
     # Setup known hosts beforehand to avoid interactive prompt
     - ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
