@@ -48,8 +48,8 @@ sync-mirror:
   script:
     - apk add --no-cache git openssh
     # Verify private key with hash sum
-    - sha256sum ${GIT_PRIVATE_KEY_FILE} # debug
     - cd /builds/${ORGANIZATION_NAME}/${PROJECT_NAME}.tmp/
+    - sha256sum ${GIT_PRIVATE_KEY_FILE} # debug
     - sha256sum -c ../${PROJECT_NAME}/build-aux/git/GIT_PRIVATE_KEY_FILE.SHA256SUM
     - cd /builds/${ORGANIZATION_NAME}/${PROJECT_NAME}
     # Setup SSH key for mirror push access
