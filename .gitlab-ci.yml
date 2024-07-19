@@ -9,7 +9,7 @@ variables:
   GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID: "donet-gitlab-ci-pool" # IAM WIF Pool
   GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID: "donet-gitlab-ci-provider" # Provider from Pool
   GCP_CODECOV_TOKEN_SECRET_NAME: "CODECOV_TOKEN" # This is the name of the secret defined in GCP Secret Manager
-  GCP_GIT_ACCESS_KEY_SECRET_NAME: "TEST_DUMMY_SECRET"
+  GCP_GIT_ACCESS_KEY_SECRET_NAME: "GIT_ACCESS_KEY"
 
 stages:
   - check
@@ -35,11 +35,11 @@ sync-mirror:
       # Must match the audience defined in the WIF Identity Pool!
       aud: https://iam.googleapis.com/projects/${GCP_PROJECT_NUMBER}/locations/global/workloadIdentityPools/${GCP_WORKLOAD_IDENTITY_FEDERATION_POOL_ID}/providers/${GCP_WORKLOAD_IDENTITY_FEDERATION_PROVIDER_ID}
   secrets:
-    GIT_PRIVATE_KEY_FILE:
+    SSH_PRIVATE_KEY:
       gcp_secret_manager:
         name: $GCP_GIT_ACCESS_KEY_SECRET_NAME
         version: 1
-      file: true
+      file: false
       token: $GCP_ID_TOKEN
   variables:
     MIRROR_HOST: "github.com"
@@ -47,13 +47,10 @@ sync-mirror:
     PROJECT_NAME: "donet"
   script:
     - apk add --no-cache git openssh
-    # NOTE: Debugging CI!
-    - cat ${GIT_PRIVATE_KEY_FILE}
-    - exit
     # Setup SSH key for mirror push access
     - mkdir ~/.ssh
     - echo "-----BEGIN OPENSSH PRIVATE KEY-----" > ~/.ssh/privatekey
-    - cat ${GIT_PRIVATE_KEY_FILE} >> ~/.ssh/privatekey
+    - echo ${SSH_PRIVATE_KEY} >> ~/.ssh/privatekey
     - echo "-----END OPENSSH PRIVATE KEY-----" >> ~/.ssh/privatekey
     - chmod 600 ~/.ssh/privatekey
     # Setup known hosts beforehand to avoid interactive prompt
