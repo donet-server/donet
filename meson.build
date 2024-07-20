@@ -17,9 +17,6 @@ cargo_opts += [ '--target-dir', meson.project_build_root()  / 'target' ]
 
 cargo_env = [ 'CARGO_HOME=' + meson.project_build_root()  / 'cargo-home' ]
 
-cargo_doc_opts = ['--lib', '--no-deps', '--document-private-items']
-cargo_doc_opts += ['--config', 'build.rustdocflags="--default-theme=ayu"']
-
 if get_option('profile') == 'release'
   cargo_opts += [ '--release' ]
   rust_target = 'release'
@@ -54,7 +51,8 @@ cargo_doc = custom_target(
   console: true,
   command: [
     'env', cargo_env, cargo_bin, 'doc',
-    cargo_opts + cargo_doc_opts,
+    cargo_opts, '--lib', '--no-deps', '--document-private-items',
+    '--config', 'build.rustdocflags="--default-theme=ayu"'
   ],
 )
 
@@ -77,14 +75,6 @@ run_target(
   ],
 )
 
-run_target(
-  'lib-docs',
-  env: cargo_env,
-  command: [
-    cargo_bin, 'doc', cargo_doc_opts, cargo_opts
-  ],
-)
-
 # Runs cargo-tarpaulin to create code coverage JSON and XML files,
 # which is used by the GitLab CI/CD job to upload to codecov.io.
 run_target(
@@ -92,8 +82,10 @@ run_target(
   env: cargo_env,
   command: [
     cargo_bin, 'install', 'cargo-tarpaulin',
-    '&&', cargo_bin, 'tarpaulin',
+    '&&', 'env', cargo_env, cargo_bin, 'tarpaulin',
     '--force-clean',
+    '--exclude-files', 'build/*',
+    '--exclude-files', 'builddebug/*',
     '--out', 'xml',
     '--output-dir', meson.project_build_root() / 'target' / 'tarpaulin',
     cargo_opts
