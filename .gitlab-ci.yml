@@ -158,7 +158,7 @@ cargo-doc:
     - meson setup build -Dprofile=debug
     - meson compile cargo-doc -C build
     - mkdir doc
-    - cp -r build/target/doc doc
+    - cp -r build/target/doc/* doc
     - chmod -R a=rwx doc
 
 sast:
