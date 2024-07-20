@@ -241,7 +241,7 @@ impl Datagram {
     /// Use this method to avoid repetitive code for every internal message.
     ///
     /// The header is formatted as shown below:
-    ///     (recipients: u8, recipients: Vec<Channel>, sender: Channel, message_type: u16)
+    ///     (recipients: `u8`, recipients: `Vec<Channel>`, sender: `Channel`, message_type: `u16`)
     ///
     pub fn add_server_header(
         &mut self,

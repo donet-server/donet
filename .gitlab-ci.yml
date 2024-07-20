@@ -139,6 +139,28 @@ unit-testing:
     - meson setup build -Dprofile=debug
     - meson compile tests -C build
 
+cargo-doc:
+  image: rust
+  stage: build
+  interruptible: true
+  cache:
+    key: meson-cache-doc-$CI_COMMIT_BRANCH
+    paths:
+      - build
+    when: 'always'
+  artifacts:
+    expire_in: 1 week
+    name: 'Library Documentation'
+    paths:
+      - doc
+  script:
+    - *install-meson
+    - meson setup build -Dprofile=debug
+    - meson compile lib-docs -C build
+    - mkdir doc
+    - cp -r build/target/doc doc
+    - chmod -R a=rwx doc
+
 sast:
   stage: test
 
@@ -205,3 +227,24 @@ codecov-upload:
     - ./codecov --version
     # Upload cargo-tarpaulin artifacts to codecov.io
     - ./codecov -v upload-process --dir tarpaulin --git-service gitlab -t ${CODECOV_TOKEN}
+
+pages:
+  stage: deploy
+  dependencies:
+    - cargo-doc
+  rules:
+    - if: ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == "master")
+  artifacts:
+    expire_in: 1 week
+    paths:
+      # GitLab Pages only deploys page under "public" directory.
+      - public
+  script:
+    - mkdir public
+    - mv doc/* public
+    - cd public
+    # Make an index.html file in the `public/` dir to reroute to
+    # the `libdonet` subdirectory where the actual documentation is at.
+    # This makes the user not encounter a 404 at the root of the pages site.
+    - touch index.html
+    - echo "<meta http-equiv=\"refresh\" content=\"0; url=libdonet\">" > index.html

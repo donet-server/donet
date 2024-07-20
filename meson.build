@@ -17,7 +17,7 @@ cargo_opts += [ '--target-dir', meson.project_build_root()  / 'target' ]
 
 cargo_env = [ 'CARGO_HOME=' + meson.project_build_root()  / 'cargo-home' ]
 
-cargo_doc_opts = ['--no-deps', '--document-private-items']
+cargo_doc_opts = ['--lib', '--no-deps', '--document-private-items']
 cargo_doc_opts += ['--config', 'build.rustdocflags="--default-theme=ayu"']
 
 if get_option('profile') == 'release'
@@ -29,7 +29,6 @@ else
   message('Building Donet for Debug.')
 endif
 
-subdir('libdonet')
 subdir('donet')
 
 cargo_build = custom_target(
@@ -61,18 +60,28 @@ cargo_doc = custom_target(
 
 run_target(
   'linting',
+  env: cargo_env,
   command: [
-    'env', cargo_env, cargo_bin, 'clippy', cargo_opts, '&&',
+    cargo_bin, 'clippy', cargo_opts, '&&',
     cargo_bin, 'fmt', '--all', '--', '--color=always', '--check',
   ],
 )
 
 run_target(
   'deny',
+  env: cargo_env,
   command: [
-    'env', cargo_env, cargo_bin, 'install', 'cargo-deny', '--locked',
-    '&&', 'env', cargo_env, cargo_bin, 'deny',
+    cargo_bin, 'install', 'cargo-deny', '--locked',
+    '&&', cargo_bin, 'deny',
     '--manifest-path', meson.project_source_root() / 'Cargo.toml', 'check'
+  ],
+)
+
+run_target(
+  'lib-docs',
+  env: cargo_env,
+  command: [
+    cargo_bin, 'doc', cargo_doc_opts, cargo_opts
   ],
 )
 
@@ -80,9 +89,10 @@ run_target(
 # which is used by the GitLab CI/CD job to upload to codecov.io.
 run_target(
   'code-coverage',
+  env: cargo_env,
   command: [
-    'env', cargo_env, cargo_bin, 'install', 'cargo-tarpaulin',
-    '&&', 'env', cargo_env, cargo_bin, 'tarpaulin',
+    cargo_bin, 'install', 'cargo-tarpaulin',
+    '&&', cargo_bin, 'tarpaulin',
     '--force-clean',
     '--out', 'xml',
     '--output-dir', meson.project_build_root() / 'target' / 'tarpaulin',
