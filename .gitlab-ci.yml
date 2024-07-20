@@ -156,7 +156,7 @@ cargo-doc:
   script:
     - *install-meson
     - meson setup build -Dprofile=debug
-    - meson compile lib-docs -C build
+    - meson compile cargo-doc -C build
     - mkdir doc
     - cp -r build/target/doc doc
     - chmod -R a=rwx doc
