@@ -28,6 +28,12 @@ endif
 
 subdir('donet')
 
+run_target(
+  'update',
+  env: cargo_env,
+  command: [ cargo_bin, 'update', '--verbose' ]
+)
+
 cargo_build = custom_target(
   'cargo-build',
   build_by_default: true,
@@ -96,7 +102,7 @@ run_target(
 # flag so it actually outputs `cargo test` stdout/stderr.
 run_target(
   'tests',
-  command: ['meson', 'test', '--verbose'],
+  command: [ 'meson', 'test', '--verbose' ],
 )
 
 test(

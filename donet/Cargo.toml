@@ -13,7 +13,7 @@ publish = false
 [dependencies]
 libdonet = { path = "../libdonet", version = "0.1.0", default-features = true }
 tokio = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
-mysql = { version = "24.0", default-features = false, features = ["derive"] }
+mysql = { version = "25", default-features = false, features = ["derive"] }
 mysql_common = { version = "*", default-features = true }
 serde = { version = "1", features = ["derive"] }
 log = { version = "0.4", features = ["std"] }
