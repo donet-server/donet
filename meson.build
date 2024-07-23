@@ -76,7 +76,7 @@ run_target(
   env: cargo_env,
   command: [
     cargo_bin, 'install', 'cargo-deny', '--locked',
-    '&&', cargo_bin, 'deny',
+    '&&', 'env', cargo_env, cargo_bin, 'deny',
     '--manifest-path', meson.project_source_root() / 'Cargo.toml', 'check'
   ],
 )
