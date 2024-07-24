@@ -119,7 +119,7 @@ test(
 
 if get_option('profile') == 'debug'
   message('Setting up Git pre-commit hook..')
-  run_command('cp', '-f', 'hooks/pre-commit.hook', '.git/hooks/pre-commit', check: false)
+  run_command('cp', '-f', 'build-aux/git/pre-commit.hook', '.git/hooks/pre-commit', check: false)
 endif
 
 meson.add_dist_script(
