@@ -15,6 +15,9 @@ indent_size = 4
 [*.rs]
 max_line_length = 110
 
+[*.dc]
+indent_size = 4
+
 [*.in]
 indent_size = 2
 max_line_length = 80
