@@ -26,6 +26,44 @@ else
   message('Building Donet for Debug.')
 endif
 
+feature_flags = []
+
+if get_option('build_client_agent')
+  feature_flags += [ 'client-agent' ]
+  message('Building the Client Agent.')
+endif
+
+if get_option('build_message_director')
+  feature_flags += [ 'message-director' ]
+  message('Building the Message Director.')
+endif
+
+if get_option('build_state_server')
+  feature_flags += [ 'state-server' ]
+  message('Building the State Server.')
+endif
+
+if get_option('build_database_server')
+  feature_flags += [ 'database-server' ]
+  message('Building the Database Server.')
+endif
+
+if get_option('build_dbss')
+  feature_flags += [ 'dbss' ]
+  message('Building the DBSS.')
+endif
+
+if get_option('build_event_logger')
+  feature_flags += [ 'event-logger' ]
+  message('Building the Event Logger.')
+endif
+
+if feature_flags.length() > 0
+  cargo_opts += [ '--no-default-features', '--features', feature_flags ]
+else
+  message('Building all default Donet services.')
+endif
+
 subdir('donet')
 
 run_target(
@@ -117,10 +155,8 @@ test(
   timeout: 1800,
 )
 
-if get_option('profile') == 'debug'
-  message('Setting up Git pre-commit hook..')
-  run_command('cp', '-f', 'build-aux/git/pre-commit.hook', '.git/hooks/pre-commit', check: false)
-endif
+message('Setting up Git pre-commit hook..')
+run_command('cp', '-f', 'build-aux/git/pre-commit.hook', '.git/hooks/pre-commit', check: false)
 
 meson.add_dist_script(
   'build-aux/meson/dist-vendor.sh',

@@ -16,7 +16,7 @@
 //! along with this program; if not, write to the Free Software Foundation,
 //! Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //!
-//! <img src="https://github.com/donet-server/donet/blob/master/logo/donet_banner.png?raw=true" height=10%>
+//! <img src="https://gitlab.com/donet-server/donet/-/raw/master/logo/donet_banner.png" height=10%>
 //!
 //! # donet
 //! Donet is a free and open source network engine designed after the Distributed Networking
@@ -26,20 +26,26 @@
 //! server, which was used to power their massive multiplayer online games, such as Toontown
 //! Online and Pirates of the Caribbean Online, from 2001 to 2013.
 //!
-//! See the project source on [Github](https://github.com/donet-server/donet). Feel free
+//! See the project source on [GitLab](https://gitlab.com/donet-server/donet). Feel free
 //! to also visit the website, [donet-server.org](https://www.donet-server.org).
 //!
 //! If you're looking for the documentation of **libdonet**, click [here](https://libdonet.rs).
 
+#[cfg(feature = "message-director")]
 pub mod channel_map;
 pub mod config;
+#[cfg(feature = "database-server")]
 pub mod dbserver;
 pub mod logger;
 pub mod meson;
+#[cfg(feature = "message-director")]
 pub mod message_director;
 pub mod network;
 pub mod service_factory;
 pub mod utils;
+
+#[macro_use]
+extern crate cfg_if;
 
 use meson::*;
 
@@ -162,64 +168,100 @@ fn main() -> std::io::Result<()> {
         let services: Services = daemon_config.services.clone();
 
         // Smart pointers to new service instances on heap
+        #[cfg(feature = "client-agent")]
         let ca_service: Box<ClientAgentService>;
+        #[cfg(feature = "message-director")]
         let md_service: Box<MessageDirectorService>;
+        #[cfg(feature = "state-server")]
         let ss_service: Box<StateServerService>;
+        #[cfg(feature = "database-server")]
         let db_service: Box<DatabaseServerService>;
+        #[cfg(feature = "dbss")]
         let dbss_service: Box<DBSSService>;
+        #[cfg(feature = "event-logger")]
         let el_service: Box<EventLoggerService>;
 
         // Tokio join handles for spawned tasks of services started.
         let mut service_handles: Vec<JoinHandle<std::io::Result<()>>> = Vec::new();
 
+        #[cfg(feature = "client-agent")]
         let want_client_agent: bool = services.client_agent.is_some();
+        #[cfg(feature = "message-director")]
         let want_message_director: bool = services.message_director.is_some();
+        #[cfg(feature = "state-server")]
         let want_state_server: bool = services.state_server.is_some();
+        #[cfg(feature = "database-server")]
         let want_database_server: bool = services.database_server.is_some();
+        #[cfg(feature = "dbss")]
         let want_dbss: bool = services.dbss.is_some();
+        #[cfg(feature = "event-logger")]
         let want_event_logger: bool = services.event_logger.is_some();
 
-        if want_client_agent {
-            let ca_factory: ClientAgentService = ClientAgentService {};
-            ca_service = ca_factory.create()?;
+        cfg_if! {
+            if #[cfg(feature = "client-agent")] {
+                if want_client_agent {
+                    let ca_factory: ClientAgentService = ClientAgentService {};
+                    ca_service = ca_factory.create()?;
 
-            #[allow(clippy::redundant_clone)]
-            ca_service.start(daemon_config.clone()).await?;
+                    #[allow(clippy::redundant_clone)]
+                    ca_service.start(daemon_config.clone()).await?;
+                }
+            }
         }
-        if want_message_director {
-            let md_factory: MessageDirectorService = MessageDirectorService {};
-            md_service = md_factory.create()?;
+        cfg_if! {
+            if #[cfg(feature = "message-director")] {
+                if want_message_director {
+                    let md_factory: MessageDirectorService = MessageDirectorService {};
+                    md_service = md_factory.create()?;
 
-            #[allow(clippy::redundant_clone)]
-            service_handles.push(md_service.start(daemon_config.clone()).await?);
+                    #[allow(clippy::redundant_clone)]
+                    service_handles.push(md_service.start(daemon_config.clone()).await?);
+                }
+            }
         }
-        if want_state_server {
-            let ss_factory: StateServerService = StateServerService {};
-            ss_service = ss_factory.create()?;
+        cfg_if! {
+            if #[cfg(feature = "state-server")] {
+                if want_state_server {
+                    let ss_factory: StateServerService = StateServerService {};
+                    ss_service = ss_factory.create()?;
 
-            #[allow(clippy::redundant_clone)]
-            ss_service.start(daemon_config.clone()).await?;
+                    #[allow(clippy::redundant_clone)]
+                    ss_service.start(daemon_config.clone()).await?;
+                }
+            }
         }
-        if want_database_server {
-            let db_factory: DatabaseServerService = DatabaseServerService {};
-            db_service = db_factory.create()?;
+        cfg_if! {
+            if #[cfg(feature = "database-server")] {
+                if want_database_server {
+                    let db_factory: DatabaseServerService = DatabaseServerService {};
+                    db_service = db_factory.create()?;
 
-            #[allow(clippy::redundant_clone)]
-            db_service.start(daemon_config.clone()).await?;
+                    #[allow(clippy::redundant_clone)]
+                    db_service.start(daemon_config.clone()).await?;
+                }
+            }
         }
-        if want_dbss {
-            let dbss_factory: DBSSService = DBSSService {};
-            dbss_service = dbss_factory.create()?;
+        cfg_if! {
+            if #[cfg(feature = "dbss")] {
+                if want_dbss {
+                    let dbss_factory: DBSSService = DBSSService {};
+                    dbss_service = dbss_factory.create()?;
 
-            #[allow(clippy::redundant_clone)]
-            dbss_service.start(daemon_config.clone()).await?;
+                    #[allow(clippy::redundant_clone)]
+                    dbss_service.start(daemon_config.clone()).await?;
+                }
+            }
         }
-        if want_event_logger {
-            let el_factory: EventLoggerService = EventLoggerService {};
-            el_service = el_factory.create()?;
+        cfg_if! {
+            if #[cfg(feature = "event-logger")] {
+                if want_event_logger {
+                    let el_factory: EventLoggerService = EventLoggerService {};
+                    el_service = el_factory.create()?;
 
-            #[allow(clippy::redundant_clone)]
-            el_service.start(daemon_config.clone()).await?;
+                    #[allow(clippy::redundant_clone)]
+                    el_service.start(daemon_config.clone()).await?;
+                }
+            }
         }
 
         loop {

@@ -10,13 +10,27 @@ keywords = ["donet", "dc", "networking", "server", "mmo"]
 readme = "README.md"
 publish = false
 
+[features]
+client-agent = []
+message-director = []
+state-server = []
+database-server = ["dep:mysql", "dep:mysql_common"]
+dbss = ["dep:mysql", "dep:mysql_common"]
+event-logger = []
+default = [
+  "client-agent", "message-director",
+  "state-server", "database-server",
+  "dbss", "event-logger",
+]
+
 [dependencies]
-libdonet = { path = "../libdonet", version = "0.1.0", default-features = true }
-tokio = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
-mysql = { version = "25", default-features = false, features = ["derive"] }
-mysql_common = { version = "*", default-features = true }
-serde = { version = "1", features = ["derive"] }
-log = { version = "0.4", features = ["std"] }
-toml = { version = "0.7" }
-multimap = { version = "0.9" }
+cfg-if = { version = "1" }
 chrono = { version = "0.4" }
+libdonet = { path = "../libdonet", version = "0.1.0", default-features = true }
+log = { version = "0.4", features = ["std"] }
+mysql = { version = "25", default-features = false, features = ["derive"], optional = true }
+mysql_common = { version = "*", default-features = true, optional = true }
+multimap = { version = "0.9" }
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
+toml = { version = "0.7" }

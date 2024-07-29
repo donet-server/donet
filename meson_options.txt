@@ -8,3 +8,9 @@ option(
   value: 'release',
   description: 'The build profile for Donet. `release` or `debug`.'
 )
+option('build_client_agent', type: 'boolean', value: false)
+option('build_message_director', type: 'boolean', value: false)
+option('build_state_server', type: 'boolean', value: false)
+option('build_database_server', type: 'boolean', value: false)
+option('build_dbss', type: 'boolean', value: false)
+option('build_event_logger', type: 'boolean', value: false)

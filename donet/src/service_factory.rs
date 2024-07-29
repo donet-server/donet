@@ -16,14 +16,16 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 use crate::config::*;
+#[cfg(feature = "database-server")]
 use crate::dbserver::{DBCredentials, DatabaseServer};
+#[cfg(feature = "message-director")]
 use crate::message_director::MessageDirector;
 use crate::utils;
 use log::{error, info};
 use std::io::{Error, ErrorKind, Result};
 use tokio::task::JoinHandle;
 
-// All DoNet service types
+// All Donet service types
 // Each implement bootstrap code to start a service.
 pub struct ClientAgentService;
 pub struct MessageDirectorService;
@@ -39,6 +41,7 @@ pub struct EventLoggerService;
 // NOTE: Removed above due to async not allowed in traits.
 //       Hoping to add back on a future rust release?
 
+#[cfg(feature = "client-agent")]
 impl ClientAgentService {
     // TODO: implement client agent xd
     pub async fn start(&self, _conf: DonetConfig) -> Result<()> {
@@ -51,6 +54,7 @@ impl ClientAgentService {
     }
 }
 
+#[cfg(feature = "message-director")]
 impl MessageDirectorService {
     pub async fn start(&self, conf: DonetConfig) -> Result<JoinHandle<Result<()>>> {
         info!("Booting Message Director service.");
@@ -84,6 +88,7 @@ impl MessageDirectorService {
     }
 }
 
+#[cfg(feature = "state-server")]
 impl StateServerService {
     pub async fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting State Server service.");
@@ -95,6 +100,7 @@ impl StateServerService {
     }
 }
 
+#[cfg(feature = "database-server")]
 impl DatabaseServerService {
     pub async fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting Database Server service.");
@@ -143,6 +149,7 @@ impl DatabaseServerService {
     }
 }
 
+#[cfg(feature = "dbss")]
 impl DBSSService {
     pub async fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting DBSS service.");
@@ -154,6 +161,7 @@ impl DBSSService {
     }
 }
 
+#[cfg(feature = "event-logger")]
 impl EventLoggerService {
     pub async fn start(&self, _conf: DonetConfig) -> Result<()> {
         info!("Booting Event Logger service.");
