@@ -52,6 +52,11 @@ If any `build_*` Meson options are passed, `--no-default-features` is passed
 to cargo build, which disables building all services. Only the service(s) that
 you explicitly request to be built will be activated via feature flags.
 
+## Communication
+
+The address of the official Matrix channel for Donet development is
+[#donet:matrix.org](https://matrix.to/#/#donet:matrix.org).
+
 ## Documentation
 Currently the Donet engine is still under heavy development.
 
