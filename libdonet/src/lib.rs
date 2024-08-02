@@ -18,6 +18,8 @@
 //!
 //! <img src="https://github.com/donet-server/donet/blob/master/logo/donet_banner.png?raw=true" height=10%>
 //!
+//! You can return to the main website for Donet at [`www.donet-server.org`].
+//!
 //! # libdonet
 //! Provides the necessary utilities and definitions for using the Donet networking protocol.
 //!
@@ -40,6 +42,8 @@
 //! - **`full`**: Enables all feature flags available for libdonet.
 //! - **`datagram`**: Includes Datagram / Datagram Iterator source for writing network packets.
 //! - **`dcfile`**: Includes the DC file lexer, parser, and DC element structures.
+//!
+//! [`www.donet-server.org`]: https://www.donet-server.org/
 
 #![doc(html_logo_url = "https://raw.githubusercontent.com/donet-server/donet/master/logo/donet_logo_v3.png")]
 //#![warn(missing_docs)]
