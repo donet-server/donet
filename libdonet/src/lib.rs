@@ -16,7 +16,7 @@
 //! along with this program; if not, write to the Free Software Foundation,
 //! Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //!
-//! <img src="https://github.com/donet-server/donet/blob/master/logo/donet_banner.png?raw=true" height=10%>
+//! <img src="https://gitlab.com/donet-server/donet/-/raw/master/logo/donet_banner.png?ref_type=heads" height=10%>
 //!
 //! You can return to the main website for Donet at [`www.donet-server.org`].
 //!
@@ -45,7 +45,9 @@
 //!
 //! [`www.donet-server.org`]: https://www.donet-server.org/
 
-#![doc(html_logo_url = "https://raw.githubusercontent.com/donet-server/donet/master/logo/donet_logo_v3.png")]
+#![doc(
+    html_logo_url = "https://gitlab.com/donet-server/donet/-/raw/master/logo/donet_logo_v3.png?ref_type=heads"
+)]
 //#![warn(missing_docs)]
 #![deny(unused_extern_crates)]
 
