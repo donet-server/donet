@@ -86,7 +86,7 @@ impl DCKeywordInterface for DCKeyword {
 /// A map of key/value pairs mapping keyword names to DCKeyword struct pointers.
 pub type KeywordName2Keyword = MultiMap<String, Arc<Mutex<DCKeyword>>>;
 
-/// Represents the two types of inputs that `DCKeywordList.has_keyword``
+/// Represents the two types of inputs that `DCKeywordList.has_keyword`
 /// accepts for looking up a Keyword. In Panda and Astron, the
 /// `has_keyword` method is overloaded instead.
 pub enum IdentifyKeyword {
