@@ -52,6 +52,16 @@ pub struct DCTypeDefinition {
     pub size: DgSizeTag,
 }
 
+impl Default for DCTypeDefinition {
+    fn default() -> Self {
+        Self {
+            alias: None,
+            data_type: DCTypeEnum::TInvalid,
+            size: 0_u16,
+        }
+    }
+}
+
 pub trait DCTypeDefinitionInterface {
     fn new() -> Self;
     fn new_with_type(dt: DCTypeEnum) -> Self;
@@ -69,11 +79,7 @@ pub trait DCTypeDefinitionInterface {
 impl DCTypeDefinitionInterface for DCTypeDefinition {
     /// Creates a new empty DCTypeDefinition struct.
     fn new() -> Self {
-        Self {
-            alias: None,
-            data_type: DCTypeEnum::TInvalid,
-            size: 0_u16,
-        }
+        Self::default()
     }
 
     /// Creates a new DCTypeDefinition struct with a DC type set.
