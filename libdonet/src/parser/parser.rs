@@ -15,8 +15,10 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-//! Definition of the DC language context free grammar for the
+//! Definition of the DC language [`Context Free Grammar`] for the
 //! LALR(1) parser processing the stream of lexical tokens.
+//!
+//! [`Context Free Grammar`]: https://en.wikipedia.org/wiki/Context-free_grammar
 
 // Please see plex issue #45. https://github.com/goffrie/plex/issues/45
 #![allow(
@@ -28,74 +30,23 @@
     clippy::let_unit_value
 )]
 
-use crate::dcarray::*;
+use super::lexer::DCToken::*;
+use super::lexer::{DCToken, Span};
 use crate::dcatomic::*;
 use crate::dcfield::*;
 use crate::dcfile::*;
 use crate::dckeyword; // Avoid wildcard import due to conflict with DCToken variant.
 use crate::dclass; // Same reason as comment above.
-use crate::dclexer::DCToken::*;
-use crate::dclexer::{DCToken, Span};
 use crate::dcmolecular::*;
 use crate::dcnumeric::*;
-use crate::dcparameter::*;
 use crate::dcstruct;
 use crate::dctype::*;
+use crate::parser::ast::*;
 
 use plex::parser;
 use std::mem::discriminant;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard};
-
-// To write the DC file elements to memory just as Panda and Astron do, I
-// initially stored the DCFile struct on static memory as mutable. This required
-// the unsafe block { } whenever it was accessed or modified, but it did not cause
-// undefined behavior ... until unit testing. Of course, it is ideal to not use
-// unsafe techniques from the beginning, so I decided to make use of Plex's features
-// by assigning types to the grammar's non-terminals and propagating the elements
-// bottom-up. (as LALR(1) parsers are 'bottom-up' parsers, where they start by
-// producing the 'edge', or 'leaf', productions, until the parser reduces all
-// non-terminals to the root production of the language grammar.)
-//
-// Since we are propagating elements from the bottom of the parse tree and upwards,
-// the return types of non-terminals closer to the root production get bigger and bigger,
-// as they're carrying more and more of the total elements in the DC file until they are
-// all 'plugged in together' into the DC file struct once we reduce to the root production.
-//
-// Even though it may *appear* visually ugly, this is the safest, and cleanest,
-// approach to assembling the DC file structure in memory.
-
-enum TypeDeclaration {
-    PythonImport(Vec<DCImport>),
-    KeywordType(dckeyword::DCKeyword),
-    StructType(dcstruct::DCStruct),
-    SwitchType(Option<u8>),
-    DClassType(dclass::DClass),
-    TypedefType(DCTypeDefinition),
-}
-
-/// Paired with the `type_value` production.
-enum TypeValue {
-    I64(i64),
-    Char(char),
-    String(String),
-    ArrayValue(Vec<(TypeValue, u32)>),
-}
-
-/// Paired with the `char_or_u16` production.
-#[derive(Clone, Copy)]
-enum CharOrU16 {
-    Char(char),
-    U16(u16),
-}
-
-/// Paired with the `char_or_number` production.
-#[derive(Clone, Copy)]
-enum CharOrNumber {
-    Char(char),
-    I64(i64),
-    F64(f64),
-}
 
 parser! {
     fn parse_(DCToken, Span);
@@ -364,7 +315,7 @@ parser! {
                         // their atomic field names in memory, waiting to receive
                         // their **real** atomic field smart pointers. Now that we
                         // have them in the dclass, we can give them the references.
-                        for id in &mf._get_atomic_names() {
+                        for id in mf._get_atomic_names() {
                             if let Some(f_ptr) = dclss.get_field_by_name(&id) {
 
                                 let new_ptr: Arc<Mutex<ClassField>> = f_ptr.clone();
@@ -408,7 +359,8 @@ parser! {
     }
 
     class_field: ClassField {
-        // e.g. "setPos(float64 x, float64 y, float64 z) ram broadcast"
+        // e.g. "setPos(float64 x, float64 y, float64 z) ram broadcast" (atomic)
+        // e.g. "string DcObjectType db" (plain field)
         named_field[nf] dc_keyword_list[kl] => {
             let mut f: DCAtomicField = DCAtomicField::new("", true); // TODO!
             f.set_keyword_list(kl);
@@ -479,13 +431,13 @@ parser! {
     switch_fields: () {
         epsilon => {},
         switch_fields switch_case => {},
-        switch_fields parameter Semicolon => {},
+        switch_fields type_value Semicolon => {},
         switch_fields named_field Semicolon => {},
         switch_fields Break Semicolon => {},
     }
 
     switch_case: () {
-        Case parameter Colon => {},
+        Case type_value Colon => {},
         Default Colon => {},
     }
 
@@ -519,16 +471,16 @@ parser! {
 
     // ---------- Method ---------- //
 
-    method: () {
-        OpenParenthesis parameters CloseParenthesis => {},
+    method: Vec<Parameter> {
+        OpenParenthesis parameters[ps] CloseParenthesis => ps,
     }
 
     method_value: () {
-        OpenParenthesis parameter_values CloseParenthesis => {},
+        OpenParenthesis parameter_values[_] CloseParenthesis => {},
     }
 
-    method_as_field: () {
-        Identifier(_) method => {},
+    method_as_field: DCAtomicField {
+        Identifier(id) method[m] => DCAtomicField::new(&id, m.is_empty()),
     }
 
     nonmethod_type: () {
@@ -590,17 +542,22 @@ parser! {
 
     // ---------- Parameter ---------- //
 
-    parameters: () {
-        epsilon => {},
+    parameters: Vec<Parameter> {
+        epsilon => vec![],
         #[no_reduce(Comma)] // don't reduce if we're expecting more params
-        parameters parameter => {},
-        parameters parameter Comma => {},
+        parameters[mut ps] parameter[p] => {
+            ps.push(p);
+            ps
+        },
+        parameters[mut ps] parameter[p] Comma => {
+            ps.push(p);
+            ps
+        },
     }
 
-    parameter: () {
-        type_value => {},
-        nonmethod_type => {},
-        nonmethod_type Equals type_value => {},
+    parameter: Parameter {
+        nonmethod_type => Parameter::default(), // TODO
+        nonmethod_type Equals type_value => Parameter::default(), // TODO
     }
 
     // ---------- DC Data Types ---------- //
@@ -680,7 +637,7 @@ parser! {
         numeric_with_range[nt] => nt,
     }
 
-    // TODO!
+    // TODO: Apply range to DCNumericType struct
     numeric_with_range: DCNumericType {
         numeric_type_token[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
         numeric_with_explicit_cast[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
@@ -688,7 +645,7 @@ parser! {
         numeric_with_divisor[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
     }
 
-    // TODO!
+    // TODO: Apply divisor to DCNumericType struct
     numeric_with_divisor: DCNumericType {
         numeric_type_token[nt] ForwardSlash number[_] => nt,
         numeric_with_explicit_cast[nt] ForwardSlash number[_] => nt,
@@ -738,7 +695,7 @@ parser! {
     // Originally, the DC system was used with Python clients, which do not need
     // strict type annotations as Python is a dynamically typed language.
     //
-    // Since we are supporting the Bevy engine, which is built on Rust, we need
+    // Since we are not expecting the client to use a dynamically typed language, we need
     // to explicitly tell the client what data type to cast to when we perform these
     // operations on numeric types after they are received from the network.
     numeric_with_explicit_cast: DCNumericType {
@@ -940,7 +897,7 @@ mod unit_testing {
     use super::parse;
     use super::{Arc, Mutex};
     use crate::dcfile::*;
-    use crate::dclexer::Lexer;
+    use crate::parser::lexer::Lexer;
 
     fn parse_dcfile_string(input: &str) -> Arc<Mutex<DCFile>> {
         let lexer = Lexer::new(input).inspect(|tok| eprintln!("token: {:?}", tok));

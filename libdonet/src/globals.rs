@@ -21,7 +21,7 @@
 #[cfg(feature = "dcfile")]
 use crate::dcfile;
 #[cfg(feature = "dcfile")]
-use crate::dclexer::{DCToken, Span};
+use crate::parser::lexer::{DCToken, Span};
 use cfg_if::cfg_if;
 use std::mem;
 use std::result::Result;

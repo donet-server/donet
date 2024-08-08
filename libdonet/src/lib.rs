@@ -64,17 +64,16 @@ cfg_if! {
 }
 cfg_if! {
     if #[cfg(feature = "dcfile")] {
+        mod parser;
         pub mod dcarray;
         pub mod dcatomic;
         pub mod dcfield;
         pub mod dcfile;
         pub mod dckeyword;
         pub mod dclass;
-        pub mod dclexer;
         pub mod dcmolecular;
         pub mod dcnumeric;
         pub mod dcparameter;
-        pub mod dcparser;
         pub mod dcstruct;
         pub mod dctype;
         mod hashgen;
@@ -141,8 +140,8 @@ cfg_if! {
 ///
 #[cfg(feature = "dcfile")]
 pub fn read_dc_files(file_paths: Vec<String>) -> globals::DCReadResult {
-    use crate::dclexer::Lexer;
-    use crate::dcparser::parse;
+    use crate::parser::lexer::Lexer;
+    use crate::parser::parser::parse;
     use std::fs::File;
     use std::io::Read;
     use std::sync::{Arc, Mutex};
