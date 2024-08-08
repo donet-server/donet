@@ -30,8 +30,8 @@ The quickest way to build for release is to do the following:
 
 To build Donet, run the following under the project directory:
 ```sh
-meson setup build
-meson compile -C build -Dprofile=debug
+meson setup build -Dprofile=debug
+meson compile -C build
 ```
 
 If you are working on a contribution to either the Donet daemon or libdonet,
