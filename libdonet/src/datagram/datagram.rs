@@ -507,7 +507,7 @@ impl DatagramIterator {
 
 #[cfg(test)]
 mod unit_testing {
-    use crate::datagram;
+    use crate::datagram::datagram;
     use crate::globals;
     use crate::globals::{msg_type, Protocol};
 
