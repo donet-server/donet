@@ -18,7 +18,7 @@
 //! Structure representing data types supported in the DC
 //! language and enforcing numeric limits through constraints.
 
-use crate::datagram::{Datagram, DatagramIterator};
+use crate::datagram::datagram::{Datagram, DatagramIterator};
 use crate::dctype::*;
 use crate::hashgen::DCHashGenerator;
 use std::mem::size_of;

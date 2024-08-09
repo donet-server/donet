@@ -15,12 +15,25 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Prime Number Generator and 32-bit DC File Hash generator based off Panda3D.
+
 use crate::globals::{DCFileHash, MAX_PRIME_NUMBERS};
 
+/// Prime number generator based off Panda's.
 pub struct PrimeNumberGenerator {
     primes: Vec<u16>,
 }
 
+/// The following is an excerpt from Panda3D's source:
+///
+/// We multiply each consecutive integer by the next prime number and add it to
+/// the total. This will generate pretty evenly-distributed hash numbers for
+/// an arbitrary sequence of integers.
+///
+/// We do recycle the prime number table at some point, just to keep it from
+/// growing insanely large, however (and to avoid wasting time computing large
+/// prime numbers unnecessarily), and we also truncate the result to the low-
+/// order 32 bits.
 pub struct DCHashGenerator {
     hash: i32,
     index: u16,

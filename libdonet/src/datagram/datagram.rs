@@ -18,7 +18,7 @@
 //! Provides structures to write network datagrams and tools
 //! for iterating over datagram data.
 
-use crate::byte_order as endianness;
+use crate::datagram::byte_order as endianness;
 use crate::globals;
 use std::mem;
 use std::vec::Vec;

@@ -18,7 +18,7 @@
 //! Base data model for DC Field elements. Alone, it represents
 //! an attribute of a structure or Distributed Class.
 
-use crate::datagram::Datagram;
+use crate::datagram::datagram::Datagram;
 use crate::dcatomic::DCAtomicField;
 use crate::dckeyword::{DCKeywordList, DCKeywordListInterface, IdentifyKeyword};
 use crate::dclass::DClass;

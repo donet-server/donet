@@ -56,12 +56,9 @@ pub mod globals;
 #[macro_use]
 extern crate cfg_if;
 
-cfg_if! {
-    if #[cfg(feature = "datagram")] {
-        pub mod byte_order;
-        pub mod datagram;
-    }
-}
+#[cfg(feature = "datagram")]
+pub mod datagram;
+
 cfg_if! {
     if #[cfg(feature = "dcfile")] {
         mod parser;
