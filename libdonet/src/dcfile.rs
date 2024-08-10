@@ -23,23 +23,9 @@ use crate::dclass::DClass;
 use crate::dcstruct::DCStruct;
 use crate::globals;
 use crate::hashgen::DCHashGenerator;
+use crate::parser::ast;
 use crate::{dcfield::DCField, dclass::DClassInterface};
 use std::sync::{Arc, Mutex, MutexGuard};
-
-#[derive(Debug, Clone)]
-pub struct DCImport {
-    pub python_module: String,
-    pub symbols: Vec<String>,
-}
-
-impl DCImport {
-    pub fn new(mod_: String, symbols: Vec<String>) -> DCImport {
-        DCImport {
-            python_module: mod_,
-            symbols: symbols,
-        }
-    }
-}
 
 /// Data model that provides a high level representation of a single,
 /// or collection, of DC files and their elements such as class imports,
@@ -48,7 +34,7 @@ impl DCImport {
 pub struct DCFile {
     structs: Vec<Mutex<DCStruct>>,
     dclasses: Vec<Mutex<DClass>>,
-    imports: Vec<DCImport>, // not modified after declaration; no mutex required.
+    imports: Vec<ast::PythonImport>, // not modified after declaration; no mutex required.
     keywords: Vec<DCKeyword>,
     field_id_2_field: Vec<Arc<Mutex<DCField>>>,
     // TODO: type_id_2_type, type_name_2_type
@@ -66,8 +52,8 @@ pub trait DCFileInterface {
 
     // Python Imports
     fn get_num_imports(&mut self) -> usize;
-    fn get_python_import(&mut self, index: usize) -> DCImport;
-    fn add_python_import(&mut self, import: DCImport);
+    fn get_python_import(&mut self, index: usize) -> ast::PythonImport;
+    fn add_python_import(&mut self, import: ast::PythonImport);
 
     // DC Keyword
     fn get_num_keywords(&self) -> usize;
@@ -166,11 +152,11 @@ impl DCFileInterface for DCFile {
         self.imports.len()
     }
 
-    fn get_python_import(&mut self, index: usize) -> DCImport {
+    fn get_python_import(&mut self, index: usize) -> ast::PythonImport {
         self.imports.get(index).unwrap().clone()
     }
 
-    fn add_python_import(&mut self, import: DCImport) {
+    fn add_python_import(&mut self, import: ast::PythonImport) {
         self.imports.push(import);
     }
 

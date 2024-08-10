@@ -41,7 +41,7 @@ use crate::dcmolecular::*;
 use crate::dcnumeric::*;
 use crate::dcstruct;
 use crate::dctype::*;
-use crate::parser::ast::*;
+use crate::parser::ast;
 
 use plex::parser;
 use std::mem::discriminant;
@@ -70,17 +70,17 @@ parser! {
 
             for type_declaration in tds {
                 match type_declaration {
-                    TypeDeclaration::PythonImport(imports) => {
+                    ast::TypeDeclaration::PythonImport(imports) => {
                         for import in imports {
                             dc_file.lock().unwrap().add_python_import(import);
                         }
                     },
-                    TypeDeclaration::KeywordType(keyword) => {
+                    ast::TypeDeclaration::KeywordType(keyword) => {
                         dc_file.lock().unwrap().add_keyword(keyword);
                     },
-                    TypeDeclaration::StructType(_) => {},
-                    TypeDeclaration::SwitchType(_) => {},
-                    TypeDeclaration::DClassType(mut dclass) => {
+                    ast::TypeDeclaration::StructType(_) => {},
+                    ast::TypeDeclaration::SwitchType(_) => {},
+                    ast::TypeDeclaration::DClassType(mut dclass) => {
                         use dclass::DClassInterface;
 
                         dclass.set_dcfile(dc_file.clone());
@@ -90,7 +90,7 @@ parser! {
 
                         dc_file.lock().unwrap().add_dclass(dclass);
                     },
-                    TypeDeclaration::TypedefType(_) => {},
+                    ast::TypeDeclaration::TypedefType(_) => {},
                 }
             }
             // TODO: maybe properly handle semantic errors in the future
@@ -100,7 +100,7 @@ parser! {
         },
     }
 
-    type_declarations: Vec<TypeDeclaration> {
+    type_declarations: ast::Root {
         epsilon => vec![],
         type_declarations[tds] Semicolon => tds,
         type_declarations[mut tds] type_decl[td] => {
@@ -109,54 +109,58 @@ parser! {
         },
     }
 
-    type_decl: TypeDeclaration {
-        python_style_import[py_imports] => TypeDeclaration::PythonImport(py_imports),
-        keyword_type[keyword] => TypeDeclaration::KeywordType(keyword),
-        struct_type[strct] => TypeDeclaration::StructType(strct),
-        switch_type => TypeDeclaration::SwitchType(None),
-        distributed_class_type[dclass] => TypeDeclaration::DClassType(dclass),
-        type_definition => TypeDeclaration::TypedefType(DCTypeDefinition::new()),
+    type_decl: ast::TypeDeclaration {
+        python_style_import[py_imports] => ast::TypeDeclaration::PythonImport(py_imports),
+        keyword_type[keyword] => ast::TypeDeclaration::KeywordType(keyword),
+        struct_type[strct] => ast::TypeDeclaration::StructType(strct),
+        switch_type => ast::TypeDeclaration::SwitchType(None),
+        distributed_class_type[dclass] => ast::TypeDeclaration::DClassType(dclass),
+        type_definition => ast::TypeDeclaration::TypedefType(DCTypeDefinition::new()),
     }
 
     // ---------- Python-style Imports ---------- //
 
-    python_style_import: Vec<DCImport> {
-        py_module[(m, ms)] dclass_import[(c, cs)] => {
-            // Since more than one DCImport structure can be generated from
+    python_style_import: Vec<ast::PythonImport> {
+        py_module[(module, module_views)] dclass_import[(class, class_views)] => {
+            // Since more than one `PythonImport` structure can be generated from
             // one python_style_import non-terminal, we return a vector type.
-            let mut result_vec: Vec<DCImport> = vec![];
+            let mut result_vec: Vec<ast::PythonImport> = vec![];
 
             /* NOTE: Workaround for not being able to pass Options through
              * the non-terminal parameters (due to moved values and borrow
              * checking issues (skill issues)), so we turn the Vectors
              * (which do implement the Copy trait) into Options here.
              */
-            let mut mvs_opt: Option<Vec<String>> = None;
-            let mut cvs_opt: Option<Vec<String>> = None;
-            if !ms.is_empty() {
-                mvs_opt = Some(ms);
+            let mut optional_module_views: Option<Vec<String>> = None;
+            let mut optional_class_views: Option<Vec<String>> = None;
+
+            if !module_views.is_empty() {
+                optional_module_views = Some(module_views);
             }
-            if !cs.is_empty() {
-                cvs_opt = Some(cs);
+            if !class_views.is_empty() {
+                optional_class_views = Some(class_views);
             }
 
-            let mut class_symbols: Vec<String> = vec![c.clone()];
+            let mut class_symbols: Vec<String> = vec![class.clone()];
 
             // Separates "Class/AI/OV" to ["Class", "ClassAI", "ClassOV"]
-            if cvs_opt.is_some() {
-                for class_suffix in &cvs_opt.unwrap() {
-                    class_symbols.push(c.clone() + class_suffix);
+            if optional_class_views.is_some() {
+                for class_suffix in &optional_class_views.unwrap() {
+                    class_symbols.push(class.clone() + class_suffix);
                 }
             }
 
             // Handles e.g. "from module/AI/OV/UD import DistributedThing/AI/OV/UD"
-            if mvs_opt.is_some() {
+            if optional_module_views.is_some() {
                 let mut c_symbol: String = class_symbols.first().unwrap().clone();
 
-                result_vec.push(DCImport::new(m.clone(), vec![c_symbol]));
+                result_vec.push(ast::PythonImport {
+                    python_module: module.clone(),
+                    symbols: vec![c_symbol],
+                });
 
-                for (i, module_suffix) in mvs_opt.unwrap().into_iter().enumerate() {
-                    let full_import: String = m.clone() + &module_suffix;
+                for (i, module_suffix) in optional_module_views.unwrap().into_iter().enumerate() {
+                    let full_import: String = module.clone() + &module_suffix;
 
                     if (class_symbols.len() - 1) <= i {
                         c_symbol = class_symbols.last().unwrap().clone();
@@ -164,11 +168,19 @@ parser! {
                         c_symbol = class_symbols.get(i + 1).unwrap().clone();
                     }
 
-                    result_vec.push(DCImport::new(full_import, vec![c_symbol]));
+                    result_vec.push(ast::PythonImport {
+                        python_module: full_import,
+                        symbols: vec![c_symbol]
+                    });
                 }
                 return result_vec;
             }
-            result_vec.push(DCImport::new(m, class_symbols));
+
+            result_vec.push(ast::PythonImport {
+                python_module: module,
+                symbols: class_symbols
+            });
+
             result_vec
         },
     }
@@ -176,27 +188,27 @@ parser! {
     // e.g. "from views ..."
     // e.g. "from game.views.Donut/AI ..."
     py_module: (String, Vec<String>) {
-        From modules[ms] slash_identifier[is] => {
+        From modules[modules] slash_identifier[views] => {
 
             // We need to join all module identifiers into one string
             let mut modules_string: String = String::new();
 
-            for (i, mod_) in ms.into_iter().enumerate() {
+            for (i, mod_) in modules.into_iter().enumerate() {
                 if i != 0 {
                     modules_string.push('.');
                 }
                 modules_string.push_str(&mod_);
             }
-            (modules_string, is)
+            (modules_string, views)
         }
     }
 
     // Bundles module names in 'from' statements, e.g. "myviews.Donut".
     modules: Vec<String> {
-        legal_python_module_identifiers[m] => vec![m],
-        modules[mut nm] Period legal_python_module_identifiers[m] => {
-            nm.push(m);
-            nm
+        legal_python_module_identifiers[module] => vec![module],
+        modules[mut vector] Period legal_python_module_identifiers[module] => {
+            vector.push(module);
+            vector
         }
     }
 
@@ -471,7 +483,7 @@ parser! {
 
     // ---------- Method ---------- //
 
-    method: Vec<Parameter> {
+    method: ast::Method {
         OpenParenthesis parameters[ps] CloseParenthesis => ps,
     }
 
@@ -542,22 +554,30 @@ parser! {
 
     // ---------- Parameter ---------- //
 
-    parameters: Vec<Parameter> {
+    parameters: Vec<ast::Parameter> {
         epsilon => vec![],
         #[no_reduce(Comma)] // don't reduce if we're expecting more params
-        parameters[mut ps] parameter[p] => {
-            ps.push(p);
-            ps
+        parameters[mut vector] parameter[param] => {
+            vector.push(param);
+            vector
         },
-        parameters[mut ps] parameter[p] Comma => {
-            ps.push(p);
-            ps
+        parameters[mut vector] parameter[param] Comma => {
+            vector.push(param);
+            vector
         },
     }
 
-    parameter: Parameter {
-        nonmethod_type => Parameter::default(), // TODO
-        nonmethod_type Equals type_value => Parameter::default(), // TODO
+    parameter: ast::Parameter {
+        nonmethod_type => ast::Parameter {
+            data_type: crate::dctype::DCTypeEnum::TChar,
+            identifier: String::default(),
+            default_value: None,
+        },
+        nonmethod_type Equals type_value[value] => ast::Parameter {
+            data_type: crate::dctype::DCTypeEnum::TChar,
+            identifier: String::default(),
+            default_value: Some(value),
+        },
     }
 
     // ---------- DC Data Types ---------- //
@@ -577,15 +597,15 @@ parser! {
     }
 
     // e.g. "blob = [0 * 14]"
-    array_expansion: (TypeValue, u32) {
+    array_expansion: ast::ArrayExpansion {
         type_value[tv] => (tv, 1_u32), // factor of 1 by default
-        signed_integer[i] Star unsigned_32_bit_int[f] => (TypeValue::I64(i), f),
-        DecimalLiteral(i) Star unsigned_32_bit_int[f] => (TypeValue::I64(i), f),
-        HexLiteral(hs) Star unsigned_32_bit_int[f] => (TypeValue::String(hs), f),
-        StringLiteral(s) Star unsigned_32_bit_int[f] => (TypeValue::String(s), f),
+        signed_integer[i] Star unsigned_32_bit_int[f] => (ast::TypeValue::I64(i), f),
+        DecimalLiteral(i) Star unsigned_32_bit_int[f] => (ast::TypeValue::I64(i), f),
+        HexLiteral(hs) Star unsigned_32_bit_int[f] => (ast::TypeValue::String(hs), f),
+        StringLiteral(s) Star unsigned_32_bit_int[f] => (ast::TypeValue::String(s), f),
     }
 
-    element_values: Vec<(TypeValue, u32)> {
+    element_values: Vec<ast::ArrayExpansion> {
         array_expansion[ae] => vec![ae],
         element_values[mut ev] Comma array_expansion[ae] => {
             ev.push(ae);
@@ -593,7 +613,7 @@ parser! {
         },
     }
 
-    array_value: Vec<(TypeValue, u32)> {
+    array_value: Vec<ast::ArrayExpansion> {
         OpenBrackets CloseBrackets => vec![],
         OpenBrackets element_values[ev] CloseBrackets => ev,
     }
@@ -619,14 +639,14 @@ parser! {
         sized_type_token[_] => {},
     }
 
-    type_value: TypeValue {
-        DecimalLiteral(i) => TypeValue::I64(i),
-        CharacterLiteral(c) => TypeValue::Char(c),
-        StringLiteral(s) => TypeValue::String(s),
-        HexLiteral(hs) => TypeValue::String(hs),
-        signed_integer[i] => TypeValue::I64(i),
-        array_value[av] => TypeValue::ArrayValue(av),
-        struct_value[_] => todo!(),
+    type_value: ast::TypeValue {
+        DecimalLiteral(i) => ast::TypeValue::I64(i),
+        CharacterLiteral(c) => ast::TypeValue::Char(c),
+        StringLiteral(s) => ast::TypeValue::String(s),
+        HexLiteral(hs) => ast::TypeValue::String(hs),
+        signed_integer[i] => ast::TypeValue::I64(i),
+        array_value[av] => ast::TypeValue::ArrayValue(av),
+        struct_value[_] => todo!(), // TODO
     }
 
     numeric_type: DCNumericType {
@@ -731,12 +751,12 @@ parser! {
         epsilon => None,
 
         char_or_number[v] => match v {
-            CharOrNumber::Char(c) => {
+            ast::CharOrNumber::Char(c) => {
                 let min_max: u64 = u64::from(c);
                 Some(DCNumericRange::new_unsigned_integer_range(min_max, min_max))
             },
-            CharOrNumber::I64(i) => Some(DCNumericRange::new_integer_range(i, i)),
-            CharOrNumber::F64(f) => Some(DCNumericRange::new_floating_point_range(f, f)),
+            ast::CharOrNumber::I64(i) => Some(DCNumericRange::new_integer_range(i, i)),
+            ast::CharOrNumber::F64(f) => Some(DCNumericRange::new_floating_point_range(f, f)),
         },
 
         char_or_number[min] Hyphen char_or_number[max] => {
@@ -747,20 +767,20 @@ parser! {
             );
 
             match min {
-                CharOrNumber::Char(min_c) => {
+                ast::CharOrNumber::Char(min_c) => {
                     let min_u64: u64 = u64::from(min_c);
                     let max_u64: u64 = match max {
-                        CharOrNumber::Char(max_c) => u64::from(max_c),
+                        ast::CharOrNumber::Char(max_c) => u64::from(max_c),
                         _ => panic!("This isn't possible."),
                     };
                     Some(DCNumericRange::new_unsigned_integer_range(min_u64, max_u64))
                 },
-                CharOrNumber::I64(min_i) => Some(DCNumericRange::new_integer_range(min_i, match max {
-                    CharOrNumber::I64(max_i) => max_i,
+                ast::CharOrNumber::I64(min_i) => Some(DCNumericRange::new_integer_range(min_i, match max {
+                    ast::CharOrNumber::I64(max_i) => max_i,
                     _ => panic!("This isn't possible."),
                 })),
-                CharOrNumber::F64(min_f) => Some(DCNumericRange::new_floating_point_range(min_f, match max {
-                    CharOrNumber::F64(max_f) => max_f,
+                ast::CharOrNumber::F64(min_f) => Some(DCNumericRange::new_floating_point_range(min_f, match max {
+                    ast::CharOrNumber::F64(max_f) => max_f,
                     _ => panic!("This isn't possible."),
                 })),
             }
@@ -770,20 +790,20 @@ parser! {
     array_range: Option<DCNumericRange> {
         epsilon => None,
         char_or_u16[v] => match v {
-            CharOrU16::Char(c) => Some(DCNumericRange::new_unsigned_integer_range(u64::from(c), u64::from(c))),
-            CharOrU16::U16(u) => Some(DCNumericRange::new_unsigned_integer_range(u64::from(u), u64::from(u))),
+            ast::CharOrU16::Char(c) => Some(DCNumericRange::new_unsigned_integer_range(u64::from(c), u64::from(c))),
+            ast::CharOrU16::U16(u) => Some(DCNumericRange::new_unsigned_integer_range(u64::from(u), u64::from(u))),
         },
         char_or_u16[min] Hyphen char_or_u16[max] => {
             let min_uint: u64;
             let max_uint: u64;
 
             match min {
-                CharOrU16::Char(c) => min_uint = u64::from(c),
-                CharOrU16::U16(u) => min_uint = u64::from(u),
+                ast::CharOrU16::Char(c) => min_uint = u64::from(c),
+                ast::CharOrU16::U16(u) => min_uint = u64::from(u),
             }
             match max {
-                CharOrU16::Char(c) => max_uint = u64::from(c),
-                CharOrU16::U16(u) => max_uint = u64::from(u),
+                ast::CharOrU16::Char(c) => max_uint = u64::from(c),
+                ast::CharOrU16::U16(u) => max_uint = u64::from(u),
             }
             Some(DCNumericRange::new_unsigned_integer_range(min_uint, max_uint))
         },
@@ -805,13 +825,13 @@ parser! {
         floating_point_type[(_, dct)] => DCNumericType::new(dct),
     }
 
-    char_or_number: CharOrNumber {
-        CharacterLiteral(c) => CharOrNumber::Char(c),
-        signed_integer[v] => CharOrNumber::I64(v),
+    char_or_number: ast::CharOrNumber {
+        CharacterLiteral(c) => ast::CharOrNumber::Char(c),
+        signed_integer[v] => ast::CharOrNumber::I64(v),
 
         number[tok] => match tok {
-            DecimalLiteral(dl) => CharOrNumber::I64(dl),
-            FloatLiteral(fl) => CharOrNumber::F64(fl),
+            DecimalLiteral(dl) => ast::CharOrNumber::I64(dl),
+            FloatLiteral(fl) => ast::CharOrNumber::F64(fl),
             _ => panic!("'number' non-terminal returned an unexpected DC token!"),
         },
     }
@@ -826,9 +846,9 @@ parser! {
         FloatLiteral(fl) => FloatLiteral(fl),
     }
 
-    char_or_u16: CharOrU16 {
-        CharacterLiteral(cl) => CharOrU16::Char(cl),
-        unsigned_32_bit_int[u] => CharOrU16::U16(u as u16),
+    char_or_u16: ast::CharOrU16 {
+        CharacterLiteral(cl) => ast::CharOrU16::Char(cl),
+        unsigned_32_bit_int[u] => ast::CharOrU16::U16(u as u16),
     }
 
     // In Panda's parser, this production is known as 'small_unsigned_integer'.
@@ -897,11 +917,13 @@ mod unit_testing {
     use super::parse;
     use super::{Arc, Mutex};
     use crate::dcfile::*;
+    use crate::parser::ast;
     use crate::parser::lexer::Lexer;
 
     fn parse_dcfile_string(input: &str) -> Arc<Mutex<DCFile>> {
         let lexer = Lexer::new(input).inspect(|tok| eprintln!("token: {:?}", tok));
         let dc_file: Arc<Mutex<DCFile>> = parse(lexer).unwrap();
+
         eprintln!("{:#?}", dc_file); // pretty print DC element tree to stderr
         dc_file
     }
@@ -917,10 +939,12 @@ mod unit_testing {
                               * that may be lexed as tokens other than Id/Module.
                               */
                              from db.char import DistributedDonut\n";
+
         let dc_file = parse_dcfile_string(dc_file);
 
         let expected_num_imports: usize = 10;
-        let mut imports: Vec<DCImport> = vec![];
+        let mut imports: Vec<ast::PythonImport> = vec![];
+
         assert_eq!(dc_file.lock().unwrap().get_num_imports(), expected_num_imports);
 
         for i in 0..expected_num_imports {

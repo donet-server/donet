@@ -28,8 +28,10 @@
 //!
 //! [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
-//use super::ast::*;
-//use crate::dcfile::DCFile;
+use super::ast;
+use crate::dcfile::DCFile;
 
 /// TODO
-pub fn generate_dcf_structure(_ast: i32) -> () {}
+pub fn generate_dcf_structure(_ast: ast::Root) -> DCFile {
+    DCFile::new()
+}

@@ -25,7 +25,7 @@
 //! [`Context Free Grammar`]: https://en.wikipedia.org/wiki/Context-free_grammar
 //! [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
-mod ast;
+pub mod ast;
 pub mod generate;
 pub mod lexer;
 pub mod parser;

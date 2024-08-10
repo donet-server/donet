@@ -20,28 +20,105 @@
 //!
 //! [`AST`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
-use crate::dcfile::*;
+use super::lexer::DCToken;
+use crate::dcfile;
 use crate::dckeyword; // Avoid wildcard import due to conflict with DCToken variant.
 use crate::dclass; // Same reason as comment above.
 use crate::dcstruct;
 use crate::dctype::*;
 
+/// Paired with the `type_declarations` production in the Context Free Grammar.
+pub type Root = Vec<TypeDeclaration>;
+
 /// Paired with the `type_decl` production in the Context Free Grammar.
+#[derive(Debug)]
 pub enum TypeDeclaration {
-    PythonImport(Vec<DCImport>),
+    // A single Python-style DC Import line can translate to
+    // multiple [`PythonImport`] structures per symbol imported.
+    PythonImport(Vec<PythonImport>),
     KeywordType(dckeyword::DCKeyword),
     StructType(dcstruct::DCStruct),
-    SwitchType(Option<u8>),
+    SwitchType(Option<u8>), // TODO
     DClassType(dclass::DClass),
     TypedefType(DCTypeDefinition),
 }
 
+#[derive(Debug, Clone)]
+pub struct PythonImport {
+    pub python_module: String,
+    pub symbols: Vec<String>,
+}
+
+#[derive(Debug)]
+pub struct Keyword {
+    pub identifier: String,
+    pub alias_type: DCTypeDefinition,
+}
+
+#[derive(Debug)]
+pub struct Struct {
+    pub identifier: String,
+    pub fields: Vec<(Parameter, Vec<String>)>,
+}
+
+#[derive(Debug)]
+pub struct Switch {
+    pub cases: Vec<Case>,
+}
+
+#[derive(Debug)]
+pub struct Case {
+    pub condition: TypeValue,
+    pub fields: Vec<(Parameter, Vec<String>)>,
+}
+
+#[derive(Debug)]
+pub struct DClass {
+    pub identifier: String,
+    pub parents: Option<Vec<String>>,
+    pub fields: Vec<AtomicOrMolecular>,
+}
+
+#[derive(Debug)]
+pub enum AtomicOrMolecular {
+    AtomicField(AtomicField),
+    MolecularField(MolecularField),
+}
+
+#[derive(Debug)]
+pub struct AtomicField {
+    pub identifier: String,
+    pub keywords: Vec<String>,
+    pub parameters: Vec<Parameter>,
+}
+
+#[derive(Debug)]
+pub struct MolecularField {
+    pub identifier: String,
+    pub atomic_field_identifiers: Vec<String>,
+}
+
+/// Paired with the `method` production in the Context Free Grammar.
+pub type Method = Vec<Parameter>;
+
+/// Paired with the `parameter` production in the Context Free Grammar.
+#[derive(Debug)]
+pub struct Parameter {
+    pub data_type: DCTypeEnum,
+    pub identifier: String,
+    pub default_value: Option<TypeValue>,
+}
+
+/// Paired with the `array_expansion` production in the Context Free Grammar.
+pub type ArrayExpansion = (TypeValue, u32);
+
 /// Paired with the `type_value` production in the Context Free Grammar.
+#[derive(Debug)]
 pub enum TypeValue {
     I64(i64),
     Char(char),
     String(String),
-    ArrayValue(Vec<(TypeValue, u32)>),
+    ArrayValue(Vec<ArrayExpansion>),
 }
 
 /// Paired with the `char_or_u16` production in the Context Free Grammar.
@@ -57,13 +134,4 @@ pub enum CharOrNumber {
     Char(char),
     I64(i64),
     F64(f64),
-}
-
-/// Paired with the `parameter` production in the Context Free Grammar.
-#[derive(Debug, Default)]
-pub struct Parameter {
-    pub base_type: DCTypeDefinition,
-    pub identifier: String,
-    pub type_alias: String,
-    pub default_value: Option<Vec<u8>>,
 }
