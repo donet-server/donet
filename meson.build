@@ -136,6 +136,17 @@ run_target(
   ],
 )
 
+# Build unit tests without running. This outputs the binary
+# for the unit tests in the target directory, which can then
+# be debugged using GDB or an equivalent.
+run_target(
+  'build-tests',
+  env: cargo_env,
+  command: [
+    cargo_bin, 'test', '--no-run', cargo_opts,
+  ]
+)
+
 # Wrapper for `meson test`, but adds the `--verbose`
 # flag so it actually outputs `cargo test` stdout/stderr.
 run_target(
