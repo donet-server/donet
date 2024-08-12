@@ -61,7 +61,7 @@ The address of the official Matrix channel for Donet development is
 Currently the Donet engine is still under heavy development.
 
 For the libdonet rust library documentation, visit
-[libdonet.rs](https://libdonet.rs).
+[lib.donet-server.org](https://lib.donet-server.org).
 
 ### Distributed Networking architecture resources
 
