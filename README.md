@@ -16,7 +16,8 @@ The Donet repository is a monorepo that houses two different Rust projects:
 - **donet** - The Donet daemon source, which includes all the Donet services.
 See [donet-server.org](https://www.donet-server.org).
 - **libdonet** - The core utilities for Donet services, including datagram
-utilities and the DC language parser. See [libdonet.rs](https://libdonet.rs).
+utilities and the DC language parser. See
+[lib.donet-server.org](https://lib.donet-server.org).
 
 Please read the [introduction to Donet](./docs/01-Introduction.md) for an
 overview of the project and how the engine works.
@@ -40,6 +41,7 @@ please run code linting and unit testing before pushing:
 meson compile linting -C build
 meson compile tests -C build
 ```
+
 These checks should go over all source files in the `donet/` and `libdonet/`
 source directories.
 
@@ -48,9 +50,26 @@ you can use the available Meson options to trigger feature flags in the Crate:
 ```sh
 meson setup build -Dbuild_state_server=true
 ```
+
 If any `build_*` Meson options are passed, `--no-default-features` is passed
 to cargo build, which disables building all services. Only the service(s) that
 you explicitly request to be built will be activated via feature flags.
+
+### Debugging Unit Tests
+
+To debug unit tests with a debugger such as [GDB](https://sourceware.org/gdb/),
+you need to have the unit tests binary. You can build this with the following
+Meson build command:
+```sh
+meson compile build-tests -C build
+```
+
+This Meson run target will build unit tests for each crate in the workspace.
+The unit test binaries should be written to the following path:
+```
+build/target/debug/deps/donetd-<hash>
+build/target/debug/deps/libdonet-<hash>
+```
 
 ## Communication
 
