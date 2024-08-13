@@ -18,14 +18,14 @@
 //! Data model for a DC Atomic Field, which represents a remote
 //! procedure call method of a Distributed Class.
 
-use crate::dcfield::{DCField, DCFieldInterface};
+use crate::dcfield::DCField;
 use crate::dckeyword::DCKeywordList;
 use crate::dclass::DClass;
-use crate::dcparameter::{DCParameter, DCParameterInterface};
-use crate::dctype::{DCTypeDefinition, DCTypeDefinitionInterface};
+use crate::dcparameter::DCParameter;
+use crate::dctype::DCTypeDefinition;
 use crate::hashgen::DCHashGenerator;
-use std::ops::Deref;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 /// Represents an atomic field of a Distributed Class.
 /// This defines the interface to a DClass object, and is
@@ -33,25 +33,15 @@ use std::sync::{Arc, Mutex, MutexGuard};
 #[derive(Debug)]
 pub struct DCAtomicField {
     base_field: DCField,
-    elements: Vec<Arc<Mutex<DCParameter>>>,
+    elements: Vec<Rc<RefCell<DCParameter>>>,
 }
 
-pub trait DCAtomicFieldInterface {
-    fn new(name: &str, bogus_field: bool) -> Self;
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
-
-    fn get_num_elements(&self) -> usize;
-    fn get_element(&self, index: usize) -> Option<Arc<Mutex<DCParameter>>>;
-
-    fn set_keyword_list(&mut self, kw_list: DCKeywordList);
-    fn add_element(&mut self, element: DCParameter);
-}
-
-impl DCAtomicFieldInterface for DCAtomicField {
-    fn new(name: &str, bogus_field: bool) -> Self {
+impl DCAtomicField {
+    pub fn new(name: &str, bogus_field: bool) -> Self {
         Self {
             base_field: {
                 let mut new_dcfield = DCField::new(name, DCTypeDefinition::new());
+
                 new_dcfield.set_bogus_field(bogus_field);
                 new_dcfield
             },
@@ -60,36 +50,35 @@ impl DCAtomicFieldInterface for DCAtomicField {
     }
 
     /// Accumulates the properties of this DC element into the file hash.
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_field.generate_hash(hashgen);
 
         hashgen.add_int(self.elements.len().try_into().unwrap());
 
         for param_ptr in &self.elements {
-            let new_ptr: Arc<Mutex<DCParameter>> = param_ptr.clone();
-            let mutex_ref: &Mutex<DCParameter> = new_ptr.deref();
-            let param: MutexGuard<'_, DCParameter> = mutex_ref.lock().unwrap();
+            let new_ptr: Rc<RefCell<DCParameter>> = Rc::clone(&param_ptr);
+            let param = new_ptr.borrow_mut();
 
             param.generate_hash(hashgen);
         }
     }
 
-    fn get_num_elements(&self) -> usize {
+    pub fn get_num_elements(&self) -> usize {
         self.elements.len()
     }
 
-    fn get_element(&self, index: usize) -> Option<Arc<Mutex<DCParameter>>> {
+    pub fn get_element(&self, index: usize) -> Option<Rc<RefCell<DCParameter>>> {
         match self.elements.get(index) {
-            Some(pointer) => Some(pointer.clone()), // make a new rc pointer
+            Some(pointer) => Some(Rc::clone(&pointer)), // make a new rc pointer
             None => None,
         }
     }
 
-    fn set_keyword_list(&mut self, kw_list: DCKeywordList) {
+    pub fn set_keyword_list(&mut self, kw_list: DCKeywordList) {
         self.base_field.set_field_keyword_list(kw_list)
     }
 
-    fn add_element(&mut self, element: DCParameter) {
-        self.elements.push(Arc::new(Mutex::new(element)));
+    pub fn add_element(&mut self, element: DCParameter) {
+        self.elements.push(Rc::new(RefCell::new(element)));
     }
 }

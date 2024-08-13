@@ -62,28 +62,14 @@ impl Default for DCTypeDefinition {
     }
 }
 
-pub trait DCTypeDefinitionInterface {
-    fn new() -> Self;
-    fn new_with_type(dt: DCTypeEnum) -> Self;
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
-
-    fn get_dc_type(&self) -> DCTypeEnum;
-    fn is_variable_length(&self) -> bool;
-    fn get_size(&self) -> DgSizeTag;
-
-    fn has_alias(&self) -> bool;
-    fn get_alias(&self) -> Result<String, ()>;
-    fn set_alias(&mut self, alias: String);
-}
-
-impl DCTypeDefinitionInterface for DCTypeDefinition {
+impl DCTypeDefinition {
     /// Creates a new empty DCTypeDefinition struct.
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self::default()
     }
 
     /// Creates a new DCTypeDefinition struct with a DC type set.
-    fn new_with_type(dt: DCTypeEnum) -> Self {
+    pub fn new_with_type(dt: DCTypeEnum) -> Self {
         Self {
             alias: None,
             data_type: dt,
@@ -91,8 +77,8 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
         }
     }
 
-    /// Generates the hash for this DC Type element.
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+    /// Accumulates the properties of this DC element into the file hash.
+    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         hashgen.add_int(i32::from(self.data_type.clone() as u8));
 
         if self.alias.is_some() {
@@ -100,26 +86,26 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
         }
     }
 
-    fn get_dc_type(&self) -> DCTypeEnum {
+    pub fn get_dc_type(&self) -> DCTypeEnum {
         self.data_type.clone()
     }
 
     #[inline(always)]
-    fn is_variable_length(&self) -> bool {
+    pub fn is_variable_length(&self) -> bool {
         self.size == 0_u16
     }
 
     #[inline(always)]
-    fn get_size(&self) -> DgSizeTag {
+    pub fn get_size(&self) -> DgSizeTag {
         self.size
     }
 
     #[inline(always)]
-    fn has_alias(&self) -> bool {
+    pub fn has_alias(&self) -> bool {
         self.alias.is_some()
     }
 
-    fn get_alias(&self) -> Result<String, ()> {
+    pub fn get_alias(&self) -> Result<String, ()> {
         if self.alias.is_some() {
             Ok(self.alias.clone().unwrap())
         } else {
@@ -127,7 +113,7 @@ impl DCTypeDefinitionInterface for DCTypeDefinition {
         }
     }
 
-    fn set_alias(&mut self, alias: String) {
+    pub fn set_alias(&mut self, alias: String) {
         self.alias = Some(alias);
     }
 }
@@ -175,12 +161,14 @@ impl DCNumber {
     pub fn new() -> Self {
         Self::default()
     }
+
     pub fn new_integer(num: i64) -> Self {
         Self {
             number_type: DCNumberType::Int,
             value: DCNumberValueUnion { integer: num },
         }
     }
+
     pub fn new_unsigned_integer(num: u64) -> Self {
         Self {
             number_type: DCNumberType::UInt,
@@ -189,6 +177,7 @@ impl DCNumber {
             },
         }
     }
+
     pub fn new_floating_point(num: f64) -> Self {
         Self {
             number_type: DCNumberType::Float,

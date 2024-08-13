@@ -30,6 +30,8 @@
     clippy::let_unit_value
 )]
 
+use super::ast;
+use super::generate::generate_dcf_structure;
 use super::lexer::DCToken::*;
 use super::lexer::{DCToken, Span};
 use crate::dcatomic::*;
@@ -41,11 +43,12 @@ use crate::dcmolecular::*;
 use crate::dcnumeric::*;
 use crate::dcstruct;
 use crate::dctype::*;
-use crate::parser::ast;
 
 use plex::parser;
+use std::cell::RefCell;
 use std::mem::discriminant;
 use std::ops::Deref;
+use std::rc::Rc;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 parser! {
@@ -62,44 +65,15 @@ parser! {
 
     // The 'dc_file' production is the root production of the grammar.
     // Plex knows this is the start symbol of our grammar as it is declared first.
-    dc_file: Arc<Mutex<DCFile>> {
-        type_declarations[tds] => {
-
-            // Allocates a DC File struct on the heap; Wrapped in a Mutex for mutability.
-            let dc_file: Arc<Mutex<DCFile>> = Arc::new(Mutex::new(DCFile::new()));
-
-            for type_declaration in tds {
-                match type_declaration {
-                    ast::TypeDeclaration::PythonImport(imports) => {
-                        for import in imports {
-                            dc_file.lock().unwrap().add_python_import(import);
-                        }
-                    },
-                    ast::TypeDeclaration::KeywordType(keyword) => {
-                        dc_file.lock().unwrap().add_keyword(keyword);
-                    },
-                    ast::TypeDeclaration::StructType(_) => {},
-                    ast::TypeDeclaration::SwitchType(_) => {},
-                    ast::TypeDeclaration::DClassType(mut dclass) => {
-                        use dclass::DClassInterface;
-
-                        dclass.set_dcfile(dc_file.clone());
-
-                        let next_class_id: usize = dc_file.lock().unwrap().get_num_dclasses();
-                        dclass.set_dclass_id(next_class_id.try_into().unwrap());
-
-                        dc_file.lock().unwrap().add_dclass(dclass);
-                    },
-                    ast::TypeDeclaration::TypedefType(_) => {},
-                }
-            }
-            // TODO: maybe properly handle semantic errors in the future
-            assert!(dc_file.lock().unwrap().semantic_analysis().is_ok());
-
-            dc_file
+    dc_file: Rc<RefCell<DCFile>> {
+        type_declarations[ast] => {
+            generate_dcf_structure(ast)
         },
     }
 
+    // Technically, *this* is the root production of the grammar, but the
+    // `dc_file` production (which is the actual root) handles converting
+    // the Abstract Syntax Tree into the DC file element hierarchy structure.
     type_declarations: ast::Root {
         epsilon => vec![],
         type_declarations[tds] Semicolon => tds,
@@ -274,15 +248,11 @@ parser! {
 
     keyword_type: dckeyword::DCKeyword {
         Keyword Identifier(id) => {
-            use dckeyword::DCKeywordInterface;
-
             // TODO: register keyword identifier in DC file
             dckeyword::DCKeyword::new(id, None)
         },
         Keyword DCKeyword(historic) => {
             // This is already a legacy keyword.
-            use dckeyword::DCKeywordInterface;
-
             dckeyword::DCKeyword::new(historic, None)
         }
     }
@@ -312,8 +282,6 @@ parser! {
     distributed_class_type: dclass::DClass {
         DClass Identifier(id) optional_inheritance[oi] OpenBraces
         optional_class_fields[ocf] CloseBraces => {
-            use dclass::DClassInterface;
-
             let mut dclss: dclass::DClass = dclass::DClass::new(&id);
 
             // TODO: dclass parents
@@ -330,9 +298,8 @@ parser! {
                         for id in mf._get_atomic_names() {
                             if let Some(f_ptr) = dclss.get_field_by_name(&id) {
 
-                                let new_ptr: Arc<Mutex<ClassField>> = f_ptr.clone();
-                                let mutex_ref: &Mutex<ClassField> = new_ptr.deref();
-                                let cfield: MutexGuard<'_, ClassField> = mutex_ref.lock().unwrap();
+                                let new_ptr: Rc<RefCell<ClassField>> = Rc::clone(&f_ptr);
+                                let cfield = new_ptr.borrow();
 
                                 match *cfield {
                                     ClassField::Atomic(_) => {},
@@ -388,14 +355,10 @@ parser! {
         epsilon => dckeyword::DCKeywordList::default(),
 
         dc_keyword_list[mut kl] Identifier(k) => {
-            use dckeyword::{DCKeywordInterface, DCKeywordListInterface};
-
             let _ = kl.add_keyword(dckeyword::DCKeyword::new(k, None));
             kl
         }
         dc_keyword_list[mut kl] DCKeyword(k) => {
-            use dckeyword::{DCKeywordInterface, DCKeywordListInterface};
-
             let _ = kl.add_keyword(dckeyword::DCKeyword::new(k, None));
             kl
         }
@@ -906,25 +869,28 @@ parser! {
     }
 }
 
+/// Public function for the DC parser, takes in a stream of lexical tokens.
 pub fn parse<I: Iterator<Item = (DCToken, Span)>>(
     i: I,
-) -> Result<Arc<Mutex<DCFile>>, (Option<(DCToken, Span)>, &'static str)> {
+) -> Result<Rc<RefCell<DCFile>>, (Option<(DCToken, Span)>, &'static str)> {
     parse_(i)
 }
 
 #[cfg(test)]
 mod unit_testing {
     use super::parse;
-    use super::{Arc, Mutex};
+    use super::Rc;
+    use super::RefCell;
     use crate::dcfile::*;
     use crate::parser::ast;
     use crate::parser::lexer::Lexer;
 
-    fn parse_dcfile_string(input: &str) -> Arc<Mutex<DCFile>> {
+    fn parse_dcfile_string(input: &str) -> Rc<RefCell<DCFile>> {
         let lexer = Lexer::new(input).inspect(|tok| eprintln!("token: {:?}", tok));
-        let dc_file: Arc<Mutex<DCFile>> = parse(lexer).unwrap();
+        let dc_file: Rc<RefCell<DCFile>> = parse(lexer).unwrap();
 
-        eprintln!("{:#?}", dc_file); // pretty print DC element tree to stderr
+        // FIXME: stack overflow on unit tests when printing DC element tree!
+        //eprintln!("{:#?}", dc_file); // pretty print DC element tree to stderr
         dc_file
     }
 
@@ -940,15 +906,15 @@ mod unit_testing {
                               */
                              from db.char import DistributedDonut\n";
 
-        let dc_file = parse_dcfile_string(dc_file);
+        let mut dc_file = parse_dcfile_string(dc_file);
 
         let expected_num_imports: usize = 10;
         let mut imports: Vec<ast::PythonImport> = vec![];
 
-        assert_eq!(dc_file.lock().unwrap().get_num_imports(), expected_num_imports);
+        assert_eq!(dc_file.borrow_mut().get_num_imports(), expected_num_imports);
 
         for i in 0..expected_num_imports {
-            imports.push(dc_file.lock().unwrap().get_python_import(i));
+            imports.push(dc_file.borrow_mut().get_python_import(i));
         }
 
         assert_eq!(imports[0].python_module, "example_views");

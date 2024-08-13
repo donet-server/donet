@@ -18,64 +18,28 @@
 //! Root structure that stores the collection of DC elements
 //! in memory. Provides functions for manipulating the tree.
 
+use crate::dcfield::DCField;
 use crate::dckeyword::DCKeyword;
 use crate::dclass::DClass;
 use crate::dcstruct::DCStruct;
 use crate::globals;
 use crate::hashgen::DCHashGenerator;
 use crate::parser::ast;
-use crate::{dcfield::DCField, dclass::DClassInterface};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::rc::Rc;
 
 /// Data model that provides a high level representation of a single,
 /// or collection, of DC files and their elements such as class imports,
 /// type definitions, structures, and Distributed Classes.
 #[derive(Debug)]
 pub struct DCFile {
-    structs: Vec<Mutex<DCStruct>>,
-    dclasses: Vec<Mutex<DClass>>,
-    imports: Vec<ast::PythonImport>, // not modified after declaration; no mutex required.
+    structs: Vec<DCStruct>,
+    dclasses: Vec<DClass>,
+    imports: Vec<ast::PythonImport>,
     keywords: Vec<DCKeyword>,
-    field_id_2_field: Vec<Arc<Mutex<DCField>>>,
+    field_id_2_field: Vec<Rc<DCField>>,
     // TODO: type_id_2_type, type_name_2_type
     all_object_valid: bool,
     inherited_fields_stale: bool,
-}
-
-#[rustfmt::skip]
-pub trait DCFileInterface {
-    fn get_hash(&mut self) -> globals::DCFileHash;
-    fn generate_hash(&mut self, hashgen: &mut DCHashGenerator);
-    fn semantic_analysis(&self) -> Result<(), ()>;
-    fn get_pretty_hash(&mut self) -> String;
-    fn add_field(&mut self, field: DCField); // assigns unique ID for the whole DC file
-
-    // Python Imports
-    fn get_num_imports(&mut self) -> usize;
-    fn get_python_import(&mut self, index: usize) -> ast::PythonImport;
-    fn add_python_import(&mut self, import: ast::PythonImport);
-
-    // DC Keyword
-    fn get_num_keywords(&self) -> usize;
-    fn get_keyword(&self, index: usize) -> Arc<DCKeyword>;
-    fn has_keyword(&self, keyword: String) -> bool;
-    fn add_keyword(&mut self, keyword: DCKeyword);
-
-    // Type Definition
-    fn add_typedef(&mut self, name: String) -> Result<(), ()>;
-
-    // Distributed Class
-    fn get_num_dclasses(&mut self) -> usize;
-    fn get_next_dclass_id(&mut self) -> globals::DClassId;
-    fn get_dclass(&mut self, index: usize) -> Arc<Mutex<DClass>>;
-    fn get_dclass_by_id(&mut self, id: globals::DClassId) -> Arc<Mutex<DClass>>;
-    fn get_dclass_by_name(&mut self, name: &str) -> Arc<Mutex<DClass>>;
-    fn add_dclass(&mut self, dclass: DClass);
-
-    // DC Struct
-    fn get_num_structs(&mut self) -> usize;
-    fn get_struct(&mut self, index: usize) -> Arc<Mutex<DCStruct>>;
-    fn add_struct(&mut self, strct: DCStruct);
 }
 
 impl DCFile {
@@ -92,18 +56,19 @@ impl DCFile {
     }
 }
 
-impl DCFileInterface for DCFile {
+impl DCFile {
     /// Returns a 32-bit hash index associated with this file.  This number is
     /// guaranteed to be consistent if the contents of the file have not changed,
     /// and it is very likely to be different if the contents of the file do change.
-    fn get_hash(&mut self) -> globals::DCFileHash {
+    pub fn get_hash(&mut self) -> globals::DCFileHash {
         let mut hashgen: DCHashGenerator = DCHashGenerator::new();
+
         self.generate_hash(&mut hashgen);
         hashgen.get_hash()
     }
 
     /// Accumulates the elements of the DC file into the hash.
-    fn generate_hash(&mut self, hashgen: &mut DCHashGenerator) {
+    pub fn generate_hash(&mut self, hashgen: &mut DCHashGenerator) {
         if globals::DC_VIRTUAL_INHERITANCE {
             // Just to change the hash output in this case.
             if globals::DC_SORT_INHERITANCE_BY_FILE {
@@ -114,9 +79,8 @@ impl DCFileInterface for DCFile {
         }
         hashgen.add_int(self.get_num_dclasses().try_into().unwrap());
 
-        for dclass in &self.dclasses {
-            let mut locked_dclass: MutexGuard<'_, DClass> = dclass.lock().unwrap();
-            locked_dclass.generate_hash(hashgen);
+        for dclass in &mut self.dclasses {
+            dclass.generate_hash(hashgen);
         }
     }
 
@@ -126,71 +90,71 @@ impl DCFileInterface for DCFile {
     /// that we link all the objects together until we reduce to the
     /// root production in the CFG) we have to perform this analysis
     /// until the very end when all the elements are in the DCF struct.
-    fn semantic_analysis(&self) -> Result<(), ()> {
+    pub fn semantic_analysis(&self) -> Result<(), ()> {
         // Run semantic analysis chain of all distributed class objects.
         // This should include semantic analysis for DC fields as well.
         for dclass in &self.dclasses {
-            let locked_dclass: MutexGuard<'_, DClass> = dclass.lock().unwrap();
-            locked_dclass.semantic_analysis()?;
+            dclass.semantic_analysis()?;
         }
         // TODO!
         Ok(())
     }
 
     /// Returns a string with the hash as a pretty format hexadecimal.
-    fn get_pretty_hash(&mut self) -> String {
+    pub fn get_pretty_hash(&mut self) -> String {
         format!("0x{:0width$x}", self.get_hash(), width = 8) // 2 hex / byte = 8 hex
     }
 
-    fn add_field(&mut self, field: DCField) {
+    /// Assigns unique ID to the field for the scope of the entire DC file.
+    pub fn add_field(&mut self, field: DCField) {
         todo!();
     }
 
     // ---------- Python Imports ---------- //
 
-    fn get_num_imports(&mut self) -> usize {
+    pub fn get_num_imports(&mut self) -> usize {
         self.imports.len()
     }
 
-    fn get_python_import(&mut self, index: usize) -> ast::PythonImport {
+    pub fn get_python_import(&mut self, index: usize) -> ast::PythonImport {
         self.imports.get(index).unwrap().clone()
     }
 
-    fn add_python_import(&mut self, import: ast::PythonImport) {
+    pub fn add_python_import(&mut self, import: ast::PythonImport) {
         self.imports.push(import);
     }
 
     // ---------- DC Keyword ---------- //
 
-    fn get_num_keywords(&self) -> usize {
+    pub fn get_num_keywords(&self) -> usize {
         todo!();
     }
 
-    fn get_keyword(&self, index: usize) -> Arc<DCKeyword> {
+    pub fn get_keyword(&self, index: usize) -> Rc<DCKeyword> {
         todo!();
     }
 
-    fn has_keyword(&self, keyword: String) -> bool {
+    pub fn has_keyword(&self, keyword: String) -> bool {
         todo!();
     }
 
-    fn add_keyword(&mut self, keyword: DCKeyword) {
+    pub fn add_keyword(&mut self, keyword: DCKeyword) {
         () // TODO!
     }
 
     // ---------- DC Type Definition ---------- //
 
-    fn add_typedef(&mut self, name: String) -> Result<(), ()> {
+    pub fn add_typedef(&mut self, name: String) -> Result<(), ()> {
         todo!();
     }
 
     // ---------- Distributed Class ---------- //
 
-    fn get_num_dclasses(&mut self) -> usize {
+    pub fn get_num_dclasses(&mut self) -> usize {
         self.dclasses.len()
     }
 
-    fn get_next_dclass_id(&mut self) -> globals::DClassId {
+    pub fn get_next_dclass_id(&mut self) -> globals::DClassId {
         let dc_num: u16 = self.get_num_dclasses().try_into().unwrap();
         if dc_num == globals::DClassId::MAX {
             panic!("dcparser: Ran out of 16-bit DClass IDs!");
@@ -198,33 +162,33 @@ impl DCFileInterface for DCFile {
         dc_num - 1_u16
     }
 
-    fn get_dclass(&mut self, index: usize) -> Arc<Mutex<DClass>> {
+    pub fn get_dclass(&mut self, index: usize) -> Rc<DClass> {
         todo!();
     }
 
-    fn get_dclass_by_id(&mut self, id: globals::DClassId) -> Arc<Mutex<DClass>> {
+    pub fn get_dclass_by_id(&mut self, id: globals::DClassId) -> Rc<DClass> {
         todo!();
     }
 
-    fn get_dclass_by_name(&mut self, name: &str) -> Arc<Mutex<DClass>> {
+    pub fn get_dclass_by_name(&mut self, name: &str) -> Rc<DClass> {
         todo!();
     }
 
-    fn add_dclass(&mut self, dclass: DClass) {
-        self.dclasses.push(Mutex::new(dclass));
+    pub fn add_dclass(&mut self, dclass: DClass) {
+        self.dclasses.push(dclass);
     }
 
     // ---------- DC Struct ---------- //
 
-    fn get_num_structs(&mut self) -> usize {
+    pub fn get_num_structs(&mut self) -> usize {
         todo!();
     }
 
-    fn get_struct(&mut self, index: usize) -> Arc<Mutex<DCStruct>> {
+    pub fn get_struct(&mut self, index: usize) -> Rc<DCStruct> {
         todo!();
     }
 
-    fn add_struct(&mut self, strct: DCStruct) {
+    pub fn add_struct(&mut self, strct: DCStruct) {
         todo!();
     }
 }

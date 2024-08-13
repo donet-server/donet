@@ -29,9 +29,43 @@
 //! [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
 use super::ast;
-use crate::dcfile::DCFile;
+use crate::dcfile::*;
+use crate::dclass;
+use std::cell::RefCell;
+use std::rc::Rc;
 
-/// TODO
-pub fn generate_dcf_structure(_ast: ast::Root) -> DCFile {
-    DCFile::new()
+/// Takes in the [`Abstract Syntax Tree`] from the DC parser and outputs a
+/// [`crate::dcfile::DCFile`] structure wrapped in a [`std::rc::Rc`] pointer.
+///
+/// [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
+pub fn generate_dcf_structure(ast: ast::Root) -> Rc<RefCell<DCFile>> {
+    let mut dc_file: Rc<RefCell<DCFile>> = Rc::new(RefCell::new(DCFile::new()));
+
+    for type_declaration in ast {
+        match type_declaration {
+            ast::TypeDeclaration::PythonImport(imports) => {
+                for import in imports {
+                    dc_file.borrow_mut().add_python_import(import);
+                }
+            }
+            ast::TypeDeclaration::KeywordType(keyword) => {
+                dc_file.borrow_mut().add_keyword(keyword);
+            }
+            ast::TypeDeclaration::StructType(_) => {}
+            ast::TypeDeclaration::SwitchType(_) => {}
+            ast::TypeDeclaration::DClassType(mut dclass) => {
+                dclass.set_dcfile(Rc::clone(&dc_file));
+
+                let next_class_id: usize = dc_file.borrow_mut().get_num_dclasses();
+                dclass.set_dclass_id(next_class_id.try_into().unwrap());
+
+                dc_file.borrow_mut().add_dclass(dclass);
+            }
+            ast::TypeDeclaration::TypedefType(_) => {}
+        }
+    }
+    // TODO: maybe properly handle semantic errors in the future
+    assert!(dc_file.borrow().semantic_analysis().is_ok());
+
+    dc_file
 }

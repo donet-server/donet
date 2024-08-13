@@ -46,7 +46,6 @@ pub mod utils;
 
 #[macro_use]
 extern crate cfg_if;
-
 use meson::*;
 
 #[derive(Clone, Copy)]
@@ -56,13 +55,14 @@ enum FlagArguments {
 
 fn main() -> std::io::Result<()> {
     use config::*;
-    use libdonet::dcfile::DCFileInterface;
     use libdonet::globals::DCReadResult;
     use libdonet::read_dc_files;
     use log::{error, info};
     use service_factory::*;
+    use std::cell::RefCell;
     use std::fs::File;
     use std::io::{Error, ErrorKind, Read};
+    use std::rc::Rc;
     use tokio::runtime::{Builder, Runtime};
     use tokio::task::JoinHandle;
 
@@ -132,10 +132,10 @@ fn main() -> std::io::Result<()> {
         info!("libdonet: DC read of {:?}", dc_check_files);
         let dc_read: DCReadResult = read_dc_files(dc_check_files.to_owned());
 
-        if let Ok(dc_file) = dc_read {
-            let h: u32 = dc_file.lock().unwrap().get_hash();
+        if let Ok(mut dc_file) = dc_read {
+            let h: u32 = dc_file.borrow_mut().get_hash();
             let sh: i32 = h as i32;
-            let ph: String = dc_file.lock().unwrap().get_pretty_hash();
+            let ph: String = dc_file.borrow_mut().get_pretty_hash();
             info!("No issues found. File hash is {} (signed {}, hex {})", h, sh, ph);
             return Ok(());
         }

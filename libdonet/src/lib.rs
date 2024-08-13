@@ -86,51 +86,52 @@ cfg_if! {
 /// printing its DC hash in hexadecimal notation, and accessing
 /// the elements of a defined Distributed Class:
 /// ```rust
-/// use libdonet::dcfile::DCFileInterface;
-/// use libdonet::dclass::{DClass, DClassInterface};
+/// use libdonet::dclass::DClass;
 /// use libdonet::globals::DCReadResult;
 /// use libdonet::read_dc_files;
 ///
-/// // All elements in a DC File object are thread-safe!
-/// use std::sync::{Arc, Mutex, MutexGuard};
+/// use std::cell::RefCell;
+/// use std::rc::Rc;
 ///
-/// let dc_file: &str = "from game.ai import AnonymousContact/UD
-///                      from game.ai import LoginManager/AI
-///                      from game.world import DistributedWorld/AI
-///                      from game.avatar import DistributedAvatar/AI/OV
+/// let dc_file = "from game.ai import AnonymousContact/UD
+///                from game.ai import LoginManager/AI
+///                from game.world import DistributedWorld/AI
+///                from game.avatar import DistributedAvatar/AI/OV
 ///
-///                      dclass AnonymousContact {
-///                        login(string username, string password) clsend airecv;
-///                      };
+///                dclass AnonymousContact {
+///                  login(string username, string password) clsend airecv;
+///                };
 ///
-///                      dclass LoginManager {
-///                        login(channel client, string username, string password) airecv;
-///                      };
+///                dclass LoginManager {
+///                  login(channel client, string username, string password) airecv;
+///                };
 ///
-///                      dclass DistributedWorld {
-///                        create_avatar(channel client) airecv;
-///                      };
+///                dclass DistributedWorld {
+///                  create_avatar(channel client) airecv;
+///                };
 ///
-///                      dclass DistributedAvatar {
-///                        set_xyzh(int16 x, int16 y, int16 z, int16 h) broadcast required;
-///                        indicate_intent(int16 / 10, int16 / 10) ownsend airecv;
-///                      };";
+///                dclass DistributedAvatar {
+///                   set_xyzh(int16 x, int16 y, int16 z, int16 h) broadcast required;
+///                   indicate_intent(int16 / 10, int16 / 10) ownsend airecv;
+///                };";
 ///
 /// let dc_read: DCReadResult = read_dc_files(vec![dc_file.into()]);
 ///
 /// if let Ok(dc_file) = dc_read {
-///     println!("{}", dc_file.lock().unwrap().get_pretty_hash()); // Print the DC File Hash
+///     // Print the DC File's 32-bit hash in hexadecimal format.
+///     println!("{}", dc_file.borrow_mut().get_pretty_hash());
 ///     
-///     let avatar_class: Arc<Mutex<DClass>> = dc_file.lock().unwrap().get_dclass_by_id(3);
-///     let mut locked_class: MutexGuard<'_, DClass> = avatar_class.lock().unwrap();
+///     // Retrieve the `DistributedAvatar` dclass by ID.
+///     let mut avatar_class = dc_file.borrow_mut().get_dclass_by_id(3);
 ///
-///     println!("{}", locked_class.get_name());
+///     // Print the identifier of the dclass.
+///     println!("{}", Rc::get_mut(&mut avatar_class).expect("Borrow failed!").get_name());
 /// }
 /// ```
 ///
 /// The output of the program would be the following:
 /// ```txt
-/// 0x01a5Fb0c
+/// 0x01a5fb0c
 /// DistributedAvatar
 /// ```
 /// <br><img src="https://c.tenor.com/myQHgyWQQ9sAAAAd/tenor.gif">
@@ -139,9 +140,10 @@ cfg_if! {
 pub fn read_dc_files(file_paths: Vec<String>) -> globals::DCReadResult {
     use crate::parser::lexer::Lexer;
     use crate::parser::parser::parse;
+    use std::cell::RefCell;
     use std::fs::File;
     use std::io::Read;
-    use std::sync::{Arc, Mutex};
+    use std::rc::Rc;
 
     let mut file_results: Vec<Result<File, std::io::Error>> = vec![];
     let mut lexer_input: String = String::new();
@@ -164,7 +166,7 @@ pub fn read_dc_files(file_paths: Vec<String>) -> globals::DCReadResult {
     }
 
     let lexer: Lexer<'_> = Lexer::new(&lexer_input);
-    let res: Result<Arc<Mutex<dcfile::DCFile>>, globals::ParseError> = parse(lexer);
+    let res: Result<Rc<RefCell<dcfile::DCFile>>, globals::ParseError> = parse(lexer);
 
     if let Ok(res_ok) = res {
         Ok(res_ok)

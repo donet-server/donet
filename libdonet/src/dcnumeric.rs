@@ -114,58 +114,8 @@ pub struct DCNumericType {
     explicit_cast: Option<DCTypeDefinition>,
 }
 
-pub trait DCNumericTypeInterface {
-    fn new(base_type: DCTypeEnum) -> Self;
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
-
-    fn has_modulus(&self) -> bool;
-    fn has_range(&self) -> bool;
-
-    fn get_divisor(&self) -> u16;
-    fn get_modulus(&self) -> f64;
-    fn get_range(&self) -> DCNumericRange;
-    fn get_explicit_cast(&self) -> Option<DCTypeDefinition>;
-
-    fn set_divisor(&mut self, divisor: u16) -> Result<(), String>;
-    fn set_modulus(&mut self, modulus: f64) -> Result<(), String>;
-    fn set_range(&mut self, range: DCNumericRange) -> Result<(), String>;
-    fn set_explicit_cast(&mut self, dtype: DCTypeDefinition) -> Result<(), String>;
-
-    fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), String>;
-}
-
 impl DCNumericType {
-    fn data_to_number(&self, data: Vec<u8>) -> (bool, DCNumber) {
-        // NOTE: See 'Deref' trait implementation for 'DCNumericType' below
-        // on how we're using self.parent.size as self.size.
-        if self.base_type.size != data.len().try_into().unwrap() {
-            return (false, DCNumber::new_integer(0_i64));
-        }
-
-        let mut dg = Datagram::new();
-        let _ = dg.add_data(data);
-        let mut dgi = DatagramIterator::new(dg);
-
-        match self.base_type.data_type {
-            DCTypeEnum::TInt8 => (true, DCNumber::new_integer(i64::from(dgi.read_i8()))),
-            DCTypeEnum::TInt16 => (true, DCNumber::new_integer(i64::from(dgi.read_i16()))),
-            DCTypeEnum::TInt32 => (true, DCNumber::new_integer(i64::from(dgi.read_i32()))),
-            DCTypeEnum::TInt64 => (true, DCNumber::new_integer(dgi.read_i64())),
-            DCTypeEnum::TChar | DCTypeEnum::TUInt8 => {
-                (true, DCNumber::new_unsigned_integer(u64::from(dgi.read_u8())))
-            }
-            DCTypeEnum::TUInt16 => (true, DCNumber::new_unsigned_integer(u64::from(dgi.read_u16()))),
-            DCTypeEnum::TUInt32 => (true, DCNumber::new_unsigned_integer(u64::from(dgi.read_u32()))),
-            DCTypeEnum::TUInt64 => (true, DCNumber::new_unsigned_integer(dgi.read_u64())),
-            DCTypeEnum::TFloat32 => (true, DCNumber::new_floating_point(f64::from(dgi.read_f32()))),
-            DCTypeEnum::TFloat64 => (true, DCNumber::new_floating_point(dgi.read_f64())),
-            _ => (false, DCNumber::new_integer(0_i64)),
-        }
-    }
-}
-
-impl DCNumericTypeInterface for DCNumericType {
-    fn new(base_type: DCTypeEnum) -> Self {
+    pub fn new(base_type: DCTypeEnum) -> Self {
         Self {
             base_type: {
                 let mut parent_struct = DCTypeDefinition::new();
@@ -208,7 +158,8 @@ impl DCNumericTypeInterface for DCNumericType {
         }
     }
 
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+    /// Accumulates the properties of this DC element into the file hash.
+    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_type.generate_hash(hashgen);
         hashgen.add_int(i32::from(self.divisor));
 
@@ -227,31 +178,31 @@ impl DCNumericTypeInterface for DCNumericType {
     }
 
     #[inline]
-    fn has_modulus(&self) -> bool {
+    pub fn has_modulus(&self) -> bool {
         self.orig_modulus != 0.0
     }
     #[inline]
-    fn has_range(&self) -> bool {
+    pub fn has_range(&self) -> bool {
         self.orig_range.is_empty()
     }
     #[inline]
-    fn get_divisor(&self) -> u16 {
+    pub fn get_divisor(&self) -> u16 {
         self.divisor
     }
     #[inline]
-    fn get_modulus(&self) -> f64 {
+    pub fn get_modulus(&self) -> f64 {
         self.orig_modulus
     }
     #[inline]
-    fn get_range(&self) -> DCNumericRange {
+    pub fn get_range(&self) -> DCNumericRange {
         self.orig_range.clone()
     }
     #[inline]
-    fn get_explicit_cast(&self) -> Option<DCTypeDefinition> {
+    pub fn get_explicit_cast(&self) -> Option<DCTypeDefinition> {
         self.explicit_cast.clone()
     }
 
-    fn set_divisor(&mut self, divisor: u16) -> Result<(), String> {
+    pub fn set_divisor(&mut self, divisor: u16) -> Result<(), String> {
         if divisor == 0 {
             return Err("Cannot set the divisor to 0.".to_owned());
         }
@@ -265,7 +216,7 @@ impl DCNumericTypeInterface for DCNumericType {
         Ok(())
     }
 
-    fn set_modulus(&mut self, modulus: f64) -> Result<(), String> {
+    pub fn set_modulus(&mut self, modulus: f64) -> Result<(), String> {
         if modulus <= 0.0_f64 {
             return Err("Modulus value cannot be less than or equal to 0.0.".to_owned());
         }
@@ -274,17 +225,45 @@ impl DCNumericTypeInterface for DCNumericType {
         Ok(()) // TODO: properly validate modulus range
     }
 
-    fn set_range(&mut self, range: DCNumericRange) -> Result<(), String> {
+    pub fn set_range(&mut self, range: DCNumericRange) -> Result<(), String> {
         self.range = range; // TODO: validate
         Ok(())
     }
 
-    fn set_explicit_cast(&mut self, dtype: DCTypeDefinition) -> Result<(), String> {
+    pub fn set_explicit_cast(&mut self, dtype: DCTypeDefinition) -> Result<(), String> {
         self.explicit_cast = Some(dtype);
         Ok(()) // TODO: do some sort of type check
     }
 
-    fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), String> {
+    pub fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), String> {
         todo!();
+    }
+
+    fn data_to_number(&self, data: Vec<u8>) -> (bool, DCNumber) {
+        // NOTE: See 'Deref' trait implementation for 'DCNumericType' below
+        // on how we're using self.parent.size as self.size.
+        if self.base_type.size != data.len().try_into().unwrap() {
+            return (false, DCNumber::new_integer(0_i64));
+        }
+
+        let mut dg = Datagram::new();
+        let _ = dg.add_data(data);
+        let mut dgi = DatagramIterator::new(dg);
+
+        match self.base_type.data_type {
+            DCTypeEnum::TInt8 => (true, DCNumber::new_integer(i64::from(dgi.read_i8()))),
+            DCTypeEnum::TInt16 => (true, DCNumber::new_integer(i64::from(dgi.read_i16()))),
+            DCTypeEnum::TInt32 => (true, DCNumber::new_integer(i64::from(dgi.read_i32()))),
+            DCTypeEnum::TInt64 => (true, DCNumber::new_integer(dgi.read_i64())),
+            DCTypeEnum::TChar | DCTypeEnum::TUInt8 => {
+                (true, DCNumber::new_unsigned_integer(u64::from(dgi.read_u8())))
+            }
+            DCTypeEnum::TUInt16 => (true, DCNumber::new_unsigned_integer(u64::from(dgi.read_u16()))),
+            DCTypeEnum::TUInt32 => (true, DCNumber::new_unsigned_integer(u64::from(dgi.read_u32()))),
+            DCTypeEnum::TUInt64 => (true, DCNumber::new_unsigned_integer(dgi.read_u64())),
+            DCTypeEnum::TFloat32 => (true, DCNumber::new_floating_point(f64::from(dgi.read_f32()))),
+            DCTypeEnum::TFloat64 => (true, DCNumber::new_floating_point(dgi.read_f64())),
+            _ => (false, DCNumber::new_integer(0_i64)),
+        }
     }
 }

@@ -68,7 +68,8 @@ pub struct Switch {
 
 #[derive(Debug)]
 pub struct Case {
-    pub condition: TypeValue,
+    // `None` condition means this is a default case.
+    pub condition: Option<TypeValue>,
     pub fields: Vec<(Parameter, Vec<String>)>,
 }
 

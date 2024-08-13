@@ -20,14 +20,14 @@
 
 use crate::datagram::datagram::Datagram;
 use crate::dcatomic::DCAtomicField;
-use crate::dckeyword::{DCKeywordList, DCKeywordListInterface, IdentifyKeyword};
+use crate::dckeyword::{DCKeywordList, IdentifyKeyword};
 use crate::dclass::DClass;
 use crate::dcmolecular::DCMolecularField;
 use crate::dcstruct::DCStruct;
-use crate::dctype::{DCTypeDefinition, DCTypeDefinitionInterface};
+use crate::dctype::DCTypeDefinition;
 use crate::globals;
 use crate::hashgen::DCHashGenerator;
-use std::sync::{Arc, Mutex};
+use std::rc::Rc;
 
 /// A field of a Distributed Class. The DCField struct is a base for
 /// struct and dclass fields. In the DC language, there are three types
@@ -35,8 +35,8 @@ use std::sync::{Arc, Mutex};
 #[derive(Debug)]
 pub struct DCField {
     keyword_list: DCKeywordList,
-    dclass: Option<Arc<Mutex<DClass>>>,
-    _struct: Option<Arc<Mutex<DCStruct>>>, // needs '_' due to reserved keyword
+    dclass: Option<Rc<DClass>>,
+    _struct: Option<Rc<DCStruct>>, // needs '_' due to reserved keyword
     field_name: String,
     field_id: globals::FieldId,
     field_type: DCTypeDefinition,
@@ -77,46 +77,6 @@ pub enum StructField {
     Molecular(DCMolecularField),
 }
 
-pub trait DCFieldInterface {
-    fn new(name: &str, dtype: DCTypeDefinition) -> Self;
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
-
-    fn get_field_id(&self) -> globals::FieldId;
-    fn get_field_name(&self) -> String;
-    fn get_dclass(&self) -> Arc<Mutex<DClass>>;
-
-    fn set_field_id(&mut self, id: globals::FieldId);
-    fn set_field_name(&mut self, name: String);
-    fn set_field_type(&mut self, dtype: DCTypeDefinition);
-    fn set_field_keyword_list(&mut self, kw_list: DCKeywordList);
-    fn set_default_value(&mut self, value: Vec<u8>);
-    fn set_bogus_field(&mut self, is_bogus: bool);
-
-    fn set_parent_struct(&mut self, parent: Arc<Mutex<DCStruct>>);
-    fn set_parent_dclass(&mut self, parent: Arc<Mutex<DClass>>);
-
-    fn has_default_value(&self) -> bool;
-    fn validate_ranges(&self, packed_data: &Datagram) -> bool;
-    fn is_bogus_field(&self) -> bool;
-
-    // Inline functions for Panda historical keywords
-    fn is_required(&self) -> bool;
-    fn is_broadcast(&self) -> bool;
-    fn is_ram(&self) -> bool;
-    fn is_db(&self) -> bool;
-    fn is_clsend(&self) -> bool;
-    fn is_clrecv(&self) -> bool;
-    fn is_ownsend(&self) -> bool;
-    fn is_ownrecv(&self) -> bool;
-    fn is_airecv(&self) -> bool;
-}
-
-impl DCField {
-    fn refresh_default_value(&self) {
-        todo!()
-    }
-}
-
 /// Macro for Panda historical keywords inline functions.
 macro_rules! has_keyword {
     ($self:ident, $i:literal) => {
@@ -126,8 +86,8 @@ macro_rules! has_keyword {
     };
 }
 
-impl DCFieldInterface for DCField {
-    fn new(name: &str, dtype: DCTypeDefinition) -> Self {
+impl DCField {
+    pub fn new(name: &str, dtype: DCTypeDefinition) -> Self {
         Self {
             keyword_list: DCKeywordList::new(),
             dclass: None,
@@ -144,7 +104,7 @@ impl DCFieldInterface for DCField {
     }
 
     /// Accumulates the properties of this DC element into the file hash.
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.keyword_list.generate_hash(hashgen);
         self.field_type.generate_hash(hashgen);
 
@@ -163,118 +123,122 @@ impl DCFieldInterface for DCField {
     }
 
     #[inline(always)]
-    fn get_field_id(&self) -> globals::FieldId {
+    pub fn get_field_id(&self) -> globals::FieldId {
         self.field_id
     }
 
     #[inline(always)]
-    fn get_field_name(&self) -> String {
+    pub fn get_field_name(&self) -> String {
         self.field_name.clone()
     }
 
-    fn get_dclass(&self) -> Arc<Mutex<DClass>> {
+    pub fn get_dclass(&self) -> Rc<DClass> {
         assert!(self.parent_is_dclass);
         // clone option to unwrap w/o move, and clone Arc to return
-        self.dclass.clone().unwrap().clone()
+        Rc::clone(&self.dclass.clone().unwrap())
     }
 
     #[inline(always)]
-    fn set_field_id(&mut self, id: globals::FieldId) {
+    pub fn set_field_id(&mut self, id: globals::FieldId) {
         self.field_id = id
     }
 
     #[inline(always)]
-    fn set_field_name(&mut self, name: String) {
+    pub fn set_field_name(&mut self, name: String) {
         self.field_name = name
     }
 
-    fn set_field_type(&mut self, dtype: DCTypeDefinition) {
+    pub fn set_field_type(&mut self, dtype: DCTypeDefinition) {
         self.field_type = dtype;
         self.has_default_value = false;
         self.default_value = vec![];
     }
 
-    fn set_field_keyword_list(&mut self, kw_list: DCKeywordList) {
+    pub fn set_field_keyword_list(&mut self, kw_list: DCKeywordList) {
         self.keyword_list = kw_list;
     }
 
-    fn set_default_value(&mut self, value: Vec<u8>) {
+    pub fn set_default_value(&mut self, value: Vec<u8>) {
         self.default_value = value;
         self.has_default_value = true;
         self.default_value_stale = false;
     }
 
     #[inline(always)]
-    fn set_bogus_field(&mut self, is_bogus: bool) {
+    pub fn set_bogus_field(&mut self, is_bogus: bool) {
         self.bogus_field = is_bogus
     }
 
-    fn set_parent_struct(&mut self, parent: Arc<Mutex<DCStruct>>) {
+    pub fn set_parent_struct(&mut self, parent: Rc<DCStruct>) {
         assert!(self.dclass.is_none());
         self._struct = Some(parent);
     }
 
-    fn set_parent_dclass(&mut self, parent: Arc<Mutex<DClass>>) {
+    pub fn set_parent_dclass(&mut self, parent: Rc<DClass>) {
         assert!(self._struct.is_none());
         self.dclass = Some(parent);
     }
 
     #[inline(always)]
-    fn has_default_value(&self) -> bool {
+    pub fn has_default_value(&self) -> bool {
         self.has_default_value
     }
 
-    fn validate_ranges(&self, packed_data: &Datagram) -> bool {
+    pub fn validate_ranges(&self, packed_data: &Datagram) -> bool {
         todo!()
     }
 
     #[inline(always)]
-    fn is_bogus_field(&self) -> bool {
+    pub fn is_bogus_field(&self) -> bool {
         self.bogus_field
     }
 
     #[inline(always)]
-    fn is_required(&self) -> bool {
+    pub fn is_required(&self) -> bool {
         has_keyword!(self, "required")
     }
 
     #[inline(always)]
-    fn is_broadcast(&self) -> bool {
+    pub fn is_broadcast(&self) -> bool {
         has_keyword!(self, "broadcast")
     }
 
     #[inline(always)]
-    fn is_ram(&self) -> bool {
+    pub fn is_ram(&self) -> bool {
         has_keyword!(self, "ram")
     }
 
     #[inline(always)]
-    fn is_db(&self) -> bool {
+    pub fn is_db(&self) -> bool {
         has_keyword!(self, "db")
     }
 
     #[inline(always)]
-    fn is_clsend(&self) -> bool {
+    pub fn is_clsend(&self) -> bool {
         has_keyword!(self, "clsend")
     }
 
     #[inline(always)]
-    fn is_clrecv(&self) -> bool {
+    pub fn is_clrecv(&self) -> bool {
         has_keyword!(self, "clrecv")
     }
 
     #[inline(always)]
-    fn is_ownsend(&self) -> bool {
+    pub fn is_ownsend(&self) -> bool {
         has_keyword!(self, "ownsend")
     }
 
     #[inline(always)]
-    fn is_ownrecv(&self) -> bool {
+    pub fn is_ownrecv(&self) -> bool {
         has_keyword!(self, "ownrecv")
     }
 
     #[inline(always)]
-    fn is_airecv(&self) -> bool {
+    pub fn is_airecv(&self) -> bool {
         has_keyword!(self, "airecv")
+    }
+
+    fn refresh_default_value(&self) {
+        todo!()
     }
 }

@@ -59,7 +59,8 @@ pub const BCHAN_DBSERVERS: Channel = 13;
 
 cfg_if! {
     if #[cfg(feature = "dcfile")] {
-        use std::sync::{Arc, Mutex};
+        use std::cell::RefCell;
+        use std::rc::Rc;
 
         // DC File Constants
         pub static HISTORICAL_DC_KEYWORDS: &[&str] = &[
@@ -80,7 +81,7 @@ cfg_if! {
             ParseError(ParseError),
             FileError(std::io::Error),
         }
-        pub type DCReadResult = Result<Arc<Mutex<dcfile::DCFile>>, DCReadError>;
+        pub type DCReadResult = Result<Rc<RefCell<dcfile::DCFile>>, DCReadError>;
     }
 }
 

@@ -19,7 +19,7 @@
 //! type that stores a list of values of the same data type.
 
 use crate::dcnumeric::DCNumericRange;
-use crate::dctype::{DCTypeDefinition, DCTypeDefinitionInterface, DCTypeEnum};
+use crate::dctype::{DCTypeDefinition, DCTypeEnum};
 use crate::hashgen::DCHashGenerator;
 
 pub struct DCArrayType {
@@ -29,19 +29,8 @@ pub struct DCArrayType {
     array_range: Option<DCNumericRange>,
 }
 
-pub trait DCArrayTypeInterface {
-    fn new(element_type: Option<DCTypeDefinition>, range: Option<DCNumericRange>) -> Self;
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
-
-    fn has_range(&self) -> bool;
-
-    fn get_range(&self) -> Option<DCNumericRange>;
-    fn get_element_type(&self) -> Option<DCTypeDefinition>;
-    fn get_array_size(&self) -> u16;
-}
-
-impl DCArrayTypeInterface for DCArrayType {
-    fn new(element_type: Option<DCTypeDefinition>, size: Option<DCNumericRange>) -> Self {
+impl DCArrayType {
+    pub fn new(element_type: Option<DCTypeDefinition>, size: Option<DCNumericRange>) -> Self {
         let mut new_array_type: Self = Self {
             base_type: DCTypeDefinition::new(),
             element_type: element_type,
@@ -97,7 +86,8 @@ impl DCArrayTypeInterface for DCArrayType {
         new_array_type
     }
 
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+    /// Accumulates the properties of this DC element into the file hash.
+    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_type.generate_hash(hashgen);
 
         if let Some(element_type) = self.element_type.clone() {
@@ -118,16 +108,19 @@ impl DCArrayTypeInterface for DCArrayType {
         }
     }
 
-    fn get_array_size(&self) -> u16 {
+    pub fn get_array_size(&self) -> u16 {
         self.base_type.size
     }
-    fn get_element_type(&self) -> Option<DCTypeDefinition> {
+
+    pub fn get_element_type(&self) -> Option<DCTypeDefinition> {
         self.element_type.clone()
     }
-    fn get_range(&self) -> Option<DCNumericRange> {
+
+    pub fn get_range(&self) -> Option<DCNumericRange> {
         self.array_range.clone()
     }
-    fn has_range(&self) -> bool {
+
+    pub fn has_range(&self) -> bool {
         self.array_range.is_some()
     }
 }

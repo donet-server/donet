@@ -15,7 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-//! Data model representing a DC Struct element.
+//! Data model representing a DC Struct element. [NEEDS WORK]
 
 #[derive(Debug, Default, PartialEq)]
 pub struct DCStruct {}
