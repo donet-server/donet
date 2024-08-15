@@ -20,15 +20,16 @@
 //!
 //! [`AST`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
-use super::lexer::DCToken;
-use crate::dcfile;
 use crate::dckeyword; // Avoid wildcard import due to conflict with DCToken variant.
 use crate::dclass; // Same reason as comment above.
 use crate::dcstruct;
 use crate::dctype::*;
 
 /// Paired with the `type_declarations` production in the Context Free Grammar.
-pub type Root = Vec<TypeDeclaration>;
+#[derive(Debug)]
+pub struct Root {
+    pub type_declarations: Vec<TypeDeclaration>,
+}
 
 /// Paired with the `type_decl` production in the Context Free Grammar.
 #[derive(Debug)]

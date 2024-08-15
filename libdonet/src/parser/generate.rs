@@ -30,7 +30,6 @@
 
 use super::ast;
 use crate::dcfile::*;
-use crate::dclass;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -39,9 +38,9 @@ use std::rc::Rc;
 ///
 /// [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 pub fn generate_dcf_structure(ast: ast::Root) -> Rc<RefCell<DCFile>> {
-    let mut dc_file: Rc<RefCell<DCFile>> = Rc::new(RefCell::new(DCFile::new()));
+    let dc_file: Rc<RefCell<DCFile>> = Rc::new(RefCell::new(DCFile::new()));
 
-    for type_declaration in ast {
+    for type_declaration in ast.type_declarations {
         match type_declaration {
             ast::TypeDeclaration::PythonImport(imports) => {
                 for import in imports {
