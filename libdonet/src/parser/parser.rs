@@ -41,6 +41,8 @@ use crate::dcnumeric::*;
 use crate::dcstruct;
 use crate::dctype::*;
 
+use log::log_enabled;
+use log::Level;
 use plex::parser;
 use std::cell::RefCell;
 use std::mem::discriminant;
@@ -62,7 +64,9 @@ parser! {
     // Plex knows this is the start symbol of our grammar as it is declared first.
     dc_file: Rc<RefCell<DCFile>> {
         type_declarations[ast] => {
-            log::debug!("\n{:#?}", ast);
+            if log_enabled!(Level::Debug) {
+                log::debug!("\n{:#?}", ast);
+            }
             generate_dcf_structure(ast)
         },
     }
