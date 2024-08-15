@@ -15,13 +15,15 @@ name = "libdonet"
 [features]
 default = ["datagram", "dcfile"]
 full = ["datagram", "dcfile"]
-datagram = ["serde", "strum"]
-dcfile = ["plex", "multimap"]
+datagram = ["dep:serde", "dep:strum"]
+dcfile = ["dep:plex", "dep:multimap"]
 
 [dependencies]
+cfg-if = { version = "1.0.0" }
+log = { version = "0.4", features = ["std"] }
+pretty_env_logger = { version = "0.5" }
 serde = { version = "1", features = ["derive"], optional = true }
 strum = { version = "0.25", features = ["derive"], optional = true }
 strum_macros = { version = "0.25" }
 plex = { version = "0.3", optional = true}
 multimap = { version = "0.9", optional = true}
-cfg-if = { version = "1.0.0" }

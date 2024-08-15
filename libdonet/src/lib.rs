@@ -77,6 +77,36 @@ cfg_if! {
     }
 }
 
+/// Returns false if a [`log`] logger is not initialized.
+///
+/// [`log`]: https://docs.rs/log/latest/log/
+///
+fn logger_initialized() -> bool {
+    use log::Level::*;
+
+    let levels: &[log::Level] = &[Error, Warn, Info, Debug, Trace];
+
+    for level in levels {
+        if log::log_enabled!(*level) {
+            return true;
+        }
+    }
+    false
+}
+
+/// Creates a [`pretty_env_logger`] logger if no [`log`]
+/// logger is found to be initialized in this process.
+///
+/// [`pretty_env_logger`]: https://docs.rs/pretty_env_logger/latest/pretty_env_logger/
+/// [`log`]: https://docs.rs/log/latest/log/
+///
+fn init_logger() {
+    if logger_initialized() {
+        return;
+    }
+    pretty_env_logger::init();
+}
+
 /// Easy to use interface for the DC file parser. Handles reading
 /// the DC files, instantiating the lexer and parser, and either
 /// returns the DCFile object or a Parse/File error.
@@ -144,6 +174,8 @@ pub fn read_dc_files(file_paths: Vec<String>) -> globals::DCReadResult {
     use std::fs::File;
     use std::io::Read;
     use std::rc::Rc;
+
+    init_logger();
 
     let mut file_results: Vec<Result<File, std::io::Error>> = vec![];
     let mut lexer_input: String = String::new();
