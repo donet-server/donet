@@ -16,12 +16,14 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 use serde::Deserialize;
-use std::vec::Vec;
 
-// NOTE: We're deriving Clone trait instead of Copy,
-// because most of our structs here use String types
-// which use the Drop trait, which does not allow us
-// to derive from the Copy trait.
+#[derive(Deserialize, PartialEq, Debug, Clone)]
+pub struct DonetConfig {
+    pub daemon: Daemon,
+    pub global: Global,
+    pub services: Services,
+}
+
 #[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct Daemon {
     pub name: String,
@@ -97,11 +99,4 @@ pub struct Services {
     pub database_server: Option<DBServer>,
     pub dbss: Option<DBSS>,
     pub event_logger: Option<EventLogger>,
-}
-
-#[derive(Deserialize, PartialEq, Debug, Clone)]
-pub struct DonetConfig {
-    pub daemon: Daemon,
-    pub global: Global,
-    pub services: Services,
 }

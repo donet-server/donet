@@ -55,14 +55,11 @@ enum FlagArguments {
 
 fn main() -> std::io::Result<()> {
     use config::*;
-    use libdonet::globals::DCReadResult;
-    use libdonet::read_dc_files;
-    use log::{error, info};
+    use log::error;
+    use logger::DaemonLogger;
     use service_factory::*;
-    use std::cell::RefCell;
     use std::fs::File;
     use std::io::{Error, ErrorKind, Read};
-    use std::rc::Rc;
     use tokio::runtime::{Builder, Runtime};
     use tokio::task::JoinHandle;
 
@@ -85,7 +82,7 @@ fn main() -> std::io::Result<()> {
                 } else if argument == "-v" || argument == "--version" {
                     print_version();
                     return Ok(());
-                } else if argument == "-c" || argument == "--check-dc" {
+                } else if argument == "-c" || argument == "--validate-dc" {
                     want_dc_check = true;
                     expecting_flag_argument = Some(FlagArguments::DCFilePath);
                     continue;
@@ -126,29 +123,16 @@ fn main() -> std::io::Result<()> {
             return Ok(());
         }
     }
-    logger::initialize_logger()?;
-
-    if want_dc_check {
-        info!("libdonet: DC read of {:?}", dc_check_files);
-        let dc_read: DCReadResult = read_dc_files(dc_check_files.to_owned());
-
-        if let Ok(mut dc_file) = dc_read {
-            let h: u32 = dc_file.borrow_mut().get_hash();
-            let sh: i32 = h as i32;
-            let ph: String = dc_file.borrow_mut().get_pretty_hash();
-            info!("No issues found. File hash is {} (signed {}, hex {})", h, sh, ph);
-            return Ok(());
-        }
-        error!("Failed to parse DC file: {:?}", dc_read.unwrap_err());
-        return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
-    }
 
     // Read the daemon configuration file
     let mut conf_file: File = File::open(config_file)?;
     let mut contents: String = String::new();
+
     conf_file.read_to_string(&mut contents)?;
+    drop(conf_file); // we're in the main scope, so lets drop manually here
 
     let toml_parse: Result<DonetConfig, toml::de::Error> = toml::from_str(contents.as_str());
+    drop(contents);
 
     if let Err(toml_error) = toml_parse {
         error!("An error occurred while parsing the TOML configuration.");
@@ -156,8 +140,56 @@ fn main() -> std::io::Result<()> {
     }
     let daemon_config: DonetConfig = toml_parse.unwrap();
 
-    // Once we've got arguments parsed and configuration read,
-    // we are safe to start the Tokio asynchronous runtime.
+    // Now that configuration file is parsed, we can create the logger.
+    if let Some(log_level) = &daemon_config.daemon.log_level {
+        match log_level.as_str() {
+            "error" => {
+                pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger {
+                    log_level: log::Level::Error,
+                };
+                logger::init_logger(&GLOBAL_LOGGER)?;
+            }
+            "warn" => {
+                pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger {
+                    log_level: log::Level::Warn,
+                };
+                logger::init_logger(&GLOBAL_LOGGER)?;
+            }
+            "info" => {
+                pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger {
+                    log_level: log::Level::Info,
+                };
+                logger::init_logger(&GLOBAL_LOGGER)?;
+            }
+            "debug" => {
+                pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger {
+                    log_level: log::Level::Debug,
+                };
+                logger::init_logger(&GLOBAL_LOGGER)?;
+            }
+            "trace" => {
+                pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger {
+                    log_level: log::Level::Trace,
+                };
+                logger::init_logger(&GLOBAL_LOGGER)?;
+            }
+            _ => panic!("Could not initialize logger. Error in log level string in TOML configuration."),
+        }
+    } else {
+        pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger {
+            log_level: log::Level::Info,
+        };
+        logger::init_logger(&GLOBAL_LOGGER)?;
+    }
+
+    // If `--validate-dc` argument was received, parse DC files and exit.
+    if want_dc_check {
+        return validate_dc_files(dc_check_files);
+    }
+    drop(args);
+
+    // At this point in execution, the program has not exited,
+    // so we are safe to start the Tokio asynchronous runtime.
     let tokio_runtime: Runtime = Builder::new_multi_thread()
         .enable_io()
         .thread_stack_size(2 * 1024 * 1024) // default: 2MB
@@ -203,7 +235,6 @@ fn main() -> std::io::Result<()> {
                     let ca_factory: ClientAgentService = ClientAgentService {};
                     ca_service = ca_factory.create()?;
 
-                    #[allow(clippy::redundant_clone)]
                     ca_service.start(daemon_config.clone()).await?;
                 }
             }
@@ -214,7 +245,6 @@ fn main() -> std::io::Result<()> {
                     let md_factory: MessageDirectorService = MessageDirectorService {};
                     md_service = md_factory.create()?;
 
-                    #[allow(clippy::redundant_clone)]
                     service_handles.push(md_service.start(daemon_config.clone()).await?);
                 }
             }
@@ -225,7 +255,6 @@ fn main() -> std::io::Result<()> {
                     let ss_factory: StateServerService = StateServerService {};
                     ss_service = ss_factory.create()?;
 
-                    #[allow(clippy::redundant_clone)]
                     ss_service.start(daemon_config.clone()).await?;
                 }
             }
@@ -236,7 +265,6 @@ fn main() -> std::io::Result<()> {
                     let db_factory: DatabaseServerService = DatabaseServerService {};
                     db_service = db_factory.create()?;
 
-                    #[allow(clippy::redundant_clone)]
                     db_service.start(daemon_config.clone()).await?;
                 }
             }
@@ -247,7 +275,6 @@ fn main() -> std::io::Result<()> {
                     let dbss_factory: DBSSService = DBSSService {};
                     dbss_service = dbss_factory.create()?;
 
-                    #[allow(clippy::redundant_clone)]
                     dbss_service.start(daemon_config.clone()).await?;
                 }
             }
@@ -258,7 +285,6 @@ fn main() -> std::io::Result<()> {
                     let el_factory: EventLoggerService = EventLoggerService {};
                     el_service = el_factory.create()?;
 
-                    #[allow(clippy::redundant_clone)]
                     el_service.start(daemon_config.clone()).await?;
                 }
             }
@@ -275,6 +301,31 @@ fn main() -> std::io::Result<()> {
     tokio_runtime.block_on(daemon_main)
 }
 
+fn validate_dc_files(files: Vec<String>) -> std::io::Result<()> {
+    use libdonet::globals::DCReadResult;
+    use libdonet::read_dc_files;
+    use log::{error, info};
+    use std::io::{Error, ErrorKind};
+
+    info!("libdonet: DC read of {:?}", files);
+    let dc_read: DCReadResult = read_dc_files(files.to_owned());
+
+    if let Ok(dc_file) = dc_read {
+        let hash: u32 = dc_file.borrow_mut().get_hash();
+        let signed: i32 = hash as i32;
+        let pretty: String = dc_file.borrow_mut().get_pretty_hash();
+
+        info!(
+            "No issues found. File hash is {} (signed {}, hex {})",
+            hash, signed, pretty
+        );
+        return Ok(());
+    }
+    error!("Failed to parse DC file: {:?}", dc_read.unwrap_err());
+
+    Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."))
+}
+
 fn print_help_page() {
     println!(
         "Usage:    {} [options] ... [CONFIG_FILE]\n\
@@ -285,7 +336,7 @@ fn print_help_page() {
         \n\
         -h, --help      Print the help page.\n\
         -v, --version   Print Donet binary build version & info.\n\
-        -c, --check-dc  Run the libdonet DC parser on the given DC file.\n",
+        -c, --validate-dc  Run the libdonet DC parser on the given DC file.\n",
         BINARY, DEFAULT_TOML
     );
 }

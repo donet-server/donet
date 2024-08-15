@@ -29,12 +29,15 @@ pub static _ANSI_CYAN: &str = "\x1b[36m";
 pub static _ANSI_GRAY: &str = "\x1b[37;2m";
 pub static _ANSI_MAGENTA: &str = "\x1b[95m";
 
-pub struct DaemonLogger;
-pub static LOGGER: DaemonLogger = DaemonLogger;
+pub struct DaemonLogger {
+    pub log_level: Level,
+}
+
+pub static MAX_LOG_LEVEL: LevelFilter = LevelFilter::Debug;
 
 impl log::Log for DaemonLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= Level::Info
+        metadata.level() <= self.log_level
     }
 
     fn log(&self, record: &Record) {
@@ -45,6 +48,7 @@ impl log::Log for DaemonLogger {
             Level::Error => _ANSI_RED,
             Level::Trace => _ANSI_GRAY,
         };
+
         if self.enabled(record.metadata()) {
             // TODO: Write to log file by daemon configuration
             let out_string: String = format!(
@@ -61,12 +65,14 @@ impl log::Log for DaemonLogger {
             println!("{}", out_string.as_str()); // stdout
         }
     }
+
     fn flush(&self) {}
 }
 
-pub fn initialize_logger() -> Result<()> {
+pub fn init_logger(logger: &'static dyn log::Log) -> Result<()> {
     let res: core::result::Result<(), SetLoggerError> =
-        log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Info));
+        log::set_logger(logger).map(|()| log::set_max_level(MAX_LOG_LEVEL));
+
     if res.is_err() {
         // catch result and transform into std::io error for main to handle.
         return Err(Error::new(
@@ -79,13 +85,18 @@ pub fn initialize_logger() -> Result<()> {
 
 #[cfg(test)]
 mod unit_testing {
-    use super::initialize_logger;
+    use super::{init_logger, DaemonLogger};
     use log::{debug, error, info, trace, warn};
     use std::io::Result;
 
     #[test]
     fn logger_integrity() {
-        let res: Result<()> = initialize_logger();
+        pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger {
+            log_level: log::Level::Trace,
+        };
+
+        let res: Result<()> = init_logger(&GLOBAL_LOGGER);
+
         if res.is_err() {
             panic!("{}", res.unwrap_err());
         }
