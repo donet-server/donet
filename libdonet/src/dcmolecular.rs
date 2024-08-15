@@ -37,10 +37,7 @@ pub struct DCMolecularField {
 impl DCMolecularField {
     pub fn new(name: &str, atomic_names: Vec<String>) -> Self {
         Self {
-            base_field: {
-                let mut new_field = DCField::new(name, DCTypeDefinition::new());
-                new_field
-            },
+            base_field: DCField::new(name, DCTypeDefinition::new()),
             atomic_names: atomic_names,
             atomic_fields: vec![],
         }

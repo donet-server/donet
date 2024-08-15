@@ -20,7 +20,6 @@
 
 use crate::dcfield::DCField;
 use crate::dckeyword::DCKeywordList;
-use crate::dclass::DClass;
 use crate::dcparameter::DCParameter;
 use crate::dctype::DCTypeDefinition;
 use crate::hashgen::DCHashGenerator;

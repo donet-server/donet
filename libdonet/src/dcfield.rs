@@ -184,7 +184,7 @@ impl DCField {
         self.has_default_value
     }
 
-    pub fn validate_ranges(&self, packed_data: &Datagram) -> bool {
+    pub fn validate_ranges(&self, _packed_data: &Datagram) -> bool {
         todo!()
     }
 

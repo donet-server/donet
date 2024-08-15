@@ -106,7 +106,7 @@ impl DCFile {
     }
 
     /// Assigns unique ID to the field for the scope of the entire DC file.
-    pub fn add_field(&mut self, field: DCField) {
+    pub fn add_field(&mut self, _field: DCField) {
         todo!();
     }
 
@@ -130,21 +130,21 @@ impl DCFile {
         todo!();
     }
 
-    pub fn get_keyword(&self, index: usize) -> Rc<DCKeyword> {
+    pub fn get_keyword(&self, _index: usize) -> Rc<DCKeyword> {
         todo!();
     }
 
-    pub fn has_keyword(&self, keyword: String) -> bool {
+    pub fn has_keyword(&self, _keyword: String) -> bool {
         todo!();
     }
 
-    pub fn add_keyword(&mut self, keyword: DCKeyword) {
+    pub fn add_keyword(&mut self, _keyword: DCKeyword) {
         () // TODO!
     }
 
     // ---------- DC Type Definition ---------- //
 
-    pub fn add_typedef(&mut self, name: String) -> Result<(), ()> {
+    pub fn add_typedef(&mut self, _name: String) -> Result<(), ()> {
         todo!();
     }
 
@@ -162,15 +162,15 @@ impl DCFile {
         dc_num - 1_u16
     }
 
-    pub fn get_dclass(&mut self, index: usize) -> Rc<DClass> {
+    pub fn get_dclass(&mut self, _index: usize) -> Rc<DClass> {
         todo!();
     }
 
-    pub fn get_dclass_by_id(&mut self, id: globals::DClassId) -> Rc<DClass> {
+    pub fn get_dclass_by_id(&mut self, _id: globals::DClassId) -> Rc<DClass> {
         todo!();
     }
 
-    pub fn get_dclass_by_name(&mut self, name: &str) -> Rc<DClass> {
+    pub fn get_dclass_by_name(&mut self, _name: &str) -> Rc<DClass> {
         todo!();
     }
 
@@ -184,11 +184,11 @@ impl DCFile {
         todo!();
     }
 
-    pub fn get_struct(&mut self, index: usize) -> Rc<DCStruct> {
+    pub fn get_struct(&mut self, _index: usize) -> Rc<DCStruct> {
         todo!();
     }
 
-    pub fn add_struct(&mut self, strct: DCStruct) {
+    pub fn add_struct(&mut self, _strct: DCStruct) {
         todo!();
     }
 }

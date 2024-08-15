@@ -235,13 +235,11 @@ impl DCNumericType {
         Ok(()) // TODO: do some sort of type check
     }
 
-    pub fn within_range(&self, data: Vec<u8>, length: u64) -> Result<(), String> {
+    pub fn within_range(&self, _data: Vec<u8>, _length: u64) -> Result<(), String> {
         todo!();
     }
 
     fn data_to_number(&self, data: Vec<u8>) -> (bool, DCNumber) {
-        // NOTE: See 'Deref' trait implementation for 'DCNumericType' below
-        // on how we're using self.parent.size as self.size.
         if self.base_type.size != data.len().try_into().unwrap() {
             return (false, DCNumber::new_integer(0_i64));
         }
