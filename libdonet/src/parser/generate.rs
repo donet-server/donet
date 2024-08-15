@@ -38,7 +38,7 @@ use std::rc::Rc;
 ///
 /// [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 pub fn generate_dcf_structure(ast: ast::Root) -> Rc<RefCell<DCFile>> {
-    let dc_file: Rc<RefCell<DCFile>> = Rc::new(RefCell::new(DCFile::new()));
+    let dc_file: Rc<RefCell<DCFile>> = Rc::new(RefCell::new(DCFile::default()));
 
     for type_declaration in ast.type_declarations {
         match type_declaration {

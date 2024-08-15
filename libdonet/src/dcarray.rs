@@ -33,7 +33,7 @@ impl DCArrayType {
     pub fn new(element_type: Option<DCTypeDefinition>, size: Option<DCNumericRange>) -> Self {
         let mut new_array_type: Self = Self {
             base_type: DCTypeDefinition::new(),
-            element_type: element_type,
+            element_type,
             array_size: 0_u16,
             array_range: size,
         };

@@ -54,7 +54,7 @@ pub struct DClass {
 impl DClass {
     pub fn new(name: &str) -> Self {
         DClass {
-            dcfile: Rc::new(RefCell::new(DCFile::new())), // FIXME
+            dcfile: Rc::new(RefCell::new(DCFile::default())), // FIXME
             dcf_assigned: false,
             class_name: name.to_owned(),
             class_id: 0, // assigned later

@@ -690,17 +690,14 @@ parser! {
             ast::CharOrU16::U16(u) => Some(DCNumericRange::new_unsigned_integer_range(u64::from(u), u64::from(u))),
         },
         char_or_u16[min] Hyphen char_or_u16[max] => {
-            let min_uint: u64;
-            let max_uint: u64;
-
-            match min {
-                ast::CharOrU16::Char(c) => min_uint = u64::from(c),
-                ast::CharOrU16::U16(u) => min_uint = u64::from(u),
-            }
-            match max {
-                ast::CharOrU16::Char(c) => max_uint = u64::from(c),
-                ast::CharOrU16::U16(u) => max_uint = u64::from(u),
-            }
+            let min_uint: u64 = match min {
+                ast::CharOrU16::Char(c) => u64::from(c),
+                ast::CharOrU16::U16(u) => u64::from(u),
+            };
+            let max_uint: u64 = match max {
+                ast::CharOrU16::Char(c) => u64::from(c),
+                ast::CharOrU16::U16(u) => u64::from(u),
+            };
             Some(DCNumericRange::new_unsigned_integer_range(min_uint, max_uint))
         },
     }
@@ -734,7 +731,7 @@ parser! {
 
     signed_integer: i64 {
         Plus DecimalLiteral(dl) => dl,
-        Hyphen DecimalLiteral(dl) => dl * -1, // hyphen consumed by lexer, so its parsed as positive
+        Hyphen DecimalLiteral(dl) => -dl, // hyphen consumed by lexer, so its parsed as positive
     }
 
     number: DCToken {
@@ -839,7 +836,7 @@ mod unit_testing {
                               */
                              from db.char import DistributedDonut\n";
 
-        let mut dc_file = parse_dcfile_string(dc_file);
+        let dc_file = parse_dcfile_string(dc_file);
 
         let expected_num_imports: usize = 10;
         let mut imports: Vec<ast::PythonImport> = vec![];

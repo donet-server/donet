@@ -42,9 +42,9 @@ pub struct DCFile {
     inherited_fields_stale: bool,
 }
 
-impl DCFile {
-    pub fn new() -> DCFile {
-        DCFile {
+impl Default for DCFile {
+    fn default() -> Self {
+        Self {
             structs: vec![],
             dclasses: vec![],
             imports: vec![],

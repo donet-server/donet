@@ -48,6 +48,7 @@
 #![doc(
     html_logo_url = "https://gitlab.com/donet-server/donet/-/raw/master/logo/donet_logo_v3.png?ref_type=heads"
 )]
+#![allow(clippy::module_inception)]
 //#![warn(missing_docs)]
 #![deny(unused_extern_crates)]
 

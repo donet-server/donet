@@ -55,7 +55,7 @@ impl DCAtomicField {
         hashgen.add_int(self.elements.len().try_into().unwrap());
 
         for param_ptr in &self.elements {
-            let new_ptr: Rc<RefCell<DCParameter>> = Rc::clone(&param_ptr);
+            let new_ptr: Rc<RefCell<DCParameter>> = Rc::clone(param_ptr);
             let param = new_ptr.borrow_mut();
 
             param.generate_hash(hashgen);
@@ -68,7 +68,7 @@ impl DCAtomicField {
 
     pub fn get_element(&self, index: usize) -> Option<Rc<RefCell<DCParameter>>> {
         match self.elements.get(index) {
-            Some(pointer) => Some(Rc::clone(&pointer)), // make a new rc pointer
+            Some(pointer) => Some(Rc::clone(pointer)), // make a new rc pointer
             None => None,
         }
     }

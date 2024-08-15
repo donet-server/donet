@@ -39,12 +39,12 @@ impl DCKeyword {
     pub fn new(name: String, historical_flag: Option<HistoricalFlag>) -> Self {
         if let Some(h_flag) = historical_flag {
             Self {
-                name: name,
+                name,
                 historical_flag: h_flag,
             }
         } else {
             Self {
-                name: name,
+                name,
                 historical_flag: !0, // bitwise complement
             }
         }
@@ -62,7 +62,7 @@ impl DCKeyword {
 
     #[inline]
     pub fn get_historical_flag(&self) -> HistoricalFlag {
-        self.historical_flag.clone()
+        self.historical_flag
     }
 
     /// Sets the historical flag bitmask to the bitwise complement of 0
@@ -149,7 +149,7 @@ impl DCKeywordList {
             IdentifyKeyword::ByName(kw_id) => self.get_keyword_by_name(kw_id).is_some(),
             IdentifyKeyword::ByStruct(kw_obj) => {
                 for kw_ptr in &self.keywords {
-                    let keyword: Rc<DCKeyword> = Rc::clone(&kw_ptr);
+                    let keyword: Rc<DCKeyword> = Rc::clone(kw_ptr);
 
                     if *keyword == kw_obj {
                         return true;
@@ -162,14 +162,14 @@ impl DCKeywordList {
 
     pub fn get_keyword(&self, index: usize) -> Option<Rc<DCKeyword>> {
         match self.keywords.get(index) {
-            Some(pointer) => Some(Rc::clone(&pointer)), // make a new rc pointer
+            Some(pointer) => Some(Rc::clone(pointer)), // make a new rc pointer
             None => None,
         }
     }
 
     pub fn get_keyword_by_name(&self, name: String) -> Option<Rc<DCKeyword>> {
         match self.kw_name_2_keyword.get(&name) {
-            Some(pointer) => Some(Rc::clone(&pointer)),
+            Some(pointer) => Some(Rc::clone(pointer)),
             None => None,
         }
     }

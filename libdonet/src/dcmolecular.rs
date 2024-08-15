@@ -38,7 +38,7 @@ impl DCMolecularField {
     pub fn new(name: &str, atomic_names: Vec<String>) -> Self {
         Self {
             base_field: DCField::new(name, DCTypeDefinition::new()),
-            atomic_names: atomic_names,
+            atomic_names,
             atomic_fields: vec![],
         }
     }
@@ -50,7 +50,7 @@ impl DCMolecularField {
         hashgen.add_int(self.atomic_fields.len().try_into().unwrap());
 
         for atomic_ptr in &self.atomic_fields {
-            let new_ptr: Rc<RefCell<DCAtomicField>> = Rc::clone(&atomic_ptr);
+            let new_ptr: Rc<RefCell<DCAtomicField>> = Rc::clone(atomic_ptr);
             let atomic_field = new_ptr.borrow_mut();
 
             atomic_field.generate_hash(hashgen);

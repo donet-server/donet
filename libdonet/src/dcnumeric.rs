@@ -33,8 +33,8 @@ pub struct DCNumericRange {
     pub max: DCNumber,
 }
 
-impl DCNumericRange {
-    pub fn new() -> Self {
+impl Default for DCNumericRange {
+    fn default() -> Self {
         let mut default_min: DCNumber = DCNumber::new_floating_point(f64::NEG_INFINITY);
         let mut default_max: DCNumber = DCNumber::new_floating_point(f64::INFINITY);
 
@@ -46,6 +46,12 @@ impl DCNumericRange {
             min: default_min,
             max: default_max,
         }
+    }
+}
+
+impl DCNumericRange {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn new_integer_range(min: i64, max: i64) -> Self {

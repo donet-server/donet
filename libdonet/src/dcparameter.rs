@@ -75,7 +75,7 @@ impl DCParameter {
     }
 
     pub fn set_identifier(&mut self, name: &str) -> Result<(), ()> {
-        self.identifier = name.to_owned();
+        name.clone_into(&mut self.identifier);
         Ok(())
     }
 
