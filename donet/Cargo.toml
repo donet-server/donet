@@ -11,12 +11,13 @@ readme = "README.md"
 publish = false
 
 [features]
-client-agent = []
+client-agent = ["requires_dc"]
 message-director = []
-state-server = []
-database-server = ["dep:mysql", "dep:mysql_common"]
-dbss = ["dep:mysql", "dep:mysql_common"]
+state-server = ["requires_dc"]
+database-server = ["requires_dc", "dep:mysql", "dep:mysql_common"]
+dbss = ["requires_dc", "dep:mysql", "dep:mysql_common"]
 event-logger = []
+requires_dc = []
 default = [
   "client-agent", "message-director",
   "state-server", "database-server",

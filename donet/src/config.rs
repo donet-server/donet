@@ -38,18 +38,28 @@ pub struct Global {
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
-pub struct Filtering {
-    pub mode: String, // 'blacklist', 'whitelist'
-    pub file: String, // <file_path>
+pub struct Services {
+    pub client_agent: Option<ClientAgent>,
+    pub message_director: Option<MessageDirector>,
+    pub state_server: Option<StateServer>,
+    pub database_server: Option<DBServer>,
+    pub dbss: Option<DBSS>,
+    pub event_logger: Option<EventLogger>,
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct ClientAgent {
     pub bind: String, // '<host>:<port>'
     //pub protocol: String,
-    pub dc_file_hash: Option<String>, // FIXME: Can we deserialize as hex literal?
+    pub dc_file_hash: Option<String>,
     pub version_string: String,
     pub filtering: Filtering,
+}
+
+#[derive(Deserialize, PartialEq, Debug, Clone)]
+pub struct Filtering {
+    pub mode: String, // 'blacklist', 'whitelist'
+    pub file: String, // <file_path>
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
@@ -64,18 +74,18 @@ pub struct StateServer {
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
+pub struct DBServer {
+    pub control_channel: u64,
+    pub db_backend: String,
+    pub sql: Option<SQL>,
+}
+
+#[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct SQL {
     pub host: String, // '<host>:<port>'
     pub user: String,
     pub pass: String,
     pub database: String,
-}
-
-#[derive(Deserialize, PartialEq, Debug, Clone)]
-pub struct DBServer {
-    pub control_channel: u64,
-    pub db_backend: String,
-    pub sql: Option<SQL>,
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
@@ -89,14 +99,4 @@ pub struct DBSS {
 pub struct EventLogger {
     pub bind: String,   // '<host>:<port>'
     pub output: String, // path, relative to root
-}
-
-#[derive(Deserialize, PartialEq, Debug, Clone)]
-pub struct Services {
-    pub client_agent: Option<ClientAgent>,
-    pub message_director: Option<MessageDirector>,
-    pub state_server: Option<StateServer>,
-    pub database_server: Option<DBServer>,
-    pub dbss: Option<DBSS>,
-    pub event_logger: Option<EventLogger>,
 }

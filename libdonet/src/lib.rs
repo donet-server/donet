@@ -177,8 +177,10 @@ pub fn read_dc_files(file_paths: Vec<String>) -> globals::DCReadResult {
     use std::rc::Rc;
 
     init_logger();
+    log::info!("DC read of {:?}", file_paths);
 
     let mut file_results: Vec<Result<File, std::io::Error>> = vec![];
+    // All DC files are passed to the lexer as one string.
     let mut lexer_input: String = String::new();
 
     for file_path in &file_paths {

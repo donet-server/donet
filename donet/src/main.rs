@@ -55,11 +55,16 @@ enum FlagArguments {
 
 fn main() -> std::io::Result<()> {
     use config::*;
+    use libdonet::dcfile::DCFile;
+    use libdonet::globals::DCReadResult;
+    use libdonet::read_dc_files;
     use log::error;
     use logger::DaemonLogger;
     use service_factory::*;
+    use std::cell::RefCell;
     use std::fs::File;
     use std::io::{Error, ErrorKind, Read};
+    use std::rc::Rc;
     use tokio::runtime::{Builder, Runtime};
     use tokio::task::JoinHandle;
 
@@ -189,13 +194,32 @@ fn main() -> std::io::Result<()> {
     drop(args);
 
     // At this point in execution, the program has not exited,
-    // so we are safe to start the Tokio asynchronous runtime.
+    // so we can start the process of booting the Donet daemon.
+    //
+    // First step is to read the DC files listed in the daemon configuration.
+    // Services like the Event Logger and Message Director do not need the DC file.
+    cfg_if! {
+        if #[cfg(feature = "requires_dc")] {
+            let files: Vec<String> = daemon_config.global.dc_files.clone();
+            let dc_read: DCReadResult = read_dc_files(files);
+
+            if let Err(dc_err) = dc_read {
+                error!("Failed to parse DC file(s): {:?}", dc_err);
+                return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
+            }
+
+            let dc: Rc<RefCell<DCFile>> = dc_read.unwrap();
+        }
+    }
+
+    // Everything is prepped for the daemon, so we
+    // are safe to start the Tokio asynchronous runtime.
     let tokio_runtime: Runtime = Builder::new_multi_thread()
         .enable_io()
         .thread_stack_size(2 * 1024 * 1024) // default: 2MB
         .build()?;
 
-    let daemon_main = async move {
+    let daemon_async_main = async move {
         #[allow(clippy::redundant_clone)]
         let services: Services = daemon_config.services.clone();
 
@@ -296,9 +320,9 @@ fn main() -> std::io::Result<()> {
         }
     };
     // Hack to reassure the compiler that I want to return an IO result.
-    utils::set_future_return_type::<std::io::Result<()>, _>(&daemon_main);
+    utils::set_future_return_type::<std::io::Result<()>, _>(&daemon_async_main);
 
-    tokio_runtime.block_on(daemon_main)
+    tokio_runtime.block_on(daemon_async_main)
 }
 
 fn validate_dc_files(files: Vec<String>) -> std::io::Result<()> {
@@ -307,7 +331,6 @@ fn validate_dc_files(files: Vec<String>) -> std::io::Result<()> {
     use log::{error, info};
     use std::io::{Error, ErrorKind};
 
-    info!("libdonet: DC read of {:?}", files);
     let dc_read: DCReadResult = read_dc_files(files.to_owned());
 
     if let Ok(dc_file) = dc_read {
