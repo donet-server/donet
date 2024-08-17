@@ -47,19 +47,12 @@ pub fn generate_dcf_structure(ast: ast::Root) -> Rc<RefCell<DCFile>> {
                     dc_file.borrow_mut().add_python_import(import);
                 }
             }
-            ast::TypeDeclaration::KeywordType(keyword) => {
-                dc_file.borrow_mut().add_keyword(keyword);
+            ast::TypeDeclaration::KeywordType(_) => {
+                //dc_file.borrow_mut().add_keyword(keyword);
             }
             ast::TypeDeclaration::StructType(_) => {}
             ast::TypeDeclaration::SwitchType(_) => {}
-            ast::TypeDeclaration::DClassType(mut dclass) => {
-                dclass.set_dcfile(Rc::clone(&dc_file));
-
-                let next_class_id: usize = dc_file.borrow_mut().get_num_dclasses();
-                dclass.set_dclass_id(next_class_id.try_into().unwrap());
-
-                dc_file.borrow_mut().add_dclass(dclass);
-            }
+            ast::TypeDeclaration::DClassType(_) => {}
             ast::TypeDeclaration::TypedefType(_) => {}
         }
     }

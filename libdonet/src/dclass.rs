@@ -134,7 +134,7 @@ impl DClass {
 
     pub fn get_field_by_name(&mut self, name: &str) -> Option<Rc<RefCell<ClassField>>> {
         match self.field_name_2_field.get(name) {
-            Some(pointer) => Some(Rc::clone(&pointer)),
+            Some(pointer) => Some(Rc::clone(pointer)),
             None => None,
         }
     }

@@ -34,11 +34,8 @@ use super::ast;
 use super::generate::generate_dcf_structure;
 use super::lexer::DCToken::*;
 use super::lexer::{DCToken, Span};
-use crate::dcfield::*;
 use crate::dcfile::*;
-use crate::dckeyword; // Avoid wildcard import due to conflict with DCToken variant.
 use crate::dcnumeric::*;
-use crate::dcstruct;
 use crate::dctype::*;
 
 use log::log_enabled;
@@ -65,6 +62,7 @@ parser! {
     dc_file: Rc<RefCell<DCFile>> {
         type_declarations[ast] => {
             if log_enabled!(Level::Debug) {
+                #[cfg(debug_assertions)]
                 log::debug!("\n{:#?}", ast);
             }
             generate_dcf_structure(ast)
@@ -89,8 +87,8 @@ parser! {
         python_style_import[py_imports] => ast::TypeDeclaration::PythonImport(py_imports),
         keyword_type[keyword] => ast::TypeDeclaration::KeywordType(keyword),
         struct_type[strct] => ast::TypeDeclaration::StructType(strct),
-        switch_type => ast::TypeDeclaration::SwitchType(None),
-        distributed_class_type[_] => ast::TypeDeclaration::SwitchType(None),
+        switch_type[switch] => ast::TypeDeclaration::SwitchType(switch),
+        distributed_class_type[dclass] => ast::TypeDeclaration::DClassType(dclass),
         type_definition => ast::TypeDeclaration::TypedefType(DCTypeDefinition::new()),
     }
 
@@ -248,29 +246,36 @@ parser! {
 
     // ---------- DC Keyword ---------- //
 
-    keyword_type: dckeyword::DCKeyword {
+    keyword_type: ast::KeywordDefinition {
         Keyword Identifier(id) => {
-            // TODO: register keyword identifier in DC file
-            dckeyword::DCKeyword::new(id, None)
+            ast::KeywordDefinition {
+                identifier: id,
+            }
         },
         Keyword DCKeyword(historic) => {
-            // This is already a legacy keyword.
-            dckeyword::DCKeyword::new(historic, None)
+            ast::KeywordDefinition {
+                identifier: historic,
+            }
         }
     }
 
     // ---------- DC Struct ---------- //
 
-    struct_type: dcstruct::DCStruct {
-        Struct Identifier(_) OpenBraces struct_fields CloseBraces => {
-            // TODO: DC Struct missing implementation
-            dcstruct::DCStruct::new()
+    struct_type: ast::Struct {
+        Struct Identifier(id) OpenBraces struct_fields[fields] CloseBraces => {
+            ast::Struct {
+                identifier: id,
+                fields,
+            }
         },
     }
 
-    struct_fields: () {
-        epsilon => {},
-        struct_fields struct_field Semicolon => {},
+    struct_fields: ast::StructFields {
+        epsilon => vec![],
+        struct_fields[vector] struct_field[_field] Semicolon => {
+            //vector.push(field);
+            vector
+        },
     }
 
     struct_field: () {
@@ -281,37 +286,51 @@ parser! {
 
     // ---------- Distributed Class ---------- //
 
-    distributed_class_type: () {
-        DClass Identifier(_id) optional_inheritance[_oi] OpenBraces
-        optional_class_fields[_ocf] CloseBraces => {}
+    distributed_class_type: ast::DClass {
+        DClass Identifier(id) optional_inheritance[parents] OpenBraces
+        optional_class_fields[fields] CloseBraces => {
+            ast::DClass {
+                identifier: id,
+                parents,
+                fields,
+            }
+        }
     }
 
-    optional_class_fields: Vec<ClassField> {
+    optional_class_fields: ast::ClassFields {
         epsilon => vec![],
-        optional_class_fields[_ocf] Semicolon => vec![],
-        optional_class_fields[mut _ocf] class_field[_cf] Semicolon => {
-            vec![]
+        optional_class_fields[vector] Semicolon => vector,
+        optional_class_fields[mut vector] class_field[field] Semicolon => {
+            vector.push(field);
+            vector
         },
     }
 
-    class_field: () {
+    class_field: ast::AtomicOrMolecular {
         // e.g. "setPos(float64 x, float64 y, float64 z) ram broadcast" (atomic)
         // e.g. "string DcObjectType db" (plain field)
-        named_field[_nf] dc_keyword_list[_kl] => {},
+        named_field[_nf] dc_keyword_list[keywords] => {
+            ast::AtomicOrMolecular::Atomic(ast::AtomicField {
+                identifier: String::default(),
+                keywords,
+                parameters: vec![],
+            })
+        },
         // e.g. "setStats : setAvatarCount, setNewAvatarCount"
-        molecular_field[_mf] => {},
+        molecular_field[molecular] => {
+            ast::AtomicOrMolecular::Molecular(molecular)
+        },
     }
 
-    dc_keyword_list: dckeyword::DCKeywordList {
-        epsilon => dckeyword::DCKeywordList::default(),
-
-        dc_keyword_list[mut kl] Identifier(k) => {
-            let _ = kl.add_keyword(dckeyword::DCKeyword::new(k, None));
-            kl
+    dc_keyword_list: Vec<String> {
+        epsilon => vec![],
+        dc_keyword_list[mut vector] Identifier(keyword) => {
+            vector.push(keyword);
+            vector
         }
-        dc_keyword_list[mut kl] DCKeyword(k) => {
-            let _ = kl.add_keyword(dckeyword::DCKeyword::new(k, None));
-            kl
+        dc_keyword_list[mut vector] DCKeyword(keyword) => {
+            vector.push(keyword);
+            vector
         }
     }
 
@@ -347,10 +366,12 @@ parser! {
 
     // ---------- Panda DC Switch Statements ---------- //
 
-    switch_type: () {
-        Switch optional_name[_] OpenParenthesis parameter
-        CloseParenthesis OpenBraces switch_fields CloseBraces => {
-            // TODO: create new switch
+    switch_type: ast::Switch {
+        Switch OpenParenthesis parameter CloseParenthesis
+        OpenBraces switch_fields CloseBraces => {
+            ast::Switch {
+                cases: vec![], // TODO
+            }
         }
     }
 
@@ -369,30 +390,50 @@ parser! {
 
     // ---------- Molecular Field ---------- //
 
-    molecular_field: () {
-        Identifier(_id) Colon Identifier(_atom1) molecular_atom_list[_mal] => {},
+    // e.g. "setStats : setAvatarCount, setNewAvatarCount"
+    molecular_field: ast::MolecularField {
+        // Molecular fields require at least one atomic name.
+        // They **should** require a minimum of two as suggested by Astron
+        // docs and Panda source comments, but one atomic name is historically legal.
+        Identifier(id) Colon Identifier(first_atomic) molecular_atom_list[mut atomics] => {
+            ast::MolecularField {
+                identifier: id,
+                atomic_field_identifiers: {
+                    let mut vec: Vec<String> = vec![first_atomic];
+                    vec.append(&mut atomics);
+                    vec
+                }
+            }
+        },
     }
 
     molecular_atom_list: Vec<String> {
         epsilon => vec![],
-        molecular_atom_list[mut mal] Comma Identifier(atomic_name) => {
-            mal.push(atomic_name);
-            mal
+        molecular_atom_list[mut atomics] Comma Identifier(atomic_name) => {
+            atomics.push(atomic_name);
+            atomics
         },
     }
 
     // ---------- Method ---------- //
 
-    method: ast::Method {
-        OpenParenthesis parameters[ps] CloseParenthesis => ps,
+    // e.g. "(int8, int16, string, blob)"
+    method_body: ast::MethodBody {
+        OpenParenthesis parameters[params] CloseParenthesis => params,
     }
 
     method_value: () {
         OpenParenthesis parameter_values[_] CloseParenthesis => {},
     }
 
-    method_as_field: () {
-        Identifier(_id) method[_m] => {},
+    // e.g. "setName(string)"
+    method_as_field: ast::MethodAsField {
+        Identifier(id) method_body[parameters] => {
+            ast::MethodAsField {
+                identifier: id,
+                parameters,
+            }
+        },
     }
 
     nonmethod_type: () {
@@ -496,7 +537,7 @@ parser! {
         sized_type_token[_] OpenParenthesis array_range CloseParenthesis => {},
     }
 
-    // e.g. "blob = [0 * 14]"
+    // e.g. "[0 * 14]"
     array_expansion: ast::ArrayExpansion {
         type_value[tv] => (tv, 1_u32), // factor of 1 by default
         signed_integer[i] Star unsigned_32_bit_int[f] => (ast::TypeValue::I64(i), f),
@@ -823,8 +864,6 @@ mod unit_testing {
         let lexer = Lexer::new(input).inspect(|tok| eprintln!("token: {:?}", tok));
         let dc_file: Rc<RefCell<DCFile>> = parse(lexer).unwrap();
 
-        // FIXME: stack overflow on unit tests when printing DC element tree!
-        //eprintln!("{:#?}", dc_file); // pretty print DC element tree to stderr
         dc_file
     }
 
