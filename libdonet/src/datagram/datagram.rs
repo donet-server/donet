@@ -24,6 +24,7 @@ use std::mem;
 use std::vec::Vec;
 use strum::IntoEnumIterator;
 
+/// Representation of a new network message (datagram) to be sent.
 pub struct Datagram {
     buffer: Vec<u8>,
     index: usize,
@@ -31,16 +32,17 @@ pub struct Datagram {
 
 impl Default for Datagram {
     fn default() -> Self {
-        Self::new()
+        Self {
+            buffer: vec![],
+            index: 0,
+        }
     }
 }
 
 impl Datagram {
+    /// Creates a new empty Datagram. Alias for the `Default` implementation.
     pub fn new() -> Self {
-        Datagram {
-            buffer: Vec::new(),
-            index: 0,
-        }
+        Self::default()
     }
 
     /// Checks if we can add `length` number of bytes to the datagram.
@@ -159,8 +161,7 @@ impl Datagram {
         self.add_u32(v)
     }
 
-    /// Added for convenience, but also better performance
-    /// than adding the parent and the zone separately.
+    /// Added for convenience, rather than adding the parent and the zone separately.
     pub fn add_location(&mut self, parent: globals::DoId, zone: globals::Zone) -> globals::DgResult {
         self.add_u32(parent)?;
         self.add_u32(zone)
