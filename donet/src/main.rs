@@ -31,11 +31,12 @@
 //!
 //! If you're looking for the documentation of **libdonet**, click [here](https://libdonet.rs).
 
-#[cfg(feature = "message-director")]
-pub mod channel_map;
+#![allow(clippy::module_inception)]
+#![deny(unused_extern_crates)]
+
 pub mod config;
 #[cfg(feature = "database-server")]
-pub mod dbserver;
+pub mod database_server;
 pub mod logger;
 pub mod meson;
 #[cfg(feature = "message-director")]
@@ -220,7 +221,6 @@ fn main() -> std::io::Result<()> {
         .build()?;
 
     let daemon_async_main = async move {
-        #[allow(clippy::redundant_clone)]
         let services: Services = daemon_config.services.clone();
 
         // Smart pointers to new service instances on heap

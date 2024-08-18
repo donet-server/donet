@@ -17,15 +17,15 @@
 
 use crate::config::*;
 #[cfg(feature = "database-server")]
-use crate::dbserver::{DBCredentials, DatabaseServer};
+use crate::database_server::dbserver::{DBCredentials, DatabaseServer};
 #[cfg(feature = "message-director")]
-use crate::message_director::MessageDirector;
+use crate::message_director::message_director::MessageDirector;
 use crate::utils;
 use log::{error, info};
 use std::io::{Error, ErrorKind, Result};
 use tokio::task::JoinHandle;
 
-// All Donet service types
+// All Donet service types.
 // Each implement bootstrap code to start a service.
 pub struct ClientAgentService;
 pub struct MessageDirectorService;
