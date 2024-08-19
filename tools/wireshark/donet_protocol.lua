@@ -1010,7 +1010,7 @@ function p_donet_internal.dissector (buf, pinfo, root)
 	end
 
 	if message_count > 0 then
-		pinfo.cols.protocol = "DoNet (Internal)"
+		pinfo.cols.protocol = "Donet (Internal)"
 		pinfo.cols.info = table.concat(descriptions, "; ")
 	end
 
@@ -1038,7 +1038,7 @@ function p_donet_client.dissector (buf, pinfo, root)
 
 	if len > 2 then subtree:add(buf(4), "Payload") end -- TODO: Dissect message payload
 
-	pinfo.cols.protocol = "DoNet (Client)"
+	pinfo.cols.protocol = "Donet (Client)"
 	pinfo.cols.info = pretty_msgtype(type)
 end
 
