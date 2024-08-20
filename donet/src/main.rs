@@ -37,6 +37,8 @@
 pub mod config;
 #[cfg(feature = "database-server")]
 pub mod database_server;
+#[cfg(feature = "event-logger")]
+pub mod event_logger;
 pub mod logger;
 pub mod meson;
 #[cfg(feature = "message-director")]

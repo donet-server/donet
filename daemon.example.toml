@@ -73,3 +73,5 @@ range_max = 200000000
 [services.event_logger]
 bind = "127.0.0.1:9090" # NOTE: UDP protocol
 output = "/var/log/donet/" # Logs output directory
+log_format = "el-%Y-%m-%d-%H-%M-%S.log" # Log file name format
+rotate_interval = "1d"

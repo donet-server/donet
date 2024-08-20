@@ -33,5 +33,5 @@ mysql = { version = "25", default-features = false, features = ["derive"], optio
 mysql_common = { version = "*", default-features = true, optional = true }
 multimap = { version = "0.9" }
 serde = { version = "1", features = ["derive"] }
-tokio = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "fs"] }
 toml = { version = "0.7" }

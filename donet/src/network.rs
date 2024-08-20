@@ -15,43 +15,61 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+//! Thin wrappers around Tokio async TCP/UDP sockets for logging.
+
 use log::info;
 use std::io::Result;
-use tokio::net::{TcpListener, TcpStream};
+use tokio::net::{TcpListener, TcpStream, UdpSocket};
 
 pub struct TCPAcceptor {
-    pub listener: Box<TcpListener>,
-    pub bind_address: String,
+    pub socket: TcpListener,
+    pub address: String,
 }
 
 pub struct TCPConnection {
-    pub _socket: Box<TcpStream>,
+    pub socket: TcpStream,
     pub address: String,
 }
 
 impl TCPAcceptor {
     pub async fn bind(uri: &str) -> Result<TCPAcceptor> {
-        let net_resp: TcpListener = TcpListener::bind(uri).await?;
+        let socket: TcpListener = TcpListener::bind(uri).await?;
 
         info!("Opened new TCP listening socket at {}.", uri);
-        let new_binding: Box<TcpListener> = Box::new(net_resp);
 
         Ok(TCPAcceptor {
-            listener: new_binding,
-            bind_address: String::from(uri),
+            socket,
+            address: String::from(uri),
         })
     }
 }
 
 impl TCPConnection {
     pub async fn connect(uri: &str) -> Result<TCPConnection> {
-        let net_resp: TcpStream = TcpStream::connect(uri).await?;
+        let socket: TcpStream = TcpStream::connect(uri).await?;
 
         info!("Opened new TCP connection to {}.", uri);
-        let new_socket: Box<TcpStream> = Box::new(net_resp);
 
         Ok(TCPConnection {
-            _socket: new_socket,
+            socket,
+            address: String::from(uri),
+        })
+    }
+}
+
+pub struct UDPSocket {
+    pub socket: UdpSocket,
+    pub address: String,
+}
+
+impl UDPSocket {
+    pub async fn bind(uri: &str) -> Result<UDPSocket> {
+        let socket = UdpSocket::bind(uri).await?;
+
+        info!("Opened new UDP socket at {}.", uri);
+
+        Ok(UDPSocket {
+            socket,
             address: String::from(uri),
         })
     }
@@ -76,7 +94,7 @@ mod unit_testing {
 
     #[tokio::test]
     async fn async_tcp_connection() {
-        let bind_address: String = String::from("127.0.0.1:6667");
+        let bind_address: String = String::from("127.0.0.1:7198");
         let bind_res: Result<TCPAcceptor, _> = TCPAcceptor::bind(&bind_address).await;
 
         match bind_res {
@@ -91,7 +109,7 @@ mod unit_testing {
         }
 
         // This should make a TCP connection with the listener created above.
-        let dst_address: String = String::from("127.0.0.1:6667");
+        let dst_address: String = String::from("127.0.0.1:7198");
         let res: Result<TCPConnection, _> = TCPConnection::connect(&dst_address).await;
 
         match res {

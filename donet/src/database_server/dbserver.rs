@@ -77,7 +77,7 @@ impl DatabaseServer<'_> {
                 creds.user, creds.host, port_str, creds.database
             )
         );
-        let p_res: Result<Pool, Error> = Pool::new(url_str);
+        let p_res: Result<Pool, Error> = Pool::new(url_str); // FIXME: This is not async!
 
         // FIXME: Clippy recommends bad code, so we're ignoring, but we need to fix later.
         #[allow(clippy::needless_late_init)]

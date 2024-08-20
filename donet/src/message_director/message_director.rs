@@ -42,12 +42,16 @@ impl MessageDirector {
         })
     }
 
+    /// This is the Message Director's main asynchronous loop.
+    /// Spawned as a Tokio task by the service factory.
     pub async fn init_network(&self) -> Result<()> {
         loop {
-            match self.binding.listener.accept().await {
+            match self.binding.socket.accept().await {
                 Ok((socket, address)) => {
                     info!("Received incoming connection from {:?}.", address);
+
                     self.handle_datagram(&socket).await?;
+
                     // TODO: Pass address (core::net::SocketAddr) to handle_datagram()
                     // once core::net is out of nightly and in stable rust. #108443
                 }

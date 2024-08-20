@@ -97,6 +97,8 @@ pub struct DBSS {
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct EventLogger {
-    pub bind: String,   // '<host>:<port>'
-    pub output: String, // path, relative to root
+    pub bind: String,            // '<host>:<port>'
+    pub output: String,          // path, relative to root
+    pub log_format: String,      // e.g. "el-%Y-%m-%d-%H-%M-%S.log"
+    pub rotate_interval: String, // e.g. "1d"
 }
