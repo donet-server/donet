@@ -171,17 +171,20 @@ fn init_logger() {
 pub fn read_dc_files(file_paths: Vec<String>) -> globals::DCReadResult {
     use crate::parser::lexer::Lexer;
     use crate::parser::parser::parse;
+    use log::{error, info};
     use std::cell::RefCell;
     use std::fs::File;
     use std::io::Read;
     use std::rc::Rc;
 
     init_logger();
-    log::info!("DC read of {:?}", file_paths);
+    info!("DC read of {:?}", file_paths);
 
     let mut file_results: Vec<Result<File, std::io::Error>> = vec![];
     // All DC files are passed to the lexer as one string.
     let mut lexer_input: String = String::new();
+
+    assert!(!file_paths.is_empty(), "No DC files given!");
 
     for file_path in &file_paths {
         file_results.push(File::open(file_path));
