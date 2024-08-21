@@ -86,7 +86,7 @@ mod unit_testing {
 
         match res {
             Ok(binding) => {
-                assert_eq!(binding.bind_address, bind_address);
+                assert_eq!(binding.address, bind_address);
             }
             Err(err) => panic!("TCPAcceptor failed to bind: {:?}", err),
         }
@@ -101,7 +101,7 @@ mod unit_testing {
             Ok(listener) => {
                 tokio::spawn(async move {
                     loop {
-                        let _ = listener.listener.accept().await;
+                        let _ = listener.socket.accept().await;
                     }
                 });
             }
