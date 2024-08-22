@@ -491,7 +491,7 @@ dependencies = [
  "chrono",
  "libdonet",
  "log",
- "multimap",
+ "multimap 0.10.0",
  "mysql",
  "mysql_common",
  "serde",
@@ -816,7 +816,7 @@ version = "0.1.0"
 dependencies = [
  "cfg-if",
  "log",
- "multimap",
+ "multimap 0.9.1",
  "plex",
  "pretty_env_logger",
  "serde",
@@ -904,6 +904,15 @@ name = "multimap"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1a5d38b9b352dbd913288736af36af41c48d61b1a8cd34bcecd727561b7d511"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "multimap"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "defc4c55412d89136f966bbb339008b474350e5e6e78d2714439c386b3137a03"
 dependencies = [
  "serde",
 ]
