@@ -94,7 +94,7 @@ impl EventLogger {
             let file = guard.as_mut().expect("");
 
             data.push('\n');
-            file.write(data.as_bytes()).await?;
+            file.write_all(data.as_bytes()).await?;
         }
     }
 
@@ -102,15 +102,18 @@ impl EventLogger {
     /// Expects datagram bytes to follow the [`MessagePack`] format.
     ///
     /// [`MessagePack`]: https://msgpack.org
-    fn process_datagram(mut data: &mut String, mut dgi: &mut DatagramIterator) -> Result<()> {
+    fn process_datagram(data: &mut String, dgi: &mut DatagramIterator) -> Result<()> {
         data.clear(); // new datagram being processed, clear previous data
 
-        msgpack::decode_to_json(&mut data, &mut dgi);
+        msgpack::decode_to_json(data, dgi);
 
         // Verify the msgpack contains a Map from the beginning.
         if let Some(ch) = data.get(0..1) {
             if ch != "{" {
-                return Err(Error::new(ErrorKind::InvalidInput, "Received non-map event log."));
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    format!("Received non-map event log. Data: {}", &data),
+                ));
             }
         }
         Ok(())
@@ -128,6 +131,7 @@ impl EventLogger {
         {
             let mut file_guard = self.log_file.lock().await;
 
+            #[allow(clippy::redundant_pattern_matching)]
             if let Some(_) = file_guard.take() {
                 // We consume the file and the Option is set to `None`.
                 // At the end of this scope, the file is dropped, which closes the file.

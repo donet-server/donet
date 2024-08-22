@@ -21,14 +21,14 @@ use libdonet::datagram::datagram::DatagramIterator;
 #[rustfmt::skip]
 static JSON_ESCAPES: [u8; 32] = [
     0, 0, 0, 0, 0, 0, 0, 0,
-    'b' as u8, 't' as u8, 'n' as u8, 'v' as u8, 'f' as u8, 'r' as u8,
+    b'b', b't', b'n', b'v', b'f', b'r',
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
 /// [`MsgPack`] utility for decoding maps and arrays.
 ///
 /// [`MsgPack`]: https://msgpack.org
-fn decode_container(mut out: &mut String, mut dgi: &mut DatagramIterator, len: u32, map: bool) {
+fn decode_container(out: &mut String, dgi: &mut DatagramIterator, len: u32, map: bool) {
     if map {
         out.push('{');
     } else {
@@ -41,11 +41,11 @@ fn decode_container(mut out: &mut String, mut dgi: &mut DatagramIterator, len: u
         }
 
         if map {
-            decode_to_json(&mut out, &mut dgi);
+            decode_to_json(out, dgi);
             out.push_str(": ");
         }
 
-        decode_to_json(&mut out, &mut dgi);
+        decode_to_json(out, dgi);
     }
 
     if map {
@@ -55,14 +55,14 @@ fn decode_container(mut out: &mut String, mut dgi: &mut DatagramIterator, len: u
     }
 }
 
-fn decode_string(mut out: &mut String, mut dgi: &mut DatagramIterator, len: u32) {
+fn decode_string(out: &mut String, dgi: &mut DatagramIterator, len: u32) {
     out.push('"');
 
-    for i in 0..len {
+    for _i in 0..len {
         let output: u8 = dgi.read_u8();
 
         if output < 0x20 {
-            if JSON_ESCAPES.contains(&(output as u8)) {
+            if JSON_ESCAPES.contains(&output) {
                 out.push_str(&format!("\\{}", JSON_ESCAPES[output as usize]));
                 continue;
             }
@@ -82,17 +82,17 @@ fn decode_string(mut out: &mut String, mut dgi: &mut DatagramIterator, len: u32)
     out.push('"');
 }
 
-fn decode_ext(mut out: &mut String, mut dgi: &mut DatagramIterator, len: u32) {
+fn decode_ext(out: &mut String, dgi: &mut DatagramIterator, len: u32) {
     out.push_str(&format!("ext({}, ", dgi.read_u8()));
 
-    decode_string(&mut out, &mut dgi, len);
+    decode_string(out, dgi, len);
     out.push(')');
 }
 
 /// Utility for decoding a [`MsgPack`] datagram into a JSON-format UTF-8 string.
 ///
 /// [`MsgPack`]: https://msgpack.org
-pub fn decode_to_json(mut out: &mut String, mut dgi: &mut DatagramIterator) {
+pub fn decode_to_json(out: &mut String, dgi: &mut DatagramIterator) {
     let marker: u8 = dgi.read_u8();
 
     if marker < 0x80 {
@@ -100,13 +100,13 @@ pub fn decode_to_json(mut out: &mut String, mut dgi: &mut DatagramIterator) {
         out.push_str(&format!("{}", marker));
     } else if marker <= 0x8f {
         // fixmap
-        decode_container(&mut out, &mut dgi, (marker - 0x80).into(), true);
+        decode_container(out, dgi, (marker - 0x80).into(), true);
     } else if marker <= 0x9f {
         // fixarray
-        decode_container(&mut out, &mut dgi, (marker - 0x90).into(), false);
+        decode_container(out, dgi, (marker - 0x90).into(), false);
     } else if marker <= 0xbf {
         // fixstr
-        decode_string(&mut out, &mut dgi, (marker - 0xa0).into());
+        decode_string(out, dgi, (marker - 0xa0).into());
     } else if marker == 0xc0 {
         // nil
         out.push_str("null");
@@ -122,27 +122,27 @@ pub fn decode_to_json(mut out: &mut String, mut dgi: &mut DatagramIterator) {
     } else if marker == 0xc4 {
         // bin8
         let len: u8 = dgi.read_u8();
-        decode_string(&mut out, &mut dgi, len.into());
+        decode_string(out, dgi, len.into());
     } else if marker == 0xc5 {
         // bin16
         let len: u16 = dgi.read_u16();
-        decode_string(&mut out, &mut dgi, byte_order::swap_be_16(len).into());
+        decode_string(out, dgi, byte_order::swap_be_16(len).into());
     } else if marker == 0xc6 {
         // bin32
         let len: u32 = dgi.read_u32();
-        decode_string(&mut out, &mut dgi, byte_order::swap_be_32(len).into());
+        decode_string(out, dgi, byte_order::swap_be_32(len));
     } else if marker == 0xc7 {
         // ext8
         let len: u8 = dgi.read_u8();
-        decode_ext(&mut out, &mut dgi, len.into());
+        decode_ext(out, dgi, len.into());
     } else if marker == 0xc8 {
         // ext16
         let len: u16 = dgi.read_u16();
-        decode_ext(&mut out, &mut dgi, byte_order::swap_be_16(len).into());
+        decode_ext(out, dgi, byte_order::swap_be_16(len).into());
     } else if marker == 0xc9 {
         // ext32
         let len: u32 = dgi.read_u32();
-        decode_ext(&mut out, &mut dgi, byte_order::swap_be_32(len).into());
+        decode_ext(out, dgi, byte_order::swap_be_32(len));
     } else if marker == 0xca {
         // float32
         let data: u32 = dgi.read_u32();
@@ -177,35 +177,35 @@ pub fn decode_to_json(mut out: &mut String, mut dgi: &mut DatagramIterator) {
         out.push_str(&format!("{}", byte_order::swap_be_64(dgi.read_u64()) as i64));
     } else if marker == 0xd8 {
         // fixext
-        decode_ext(&mut out, &mut dgi, 1 << (marker - 0xd4));
+        decode_ext(out, dgi, 1 << (marker - 0xd4));
     } else if marker == 0xd9 {
         // str8
         let len: u8 = dgi.read_u8();
-        decode_string(&mut out, &mut dgi, len.into());
+        decode_string(out, dgi, len.into());
     } else if marker == 0xda {
         // str16
         let len: u16 = dgi.read_u16();
-        decode_string(&mut out, &mut dgi, byte_order::swap_be_16(len).into());
+        decode_string(out, dgi, byte_order::swap_be_16(len).into());
     } else if marker == 0xdb {
         // str32
         let len: u32 = dgi.read_u32();
-        decode_string(&mut out, &mut dgi, byte_order::swap_be_32(len).into());
+        decode_string(out, dgi, byte_order::swap_be_32(len));
     } else if marker == 0xdc {
         // array16
         let len: u16 = dgi.read_u16();
-        decode_container(&mut out, &mut dgi, byte_order::swap_be_16(len).into(), false);
+        decode_container(out, dgi, byte_order::swap_be_16(len).into(), false);
     } else if marker == 0xdd {
         // array32
         let len: u32 = dgi.read_u32();
-        decode_container(&mut out, &mut dgi, byte_order::swap_be_32(len).into(), false);
+        decode_container(out, dgi, byte_order::swap_be_32(len), false);
     } else if marker == 0xde {
         // map16
         let len: u16 = dgi.read_u16();
-        decode_container(&mut out, &mut dgi, byte_order::swap_be_16(len).into(), true);
+        decode_container(out, dgi, byte_order::swap_be_16(len).into(), true);
     } else if marker == 0xdf {
         // map32
         let len: u32 = dgi.read_u32();
-        decode_container(&mut out, &mut dgi, byte_order::swap_be_32(len).into(), true);
+        decode_container(out, dgi, byte_order::swap_be_32(len), true);
     } else {
         // everything >= 0xe0 is a negative fixint.
         out.push_str(&format!("{}", marker as i8));
