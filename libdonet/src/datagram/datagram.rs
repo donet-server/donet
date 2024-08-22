@@ -290,6 +290,7 @@ impl Datagram {
 }
 
 /// Utility for iterating value by value of a datagram message.
+#[derive(Debug)]
 pub struct DatagramIterator {
     datagram: Datagram,
     index: usize,

@@ -17,6 +17,7 @@
 
 use super::msgpack;
 use crate::config;
+use crate::event::LoggedEvent;
 use crate::network::UDPSocket;
 use chrono::{DateTime, Local, TimeZone};
 use libdonet::datagram::datagram::{Datagram, DatagramIterator};
@@ -57,45 +58,44 @@ impl EventLogger {
         let mut dg: Datagram;
         let mut dgi: DatagramIterator;
 
+        {
+            let mut event = LoggedEvent::new("log-opened", "EventLogger");
+            event.add("msg", "Log opened upon Event Logger startup.");
+
+            dgi = DatagramIterator::new(event.make_datagram());
+
+            let ip = core::net::Ipv4Addr::new(127, 0, 0, 1);
+            let v4addr = core::net::SocketAddrV4::new(ip, 0);
+            let addr = std::net::SocketAddr::V4(v4addr);
+
+            self.process_datagram(&buffer, addr, &mut data, &mut dgi)
+                .await
+                .expect("Failed to process log opened event!");
+        }
+
         loop {
             let (len, addr) = self.binding.socket.recv_from(&mut buffer).await?;
             trace!("Got packet from {}.", addr);
 
             dg = Datagram::new();
 
-            dg.add_data(buffer.to_vec())
-                .expect("Failed to create dg from buffer!");
+            // The buffer is always 3 kb in size. Let's make a slice that
+            // contains only the length of the datagram received.
+            let mut buf_slice = buffer.to_vec();
+            buf_slice.truncate(len);
+
+            dg.add_data(buf_slice)
+                .expect("Failed to create dg from buffer slice!");
 
             dgi = DatagramIterator::new(dg.clone());
 
-            match Self::process_datagram(&mut data, &mut dgi) {
+            match self.process_datagram(&buffer, addr, &mut data, &mut dgi).await {
                 Ok(txt) => txt,
                 Err(err) => {
                     error!("Failed to process datagram from {}: {}", addr, err);
                     continue;
                 }
             };
-
-            // Remaining bytes should equal the remaining unused buffer.
-            if dgi.get_remaining() as usize != (buffer.len() - len) {
-                error!("Received packet with extraneous data from {}", addr);
-            }
-            trace!("Received: {}", data);
-
-            let unix_time: i64 = Self::get_unix_time();
-            let date: DateTime<Local> = Local.timestamp_opt(unix_time, 0).unwrap();
-
-            // Insert timestamp as the first element of the map for this log entry.
-            data.insert_str(
-                1,
-                &format!("{}", date.format("\"_time\": \"%Y-%m-%d %H:%M:%S%z\", ")),
-            );
-
-            let mut guard = self.log_file.lock().await;
-            let file = guard.as_mut().expect("");
-
-            data.push('\n');
-            file.write_all(data.as_bytes()).await?;
         }
     }
 
@@ -103,8 +103,15 @@ impl EventLogger {
     /// Expects datagram bytes to follow the [`MessagePack`] format.
     ///
     /// [`MessagePack`]: https://msgpack.org
-    fn process_datagram(data: &mut String, dgi: &mut DatagramIterator) -> Result<()> {
-        data.clear(); // new datagram being processed, clear previous data
+    async fn process_datagram(
+        &self,
+        buf: &[u8],
+        addr: core::net::SocketAddr,
+        data: &mut String,
+        dgi: &mut DatagramIterator,
+    ) -> Result<()> {
+        // new datagram being processed, clear previous data
+        data.clear();
 
         msgpack::decode_to_json(data, dgi);
 
@@ -117,6 +124,28 @@ impl EventLogger {
                 ));
             }
         }
+
+        // Remaining bytes should equal the remaining unused buffer.
+        if dgi.get_remaining() as usize != 0 {
+            error!("Received packet with extraneous data from {}", addr);
+        }
+        trace!("Received: {}", data);
+
+        let unix_time: i64 = Self::get_unix_time();
+        let date: DateTime<Local> = Local.timestamp_opt(unix_time, 0).unwrap();
+
+        // Insert timestamp as the first element of the map for this log entry.
+        data.insert_str(
+            1,
+            &format!("{}", date.format("\"_time\": \"%Y-%m-%d %H:%M:%S%z\", ")),
+        );
+
+        let mut guard = self.log_file.lock().await;
+        let file = guard.as_mut().expect("");
+
+        data.push('\n');
+        file.write_all(data.as_bytes()).await?;
+
         Ok(())
     }
 

@@ -34,18 +34,19 @@
 #![allow(clippy::module_inception)]
 #![deny(unused_extern_crates)]
 
-pub mod config;
+mod config;
 #[cfg(feature = "database-server")]
-pub mod database_server;
+mod database_server;
+mod event;
 #[cfg(feature = "event-logger")]
-pub mod event_logger;
-pub mod logger;
-pub mod meson;
+mod event_logger;
+mod logger;
+mod meson;
 #[cfg(feature = "message-director")]
-pub mod message_director;
-pub mod network;
-pub mod service_factory;
-pub mod utils;
+mod message_director;
+mod network;
+mod service_factory;
+mod utils;
 
 #[macro_use]
 extern crate cfg_if;
