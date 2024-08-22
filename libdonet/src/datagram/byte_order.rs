@@ -72,6 +72,59 @@ pub fn swap_le_64(v: u64) -> u64 {
     v
 }
 
+/// Swaps 2 bytes in big endian byte order to little endian.
+/// Returns the input if the processor is big endian.
+#[cfg(target_endian = "little")]
+pub fn swap_be_16(v: u16) -> u16 {
+    return (v & 0x00ff) << 8 | (v & 0xff00) >> 8;
+}
+
+/// Swaps 4 bytes in big endian byte order to little endian.
+/// Returns the input if the processor is big endian.
+#[rustfmt::skip]
+#[cfg(target_endian = "little")]
+pub fn swap_be_32(v: u32) -> u32 {
+    return (v & 0x000000ff) << 24
+        | (v & 0x0000ff00) << 8
+        | (v & 0x00ff0000) >> 8
+        | (v & 0xff000000) >> 24;
+}
+
+/// Swaps 8 bytes in big endian byte order to little endian.
+/// Returns the input if the processor is big endian.
+#[cfg(target_endian = "little")]
+pub fn swap_be_64(v: u64) -> u64 {
+    return (v & 0x00000000000000ff) << 56
+        | (v & 0x000000000000ff00) << 40
+        | (v & 0x0000000000ff0000) << 24
+        | (v & 0x00000000ff000000) << 8
+        | (v & 0x000000ff00000000) >> 8
+        | (v & 0x0000ff0000000000) >> 24
+        | (v & 0x00ff000000000000) >> 40
+        | (v & 0xff00000000000000) >> 56;
+}
+
+/// Swaps 2 bytes in big endian byte order to little endian.
+/// Returns the input if the processor is big endian.
+#[cfg(target_endian = "big")]
+pub fn swap_be_16(v: u16) -> u16 {
+    v // no need to swap bytes
+}
+
+/// Swaps 4 bytes in big endian byte order to little endian.
+/// Returns the input if the processor is big endian.
+#[cfg(target_endian = "big")]
+pub fn swap_be_32(v: u32) -> u32 {
+    v
+}
+
+/// Swaps 8 bytes in big endian byte order to little endian.
+/// Returns the input if the processor is big endian.
+#[cfg(target_endian = "big")]
+pub fn swap_be_64(v: u64) -> u64 {
+    v
+}
+
 #[cfg(test)]
 mod unit_testing {
     use super::*;
