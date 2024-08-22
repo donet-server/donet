@@ -18,7 +18,7 @@
 use super::msgpack;
 use crate::config;
 use crate::network::UDPSocket;
-use chrono::DateTime;
+use chrono::{DateTime, Local, TimeZone};
 use libdonet::datagram::datagram::{Datagram, DatagramIterator};
 use log::{debug, error, info, trace};
 use std::io::{Error, ErrorKind, Result};
@@ -51,14 +51,14 @@ impl EventLogger {
     pub async fn start_receive(&mut self) -> Result<()> {
         self.rotate_log().await?;
 
-        let mut buffer = [0_u8; 5 * 1024]; // 5 kb
+        let mut buffer = [0_u8; 3 * 1024]; // 3 kb
         let mut data: String = String::default();
 
         let mut dg: Datagram;
         let mut dgi: DatagramIterator;
 
         loop {
-            let (_len, addr) = self.binding.socket.recv_from(&mut buffer).await?;
+            let (len, addr) = self.binding.socket.recv_from(&mut buffer).await?;
             trace!("Got packet from {}.", addr);
 
             dg = Datagram::new();
@@ -76,13 +76,14 @@ impl EventLogger {
                 }
             };
 
-            if dgi.tell() != dg.size() {
+            // Remaining bytes should equal the remaining unused buffer.
+            if dgi.get_remaining() as usize != (buffer.len() - len) {
                 error!("Received packet with extraneous data from {}", addr);
             }
             trace!("Received: {}", data);
 
             let unix_time: i64 = Self::get_unix_time();
-            let date = DateTime::from_timestamp(unix_time, 0).expect("Invalid unix time!");
+            let date: DateTime<Local> = Local.timestamp_opt(unix_time, 0).unwrap();
 
             // Insert timestamp as the first element of the map for this log entry.
             data.insert_str(
