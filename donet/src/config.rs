@@ -81,6 +81,7 @@ pub struct DBServer {
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct SQL {
     pub host: String, // '<host>:<port>'
     pub user: String,
@@ -89,6 +90,7 @@ pub struct SQL {
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct DBSS {
     pub db_channel: u64,
     pub range_min: u64,
