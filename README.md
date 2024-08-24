@@ -71,6 +71,38 @@ build/target/debug/deps/donetd-<hash>
 build/target/debug/deps/libdonet-<hash>
 ```
 
+### Reviewing Coverage Reports Locally
+
+The latest commit's unit test code coverage report can be viewed online at
+[https://codecov.io](https://codecov.io/gl/donet-server/donet). The dashboard
+displays the code coverage percentage for the entire project and allows you
+to view covered and missing lines per source file if you are logged in.
+
+During development, you may need to inspect the code coverage report directly
+from your latest local changes before you can see it on the online dashboard
+after pushing a new commit.
+
+Donet uses [Tarpaulin](https://github.com/xd009642/tarpaulin) to generate
+code coverage reports. To build the coverage report locally, run the following
+run target using Meson:
+```sh
+meson compile code-coverage -C build
+```
+
+The output of this run target should be 2 coverage report files:
+```
+build/target/tarpaulin/cobertura.xml
+build/target/tarpaulin/coverage.json
+```
+
+These are large XML/JSON files, so you will need a tool to view the report.
+You can use [pycobertura](https://github.com/aconrad/pycobertura) to view the
+code coverage report from your terminal. To do this, run:
+```sh
+python -m pip install pycobertura
+python -m pycobertura show build/target/tarpaulin/cobertura.xml
+```
+
 ## Communication
 
 The address of the official Matrix channel for Donet development is
