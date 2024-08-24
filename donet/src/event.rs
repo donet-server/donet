@@ -47,8 +47,8 @@ impl LoggedEvent {
             // Can fit in a fixmap.
             dg.add_u8((0x80 + map_len) as u8).unwrap();
         } else {
-            // Use a str16.
-            // We don't have to worry about str32, nothing that big will fit in a
+            // Use a map16.
+            // We don't have to worry about map32, nothing that big will fit in a
             // single UDP packet anyway.
             dg.add_u8(0xde).unwrap();
             dg.add_u8((map_len >> 8 & 0xff) as u8).unwrap();
@@ -79,5 +79,33 @@ impl LoggedEvent {
         }
 
         dg.add_data(value.as_bytes().to_vec()).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod unit_testing {
+    use super::{Datagram, LoggedEvent};
+
+    #[test]
+    fn fixmap_fixstr_msgpack_datagram() {
+        let mut event: LoggedEvent = LoggedEvent::new("unit", "test");
+        event.add("msg", "Unit Test Event");
+
+        let dg: Datagram = event.make_datagram();
+    }
+
+    #[test]
+    fn map16_str16_msgpack_datagram() {
+        let mut event: LoggedEvent = LoggedEvent::new("unit", "test");
+
+        // Add more than 2 ^ 4 - 1, or 15, elements to the map.
+        for _ in 0..16 {
+            event.add("msg", "Unit Test Event");
+        }
+
+        // Add a string that is larger than 2 ^ 5 - 1, or 32, chars.
+        event.add("msg", "0123456789abcdefghijklmnopqrstuvwxyz");
+
+        let dg: Datagram = event.make_datagram();
     }
 }
