@@ -52,7 +52,7 @@ impl EventLogger {
     pub async fn start_receive(&mut self) -> Result<()> {
         self.rotate_log().await?;
 
-        let mut buffer = [0_u8; 3 * 1024]; // 3 kb
+        let mut buffer = [0_u8; 1024]; // 1 kb
         let mut data: String = String::default();
 
         let mut dg: Datagram;
@@ -79,7 +79,7 @@ impl EventLogger {
 
             dg = Datagram::new();
 
-            // The buffer is always 3 kb in size. Let's make a slice that
+            // The buffer is always 1 kb in size. Let's make a slice that
             // contains only the length of the datagram received.
             let mut buf_slice = buffer.to_vec();
             buf_slice.truncate(len);
