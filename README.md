@@ -142,7 +142,7 @@ the software license in the [COPYING](./COPYING) file.
 Donet logo artwork created by [honeymatsu](https://honeymatsu.carrd.co/). 🍩
 
 Older revisions of the Donet logo created and designed by
-[Karla Valeria Rodriguez](https://github.com/karla-valeria). 🍩
+[Karla Valeria Rodriguez](https://valerierdz.com/). 🍩
 
 ## Legal
 
