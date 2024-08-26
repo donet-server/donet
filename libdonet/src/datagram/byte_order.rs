@@ -129,6 +129,8 @@ pub fn swap_be_64(v: u64) -> u64 {
 mod unit_testing {
     use super::*;
 
+    // Little-endian swap tests
+
     #[test]
     #[cfg(target_endian = "big")]
     fn endianness_swap_le_16() -> () {
@@ -168,6 +170,50 @@ mod unit_testing {
     #[cfg(target_endian = "little")]
     fn endianness_swap_le_64() -> () {
         let res: u64 = swap_le_64(100000000000000000 as u64);
+        assert_eq!(res, 100000000000000000);
+    }
+
+    // Big-endian swap tests
+
+    #[test]
+    #[cfg(target_endian = "little")]
+    fn endianness_swap_be_16() -> () {
+        let res: u16 = swap_be_16(1000 as u16);
+        assert_eq!(res, 59395);
+    }
+
+    #[test]
+    #[cfg(target_endian = "big")]
+    fn endianness_swap_be_16() -> () {
+        let res: u16 = swap_be_16(1000 as u16);
+        assert_eq!(res, 1000);
+    }
+
+    #[test]
+    #[cfg(target_endian = "little")]
+    fn endianness_swap_be_32() -> () {
+        let res: u32 = swap_be_32(100000000 as u32);
+        assert_eq!(res, 14808325);
+    }
+
+    #[test]
+    #[cfg(target_endian = "big")]
+    fn endianness_swap_be_32() -> () {
+        let res: u32 = swap_be_32(100000000 as u32);
+        assert_eq!(res, 100000000);
+    }
+
+    #[test]
+    #[cfg(target_endian = "little")]
+    fn endianness_swap_be_64() -> () {
+        let res: u64 = swap_be_64(100000000000000000 as u64);
+        assert_eq!(res, 152134054404865);
+    }
+
+    #[test]
+    #[cfg(target_endian = "big")]
+    fn endianness_swap_be_64() -> () {
+        let res: u64 = swap_be_64(100000000000000000 as u64);
         assert_eq!(res, 100000000000000000);
     }
 }
