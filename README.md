@@ -55,6 +55,16 @@ If any `build_*` Meson options are passed, `--no-default-features` is passed
 to cargo build, which disables building all services. Only the service(s) that
 you explicitly request to be built will be activated via feature flags.
 
+## Code Coverage &nbsp; [![codecov](https://codecov.io/gl/donet-server/donet/graph/badge.svg?token=XCESKI8ISS)](https://codecov.io/gl/donet-server/donet)
+
+The Donet project uses [Codecov](https://codecov.io) as its online dashboard for
+viewing unit test coverage statistics. The CI/CD pipeline generates the
+Cobertura XML and uploads it to Codecov if it is on the default branch. You can
+use the badge above or the badge in the GitLab repository to go to the
+dashboard for Donet.
+
+<img src="https://codecov.io/gl/donet-server/donet/graphs/sunburst.svg?token=XCESKI8ISS" alt="Coverage graph"/>
+
 ### Debugging Unit Tests
 
 To debug unit tests with a debugger such as [GDB](https://sourceware.org/gdb/),
