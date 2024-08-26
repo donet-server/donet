@@ -91,7 +91,7 @@ mod unit_testing {
         let mut event: LoggedEvent = LoggedEvent::new("unit", "test");
         event.add("msg", "Unit Test Event");
 
-        let dg: Datagram = event.make_datagram();
+        let _: Datagram = event.make_datagram();
     }
 
     #[test]
@@ -106,6 +106,6 @@ mod unit_testing {
         // Add a string that is larger than 2 ^ 5 - 1, or 32, chars.
         event.add("msg", "0123456789abcdefghijklmnopqrstuvwxyz");
 
-        let dg: Datagram = event.make_datagram();
+        let _: Datagram = event.make_datagram();
     }
 }

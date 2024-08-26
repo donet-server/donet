@@ -175,8 +175,8 @@ pub fn decode_to_json(out: &mut String, dgi: &mut DatagramIterator) {
     } else if marker == 0xd3 {
         // int64
         out.push_str(&format!("{}", byte_order::swap_be_64(dgi.read_u64()) as i64));
-    } else if marker == 0xd8 {
-        // fixext
+    } else if marker <= 0xd8 {
+        // fixext family
         decode_ext(out, dgi, 1 << (marker - 0xd4));
     } else if marker == 0xd9 {
         // str8
@@ -209,5 +209,85 @@ pub fn decode_to_json(out: &mut String, dgi: &mut DatagramIterator) {
     } else {
         // everything >= 0xe0 is a negative fixint.
         out.push_str(&format!("{}", marker as i8));
+    }
+}
+
+#[cfg(test)]
+mod unit_testing {
+    use super::*;
+    use libdonet::datagram::datagram::Datagram;
+    use libdonet::globals::DgResult;
+
+    #[test]
+    fn fixmap_fixstr_common_usage() -> DgResult {
+        let mut output: String = String::default();
+
+        // Unit tests must not be dependent on other tests, so we cannot
+        // use any internal utilities to build the test datagram. (e.g. LoggedEvent)
+        //
+        // This does not include libdonet utilities, as they are a separate crate.
+        let mut dg: Datagram = Datagram::default();
+
+        dg.add_data(vec![0x80 + 0x3, 0xa0 + 0x4])?; // fixmap (3), fixstr (4)
+        dg.add_data("test".as_bytes().to_vec())?; // "test"
+        dg.add_data(vec![0xc3, 0xa0 + 0x4])?; // true, fixstr (4)
+        dg.add_data("test".as_bytes().to_vec())?; // "test"
+        dg.add_data(vec![0x3])?; // positive fixint (3)
+        dg.add_data(vec![0xa0 + 0x4])?; // fixstr (4)
+        dg.add_data("test".as_bytes().to_vec())?; // "test"
+        dg.add_data(vec![0xc0])?; // null
+
+        decode_to_json(&mut output, &mut DatagramIterator::new(dg));
+
+        assert_eq!(output.as_str(), "{\"test\": true, \"test\": 3, \"test\": null}");
+        Ok(())
+    }
+
+    #[test]
+    fn fixarray_container_decode() -> DgResult {
+        let mut output: String = String::default();
+        let mut dg: Datagram = Datagram::default();
+
+        dg.add_data(vec![0x90 + 0x3])?; // fixarray (3)
+        dg.add_data(vec![0xc2])?; // false
+        dg.add_data(vec![0xc1])?; // unused marker
+        dg.add_data(vec![0xe0])?; // negative fixint (-32)
+
+        decode_to_json(&mut output, &mut DatagramIterator::new(dg));
+
+        assert_eq!(output.as_str(), "[false, *INVALID*, -32]");
+        Ok(())
+    }
+
+    #[test]
+    fn fixext_decode() -> DgResult {
+        let mut output: String = String::default();
+        let mut dg: Datagram = Datagram::default();
+
+        dg.add_data(vec![0xd4])?; // fixext 1
+        dg.add_data(vec![0x1])?; // type
+        dg.add_data(vec![0xff])?; // value
+
+        decode_to_json(&mut output, &mut DatagramIterator::new(dg));
+
+        assert_eq!(output.as_str(), "ext(1, \"\\xff\")");
+        Ok(())
+    }
+
+    #[test]
+    fn msgpack_floating_types() -> DgResult {
+        let mut output: String = String::default();
+        let mut dg: Datagram = Datagram::default();
+
+        dg.add_data(vec![0x90 + 0x2])?; // fixarray (2)
+        dg.add_data(vec![0xca])?; // float32
+        dg.add_f32(f32::MAX)?; // value
+        dg.add_data(vec![0xcb])?; // float64
+        dg.add_f64(f64::MAX)?; // value
+
+        decode_to_json(&mut output, &mut DatagramIterator::new(dg));
+
+        assert_eq!(output.as_str(), "[4294967300, 18446744073709552000]");
+        Ok(())
     }
 }
