@@ -77,7 +77,7 @@ impl UDPSocket {
 
 #[cfg(test)]
 mod unit_testing {
-    use super::{TCPAcceptor, TCPConnection};
+    use super::{TCPAcceptor, TCPConnection, UDPSocket};
 
     #[tokio::test]
     async fn async_tcp_listener() {
@@ -117,6 +117,19 @@ mod unit_testing {
                 assert_eq!(binding.address, dst_address);
             }
             Err(err) => panic!("TCPConnection failed to establish: {:?}", err),
+        }
+    }
+
+    #[tokio::test]
+    async fn async_udp_socket() {
+        let bind_address: String = String::from("127.0.0.1:7197");
+        let res: Result<UDPSocket, _> = UDPSocket::bind(&bind_address).await;
+
+        match res {
+            Ok(binding) => {
+                assert_eq!(binding.address, bind_address);
+            }
+            Err(err) => panic!("UDPSocket failed to bind: {:?}", err),
         }
     }
 }
