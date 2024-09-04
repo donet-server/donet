@@ -16,7 +16,7 @@ message-director = []
 state-server = ["requires_dc"]
 database-server = ["requires_dc", "dep:mysql", "dep:mysql_common"]
 dbss = ["requires_dc", "dep:mysql", "dep:mysql_common"]
-event-logger = []
+event-logger = ["dep:regex"]
 requires_dc = []
 default = [
   "client-agent", "message-director",
@@ -32,6 +32,7 @@ log = { version = "0.4", features = ["std"] }
 mysql = { version = "25", default-features = false, features = ["derive"], optional = true }
 mysql_common = { version = "*", default-features = true, optional = true }
 multimap = { version = "0.10" }
+regex = { version = "1.10", optional = true }
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "fs", "io-util", "sync"] }
 toml = { version = "0.7" }

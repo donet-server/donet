@@ -494,6 +494,7 @@ dependencies = [
  "multimap 0.10.0",
  "mysql",
  "mysql_common",
+ "regex",
  "serde",
  "tokio",
  "toml",

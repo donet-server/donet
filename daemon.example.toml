@@ -1,4 +1,4 @@
-# The 'daemon' section describes identification 
+# The 'daemon' section describes identification
 # information which can be queried from an MD instance.
 #
 # For this example, this single daemon will perform the
@@ -8,13 +8,13 @@ name = "Donet Cluster"
 #id = 3 # default: automatically assigned
 log_level = "info" # default: "info"
 
-# The 'global' section contains configuration that 
+# The 'global' section contains configuration that
 # is shared among all daemons in the cluster.
 [global]
-eventlogger = "127.0.0.1:9090"
+eventlogger = "127.0.0.1:7197"
 dc_files = ["main.dc", "game.dc"]
 
-# The 'services' section describes the service(s) that 
+# The 'services' section describes the service(s) that
 # this daemon should perform as. (e.g. Client Agent, State Server, etc.)
 #
 #    Valid Services:
@@ -71,7 +71,7 @@ range_min = 100000000
 range_max = 200000000
 
 [services.event_logger]
-bind = "127.0.0.1:9090" # NOTE: UDP protocol
+bind = "127.0.0.1:7197" # NOTE: UDP protocol
 output = "/var/log/donet/" # Logs output directory
 log_format = "el-%Y-%m-%d-%H-%M-%S.log" # Log file name format
 rotate_interval = "1d"

@@ -19,15 +19,28 @@ use super::msgpack;
 use crate::config;
 use crate::event::LoggedEvent;
 use crate::network::UDPSocket;
-use chrono::{DateTime, Local, TimeZone};
+use chrono::{DateTime, Duration, Local, TimeZone};
 use libdonet::datagram::datagram::{Datagram, DatagramIterator};
 use log::{debug, error, info, trace};
+use regex::Regex;
 use std::io::{Error, ErrorKind, Result};
 use std::sync::Arc;
 use std::time::SystemTime;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::Mutex;
+
+/// Interval unit types for log rotation intervals.
+pub enum IntervalUnit {
+    Minutes, // min
+    Hours,   // h, hr
+    Days,    // d
+    Months,  // mo
+}
+
+/// Represents the configured log rotation interval.
+/// First item is the unit quantity, second item is the unit type.
+pub type Interval = (i64, IntervalUnit);
 
 /// The `EventLogger` is a Donet service in the daemon that opens
 /// up a socket and reads UDP packets from that socket. Received
@@ -36,6 +49,8 @@ pub struct EventLogger {
     binding: UDPSocket,
     log_format: String,
     log_file: Arc<Mutex<Option<File>>>,
+    rotation_interval: Interval,
+    next_rotation: i64, // unix timestamp
 }
 
 impl EventLogger {
@@ -44,13 +59,15 @@ impl EventLogger {
             binding: UDPSocket::bind(&conf.bind).await?,
             log_format: format!("{}{}", conf.output, conf.log_format),
             log_file: Arc::new(Mutex::new(None)),
+            rotation_interval: Self::str_to_interval(&conf.rotate_interval),
+            next_rotation: 0_i64, // set on first log opened
         })
     }
 
     /// This is Event Logger's main asynchronous loop.
     /// Spawned as a Tokio task by the service factory.
     pub async fn start_receive(&mut self) -> Result<()> {
-        self.rotate_log().await?;
+        self.open_log().await?;
 
         let mut buffer = [0_u8; 1024]; // 1 kb
         let mut data: String = String::default();
@@ -68,7 +85,7 @@ impl EventLogger {
             let v4addr = core::net::SocketAddrV4::new(ip, 0);
             let addr = std::net::SocketAddr::V4(v4addr);
 
-            self.process_datagram(&buffer, addr, &mut data, &mut dgi)
+            self.process_datagram(addr, &mut data, &mut dgi)
                 .await
                 .expect("Failed to process log opened event!");
         }
@@ -89,7 +106,14 @@ impl EventLogger {
 
             dgi = DatagramIterator::new(dg.clone());
 
-            match self.process_datagram(&buffer, addr, &mut data, &mut dgi).await {
+            // Check Unix timestamp for next rotation and cycle log if expired.
+            let unix_time: i64 = Self::get_unix_time();
+
+            if self.next_rotation <= unix_time {
+                self.rotate_log(&mut data, &mut dgi).await?
+            }
+
+            match self.process_datagram(addr, &mut data, &mut dgi).await {
                 Ok(txt) => txt,
                 Err(err) => {
                     error!("Failed to process datagram from {}: {}", addr, err);
@@ -99,13 +123,12 @@ impl EventLogger {
         }
     }
 
-    /// Takes in raw byte buffer from packet, outputs string to write to log.
+    /// Takes in `DatagramIterator` with packet data and modifies output string stream.
     /// Expects datagram bytes to follow the [`MessagePack`] format.
     ///
     /// [`MessagePack`]: https://msgpack.org
     async fn process_datagram(
         &self,
-        buf: &[u8],
         addr: core::net::SocketAddr,
         data: &mut String,
         dgi: &mut DatagramIterator,
@@ -149,7 +172,9 @@ impl EventLogger {
         Ok(())
     }
 
-    async fn rotate_log(&mut self) -> Result<()> {
+    /// Opens a new log file on disk once any writes to the current log
+    /// file are finished, and creates a next log rotation timestamp.
+    async fn open_log(&mut self) -> Result<()> {
         let unix_time: i64 = Self::get_unix_time();
         let date = DateTime::from_timestamp(unix_time, 0).expect("Invalid unix time!");
 
@@ -174,9 +199,78 @@ impl EventLogger {
         file_guard.replace(new_log); // replace `None` with new log file
 
         info!("Opened a new log.");
+
+        // Create new chrono `DateTime` to represent the expiration time for this log.
+        let next_rotation_date = match self.rotation_interval.1 {
+            IntervalUnit::Minutes => date + Duration::minutes(self.rotation_interval.0),
+            IntervalUnit::Hours => date + Duration::hours(self.rotation_interval.0),
+            IntervalUnit::Days => date + Duration::days(self.rotation_interval.0),
+            IntervalUnit::Months => date + Duration::days(self.rotation_interval.0 * 30),
+        };
+
+        // Convert `DateTime` to Unix timestamp & set as next rotation timestamp
+        self.next_rotation = next_rotation_date.timestamp();
+
         Ok(())
     }
 
+    /// Rotates the log file. The current log file is closed once all writes
+    /// to the file are finished, and a new log file is opened.
+    async fn rotate_log(&mut self, data: &mut String, dgi: &mut DatagramIterator) -> Result<()> {
+        self.open_log().await?;
+
+        let mut event = LoggedEvent::new("log-opened", "EventLogger");
+        event.add("msg", "Log cycled.");
+
+        *dgi = DatagramIterator::new(event.make_datagram());
+
+        let ip = core::net::Ipv4Addr::new(127, 0, 0, 1);
+        let v4addr = core::net::SocketAddrV4::new(ip, 0);
+        let addr = std::net::SocketAddr::V4(v4addr);
+
+        self.process_datagram(addr, data, dgi)
+            .await
+            .expect("Failed to process log cycled event!");
+        Ok(())
+    }
+
+    /// Parses a string (from TOML config) into an [`Interval`] tuple.
+    #[inline(always)]
+    fn str_to_interval(input: &str) -> Interval {
+        let quantity_re = Regex::new(r"0|([1-9][0-9]*)").unwrap(); // decimal
+        let unit_re = Regex::new(r"((min)|h|(hr)|d|(mo))$").unwrap(); // see `IntervalUnit`
+
+        let quantity: i64 = quantity_re
+            .find(input)
+            .expect("Regex for interval unit quantity did not match.")
+            .as_str()
+            .parse::<i64>()
+            .unwrap();
+
+        // `Duration` prefers i64, but we won't accept signed integers.
+        assert!(
+            quantity >= 1,
+            "Log rotation interval unit quantity cannot be negative or zero."
+        );
+
+        let unit_match: &str = unit_re
+            .find(input)
+            .expect("Regex for interval unit type did not match.")
+            .as_str();
+
+        let unit_type: IntervalUnit = match unit_match {
+            "min" => IntervalUnit::Minutes,
+            "h" => IntervalUnit::Hours,
+            "hr" => IntervalUnit::Hours,
+            "d" => IntervalUnit::Days,
+            "mo" => IntervalUnit::Months,
+            _ => panic!("Regex invalid"),
+        };
+
+        (quantity, unit_type)
+    }
+
+    /// Returns the current unix timestamp as a 64-bit signed integer.
     #[inline(always)]
     fn get_unix_time() -> i64 {
         match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
