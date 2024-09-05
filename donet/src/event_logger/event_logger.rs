@@ -31,6 +31,7 @@ use tokio::io::AsyncWriteExt;
 use tokio::sync::Mutex;
 
 /// Interval unit types for log rotation intervals.
+#[derive(Debug, PartialEq, Eq)]
 pub enum IntervalUnit {
     Minutes, // min
     Hours,   // h, hr
@@ -236,8 +237,8 @@ impl EventLogger {
 
     /// Parses a string (from TOML config) into an [`Interval`] tuple.
     #[inline(always)]
-    fn str_to_interval(input: &str) -> Interval {
-        let quantity_re = Regex::new(r"0|([1-9][0-9]*)").unwrap(); // decimal
+    pub(self) fn str_to_interval(input: &str) -> Interval {
+        let quantity_re = Regex::new(r"-{0,}(0|([1-9][0-9]*))").unwrap(); // decimal
         let unit_re = Regex::new(r"((min)|h|(hr)|d|(mo))$").unwrap(); // see `IntervalUnit`
 
         let quantity: i64 = quantity_re
@@ -280,5 +281,62 @@ impl EventLogger {
                 panic!("The Event Logger had to panic unexpectedly.");
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod unit_testing {
+    use super::{EventLogger, Interval, IntervalUnit};
+    use crate::config;
+    use crate::event::LoggedEvent;
+    use crate::network::UDPSocket;
+    use libdonet::datagram::datagram::Datagram;
+    use std::io::Error;
+    use std::result::Result;
+
+    #[tokio::test]
+    async fn basic_message_test() -> Result<(), Error> {
+        let conf = config::EventLogger {
+            bind: "127.0.0.0:7197".to_string(),
+            output: "./".to_string(),
+            log_format: "el-%Y-%m-%d-%H-%M-%S.log".to_string(),
+            rotate_interval: "1d".to_string(),
+        };
+
+        let _: EventLogger = EventLogger::new(conf).await?;
+
+        let sock: UDPSocket = UDPSocket::bind("127.0.0.1:2816").await?;
+        let mut dg: Datagram;
+
+        let mut new_log = LoggedEvent::new("test", "Unit Test Socket");
+        new_log.add("msg", "This is a test log message.");
+
+        dg = new_log.make_datagram();
+
+        sock.socket.send_to(&dg.get_data(), "127.0.0.1:7197").await?;
+        Ok(())
+    }
+
+    #[test]
+    fn str_to_interval() {
+        let inputs: [&str; 5] = ["1min", "10h", "999hr", "42d", "3mo"];
+        let outputs: [Interval; 5] = [
+            (1, IntervalUnit::Minutes),
+            (10, IntervalUnit::Hours),
+            (999, IntervalUnit::Hours),
+            (42, IntervalUnit::Days),
+            (3, IntervalUnit::Months),
+        ];
+
+        for (i, input) in inputs.iter().enumerate() {
+            assert_eq!(EventLogger::str_to_interval(input), outputs[i]);
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn negative_or_zero_interval() {
+        let _: Interval = EventLogger::str_to_interval("-1d");
+        _ = EventLogger::str_to_interval("0d");
     }
 }
