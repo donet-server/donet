@@ -226,19 +226,19 @@ fn main() -> std::io::Result<()> {
     let daemon_async_main = async move {
         let services: Services = daemon_config.services.clone();
 
-        // Smart pointers to new service instances on heap
+        // New service instances on the main thread's stack
         #[cfg(feature = "client-agent")]
-        let ca_service: Box<ClientAgentService>;
+        let ca_service: ClientAgentService;
         #[cfg(feature = "message-director")]
-        let md_service: Box<MessageDirectorService>;
+        let md_service: MessageDirectorService;
         #[cfg(feature = "state-server")]
-        let ss_service: Box<StateServerService>;
+        let ss_service: StateServerService;
         #[cfg(feature = "database-server")]
-        let db_service: Box<DatabaseServerService>;
+        let db_service: DatabaseServerService;
         #[cfg(feature = "dbss")]
-        let dbss_service: Box<DBSSService>;
+        let dbss_service: DBSSService;
         #[cfg(feature = "event-logger")]
-        let el_service: Box<EventLoggerService>;
+        let el_service: EventLoggerService;
 
         // Tokio join handles for spawned tasks of services started.
         let mut service_handles: Vec<JoinHandle<std::io::Result<()>>> = Vec::new();

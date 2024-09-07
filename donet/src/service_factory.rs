@@ -51,8 +51,8 @@ impl ClientAgentService {
         Ok(())
     }
 
-    pub fn create(&self) -> Result<Box<ClientAgentService>> {
-        Ok(Box::new(ClientAgentService))
+    pub fn create(&self) -> Result<ClientAgentService> {
+        Ok(ClientAgentService)
     }
 }
 
@@ -80,8 +80,8 @@ impl MessageDirectorService {
         Ok(tokio::task::spawn(md_loop))
     }
 
-    pub fn create(&self) -> Result<Box<MessageDirectorService>> {
-        Ok(Box::new(MessageDirectorService))
+    pub fn create(&self) -> Result<MessageDirectorService> {
+        Ok(MessageDirectorService)
     }
 }
 
@@ -92,8 +92,8 @@ impl StateServerService {
         Ok(())
     }
 
-    pub fn create(&self) -> Result<Box<StateServerService>> {
-        Ok(Box::new(StateServerService))
+    pub fn create(&self) -> Result<StateServerService> {
+        Ok(StateServerService)
     }
 }
 
@@ -141,8 +141,8 @@ impl DatabaseServerService {
         Ok(())
     }
 
-    pub fn create(&self) -> Result<Box<DatabaseServerService>> {
-        Ok(Box::new(DatabaseServerService))
+    pub fn create(&self) -> Result<DatabaseServerService> {
+        Ok(DatabaseServerService)
     }
 }
 
@@ -153,8 +153,8 @@ impl DBSSService {
         Ok(())
     }
 
-    pub fn create(&self) -> Result<Box<DBSSService>> {
-        Ok(Box::new(DBSSService))
+    pub fn create(&self) -> Result<DBSSService> {
+        Ok(DBSSService)
     }
 }
 
@@ -174,7 +174,7 @@ impl EventLoggerService {
         Ok(tokio::task::spawn(service_loop))
     }
 
-    pub fn create(&self) -> Result<Box<EventLoggerService>> {
-        Ok(Box::new(EventLoggerService))
+    pub fn create(&self) -> Result<EventLoggerService> {
+        Ok(EventLoggerService)
     }
 }
