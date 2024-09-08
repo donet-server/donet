@@ -34,5 +34,5 @@ mysql_common = { version = "*", default-features = true, optional = true }
 multimap = { version = "0.10" }
 regex = { version = "1.10", optional = true }
 serde = { version = "1", features = ["derive"] }
-tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "fs", "io-util", "sync"] }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "fs", "io-util", "sync", "signal"] }
 toml = { version = "0.7" }
