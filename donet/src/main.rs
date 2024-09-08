@@ -62,7 +62,7 @@ fn main() -> std::io::Result<()> {
     use libdonet::dcfile::DCFile;
     use libdonet::globals::DCReadResult;
     use libdonet::read_dc_files;
-    use log::error;
+    use log::{error, info};
     use logger::DaemonLogger;
     use service_factory::*;
     use std::cell::RefCell;
@@ -241,7 +241,7 @@ fn main() -> std::io::Result<()> {
         let el_service: EventLoggerService;
 
         // Tokio join handles for spawned tasks of services started.
-        let mut service_handles: Vec<JoinHandle<std::io::Result<()>>> = Vec::new();
+        let mut service_handles: Vec<JoinHandle<std::io::Result<()>>> = vec![];
 
         #[cfg(feature = "client-agent")]
         let want_client_agent: bool = services.client_agent.is_some();
@@ -272,7 +272,8 @@ fn main() -> std::io::Result<()> {
                     let md_factory: MessageDirectorService = MessageDirectorService {};
                     md_service = md_factory.create()?;
 
-                    service_handles.push(md_service.start(daemon_config.clone()).await?);
+                    let handle = md_service.start(daemon_config.clone()).await?;
+                    service_handles.push(handle);
                 }
             }
         }
@@ -312,16 +313,35 @@ fn main() -> std::io::Result<()> {
                     let el_factory: EventLoggerService = EventLoggerService {};
                     el_service = el_factory.create()?;
 
-                    el_service.start(daemon_config.clone()).await?;
+                    let handle = el_service.start(daemon_config.clone()).await?;
+                    service_handles.push(handle);
                 }
             }
         }
 
-        loop {
-            // TODO: Iterate through services' join handles
-            // and abort them once an interrupt signal is received.
+        match tokio::signal::ctrl_c().await {
+            Ok(()) => {
+                println!();
+                info!("Received interrupt (Ctrl + C)");
+            }
+            Err(err) => {
+                error!("Unable to listen for shutdown signal: {}", err);
+                panic!("Tokio was not able to listen to the interrupt signal.")
+            }
         }
+        info!("Exiting...");
+
+        // Abort all spawned Tokio tasks.
+        for handle in &service_handles {
+            handle.abort();
+        }
+        // Await task handles to wrap things up; Expect a cancellation error.
+        for handle in service_handles {
+            assert!(handle.await.unwrap_err().is_cancelled());
+        }
+        Ok(())
     };
+
     // Hack to reassure the compiler that I want to return an IO result.
     utils::set_future_return_type::<std::io::Result<()>, _>(&daemon_async_main);
 
