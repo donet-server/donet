@@ -15,60 +15,40 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-//! Thin wrappers around Tokio async TCP/UDP sockets for logging.
-
 use log::info;
 use std::io::Result;
-use tokio::net::{TcpListener, TcpStream, UdpSocket};
+use tokio::net::{TcpListener, TcpStream};
 
-pub struct TCPAcceptor {
+pub struct Acceptor {
     pub socket: TcpListener,
     pub address: String,
 }
 
-pub struct TCPConnection {
+pub struct Connection {
     pub socket: TcpStream,
     pub address: String,
 }
 
-impl TCPAcceptor {
-    pub async fn bind(uri: &str) -> Result<TCPAcceptor> {
+impl Acceptor {
+    pub async fn bind(uri: &str) -> Result<Self> {
         let socket: TcpListener = TcpListener::bind(uri).await?;
 
         info!("Opened new TCP listening socket at {}.", uri);
 
-        Ok(TCPAcceptor {
+        Ok(Self {
             socket,
             address: String::from(uri),
         })
     }
 }
 
-impl TCPConnection {
-    pub async fn connect(uri: &str) -> Result<TCPConnection> {
+impl Connection {
+    pub async fn connect(uri: &str) -> Result<Self> {
         let socket: TcpStream = TcpStream::connect(uri).await?;
 
         info!("Opened new TCP connection to {}.", uri);
 
-        Ok(TCPConnection {
-            socket,
-            address: String::from(uri),
-        })
-    }
-}
-
-pub struct UDPSocket {
-    pub socket: UdpSocket,
-    pub address: String,
-}
-
-impl UDPSocket {
-    pub async fn bind(uri: &str) -> Result<UDPSocket> {
-        let socket = UdpSocket::bind(uri).await?;
-
-        info!("Opened new UDP socket at {}.", uri);
-
-        Ok(UDPSocket {
+        Ok(Self {
             socket,
             address: String::from(uri),
         })
@@ -77,12 +57,12 @@ impl UDPSocket {
 
 #[cfg(test)]
 mod unit_testing {
-    use super::{TCPAcceptor, TCPConnection, UDPSocket};
+    use super::{Acceptor, Connection};
 
     #[tokio::test]
     async fn async_tcp_listener() {
         let bind_address: String = String::from("127.0.0.1:7199");
-        let res: Result<TCPAcceptor, _> = TCPAcceptor::bind(&bind_address).await;
+        let res: Result<Acceptor, _> = Acceptor::bind(&bind_address).await;
 
         match res {
             Ok(binding) => {
@@ -95,7 +75,7 @@ mod unit_testing {
     #[tokio::test]
     async fn async_tcp_connection() {
         let bind_address: String = String::from("127.0.0.1:7198");
-        let bind_res: Result<TCPAcceptor, _> = TCPAcceptor::bind(&bind_address).await;
+        let bind_res: Result<Acceptor, _> = Acceptor::bind(&bind_address).await;
 
         match bind_res {
             Ok(listener) => {
@@ -110,26 +90,13 @@ mod unit_testing {
 
         // This should make a TCP connection with the listener created above.
         let dst_address: String = String::from("127.0.0.1:7198");
-        let res: Result<TCPConnection, _> = TCPConnection::connect(&dst_address).await;
+        let res: Result<Connection, _> = Connection::connect(&dst_address).await;
 
         match res {
             Ok(binding) => {
                 assert_eq!(binding.address, dst_address);
             }
             Err(err) => panic!("TCPConnection failed to establish: {:?}", err),
-        }
-    }
-
-    #[tokio::test]
-    async fn async_udp_socket() {
-        let bind_address: String = String::from("127.0.0.1:7197");
-        let res: Result<UDPSocket, _> = UDPSocket::bind(&bind_address).await;
-
-        match res {
-            Ok(binding) => {
-                assert_eq!(binding.address, bind_address);
-            }
-            Err(err) => panic!("UDPSocket failed to bind: {:?}", err),
         }
     }
 }

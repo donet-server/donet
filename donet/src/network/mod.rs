@@ -15,7 +15,8 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-mod channel_map;
-pub mod message_director;
-mod subscriber;
-mod upstream;
+//! Thin wrappers around Tokio async TCP/UDP sockets for Donet.
+
+pub mod client;
+pub mod tcp;
+pub mod udp;

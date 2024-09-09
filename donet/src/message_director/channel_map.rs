@@ -29,43 +29,15 @@ pub struct ChannelSubscriber {
 
 pub type ChannelSubscriberRef = Arc<Mutex<ChannelSubscriber>>;
 
+#[derive(Default)]
 pub struct ChannelMap {
     subscriptions: MultiMap<Channel, ChannelSubscriberRef>,
-    _range_subscriptions: MultiMap<Channel, ChannelSubscriberRef>,
+    range_subscriptions: MultiMap<Channel, ChannelSubscriberRef>,
 }
 
-trait ChannelMapInterface {
-    fn new() -> Self;
-    // Adds a single channel to the subscriber's subscribed channels map.
-    fn subscribe_channel(&mut self, sub: ChannelSubscriberRef, chan: Channel);
-    // Removes the given channel from the subscribed channels map.
-    fn unsubscribe_channel(&mut self, sub: ChannelSubscriberRef, chan: Channel);
-    // Adds an object to be subscribed to a range of channels. The range is inclusive.
-    fn subscribe_range(&mut self, _sub: ChannelSubscriberRef, _min: Channel, _max: Channel);
-    // Performs the reverse of the subscribe_range() method.
-    fn unsubscribe_range(&mut self, _sub: ChannelSubscriberRef, _min: Channel, _max: Channel);
-    // Removes all channel and range subscriptions from the subscriber.
-    fn unsubscribe_all(&mut self, _sub: ChannelSubscriberRef);
-    // Removes the given subscriber from the multi-map for a given channel.
-    // Returns true only if:
-    // a) There are subscribers for the given channel and
-    // b) The provided subscriber was the last one for the channel, and was removed successfully.
-    fn remove_subscriber(&mut self, sub: ChannelSubscriberRef, chan: Channel) -> bool;
-    // Checks if a given object has a subscription on a channel.
-    fn is_subscribed(&mut self, sub: ChannelSubscriberRef, chan: Channel) -> bool;
-    // Performs the same check as is_subscribed(), but for an array of channels.
-    fn are_subscribed(&mut self, _subs: &mut Vec<ChannelSubscriber>, _chans: &[Channel]);
-}
-
-impl ChannelMapInterface for ChannelMap {
-    fn new() -> Self {
-        ChannelMap {
-            subscriptions: MultiMap::new(),
-            _range_subscriptions: MultiMap::new(),
-        }
-    }
-
-    fn subscribe_channel(&mut self, sub: ChannelSubscriberRef, chan: Channel) {
+impl ChannelMap {
+    /// Adds a single channel to the subscriber's subscribed channels map.
+    pub fn subscribe_channel(&mut self, sub: ChannelSubscriberRef, chan: Channel) {
         let mut locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().unwrap();
         if self.is_subscribed(sub.clone(), chan) {
             return;
@@ -79,7 +51,8 @@ impl ChannelMapInterface for ChannelMap {
         self.subscriptions.insert(chan, sub.clone());
     }
 
-    fn unsubscribe_channel(&mut self, sub: ChannelSubscriberRef, chan: Channel) {
+    /// Removes the given channel from the subscribed channels map.
+    pub fn unsubscribe_channel(&mut self, sub: ChannelSubscriberRef, chan: Channel) {
         let mut locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().unwrap();
         if self.is_subscribed(sub.clone(), chan) {
             return;
@@ -95,13 +68,20 @@ impl ChannelMapInterface for ChannelMap {
         locked_sub.subscribed_channels.swap_remove(index);
     }
 
-    fn subscribe_range(&mut self, _sub: ChannelSubscriberRef, _min: Channel, _max: Channel) {}
+    /// Adds an object to be subscribed to a range of channels. The range is inclusive.
+    pub fn subscribe_range(&mut self, _sub: ChannelSubscriberRef, _min: Channel, _max: Channel) {}
 
-    fn unsubscribe_range(&mut self, _sub: ChannelSubscriberRef, _min: Channel, _max: Channel) {}
+    /// Performs the reverse of the subscribe_range() method.
+    pub fn unsubscribe_range(&mut self, _sub: ChannelSubscriberRef, _min: Channel, _max: Channel) {}
 
-    fn unsubscribe_all(&mut self, _sub: ChannelSubscriberRef) {}
+    /// Removes all channel and range subscriptions from the subscriber.
+    pub fn unsubscribe_all(&mut self, _sub: ChannelSubscriberRef) {}
 
-    fn remove_subscriber(&mut self, sub: ChannelSubscriberRef, chan: Channel) -> bool {
+    /// Removes the given subscriber from the multi-map for a given channel.
+    /// Returns true only if:
+    /// a) There are subscribers for the given channel and
+    /// b) The provided subscriber was the last one for the channel, and was removed successfully.
+    pub fn remove_subscriber(&mut self, sub: ChannelSubscriberRef, chan: Channel) -> bool {
         let locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().unwrap();
         let mut sub_count: usize = self.subscriptions.len();
         if sub_count == 0 {
@@ -132,7 +112,8 @@ impl ChannelMapInterface for ChannelMap {
         sub_count == 0
     }
 
-    fn is_subscribed(&mut self, sub: ChannelSubscriberRef, chan: Channel) -> bool {
+    /// Checks if a given object has a subscription on a channel.
+    pub fn is_subscribed(&mut self, sub: ChannelSubscriberRef, chan: Channel) -> bool {
         let locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().unwrap();
         if locked_sub.subscribed_channels.contains(&chan) {
             return true;
@@ -143,5 +124,6 @@ impl ChannelMapInterface for ChannelMap {
         false
     }
 
-    fn are_subscribed(&mut self, _subs: &mut Vec<ChannelSubscriber>, _chans: &[Channel]) {}
+    /// Performs the same check as is_subscribed(), but for an array of channels.
+    pub fn are_subscribed(&mut self, _subs: &mut [ChannelSubscriber], _chans: &[Channel]) {}
 }

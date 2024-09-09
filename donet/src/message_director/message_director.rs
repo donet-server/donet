@@ -15,30 +15,31 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-//use crate::channel_map;
-use crate::network::{TCPAcceptor, TCPConnection};
+use super::channel_map::ChannelMap;
+use crate::network::tcp;
 use log::{error, info};
 use std::io::Result;
 use tokio::net::TcpStream;
-//use core::net::SocketAddr // nightly feature atm
 
 pub struct MessageDirector {
-    binding: TCPAcceptor,
-    _upstream: Option<TCPConnection>,
+    binding: tcp::Acceptor,
+    upstream: Option<tcp::Connection>,
+    channel_map: ChannelMap,
 }
 
 impl MessageDirector {
     pub async fn new(bind_uri: &str, upstream_uri: Option<String>) -> Result<MessageDirector> {
-        let mut upstream_con: Option<TCPConnection> = None;
+        let mut upstream_con: Option<tcp::Connection> = None;
 
         if let Some(u_uri) = upstream_uri {
             info!("Message Director will connect to upstream MD.");
-            upstream_con = Some(TCPConnection::connect(u_uri.as_str()).await?);
+            upstream_con = Some(tcp::Connection::connect(u_uri.as_str()).await?);
         }
 
         Ok(MessageDirector {
-            binding: TCPAcceptor::bind(bind_uri).await?,
-            _upstream: upstream_con,
+            binding: tcp::Acceptor::bind(bind_uri).await?,
+            upstream: upstream_con,
+            channel_map: ChannelMap::default(),
         })
     }
 
@@ -51,9 +52,6 @@ impl MessageDirector {
                     info!("Received incoming connection from {:?}.", address);
 
                     self.handle_datagram(&socket).await?;
-
-                    // TODO: Pass address (core::net::SocketAddr) to handle_datagram()
-                    // once core::net is out of nightly and in stable rust. #108443
                 }
                 Err(socket_err) => error!("Failed to get client: {:?}", socket_err),
             }

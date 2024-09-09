@@ -18,7 +18,7 @@
 use super::msgpack;
 use crate::config;
 use crate::event::LoggedEvent;
-use crate::network::UDPSocket;
+use crate::network::udp;
 use chrono::{DateTime, Duration, Local, TimeZone};
 use libdonet::datagram::datagram::{Datagram, DatagramIterator};
 use log::{debug, error, info, trace};
@@ -47,7 +47,7 @@ pub type Interval = (i64, IntervalUnit);
 /// up a socket and reads UDP packets from that socket. Received
 /// UDP packets will be logged as configured in the daemon TOML file.
 pub struct EventLogger {
-    binding: UDPSocket,
+    binding: udp::Socket,
     log_format: String,
     log_file: Arc<Mutex<Option<File>>>,
     rotation_interval: Interval,
@@ -57,7 +57,7 @@ pub struct EventLogger {
 impl EventLogger {
     pub async fn new(conf: config::EventLogger) -> Result<Self> {
         Ok(Self {
-            binding: UDPSocket::bind(&conf.bind).await?,
+            binding: udp::Socket::bind(&conf.bind).await?,
             log_format: format!("{}{}", conf.output, conf.log_format),
             log_file: Arc::new(Mutex::new(None)),
             rotation_interval: Self::str_to_interval(&conf.rotate_interval),
@@ -289,7 +289,7 @@ mod unit_testing {
     use super::{EventLogger, Interval, IntervalUnit};
     use crate::config;
     use crate::event::LoggedEvent;
-    use crate::network::UDPSocket;
+    use crate::network::udp;
     use libdonet::datagram::datagram::Datagram;
     use std::io::Error;
     use std::result::Result;
@@ -305,7 +305,7 @@ mod unit_testing {
 
         let _: EventLogger = EventLogger::new(conf).await?;
 
-        let sock: UDPSocket = UDPSocket::bind("127.0.0.1:2816").await?;
+        let sock: udp::Socket = udp::Socket::bind("127.0.0.1:2816").await?;
         let mut dg: Datagram;
 
         let mut new_log = LoggedEvent::new("test", "Unit Test Socket");

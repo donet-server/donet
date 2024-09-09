@@ -15,7 +15,18 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-mod channel_map;
-pub mod message_director;
-mod subscriber;
-mod upstream;
+use crate::network::client::Client;
+use std::io::Result;
+use tokio::net::TcpStream;
+
+pub struct Subscriber {
+    client: Client,
+}
+
+impl Subscriber {
+    pub async fn new(socket: TcpStream) -> Result<Self> {
+        Ok(Self {
+            client: Client::new(socket).await?,
+        })
+    }
+}

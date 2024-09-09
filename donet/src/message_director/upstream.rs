@@ -15,7 +15,24 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-mod channel_map;
-pub mod message_director;
-mod subscriber;
-mod upstream;
+use crate::network::tcp;
+use libdonet::datagram::datagram::Datagram;
+use std::io::Result;
+use tokio::sync::Mutex;
+
+/// Represents a connection to an upstream Message Director service.
+pub struct UpstreamMD {
+    connection: tcp::Connection,
+    is_sending: bool,
+    queue: Mutex<Vec<Datagram>>,
+}
+
+impl UpstreamMD {
+    async fn connect(address: &str) -> Result<Self> {
+        Ok(Self {
+            connection: tcp::Connection::connect(address).await?,
+            is_sending: false,
+            queue: Mutex::new(vec![]),
+        })
+    }
+}
