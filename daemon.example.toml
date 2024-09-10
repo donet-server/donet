@@ -27,17 +27,10 @@ dc_files = ["main.dc", "game.dc"]
 
 [services.client_agent]
 bind = "127.0.0.1:7198"
-# 'protocol' will be a future feature.
-#protocol = "TCP" # Underlying protocol to use below Donet's (Options: 'TCP', 'UDP')
 # 'dc_file_hash' tells the daemon what DC hash (32-bit) to expect from the client.
 # This setting may be used if the AI / clients don't have the same DC parser as Donet.
 #dc_file_hash = 0xABCDEF12
 version_string = "v1.0.0"
-# Filtering of object fields with string parameters
-# Can be bypassed by defining a field with the 'bypass' keyword.
-[services.client_agent.filtering]
-mode = "blacklist" # modes: 'whitelist', 'blacklist'. Default: 'blacklist'
-file = "bad_words.txt"
 
 [services.message_director]
 # The 'bind' value specifies the port and address to

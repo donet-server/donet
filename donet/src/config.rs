@@ -50,16 +50,8 @@ pub struct Services {
 #[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct ClientAgent {
     pub bind: String, // '<host>:<port>'
-    //pub protocol: String,
     pub dc_file_hash: Option<String>,
     pub version_string: String,
-    pub filtering: Filtering,
-}
-
-#[derive(Deserialize, PartialEq, Debug, Clone)]
-pub struct Filtering {
-    pub mode: String, // 'blacklist', 'whitelist'
-    pub file: String, // <file_path>
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
@@ -100,7 +92,7 @@ pub struct DBSS {
 #[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct EventLogger {
     pub bind: String,            // '<host>:<port>'
-    pub output: String,          // path, relative to root
+    pub output: String,          // path, relative to fs root
     pub log_format: String,      // e.g. "el-%Y-%m-%d-%H-%M-%S.log"
     pub rotate_interval: String, // e.g. "1d"
 }
