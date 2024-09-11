@@ -17,7 +17,7 @@ The Donet repository is a monorepo that houses two different Rust projects:
 See [donet-server.org](https://www.donet-server.org).
 - **libdonet** - The core utilities for Donet services, including datagram
 utilities and the DC language parser. See
-[lib.donet-server.org](https://lib.donet-server.org).
+[docs.donet-server.org](https://docs.donet-server.org/libdonet).
 
 Please read the [introduction to Donet](./docs/01-Introduction.md) for an
 overview of the project and how the engine works.
@@ -119,10 +119,8 @@ The address of the official Matrix channel for Donet development is
 [#donet:matrix.org](https://matrix.to/#/#donet:matrix.org).
 
 ## Documentation
-Currently the Donet engine is still under heavy development.
-
-For the libdonet rust library documentation, visit
-[lib.donet-server.org](https://lib.donet-server.org).
+The Donet project documentation is available at
+[docs.donet-server.org](https://docs.donet-server.org).
 
 ### Distributed Networking architecture resources
 
