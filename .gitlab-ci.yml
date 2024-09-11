@@ -237,7 +237,7 @@ codecov-upload:
 pages:
   stage: deploy
   dependencies:
-    - cargo-doc
+    - documentation
   rules:
     - if: ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == "master")
   artifacts:
