@@ -87,7 +87,6 @@ parser! {
         python_style_import[py_imports] => ast::TypeDeclaration::PythonImport(py_imports),
         keyword_type[keyword] => ast::TypeDeclaration::KeywordType(keyword),
         struct_type[strct] => ast::TypeDeclaration::StructType(strct),
-        switch_type[switch] => ast::TypeDeclaration::SwitchType(switch),
         distributed_class_type[dclass] => ast::TypeDeclaration::DClassType(dclass),
         type_definition => ast::TypeDeclaration::TypedefType(DCTypeDefinition::new()),
     }

@@ -36,7 +36,6 @@ pub enum TypeDeclaration {
     PythonImport(Vec<PythonImport>),
     KeywordType(KeywordDefinition),
     StructType(Struct),
-    SwitchType(Switch),
     DClassType(DClass),
     TypedefType(DCTypeDefinition),
 }

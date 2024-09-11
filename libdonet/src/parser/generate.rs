@@ -51,7 +51,6 @@ pub fn generate_dcf_structure(ast: ast::Root) -> Rc<RefCell<DCFile>> {
                 //dc_file.borrow_mut().add_keyword(keyword);
             }
             ast::TypeDeclaration::StructType(_) => {}
-            ast::TypeDeclaration::SwitchType(_) => {}
             ast::TypeDeclaration::DClassType(_) => {}
             ast::TypeDeclaration::TypedefType(_) => {}
         }
