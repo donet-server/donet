@@ -139,7 +139,7 @@ unit-testing:
     - meson setup build -Dprofile=debug
     - meson compile tests -C build
 
-cargo-doc:
+documentation:
   image: rust
   stage: build
   interruptible: true
@@ -150,14 +150,20 @@ cargo-doc:
     when: 'always'
   artifacts:
     expire_in: 1 week
-    name: 'Library Documentation'
+    name: 'Project Documentation'
     paths:
       - doc
   script:
     - *install-meson
+    - apk add --no-cache python3
+    - python3 -m venv venv
+    - source venv/bin/activate
+    - python3 -m pip install -r docs/requirements.txt
     - meson setup build -Dprofile=debug
+    - meson compile sphinx -C build
     - meson compile cargo-doc -C build
     - mkdir doc
+    - cp -r build/sphinx/* doc
     - cp -r build/target/doc/* doc
     - chmod -R a=rwx doc
 
@@ -242,9 +248,3 @@ pages:
   script:
     - mkdir public
     - mv doc/* public
-    - cd public
-    # Make an index.html file in the `public/` dir to reroute to
-    # the `libdonet` subdirectory where the actual documentation is at.
-    # This makes the user not encounter a 404 at the root of the pages site.
-    - touch index.html
-    - echo "<meta http-equiv=\"refresh\" content=\"0; url=libdonet\">" > index.html
