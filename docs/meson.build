@@ -18,13 +18,15 @@ run_command(
   check: true
 )
 
-sphinx_docs = custom_target(
-  'sphinx',
-  build_by_default: false,
-  build_always_stale: true,
-  output: 'sphinx',
-  command: [
-    sphinx_bin, meson.project_source_root() / 'docs',
-    meson.project_build_root() / 'sphinx'
-  ]
-)
+if sphinx_bin.found()
+  sphinx_docs = custom_target(
+    'sphinx',
+    build_by_default: false,
+    build_always_stale: true,
+    output: 'sphinx',
+    command: [
+      sphinx_bin, meson.project_source_root() / 'docs',
+      meson.project_build_root() / 'sphinx'
+    ]
+  )
+endif

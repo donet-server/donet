@@ -7,7 +7,7 @@ project('donet', 'rust',
 git_bin = find_program('git', required: true)
 cargo_bin  = find_program('cargo', required: true)
 find_program('ninja', required: true)
-sphinx_bin = find_program('sphinx-build', required: true)
+sphinx_bin = find_program('sphinx-build', required: false)
 
 daemon_bin = meson.project_name() + 'd'
 git_url = 'https://gitlab.com/donet-server/donet'
