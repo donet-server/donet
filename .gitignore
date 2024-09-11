@@ -28,8 +28,8 @@ target/
 .idea/
 *~
 
-# Python Virtual Env
-# Used for testing (with Panda3D)
+# Python Virtual Environment
+# Used for pycobertura and Sphinx
 venv/
 .venv/
 

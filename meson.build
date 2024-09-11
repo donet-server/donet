@@ -7,9 +7,13 @@ project('donet', 'rust',
 git_bin = find_program('git', required: true)
 cargo_bin  = find_program('cargo', required: true)
 find_program('ninja', required: true)
+sphinx_bin = find_program('sphinx-build', required: true)
 
 daemon_bin = meson.project_name() + 'd'
 git_url = 'https://gitlab.com/donet-server/donet'
+donet_website_url = 'https://www.donet-server.org'
+libdonet_website_url = 'https://docs.donet-server.org/libdonet'
+sphinx_website_url = 'https://docs.donet-server.org'
 vcs_tag = run_command(git_bin, 'rev-parse', 'HEAD', check: false).stdout().strip()
 
 cargo_opts = [ '--manifest-path', meson.project_source_root() / 'Cargo.toml' ]
@@ -65,6 +69,7 @@ else
 endif
 
 subdir('donet')
+subdir('docs')
 
 run_target(
   'update',

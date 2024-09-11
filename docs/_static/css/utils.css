@@ -1,0 +1,82 @@
+/* 2xL */
+/* @media (max-width: 1536px) {} */
+
+/* xL */
+/* @media (max-width: 1280px) {} */
+
+/* lg */
+/* @media (max-width: 1024px) {} */
+
+/* md */
+/* @media (max-width: 768px) {} */
+
+/* sm */
+/* @media (max-width: 640px) {} */
+
+/* xs */
+/* @media (max-width: 475px) {} */
+
+.container {
+    max-width: var(--global-max-width); /* should always match max-width of header */
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--global-margin);
+    padding-right: var(--global-margin);
+}
+
+.section {
+    padding-bottom: 10rem;
+    padding-top: 10rem;
+}
+
+/* 2xL */
+@media (max-width: 1536px) {
+    .container {
+      max-width: 1280px;
+    }
+}
+
+/* xL */
+@media (max-width: 1280px) {
+    .container {
+      max-width: 1024px;
+    }
+}
+
+/* lg */
+@media (max-width: 1024px) {
+    .container {
+      max-width: 768px;
+    }
+}
+
+/* md */
+@media (max-width: 768px) {
+    .container {
+      max-width: 640px;
+    }
+}
+
+/* sm */
+@media (max-width: 640px) {
+    .container {
+      max-width: 475px;
+    }
+
+    .section {
+      padding-bottom: 5rem;
+      padding-top: 5rem;
+    }
+}
+
+/* xs */
+@media (max-width: 475px) {
+    .container {
+      max-width: 375px;
+    }
+
+    .section {
+      padding-bottom: 5rem;
+      padding-top: 5rem;
+    }
+}

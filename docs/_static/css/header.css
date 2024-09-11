@@ -1,0 +1,202 @@
+header {
+    background-color: var(--dark-gray);
+    height: var(--header-height);
+    width: 100%;
+    z-index: 1;
+    margin: auto;
+    /* Set some properties from style.css of donet website */
+    /* Keep exclusive to `header` to not override sphinx css. */
+    font-family: 'Days One', sans-serif;
+    color: var(--light-clr);
+    margin: 0;
+    line-height: calc(1em + 0.5rem);
+}
+
+header a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* This is naturally overridden so we override again to get our way */
+header a:visited {
+    color: var(--light-clr);
+}
+
+/* Same as comment above */
+header a p {
+    margin: 0;
+    font-size: var(--size-s);
+    line-height: calc(1em + 0.5rem);
+}
+
+.header-container {
+    height: 100%;
+    max-width: var(--global-max-width);
+    box-sizing: inherit;
+    margin: auto;
+}
+
+.logo {
+    display: inline-block;
+    width: 140px;
+    padding-top: var(--global-margin);
+    padding-bottom: var(--global-margin);
+    margin-left: var(--global-margin);
+}
+
+.desktop-menu {
+    display: flex;
+    float: right;
+    align-items: center;
+    list-style: none;
+    height: 100%;
+    box-sizing: inherit;
+}
+
+.desktop-menu a {
+    font-size: var(--size-s);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: calc((var(--header-height) / 2) - 11px); /* half of height of header minus half of height of link */
+    padding-bottom: calc((var(--header-height) / 2) - 11px);
+    display: flex;
+    background-image: linear-gradient(to bottom, var(--dark-gray) 50%, color-mix(in srgb, var(--light-pink), transparent 70%) 50%);
+    background-size: 100% 200%;
+    -webkit-transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: 0;
+    line-height: calc(1em + 0.5rem);
+}
+
+.desktop-menu a:hover {
+    background-position: 0 100%;
+    color: var(--light-clr); /* Fixes some odd conflict with sphinx css */
+}
+
+/* Assuming an image in a link serves as an icon. */
+.desktop-menu a img {
+    width: 22px;
+    height: 22px;
+    margin-right: 7px;
+}
+
+.popup-menu {
+    position: fixed;
+    z-index: 9998;
+    list-style: none;
+    box-sizing: inherit;
+    padding: 16px;
+    border-left: 2px solid var(--pastel-pink);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    margin-top: var(--header-height);
+    margin-left: 50%;
+    background: var(--dark-gray);
+    color: #fff;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+}
+
+/* Assuming an image in a link serves as an icon. */
+.popup-menu a img {
+    width: 22px;
+    height: 22px;
+    margin-right: 7px;
+}
+
+.popup-menu a {
+    font-size: var(--size-s);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: calc((var(--header-height) / 2) - 16px); /* half of height of header minus half of height of link */
+    padding-bottom: calc((var(--header-height) / 2) - 16px);
+    display: flex;
+    background-image: linear-gradient(to bottom, var(--dark-gray) 50%, color-mix(in srgb, var(--light-pink), transparent 70%) 50%);
+    background-size: 100% 200%;
+    -webkit-transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.popup-menu a:hover {
+    background-position: 0 100%;
+}
+
+.menu-icon {
+    display: none;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    align-content: center;
+}
+
+.menu-icon img {
+    width: 30px;
+    height: 30px;
+}
+
+.menu-icon input {
+    position: absolute;
+    opacity: 0%;
+    z-index: -1;
+    width: 30px; /* Same dimensions as `.menu-icon img` */
+    height: 30px;
+}
+
+/* Show the popup nav menu when checkbox is checked. */
+.menu-icon input:checked ~ .popup-menu {
+    transform: translateX(0);
+}
+
+.shadow {
+    position: fixed;
+    z-index: 9997;
+    box-sizing: inherit;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    margin-top: var(--header-height);
+    background: #000;
+    pointer-events: none;
+    opacity: 0%;
+    -webkit-transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-icon input:checked ~ .shadow {
+    opacity: 50%;
+}
+
+/* 2xL */
+/* @media (max-width: 1536px) {} */
+
+/* xL */
+/* @media (max-width: 1280px) {} */
+
+/* lg */
+/* @media (max-width: 1024px) {} */
+
+/* md */
+@media (max-width: 768px) {
+    header {
+        padding: 0 16px 0 0;
+    }
+
+    .menu-icon {
+        display: block;
+        float: right;
+        height: 100%;
+    }
+
+    .desktop-menu {
+        display: none;
+    }
+}
+
+/* sm */
+/* @media (max-width: 640px) {} */
+
+/* xs */
+/* @media (max-width: 475px) {} */

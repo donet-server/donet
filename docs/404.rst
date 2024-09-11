@@ -1,0 +1,16 @@
+:orphan:
+
+Page Not Found
+==============
+
+The requested page was not found in the Donet documentation. The
+search feature may help you find what you are looking for.
+
+.. raw:: html
+
+   <!--INSERT-->
+
+If you have arrived here because you followed a link in the official
+documentation, please `file an issue`_ to make us aware of this.
+
+.. _file an issue: https://gitlab.com/donet-server/donet/issues

@@ -1,19 +1,19 @@
-<img src="../logo/donet_banner.png" align="right" width="30%"/>
+.. _intro:
 
-# 01 - Introduction to Donet
+Introduction to Donet
+=====================
 
-**Donet**[^1] ([/ˈdoʊ.net/](https://en.wikipedia.org/wiki/Help:IPA/English))
-is a free and open-source server software, designed for powering massive
-multiplayer online games. The design of Donet focuses on solving five
-critical problems: Network **culling**, data **persistence**, **security**,
-**reliability**, and **scalability**.
+**Donet** [1]_ ( `/ˈdoʊ.net/`_ )
+is a free and open source server software, designed for powering massive
+multiplayer online virtual worlds. The design of Donet focuses on solving
+five critical problems: Network **culling**, data **persistence**,
+**security**, **reliability**, and **scalability**.
 
 The architecture of this project is inspired by the OTP (Online Theme Park)
 server, which was developed by Disney Interactive (formerly known as Disney VR
 Studios) and used from 2001 to 2013 to power massive multiplayer online games
 such as Toontown Online, Pirates of the Caribbean Online, and others. Donet is
-licensed under the
-[GNU Affero General Public License](https://www.gnu.org/licenses/agpl-3.0.html).
+licensed under the `GNU Affero General Public License`_.
 
 Donet is designed to distribute the workload of operating a virtual world (or
 online application) by separating it's fundamental functions into different
@@ -21,38 +21,39 @@ services. In a production environment, many instances of Donet can be running in
 different machines, each serving a specific role in the cluster while
 communicating with each other over the Donet protocol.
 
-[^1]: An acronym for 'Distributed Object Networking'.
+.. _/ˈdoʊ.net/: https://en.wikipedia.org/wiki/Help:IPA/English
+.. _GNU Affero General Public License: https://www.gnu.org/licenses/agpl-3.0.html
 
-## Overview
+Overview
+--------
 
 Distributed Networking is the high-level network API of the Panda3D engine. When
 a distributed object is created, all interested clients will automatically
 create a copy of that object. Updates to the object will automatically propagate
 to the copies. Field updates can be culled according to the rules applied to
-object fields via keywords[^2].
+object fields via keywords [2]_.
 
-[^2]: Modifies behavior of object fields, such as permissions or culling.
+The distributed network is composed of several layers: The DC file (\*.dc),
+is a :term:`DSL` which defines the communication, or the
+:term:`network contract`, of your networked application, the Donet cluster
+which handles communication between clients, Client/AI Repositories which
+interact and manage the Distributed Objects, and the Distributed Objects
+themselves.
+
 Refer to the DC file documentation for more information.
 
-The distributed network is composed of several layers: The DC file (*.dc), is a
-[DSL](https://en.wikipedia.org/wiki/Domain-specific_language) which defines
-the communication, or the network
-[contract](https://en.wikipedia.org/wiki/Design_by_contract), of
-your networked application, the Donet cluster which handles communication
-between clients, Client/AI Repositories which interact and manage the
-Distributed Objects, and the Distributed Objects themselves.
-
-<br>
-
-## Fundamental Terms & Concepts
+Fundamental Terms & Concepts
+----------------------------
 
 There are many acronyms that you will find as you read the documentation. Please
 review the list below to learn and understand the different concepts and terms.
+Also refer to the :ref:`glossary` for more terms and definitions.
 
 - **DO**
 
-  Distributed Object. Represents an object present in a State Server's
-  visibility tree.
+  Distributed Object. Represents an instance of a Distributed Class. This
+  object is present in the State Server's visibility tree and views of it
+  can also exist on Donet clients. This includes AI and game clients.
 
 - **DOG**
 
@@ -82,7 +83,7 @@ review the list below to learn and understand the different concepts and terms.
   way related to the field of machine learning. An AI is a process on the server
   cluster's internal network that acts as a client connected directly to a
   Message Director instance. This means that all AI clients bypass the Client
-  Agent, as they are inside of the 'trusted zone[^3].' AI processes have
+  Agent, as they are inside of the 'trusted zone [3]_.' AI processes have
   **authority over Distributed Objects** and host the game/application's logic.
 
 - **UD**
@@ -111,7 +112,8 @@ review the list below to learn and understand the different concepts and terms.
   Objects seen by a client, but not owned by it, also have their client-side
   representation without a suffix.
 
-  <img src="./images/view_diagram.png" width=70% />
+  .. image:: view_diagram.png
+     :align: left
 
   Each view implements the logic that is executed when a field of the
   Distributed Object is called. For example, a Distributed Class named
@@ -123,29 +125,41 @@ review the list below to learn and understand the different concepts and terms.
   objects they have ownership of, or use shared logic for objects they do not
   own.
 
-  The concept of views is very similar to the
-  [Model-view-controller (MVC)](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller)
-  software design pattern.
+  The concept of views is very similar to the :term:`Model-view-controller`
+  (MVC) software design pattern.
 
 - **CR**
 
-  Client Repository. See
-  [Panda3D's Client Repository](https://docs.panda3d.org/1.10/python/programming/networking/distributed/client-repositories).
+  Client Repository. See `Panda3D's Client Repository`_.
+
+.. _`Panda3D's Client Repository`: https://docs.panda3d.org/1.10/python/programming/networking/distributed/client-repositories
 
 - **AIR**
 
-  AI Repository. See
-  [Panda3D's AI Repository](https://docs.panda3d.org/1.10/python/programming/networking/distributed/ai-repositories).
+  AI Repository. See `Panda3D's AI Repository`_.
 
-<br>
+.. _`Panda3D's AI Repository`: https://docs.panda3d.org/1.10/python/programming/networking/distributed/ai-repositories
+
+Additional Resources
+--------------------
 
 If you wish to learn more about Panda3D's Distributed Networking, you can also
 visit these resources available online:
 
-- [October 2003: Building a MMOG for the Million - Disney's Toontown Online](https://dl.acm.org/doi/10.1145/950566.950589)
-- [Apr 16, 2008: The DistributedObject System, client side](https://www.youtube.com/watch?v=JsgCFVpXQtQ)
-- [Apr 23, 2008: DistributedObjects and the OTP server](https://www.youtube.com/watch?v=r_ZP9SInPcs)
-- [Apr 30, 2008: OTP Server Internals](https://www.youtube.com/watch?v=SzybRdxjYoA)
-- [October 2010: (GDC Online) MMO 101 - Building Disney's Server System](https://www.gdcvault.com/play/1013776/MMO-101-Building-Disney-s)
-- [(PDF Slideshow) MMO 101 - Building Disney's Server System](https://ubm-twvideo01.s3.amazonaws.com/o1/vault/gdconline10/slides/11516-MMO_101_Building_Disneys_Sever.pdf)
+- `October 2003 | Building a MMOG for the Million - Disney's Toontown Online`_
+- `Apr 16, 2008 | The DistributedObject System, client side`_
+- `Apr 23, 2008 | DistributedObjects and the OTP server`_
+- `Apr 30, 2008 | OTP Server Internals`_
+- `October 2010 | (GDC Online) MMO 101 - Building Disney's Server System`_
+- `(PDF Slideshow) MMO 101 - Building Disney's Server System`_
 
+.. _October 2003 | Building a MMOG for the Million - Disney's Toontown Online: https://dl.acm.org/doi/10.1145/950566.950589
+.. _Apr 16, 2008 | The DistributedObject System, client side: https://www.youtube.com/watch?v=JsgCFVpXQtQ
+.. _Apr 23, 2008 |  DistributedObjects and the OTP server: https://www.youtube.com/watch?v=r_ZP9SInPcs
+.. _Apr 30, 2008 | OTP Server Internals: https://www.youtube.com/watch?v=SzybRdxjYoA
+.. _October 2010 | (GDC Online) MMO 101 - Building Disney's Server System: https://www.gdcvault.com/play/1013776/MMO-101-Building-Disney-s
+.. _(PDF Slideshow) MMO 101 - Building Disney's Server System: https://ubm-twvideo01.s3.amazonaws.com/o1/vault/gdconline10/slides/11516-MMO_101_Building_Disneys_Sever.pdf
+
+.. [1] An acronym for 'Distributed Object Networking'.
+.. [2] Modifies behavior of object fields, such as permissions or culling.
+.. [3] See the example diagram in this document for context.

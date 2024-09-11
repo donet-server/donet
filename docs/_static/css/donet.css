@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=Days+One&display=swap');
+
+:root {
+    --global-max-width: 1440px;
+    --global-margin: 8px;
+    --header-height: 60px;
+
+    /* color palette */
+    --dark-gray: #232323;
+    --pastel-pink: #f7717c;
+    --light-pink: #f89aa1;
+    --light-clr: #fff2f3;
+    --cherry-blosson-clr: #f7b2b7;
+    --coral-clr: #f7717d;
+    --thulian-clr: #de639a;
+    --mardigras-clr: #7f2982;
+    --drkpurple-clr: #16001e;
+
+    /* sizes */
+    --size-xxs: 0.5rem;
+    --size-xs: 0.75rem;
+    --size-s: 0.875rem;
+    --size-base: 1rem;
+    --size-lg: 1.125rem;
+    --size-xl: 1.25rem;
+    --size-2xl: 1.5rem;
+    --size-3xl: 1.875rem;
+    --size-4xl: 2.25rem;
+    --size-5xl: 3rem;
+    --size-6xl: 3.75rem;
+    --size-7xl: 4.5rem;
+    --size-8xl: 6rem;
+    --size-9xl: 8rem;
+    --size-10xl: 10rem;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body, .wy-body-for-nav {
+    background: url("../background.jpg") var(--light-clr);
+}
+
+.wy-grid-for-nav {
+    position: fixed !important;
+    max-width: 1100px;
+    margin: 0 auto;
+    -webkit-box-shadow: 3px 3px 15px rgba(0,0,0,0.15);
+    box-shadow: 3px 3px 15px rgba(0,0,0,0.15);
+    overflow-y: auto;
+}
+
+@media screen and (min-width: 1100px) {
+    .wy-grid-for-nav {
+        left: calc(50% - 550px);
+    }
+}
+
+@media screen and (min-width: 767px) {
+    .wy-nav-side {
+        left: inherit;
+    }
+}
+
+/* top bar that appears in mobile version */
+.wy-nav-top {
+    background: var(--dark-gray);
+    height: 55px;
+    line-height: 55px;
+    padding: 0 0;
+}
+
+.wy-nav-top i {
+    font-size: 24px;
+    line-height: 55px;
+    padding: 0 16px;
+
+    background-image: -webkit-gradient(linear,left top,left bottom,color-stop(50%,transparent),color-stop(50%,#252424));
+    background-image: -webkit-linear-gradient(top,transparent 50%,#252424 50%);
+    background-image: linear-gradient(to bottom,transparent 50%,#252424 50%);
+    background-size: 100% 200%;
+    -webkit-transition: all .25s cubic-bezier(0.4,0,0.2,1);
+    transition: all .25s cubic-bezier(0.4,0,0.2,1);
+}
+
+.wy-nav-top i:hover, .wy-nav-top i:active, .wy-nav-top i:focus {
+    background-position: 0 100%;
+}
+
+.wy-nav-content {
+    background: #fff;
+    border-radius: 4px;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* override table width restrictions */
+@media screen and (min-width: 767px) {
+
+   .wy-table-responsive table td {
+      /* !important prevents the common CSS stylesheets from overriding
+         this as on RTD they are loaded after this stylesheet */
+      white-space: normal !important;
+   }
+
+   .wy-table-responsive {
+      overflow: visible !important;
+   }
+}
+
+/* style the version selection links */
+.sidebar-curr-variation {
+    margin: 4px 6px;
+}
+
+.sidebar-variation-link {
+    /*border-bottom: 1px solid white;*/
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+/* Sphinx side navbar should not expand above our header */
+.wy-nav-side {
+    margin-top: var(--header-height);
+}
+
+/* make search box border match the background */
+.wy-side-nav-search input[type=text] {
+    border-color: var(--coral-clr);
+}
+
+.wy-menu-vertical li span.toctree-expand {
+    margin-left: -1.4em;
+}
+
+.wy-menu-vertical a {
+    padding: .4045em 1.918em;
+}
+
+/* make sidebar link click state match the background color */
+.wy-menu-vertical a:active {
+    background-color: var(--thulian-clr);
+}
+
+.rst-content dl.glossary dt {
+    background: inherit;
+    color: inherit;
+    border-top: inherit;
+    padding: inherit;
+}

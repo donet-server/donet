@@ -1,0 +1,70 @@
+# Configuration file for the Sphinx documentation builder.
+#
+# For the full list of built-in configuration values, see the documentation:
+# https://www.sphinx-doc.org/en/master/usage/configuration.html
+
+# -- Project information -----------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+
+project = 'Donet'
+copyright = '2024, The Donet Authors'
+author = 'The Donet Authors'
+release = '2024'
+needs_sphinx = '7.4'
+version = 'master'
+language = 'en'
+
+# -- General configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+
+# Add any Sphinx extension module names here, as strings. They can be
+# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
+extensions = []
+templates_path = ['_templates']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+source_suffix = '.rst'
+master_doc = 'index'
+# The name of the Pygments (syntax highlighting) style to use.
+pygments_style = 'default'
+
+# -- Options for HTML output -------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
+
+html_theme = 'sphinx_rtd_theme'
+html_theme_options = {
+    'style_nav_header_background': '#f7717d',
+    'logo_only': True,
+    'collapse_navigation': False,
+    'prev_next_buttons_location': 'both',
+    'style_external_links': True,
+    'display_version': True,
+}
+html_static_path = ['_static']
+# The name for this set of Sphinx documents.  If None, it defaults to
+# "<project> v<release> documentation".
+html_title = 'Donet Manual'
+html_logo = None
+# The name of an image file (within the static path) to use as favicon of the
+# docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
+# pixels large.
+html_favicon = '_static/favicon/favicon.ico'
+html_context = {
+    'css_files': [
+        '_static/css/badge_only.css',
+        '_static/css/theme.css',
+        '_static/css/donet.css',  # override wide tables in RTD theme
+    ],
+    'display_gitlab': True,
+    'gitlab_user': 'donet-server',
+    'gitlab_repo': 'donet',
+    # All our rst source files are not in the donet repo root, but
+    # under the `docs/` subdir, so we need to adjust this through the
+    # `gitlab_version` property, and append `/docs` to the string.
+    'gitlab_version': version + '/docs',
+    'conf_py_path': '/',
+    'version': version,
+}
+# Don't copy the sources; use GitLab links instead.
+html_copy_source = False
+html_show_sphinx = True
+html_show_copyright = True
