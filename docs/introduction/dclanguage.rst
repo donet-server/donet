@@ -59,9 +59,27 @@ followed in this document is `ISO/IEC 14977`_.
 Lexical Tokens
 --------------
 
+In a *.dc* file, spacing characters such as ``0x20`` and ``\t`` as
+well as newline characters like ``\n`` and ``\r`` that exist
+between lexical elements are ignored.
+
+The DC lexer also accepts comments as tokens, which it then ignores.
+C++-style comments (single line) and C-style comments (multi-line)
+are both recognized by the lexer.
+
+.. code-block:: cpp
+
+    // This is a C++-style comment.
+    /* This is a C-style comment. */
+
+These ignored tokens should be used to make the file easier
+to read for the developer.
+
+Prelude
+^^^^^^^
+
 .. code-block:: ebnf
 
-    (* Prelude *)
     letter = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z';
 
     decimal digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
@@ -70,7 +88,11 @@ Lexical Tokens
     binary digit = '0' | '1';
     decimals = decimal digit, { decimal digit };
 
-    (* Literals *)
+Literals
+^^^^^^^^
+
+.. code-block:: ebnf
+
     decimal literal = ( decimal digit - '0' ), { decimal digit };
     octal literal = '0', { octal digit };
     hex literal = '0', ( 'x' | 'X' ), hexadecimal digit, { hexadecimal digit };
@@ -80,19 +102,31 @@ Lexical Tokens
     string literal = '"', { ? UTF-8 character ? - '"' }, '"';
     escape character = '\', ( 'x', hexadecimal digit, { hexadecimal digit } | ? UTF-8 character ? );
 
-    (* Data Types *)
+Data Types
+^^^^^^^^^^
+
+.. code-block:: ebnf
+
     char type = 'char';
     bool type = 'bool'; (* Unique to Donet; alias for uint8 *)
+
+    (* Signed integer types *)
     int8 type = 'int8';
     int16 type = 'int16';
     int32 type = 'int32';
     int64 type = 'int64';
+
+    (* Unsigned integer types *)
     uint8 type = 'uint8';
     uint16 type = 'uint16';
     uint32 type = 'uint32';
     uint64 type = 'uint64';
+
+    (* Floating point types *)
     float32 type = 'float32'; (* Introduced by Astron *)
     float64 type = 'float64';
+
+    (* Array types *)
     int8 array type = 'int8array';
     int16 array type = 'int16array';
     int32 array type = 'int32array';
@@ -100,46 +134,162 @@ Lexical Tokens
     uint16 array type = 'uint16array';
     uint32 array type = 'uint32array';
     uint32 uint8 array type = 'uint32uint8array';
+
+    (* Sized types *)
     string type = 'string';
     blob type = 'blob';
     blob32 type = 'blob32'; (* Used in Panda *)
 
-    (* Keywords *)
+Keywords
+^^^^^^^^
+
+The following identifiers are reserved as keywords and may
+not be used as identifiers.
+
+.. code-block:: ebnf
+
+    (* Keyword tokens will be referred to by their literal string
+       (e.g. 'dclass') in the context-free grammar for readability. *)
+
     dclass = 'dclass';
     struct = 'struct';
     keyword = 'keyword';
     typedef = 'typedef';
+
+    (* Python-style imports *)
     from = 'from';
     import = 'import';
-    switch = 'switch'; (* Used in Panda *)
+
+    (* Panda switch statements *)
+    switch = 'switch';
     case = 'case';
     default = 'default';
     break = 'break';
 
-    (* Identifiers *)
+Identifiers
+^^^^^^^^^^^
+
+.. code-block:: ebnf
+
     identifier = ( letter | '_' ), { letter | decimal digit | '_' };
     dc keyword = 'ram' | 'required' | 'db' | 'airecv' | 'ownrecv' | 'clrecv' | 'broadcast' | 'ownsend' | 'clsend';
-    view suffix = 'AI' | 'OV' | 'UD'; (* Used in imports *)
+    view suffix = 'AI' | 'OV' | 'UD'; (* Used in python-style imports *)
+
+Operators
+^^^^^^^^^
+
+.. code-block:: ebnf
+
+    (* Operators will be referred to by their literal character
+       (e.g. '%') in the context-free grammar for readability. *)
+
+    percent = '%';
+    star = '*';
+    plus = '+';
+    hyphen = '-';
+    forward slash = '/';
+    period = '.';
+
+Delimiters
+^^^^^^^^^^
+
+Delimiters are used to separate other lexical tokens. Some delimiter
+tokens may have additional special meaning in certain productions
+in the :term:`Context-Free Grammar`.
+
+.. code-block:: ebnf
+
+    (* Delimiters will be referred to by their literal character
+       (e.g. ';') in the context-free grammar for readability. *)
+
+    open parenthesis = '(';
+    close parenthesis = ')';
+    open braces = '{';
+    close braces = '}';
+    open brackets = '[';
+    close brackets = ']';
+    comma = ',';
+    semicolon = ';';
+    equals = '=';
+    colon = ':';
 
 Context-Free Grammar
 --------------------
+
+DC File
+^^^^^^^
+
+The ``DC File`` is the root production of the grammar.
+The root production is made up of **one or more** type
+declarations. Each type declaration can optionally be
+terminated with a semicolon (``;``) character.
 
 .. code-block:: ebnf
 
     (* Root production of the grammar *)
     dc file = type declaration, { ';' | type declaration };
 
-    type declaration = dc import | keyword decl | struct decl | dclass decl | typedef decl;
+    type declaration = python import | keyword decl | typedef decl | dclass decl | struct decl;
 
-    (* DC Import *)
-    dc import = from, identifier, { '.', identifier }, view suffixes, import, ( '*' | ( identifier, view suffixes ) );
+Python-style Import
+^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: ebnf
+
+    python import = py modules, py symbols;
+    py modules = 'from', identifier, { '.', identifier }, view suffixes;
+    py symbols = 'import', ( '*' | ( identifier, view suffixes ) );
     view suffixes = { '/', view suffix };
 
-    (* Keyword *)
-    keyword decl = keyword, ( identifier | dc keyword );
+Keyword
+^^^^^^^
 
-    (* Struct *)
-    struct decl = struct, identifier, '{', { struct field, ';' }, '}';
+.. code-block:: ebnf
+
+    (* Can be a historical DC keyword or a defined one. *)
+    keyword decl = 'keyword', ( identifier | dc keyword );
+    keyword list = { identifier | dc keyword };
+
+Type Definition
+^^^^^^^^^^^^^^^
+
+.. code-block:: ebnf
+
+    typedef decl = 'typedef', nonmethod type with name, [ '[', array range, ']' ];
+
+Struct
+^^^^^^
+
+.. code-block:: ebnf
+
+    struct decl = 'struct', identifier, '{', struct fields, '}';
+    struct fields = { struct field, ';' };
     struct field = switch decl | unnamed field | named field;
 
-    (* TODO! *)
+Distributed Class
+^^^^^^^^^^^^^^^^^
+
+.. code-block:: ebnf
+
+    dclass decl = 'dclass', identifier, parents, '{', class fields, '}';
+    parents = ':', identifier, { ',', identifier };
+
+    class fields = { class field, [ ';' ] };
+    class field = atomic field | molecular field;
+
+Class Fields
+^^^^^^^^^^^^
+
+.. code-block:: ebnf
+
+    atomic field = named field, keyword list;
+    molecular field = identifier, ':', identifier, { ',', identifier };
+
+Switch
+^^^^^^
+
+.. code-block:: ebnf
+
+    switch decl = 'switch', '(', parameter, ')', '{', switch fields, '}';
+    switch fields = { switch case | ( type value, ';' ) | ( named field, ';' ) | ( 'break', ';' ) };
+    switch case = ( ( 'case', type value ) | 'default' ), ':';
