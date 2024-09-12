@@ -10,11 +10,17 @@ find_program('ninja', required: true)
 sphinx_bin = find_program('sphinx-build', required: false)
 
 daemon_bin = meson.project_name() + 'd'
-git_url = 'https://gitlab.com/donet-server/donet'
+vcs_tag = run_command(git_bin, 'rev-parse', 'HEAD', check: false).stdout().strip()
+
+# Used in configuring Sphinx documentation to link sources to the repo.
+git_host = 'gitlab'
+git_host_user = 'donet-server'
+git_host_repo = 'donet'
+git_url = 'https://gitlab.com/' + git_host_user + '/' + git_host_repo
+
 donet_website_url = 'https://www.donet-server.org'
 libdonet_website_url = 'https://docs.donet-server.org/libdonet'
 sphinx_website_url = 'https://docs.donet-server.org'
-vcs_tag = run_command(git_bin, 'rev-parse', 'HEAD', check: false).stdout().strip()
 
 cargo_opts = [ '--manifest-path', meson.project_source_root() / 'Cargo.toml' ]
 cargo_opts += [ '--target-dir', meson.project_build_root()  / 'target' ]

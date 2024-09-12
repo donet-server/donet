@@ -54,13 +54,13 @@ html_context = {
         '_static/css/theme.css',
         '_static/css/donet.css',  # override wide tables in RTD theme
     ],
-    'display_gitlab': True,
-    'gitlab_user': 'donet-server',
-    'gitlab_repo': 'donet',
+    'display_@GIT_HOST@': True,
+    '@GIT_HOST@_user': '@GIT_HOST_USER@',
+    '@GIT_HOST@_repo': '@GIT_HOST_REPO@',
     # All our rst source files are not in the donet repo root, but
     # under the `docs/` subdir, so we need to adjust this through the
     # `gitlab_version` property, and append `/docs` to the string.
-    'gitlab_version': version + '/docs',
+    '@GIT_HOST@_version': version + '/docs',
     'conf_py_path': '/',
     'version': version,
 }

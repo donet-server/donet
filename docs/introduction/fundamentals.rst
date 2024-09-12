@@ -83,8 +83,10 @@ Also refer to the :ref:`glossary` for more terms and definitions.
   objects they have ownership of, or use shared logic for objects they do not
   own.
 
-  The concept of views is very similar to the :term:`Model-view-controller`
-  (MVC) software design pattern.
+  .. tip::
+
+    The concept of views is very similar to the
+    :term:`Model-view-controller` (MVC) software design pattern.
 
 - **CR**
 
