@@ -98,6 +98,9 @@ Glossary
       A formal grammar used to define languages. See
       `context-free grammar`_ on Wikipedia.
 
+   Unit Testing
+      See `Unit Testing`_ on Wikipedia.
+
    async
       Common abbreviation of :term:`asynchronous`.
 
@@ -120,3 +123,4 @@ Glossary
 .. _Design by contract: https://en.wikipedia.org/wiki/Design_by_contract
 .. _MVC: https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller
 .. _context-free grammar: https://en.wikipedia.org/wiki/Context-free_grammar
+.. _Unit Testing: https://en.wikipedia.org/wiki/Unit_testing

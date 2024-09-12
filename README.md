@@ -19,11 +19,12 @@ See [donet-server.org](https://www.donet-server.org).
 utilities and the DC language parser. See
 [docs.donet-server.org](https://docs.donet-server.org/libdonet).
 
-Please read the [introduction to Donet](./docs/01-Introduction.md) for an
-overview of the project and how the engine works.
+Please read the
+[introduction to Donet](https://docs.donet-server.org/introduction)
+for an overview of the project and how the engine works.
 
 Before starting your own contribution to Donet, please read over the
-[Contributing Guidelines](./CONTRIBUTING.md).
+[Contributing Guidelines](https://docs.donet-server.org/internal/guidelines).
 
 We use Git for version control and Meson as the build system.
 
@@ -55,84 +56,14 @@ If any `build_*` Meson options are passed, `--no-default-features` is passed
 to cargo build, which disables building all services. Only the service(s) that
 you explicitly request to be built will be activated via feature flags.
 
-## Code Coverage &nbsp; [![codecov](https://codecov.io/gl/donet-server/donet/graph/badge.svg?token=XCESKI8ISS)](https://codecov.io/gl/donet-server/donet)
-
-The Donet project uses [Codecov](https://codecov.io) as its online dashboard for
-viewing unit test coverage statistics. The CI/CD pipeline generates the
-Cobertura XML and uploads it to Codecov if it is on the default branch. You can
-use the badge above or the badge in the GitLab repository to go to the
-dashboard for Donet.
-
-<img src="https://codecov.io/gl/donet-server/donet/graphs/sunburst.svg?token=XCESKI8ISS" alt="Coverage graph"/>
-
-### Debugging Unit Tests
-
-To debug unit tests with a debugger such as [GDB](https://sourceware.org/gdb/),
-you need to have the unit tests binary. You can build this with the following
-Meson build command:
-```sh
-meson compile build-tests -C build
-```
-
-This Meson run target will build unit tests for each crate in the workspace.
-The unit test binaries should be written to the following path:
-```
-build/target/debug/deps/donetd-<hash>
-build/target/debug/deps/libdonet-<hash>
-```
-
-### Reviewing Coverage Reports Locally
-
-The latest commit's unit test code coverage report can be viewed online at
-[https://codecov.io](https://codecov.io/gl/donet-server/donet). The dashboard
-displays the code coverage percentage for the entire project and allows you
-to view covered and missing lines per source file if you are logged in.
-
-During development, you may need to inspect the code coverage report directly
-from your latest local changes before you can see it on the online dashboard
-after pushing a new commit.
-
-Donet uses [Tarpaulin](https://github.com/xd009642/tarpaulin) to generate
-code coverage reports. To build the coverage report locally, run the following
-run target using Meson:
-```sh
-meson compile code-coverage -C build
-```
-
-The output of this run target should be 2 coverage report files:
-```
-build/target/tarpaulin/cobertura.xml
-build/target/tarpaulin/coverage.json
-```
-
-These are large XML/JSON files, so you will need a tool to view the report.
-You can use [pycobertura](https://github.com/aconrad/pycobertura) to view the
-code coverage report from your terminal. To do this, run:
-```sh
-python -m pip install pycobertura
-python -m pycobertura show build/target/tarpaulin/cobertura.xml
-```
+## Documentation
+The Donet project documentation is available at
+[docs.donet-server.org](https://docs.donet-server.org).
 
 ## Communication
 
 The address of the official Matrix channel for Donet development is
 [#donet:matrix.org](https://matrix.to/#/#donet:matrix.org).
-
-## Documentation
-The Donet project documentation is available at
-[docs.donet-server.org](https://docs.donet-server.org).
-
-### Distributed Networking architecture resources
-
-Resources for more info on Panda's Distributed Networking
-(Sources listed in chronological order):
-
-- [October 2003: Building a MMOG for the Million - Disney's Toontown Online](https://dl.acm.org/doi/10.1145/950566.950589)
-- [Apr 16, 2008: The DistributedObject System, client side](https://www.youtube.com/watch?v=JsgCFVpXQtQ)
-- [Apr 23, 2008: DistributedObjects and the OTP server](https://www.youtube.com/watch?v=r_ZP9SInPcs)
-- [Apr 30, 2008: OTP Server Internals](https://www.youtube.com/watch?v=SzybRdxjYoA)
-- [October 2010: (GDC Online) MMO 101 - Building Disney's Server System](https://www.gdcvault.com/play/1013776/MMO-101-Building-Disney-s)
-- [(PDF Slideshow) MMO 101 - Building Disney's Server System](https://ubm-twvideo01.s3.amazonaws.com/o1/vault/gdconline10/slides/11516-MMO_101_Building_Disneys_Sever.pdf)
 
 <br>
 

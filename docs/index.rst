@@ -44,7 +44,7 @@ between the different sections and their contained pages.
    :maxdepth: 2
 
    introduction/index
-   dclanguage
+   internal/index
    glossary
 
 Get in Touch
