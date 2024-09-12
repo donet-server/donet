@@ -26,35 +26,10 @@ for an overview of the project and how the engine works.
 Before starting your own contribution to Donet, please read over the
 [Contributing Guidelines](https://docs.donet-server.org/internal/guidelines).
 
-We use Git for version control and Meson as the build system.
+## Building
 
-The quickest way to build for release is to do the following:
-
-To build Donet, run the following under the project directory:
-```sh
-meson setup build -Dprofile=debug
-meson compile -C build
-```
-
-If you are working on a contribution to either the Donet daemon or libdonet,
-please run code linting and unit testing before pushing:
-```sh
-meson compile linting -C build
-meson compile tests -C build
-```
-
-These checks should go over all source files in the `donet/` and `libdonet/`
-source directories.
-
-If you would like to build only certain Donet services into the output binary,
-you can use the available Meson options to trigger feature flags in the Crate:
-```sh
-meson setup build -Dbuild_state_server=true
-```
-
-If any `build_*` Meson options are passed, `--no-default-features` is passed
-to cargo build, which disables building all services. Only the service(s) that
-you explicitly request to be built will be activated via feature flags.
+The build instructions for Donet are available in the
+[docs](https://docs.donet-server.org/gettingstarted/building-linux).
 
 ## Documentation
 The Donet project documentation is available at

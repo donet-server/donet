@@ -44,6 +44,7 @@ between the different sections and their contained pages.
    :maxdepth: 2
 
    introduction/index
+   gettingstarted/index
    internal/index
    glossary
 
