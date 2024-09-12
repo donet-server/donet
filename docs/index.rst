@@ -36,8 +36,7 @@ between the different sections and their contained pages.
    :maxdepth: 2
 
    introduction/index
-   introduction/services
-   introduction/dclanguage
+   dclanguage
    glossary
 
 Get in Touch
