@@ -8,6 +8,14 @@
 Donet Manual
 ============
 
+.. warning::
+
+   Donet is still under heavy development and **not** yet ready
+   for use in a production environment.
+
+   This documentation should give you a sense of what the final
+   product will look like.
+
 Welcome to the Donet network engine documentation. Donet is a
 free and open source networking engine for massive multiplayer
 online games.
