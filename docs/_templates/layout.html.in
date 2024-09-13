@@ -97,6 +97,9 @@
         <img class="logo" src="{{ pathto('_static/donet_banner.png', 1) }}" alt="Donet Logo">
         </a>
         <nav class="desktop-menu">
+        <a href="@DONET_URL@">
+            <p>Home</p>
+        </a>
         <a href="@DONET_URL@#three-points">
             <p>About</p>
         </a>
@@ -118,6 +121,9 @@
         <input type="checkbox" id="menutoggle"/>
         <img src="{{ pathto('_static/symbolic/open-menu-symbolic.svg', 1) }}" alt="Main Menu" style="filter: brightness(1000%);">
         <nav class="popup-menu">
+            <a href="@DONET_URL@">
+            <p>Home</p>
+            </a>
             <a href="@DONET_URL@#three-points">
             <p>About</p>
             </a>
