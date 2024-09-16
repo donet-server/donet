@@ -28,8 +28,8 @@ Before starting your own contribution to Donet, please read over the
 
 ## Building
 
-The build instructions for Donet are available in the
-[docs](https://docs.donet-server.org/gettingstarted/building-linux).
+The build instructions are available at
+[docs.donet-server.org](https://docs.donet-server.org/gettingstarted/building-linux).
 
 ## Documentation
 The Donet project documentation is available at
@@ -39,8 +39,6 @@ The Donet project documentation is available at
 
 The address of the official Matrix channel for Donet development is
 [#donet:matrix.org](https://matrix.to/#/#donet:matrix.org).
-
-<br>
 
 ## Copyright and License
 
