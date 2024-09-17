@@ -15,5 +15,4 @@ other additional information for Donet developers.
     motivation
     guidelines
     unittesting
-    dclanguage
     security

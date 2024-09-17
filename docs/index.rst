@@ -45,6 +45,7 @@ between the different sections and their contained pages.
 
    introduction/index
    gettingstarted/index
+   dclanguage
    internal/index
    glossary
 
