@@ -1,0 +1,4 @@
+.. _client:
+
+Client Protocol
+===============
