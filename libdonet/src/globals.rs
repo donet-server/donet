@@ -111,124 +111,13 @@ pub fn msg_type(proto_enum: Protocol) -> MsgType {
     proto_enum as MsgType
 }
 
-/// Enumerator for every message type in the Donet network protocol.
-///
-/// The Donet network protocol is made up of **two** separate, yet
-/// similar protocols: The Client and the Internal protocol.
-///
-/// Every message type defined has a certain 16-bit number identifier.
-/// Message type number IDs are organized in ranges, each range designated
-/// to a certain Donet service.
-///
-/// # Client Protocol
-///
-/// All message types in the client protocol are under the <1000 range.
-///
-/// - **`0-99`**: Basic client messages for the initial handshake
-/// with the Client Agent and maintaining the connection.
-/// - **`100-199`**: Distributed Object generates and field updates.
-/// - **`200-999`**: Client Interest controls.
-///
-/// # Internal Protocol
-///
-/// - ### **`1000-1999`** - Client Agent
-///     - **`1000-1099`** - Client State and Session controls
-///     - **`1100-1199`** - Channel Controls
-///     - **`1200-1999`** - Interest Controls
-///
-/// - ### **`2000-2999`** - State Server / DBSS
-///     - **`2000-2009`** - Object Create / Delete
-///     - **`2010-2039`** - Object Fields
-///     - **`2040-2049`** - Object Location
-///     - **`2050-2059`** - Object Designated AI
-///     - **`2060-2099`** - Object Ownership
-///     - **`2100-2199`** - Zone Controls
-///
-///     ### **Database State Server**
-///     - **`2200-2229`** - DBSS Object Activation
-///     - **`2230-2239`** - Object Data on Disk
-///
-/// - ### **`3000-3999`** - Database Server
-///     - **`3000-3009`** - Object Create
-///     - **`3010-3019`** - Object Get Fields
-///     - **`3020-3029`** - Object Set Fields
-///     - **`3030-3039`** - Object Delete Fields
-///
-/// - ### **`9000-9999`** - Message Director
-///     - **`9000-9009`** - Channels and Channel Ranges
-///     - **`9010-9019`** - Post Removes
-///
 #[repr(u16)] // 16-bit alignment
 #[derive(Debug, Copy, Clone, PartialEq, EnumIter)]
 pub enum Protocol {
-    /// ```md
-    /// args(dc_hash: u32, version: &str)
-    /// ```
-    /// This is the first message a client may send. The `dc_hash` is a
-    /// **32-bit** hash value calculated from all fields/classes listed in
-    /// the client's DC file. The version is an app/game-specific string
-    /// that developers should change whenever they release a new client
-    /// build. Both values are compared to the Client Agent's DC file
-    /// hash and configured version string to ensure that the client is
-    /// fully up-to-date. If the client is not up-to-date, it will be
-    /// disconnected with a `ClientEject`. If the client is up-to-date,
-    /// the gameserver will send a `ClientHelloResp` to inform the
-    /// client that it may proceed with its normal logic flow.
-    ///
-    /// *Excerpt taken from the [Astron](https://github.com/Astron/Astron)
-    /// project, licensed under the
-    /// [BSD-3-Clause](https://raw.githubusercontent.com/Astron/Astron/master/LICENSE.md)
-    /// license.*
-    ///
-    /// Copyright &copy; 2013 Sam "CFSworks" Edwards <br>
-    /// Copyright &copy; 2013 Kevin "Kestred" Stenerson <br>
     ClientHello = 1,
-
-    /// This is sent by the Client Agent to the client when the client's
-    /// `ClientHello` is accepted. This message contains no arguments.
-    ///
-    /// *Excerpt taken from the [Astron](https://github.com/Astron/Astron)
-    /// project, licensed under the
-    /// [BSD-3-Clause](https://raw.githubusercontent.com/Astron/Astron/master/LICENSE.md)
-    /// license.*
-    ///
-    /// Copyright &copy; 2013 Sam "CFSworks" Edwards <br>
-    /// Copyright &copy; 2013 Kevin "Kestred" Stenerson <br>
     ClientHelloResp = 2,
-
-    /// Sent by the client when it's closing the connection.
-    /// This message contains no arguments.
     ClientDisconnect = 3,
-
-    /// ```md
-    /// args(error_code: u16, reason: &str)
-    /// ```
-    /// This is sent by the Client Agent to the client when the client is being
-    /// disconnected. The `error_code` and `reason` arguments provide some
-    /// explanation as to why the client is being dropped from the game.
-    ///
-    /// *Excerpt taken from the [Astron](https://github.com/Astron/Astron)
-    /// project, licensed under the
-    /// [BSD-3-Clause](https://raw.githubusercontent.com/Astron/Astron/master/LICENSE.md)
-    /// license.*
-    ///
-    /// Copyright &copy; 2013 Sam "CFSworks" Edwards <br>
-    /// Copyright &copy; 2013 Kevin "Kestred" Stenerson <br>
     ClientEject = 4,
-
-    /// The client should send this message on a regular interval.
-    /// If the Client Agent does not receive a `ClientHeartbeat` for a
-    /// certain (configurable) amount of time, it will assume that the
-    /// client has crashed and disconnect the client.
-    /// This message contains no arguments.
-    ///
-    /// *Excerpt taken from the [Astron](https://github.com/Astron/Astron)
-    /// project, licensed under the
-    /// [BSD-3-Clause](https://raw.githubusercontent.com/Astron/Astron/master/LICENSE.md)
-    /// license.*
-    ///
-    /// Copyright &copy; 2013 Sam "CFSworks" Edwards <br>
-    /// Copyright &copy; 2013 Kevin "Kestred" Stenerson <br>
     ClientHeartbeat = 5,
 
     ClientObjectSetField = 120,
