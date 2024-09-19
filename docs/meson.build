@@ -42,7 +42,8 @@ if sphinx_bin.found()
     build_always_stale: true,
     output: 'sphinx',
     command: [
-      sphinx_bin, meson.project_source_root() / 'docs',
+      sphinx_bin, '--jobs', 'auto', '--write-all', '--fresh-env',
+      meson.project_source_root() / 'docs',
       meson.project_build_root() / 'sphinx'
     ]
   )
