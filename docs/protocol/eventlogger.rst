@@ -1,5 +1,5 @@
 .. _eventlogger:
 
-Event Logger Messages
+Event Logger Behavior
 =====================
 
