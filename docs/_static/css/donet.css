@@ -99,15 +99,27 @@ body, .wy-body-for-nav {
 /* override table width restrictions */
 @media screen and (min-width: 767px) {
 
-   .wy-table-responsive table td {
-      /* !important prevents the common CSS stylesheets from overriding
-         this as on RTD they are loaded after this stylesheet */
-      white-space: normal !important;
-   }
+    /* Allow tables to overflow with scrollbar */
+    /* Super useful for Donet protocol reference tables! */
+    .wy-table-responsive {
+        /* !important prevents the common CSS stylesheets from overriding
+        this as on RTD they are loaded after this stylesheet */
+        overflow: auto !important;
+    }
 
-   .wy-table-responsive {
-      overflow: visible !important;
-   }
+    /* Allows table to expand and make use of div's overflow */
+    .wy-table-responsive table {
+        width: max-content !important;
+    }
+
+    /* Allow for text to expand within its cell instead of wrapping */
+    .wy-table-responsive table tbody tr td p a {
+        overflow-wrap: normal !important;
+    }
+
+    .wy-table-responsive table td {
+        white-space: normal !important;
+    }
 }
 
 /* style the version selection links */
