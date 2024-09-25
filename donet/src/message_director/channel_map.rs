@@ -18,8 +18,8 @@
 use libdonet::globals::Channel;
 use multimap::MultiMap;
 use std::ops::Range;
-use std::sync::{Arc, Mutex, MutexGuard};
-use std::vec::Vec;
+use std::sync::Arc;
+use tokio::sync::{Mutex, MutexGuard};
 
 #[derive(Clone, PartialEq)]
 pub struct ChannelSubscriber {
@@ -37,27 +37,31 @@ pub struct ChannelMap {
 
 impl ChannelMap {
     /// Adds a single channel to the subscriber's subscribed channels map.
-    pub fn subscribe_channel(&mut self, sub: ChannelSubscriberRef, chan: Channel) {
-        let mut locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().unwrap();
-        if self.is_subscribed(sub.clone(), chan) {
+    pub async fn subscribe_channel(&mut self, sub: ChannelSubscriberRef, chan: Channel) {
+        let mut locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().await;
+
+        if self.is_subscribed(sub.clone(), chan).await {
             return;
         }
         locked_sub.subscribed_channels.push(chan);
+
         let has_subscriptions: bool = !locked_sub.subscribed_channels.is_empty();
 
         if has_subscriptions {
-            // FIXME: Implement 'on_add_channel' callback.
+            // TODO: Implement 'on_add_channel' callback.
         }
         self.subscriptions.insert(chan, sub.clone());
     }
 
     /// Removes the given channel from the subscribed channels map.
-    pub fn unsubscribe_channel(&mut self, sub: ChannelSubscriberRef, chan: Channel) {
-        let mut locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().unwrap();
-        if self.is_subscribed(sub.clone(), chan) {
+    pub async fn unsubscribe_channel(&mut self, sub: ChannelSubscriberRef, chan: Channel) {
+        let mut locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().await;
+
+        if self.is_subscribed(sub.clone(), chan).await {
             return;
         }
         let mut index: usize = 0;
+
         for subscription in &locked_sub.subscribed_channels {
             if chan != *subscription {
                 index += 1;
@@ -77,13 +81,16 @@ impl ChannelMap {
     /// Removes all channel and range subscriptions from the subscriber.
     pub fn unsubscribe_all(&mut self, _sub: ChannelSubscriberRef) {}
 
-    /// Removes the given subscriber from the multi-map for a given channel.
+    /// Removes the given subscriber from the MultiMap for a given channel.
+    ///
     /// Returns true only if:
     /// a) There are subscribers for the given channel and
     /// b) The provided subscriber was the last one for the channel, and was removed successfully.
-    pub fn remove_subscriber(&mut self, sub: ChannelSubscriberRef, chan: Channel) -> bool {
-        let locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().unwrap();
+    ///
+    pub async fn remove_subscriber(&mut self, sub: ChannelSubscriberRef, chan: Channel) -> bool {
+        let locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().await;
         let mut sub_count: usize = self.subscriptions.len();
+
         if sub_count == 0 {
             return false;
         }
@@ -93,19 +100,20 @@ impl ChannelMap {
             }
             let mut index: usize = 0;
             let mut found: bool = false;
-            for subscription in subscriptions.iter() {
-                if *subscription.lock().unwrap() == *locked_sub {
+
+            for subscription in subscriptions.iter_mut() {
+                if *subscription.lock().await == *locked_sub {
                     found = true;
                     sub_count -= 1;
                 }
                 index += 1;
             }
             if found {
-                // Okay so the remove method for values requires a second borrow of
-                // the vector which the compiler didn't like, so I had to work around
-                // this by using a found flag and performing the remove outside of the
-                // for loop which turns values into an iterator, this way we don't
-                // perform a second borrow. I don't know why it needs to be like this.
+                // The swap_remove() function requires a second mutable
+                // borrow of the vector which is illegal, so I had to work
+                // around this by using a `found` flag and performing the
+                // remove outside of the for loop which turns values into
+                // an iterator. This way we don't perform a second borrow.
                 subscriptions.swap_remove(index);
             }
         }
@@ -113,8 +121,9 @@ impl ChannelMap {
     }
 
     /// Checks if a given object has a subscription on a channel.
-    pub fn is_subscribed(&mut self, sub: ChannelSubscriberRef, chan: Channel) -> bool {
-        let locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().unwrap();
+    pub async fn is_subscribed(&mut self, sub: ChannelSubscriberRef, chan: Channel) -> bool {
+        let locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().await;
+
         if locked_sub.subscribed_channels.contains(&chan) {
             return true;
         }
