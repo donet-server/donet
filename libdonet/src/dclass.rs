@@ -69,7 +69,7 @@ impl DClass {
     }
 
     /// Accumulates the properties of this DC element into the file hash.
-    pub fn generate_hash(&mut self, hashgen: &mut DCHashGenerator) {
+    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         hashgen.add_string(self.get_name());
         hashgen.add_int(self.get_num_parents().try_into().unwrap());
 
@@ -132,7 +132,7 @@ impl DClass {
         self.fields.push(Rc::new(RefCell::new(field)));
     }
 
-    pub fn get_field_by_name(&mut self, name: &str) -> Option<Rc<RefCell<ClassField>>> {
+    pub fn get_field_by_name(&self, name: &str) -> Option<Rc<RefCell<ClassField>>> {
         match self.field_name_2_field.get(name) {
             Some(pointer) => Some(Rc::clone(pointer)),
             None => None,
@@ -140,12 +140,12 @@ impl DClass {
     }
 
     #[inline(always)]
-    pub fn get_name(&mut self) -> String {
+    pub fn get_name(&self) -> String {
         self.class_name.clone()
     }
 
     #[inline(always)]
-    pub fn get_dclass_id(&mut self) -> globals::DClassId {
+    pub fn get_dclass_id(&self) -> globals::DClassId {
         self.class_id
     }
 
@@ -155,23 +155,23 @@ impl DClass {
     }
 
     #[inline(always)]
-    pub fn get_num_parents(&mut self) -> usize {
+    pub fn get_num_parents(&self) -> usize {
         self.class_parents.len()
     }
 
     #[inline(always)]
-    pub fn get_parent(&mut self, index: usize) -> Option<Rc<RefCell<DClass>>> {
+    pub fn get_parent(&self, index: usize) -> Option<Rc<RefCell<DClass>>> {
         // copy the reference inside the option instead of a reference to the reference
         self.class_parents.get(index).cloned()
     }
 
     #[inline(always)]
-    pub fn has_constructor(&mut self) -> bool {
+    pub fn has_constructor(&self) -> bool {
         self.constructor.is_some()
     }
 
     #[inline(always)]
-    pub fn get_constructor(&mut self) -> Option<Rc<RefCell<DCAtomicField>>> {
+    pub fn get_constructor(&self) -> Option<Rc<RefCell<DCAtomicField>>> {
         if let Some(atomic) = &self.constructor {
             Some(Rc::clone(atomic))
         } else {

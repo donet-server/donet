@@ -60,7 +60,7 @@ impl DCFile {
     /// Returns a 32-bit hash index associated with this file.  This number is
     /// guaranteed to be consistent if the contents of the file have not changed,
     /// and it is very likely to be different if the contents of the file do change.
-    pub fn get_hash(&mut self) -> globals::DCFileHash {
+    pub fn get_hash(&self) -> globals::DCFileHash {
         let mut hashgen: DCHashGenerator = DCHashGenerator::new();
 
         self.generate_hash(&mut hashgen);
@@ -68,7 +68,7 @@ impl DCFile {
     }
 
     /// Accumulates the elements of the DC file into the hash.
-    pub fn generate_hash(&mut self, hashgen: &mut DCHashGenerator) {
+    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         if globals::DC_VIRTUAL_INHERITANCE {
             // Just to change the hash output in this case.
             if globals::DC_SORT_INHERITANCE_BY_FILE {
@@ -79,7 +79,7 @@ impl DCFile {
         }
         hashgen.add_int(self.get_num_dclasses().try_into().unwrap());
 
-        for dclass in &mut self.dclasses {
+        for dclass in &self.dclasses {
             dclass.generate_hash(hashgen);
         }
     }
@@ -101,7 +101,7 @@ impl DCFile {
     }
 
     /// Returns a string with the hash as a pretty format hexadecimal.
-    pub fn get_pretty_hash(&mut self) -> String {
+    pub fn get_pretty_hash(&self) -> String {
         format!("0x{:0width$x}", self.get_hash(), width = 8) // 2 hex / byte = 8 hex
     }
 
@@ -112,11 +112,11 @@ impl DCFile {
 
     // ---------- Python Imports ---------- //
 
-    pub fn get_num_imports(&mut self) -> usize {
+    pub fn get_num_imports(&self) -> usize {
         self.imports.len()
     }
 
-    pub fn get_python_import(&mut self, index: usize) -> ast::PythonImport {
+    pub fn get_python_import(&self, index: usize) -> ast::PythonImport {
         self.imports.get(index).unwrap().clone()
     }
 
@@ -150,11 +150,11 @@ impl DCFile {
 
     // ---------- Distributed Class ---------- //
 
-    pub fn get_num_dclasses(&mut self) -> usize {
+    pub fn get_num_dclasses(&self) -> usize {
         self.dclasses.len()
     }
 
-    pub fn get_next_dclass_id(&mut self) -> globals::DClassId {
+    pub fn get_next_dclass_id(&self) -> globals::DClassId {
         let dc_num: u16 = self.get_num_dclasses().try_into().unwrap();
         if dc_num == globals::DClassId::MAX {
             panic!("dcparser: Ran out of 16-bit DClass IDs!");
@@ -162,15 +162,15 @@ impl DCFile {
         dc_num - 1_u16
     }
 
-    pub fn get_dclass(&mut self, _index: usize) -> Rc<DClass> {
+    pub fn get_dclass(&self, _index: usize) -> Rc<DClass> {
         todo!();
     }
 
-    pub fn get_dclass_by_id(&mut self, _id: globals::DClassId) -> Rc<DClass> {
+    pub fn get_dclass_by_id(&self, _id: globals::DClassId) -> Rc<DClass> {
         todo!();
     }
 
-    pub fn get_dclass_by_name(&mut self, _name: &str) -> Rc<DClass> {
+    pub fn get_dclass_by_name(&self, _name: &str) -> Rc<DClass> {
         todo!();
     }
 
@@ -180,11 +180,11 @@ impl DCFile {
 
     // ---------- DC Struct ---------- //
 
-    pub fn get_num_structs(&mut self) -> usize {
+    pub fn get_num_structs(&self) -> usize {
         todo!();
     }
 
-    pub fn get_struct(&mut self, _index: usize) -> Rc<DCStruct> {
+    pub fn get_struct(&self, _index: usize) -> Rc<DCStruct> {
         todo!();
     }
 
