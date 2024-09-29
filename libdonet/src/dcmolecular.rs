@@ -28,14 +28,14 @@ use std::rc::Rc;
 /// An abstract field which provides an interface to access
 /// multiple atomic fields under one field and one identifier.
 #[derive(Debug)]
-pub struct DCMolecularField {
-    base_field: DCField,
+pub struct DCMolecularField<'dc> {
+    base_field: DCField<'dc>,
     atomic_names: Vec<String>, // used to propagate IDs up parse tree to then assign AFs
-    atomic_fields: Vec<Rc<RefCell<DCAtomicField>>>,
+    atomic_fields: Vec<Rc<RefCell<DCAtomicField<'dc>>>>,
 }
 
-impl DCMolecularField {
-    pub fn new(name: &str, atomic_names: Vec<String>) -> Self {
+impl<'dc> DCMolecularField<'dc> {
+    pub(crate) fn new(name: &str, atomic_names: Vec<String>) -> Self {
         Self {
             base_field: DCField::new(name, DCTypeDefinition::new()),
             atomic_names,
@@ -58,7 +58,7 @@ impl DCMolecularField {
     }
 
     /// Adds a smart pointer to the original atomic field in our array.
-    pub fn add_atomic_field(&mut self, atomic_ptr: Rc<RefCell<DCAtomicField>>) {
+    pub fn add_atomic_field(&mut self, atomic_ptr: Rc<RefCell<DCAtomicField<'dc>>>) {
         // We should be receiving our own Rc ptr copy, so just move it into our vec.
         self.atomic_fields.push(atomic_ptr);
     }
@@ -68,7 +68,7 @@ impl DCMolecularField {
         self.atomic_fields.len()
     }
 
-    pub fn get_atomic_field(&self, index: usize) -> Option<Rc<RefCell<DCAtomicField>>> {
+    pub fn get_atomic_field(&self, index: usize) -> Option<Rc<RefCell<DCAtomicField<'dc>>>> {
         self.atomic_fields.get(index).cloned()
     }
 

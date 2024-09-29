@@ -30,22 +30,20 @@
 
 use super::ast;
 use crate::dcfile::*;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 /// Takes in the [`Abstract Syntax Tree`] from the DC parser and outputs a
-/// [`crate::dcfile::DCFile`] structure wrapped in a [`std::rc::Rc`] pointer.
+/// [`crate::dcfile::DCFile`] immutable structure with a static lifetime.
 ///
 /// [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
-pub fn generate_dcf_structure(ast: ast::Root) -> Rc<RefCell<DCFile>> {
-    let dc_file: Rc<RefCell<DCFile>> = Rc::new(RefCell::new(DCFile::default()));
+pub fn generate_dcf_structure<'a>(_: ast::Root) -> DCFile<'a> {
+    let dc_file: DCFile = DCFile::new(vec![], vec![], vec![], vec![], vec![], true, false);
 
-    for type_declaration in ast.type_declarations {
+    /*for type_declaration in ast.type_declarations {
         match type_declaration {
             ast::TypeDeclaration::PythonImport(imports) => {
-                for import in imports {
-                    dc_file.borrow_mut().add_python_import(import);
-                }
+                //for import in imports {
+                    //dc_file.borrow_mut().add_python_import(import);
+                //}
             }
             ast::TypeDeclaration::KeywordType(_) => {
                 //dc_file.borrow_mut().add_keyword(keyword);
@@ -54,9 +52,9 @@ pub fn generate_dcf_structure(ast: ast::Root) -> Rc<RefCell<DCFile>> {
             ast::TypeDeclaration::DClassType(_) => {}
             ast::TypeDeclaration::TypedefType(_) => {}
         }
-    }
+    }*/
     // TODO: maybe properly handle semantic errors in the future
-    assert!(dc_file.borrow().semantic_analysis().is_ok());
+    //assert!(dc_file.borrow().semantic_analysis().is_ok());
 
     dc_file
 }

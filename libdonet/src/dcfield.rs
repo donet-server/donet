@@ -27,16 +27,15 @@ use crate::dcstruct::DCStruct;
 use crate::dctype::DCTypeDefinition;
 use crate::globals;
 use crate::hashgen::DCHashGenerator;
-use std::rc::Rc;
 
 /// A field of a Distributed Class. The DCField struct is a base for
 /// struct and dclass fields. In the DC language, there are three types
 /// of field declarations, which are: plain fields, atomic, and molecular.
 #[derive(Debug)]
-pub struct DCField {
+pub struct DCField<'dc> {
     keyword_list: DCKeywordList,
-    dclass: Option<Rc<DClass>>,
-    _struct: Option<Rc<DCStruct>>, // needs '_' due to reserved keyword
+    dclass: Option<&'dc DClass<'dc>>,
+    strukt: Option<&'dc DCStruct>, // 'strukt' due to reserved keyword
     field_name: String,
     field_id: globals::FieldId,
     field_type: DCTypeDefinition,
@@ -63,18 +62,18 @@ pub struct DCField {
 /// represents, joined together in the order in which they were declared
 /// when the molecular field was declared.
 #[derive(Debug)]
-pub enum ClassField {
-    Field(DCField),
-    Atomic(DCAtomicField),
-    Molecular(DCMolecularField),
+pub enum ClassField<'dc> {
+    Field(DCField<'dc>),
+    Atomic(DCAtomicField<'dc>),
+    Molecular(DCMolecularField<'dc>),
 }
 
 /// A different enumerator representing DC Field types used
 /// for DC Structs, since they cannot contain DC Atomic Fields.
 #[derive(Debug)]
-pub enum StructField {
-    Field(DCField),
-    Molecular(DCMolecularField),
+pub enum StructField<'dc> {
+    Field(DCField<'dc>),
+    Molecular(DCMolecularField<'dc>),
 }
 
 /// Macro for Panda historical keywords inline functions.
@@ -86,12 +85,12 @@ macro_rules! has_keyword {
     };
 }
 
-impl DCField {
-    pub fn new(name: &str, dtype: DCTypeDefinition) -> Self {
+impl<'dc> DCField<'dc> {
+    pub(crate) fn new(name: &str, dtype: DCTypeDefinition) -> Self {
         Self {
             keyword_list: DCKeywordList::new(),
             dclass: None,
-            _struct: None,
+            strukt: None,
             field_name: name.to_owned(),
             field_id: 0_u16,
             field_type: dtype,
@@ -132,10 +131,9 @@ impl DCField {
         self.field_name.clone()
     }
 
-    pub fn get_dclass(&self) -> Rc<DClass> {
+    pub fn get_dclass(&self) -> &'static DClass {
         assert!(self.parent_is_dclass);
-        // clone option to unwrap w/o move, and clone Arc to return
-        Rc::clone(&self.dclass.clone().unwrap())
+        self.dclass.unwrap()
     }
 
     #[inline(always)]
@@ -169,13 +167,13 @@ impl DCField {
         self.bogus_field = is_bogus
     }
 
-    pub fn set_parent_struct(&mut self, parent: Rc<DCStruct>) {
+    pub fn set_parent_struct(&mut self, parent: &'dc DCStruct) {
         assert!(self.dclass.is_none());
-        self._struct = Some(parent);
+        self.strukt = Some(parent);
     }
 
-    pub fn set_parent_dclass(&mut self, parent: Rc<DClass>) {
-        assert!(self._struct.is_none());
+    pub fn set_parent_dclass(&mut self, parent: &'dc DClass<'dc>) {
+        assert!(self.strukt.is_none());
         self.dclass = Some(parent);
     }
 

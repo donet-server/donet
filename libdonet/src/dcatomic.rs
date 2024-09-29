@@ -30,13 +30,13 @@ use std::rc::Rc;
 /// This defines the interface to a DClass object, and is
 /// always implemented as a remote procedure call (RPC).
 #[derive(Debug)]
-pub struct DCAtomicField {
-    base_field: DCField,
-    elements: Vec<Rc<RefCell<DCParameter>>>,
+pub struct DCAtomicField<'dc> {
+    base_field: DCField<'dc>,
+    elements: Vec<Rc<RefCell<DCParameter<'dc>>>>,
 }
 
-impl DCAtomicField {
-    pub fn new(name: &str, bogus_field: bool) -> Self {
+impl<'dc> DCAtomicField<'dc> {
+    pub(crate) fn new(name: &str, bogus_field: bool) -> Self {
         Self {
             base_field: {
                 let mut new_dcfield = DCField::new(name, DCTypeDefinition::new());
@@ -66,7 +66,7 @@ impl DCAtomicField {
         self.elements.len()
     }
 
-    pub fn get_element(&self, index: usize) -> Option<Rc<RefCell<DCParameter>>> {
+    pub fn get_element(&self, index: usize) -> Option<Rc<RefCell<DCParameter<'dc>>>> {
         match self.elements.get(index) {
             Some(pointer) => Some(Rc::clone(pointer)), // make a new rc pointer
             None => None,
@@ -77,7 +77,7 @@ impl DCAtomicField {
         self.base_field.set_field_keyword_list(kw_list)
     }
 
-    pub fn add_element(&mut self, element: DCParameter) {
+    pub fn add_element(&mut self, element: DCParameter<'dc>) {
         self.elements.push(Rc::new(RefCell::new(element)));
     }
 }

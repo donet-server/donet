@@ -25,7 +25,24 @@
 //! [`Context Free Grammar`]: https://en.wikipedia.org/wiki/Context-free_grammar
 //! [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
-pub mod ast;
-pub mod generate;
-pub mod lexer;
-pub mod parser;
+pub(crate) mod ast;
+mod error;
+mod generate;
+pub(crate) mod lexer;
+pub(crate) mod parser;
+
+use crate::dcfile::DCFile;
+use crate::globals::ParseError;
+
+/// Runs the entire DC parser pipeline. The input is a single string slice
+/// that represents the raw DC file in UTF-8, and the output is the final
+/// DC element tree data structure to be used by Donet.
+#[inline]
+pub(crate) fn dcparse_pipeline<'a>(input: String) -> Result<DCFile<'a>, ParseError> {
+    let lexer: lexer::Lexer<'_> = lexer::Lexer::new(&input);
+    let ast: ast::Root = parser::parse(lexer)?;
+
+    let dc_file: DCFile = generate::generate_dcf_structure(ast);
+
+    Ok(dc_file)
+}

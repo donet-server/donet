@@ -31,19 +31,13 @@
 )]
 
 use super::ast;
-use super::generate::generate_dcf_structure;
 use super::lexer::DCToken::*;
 use super::lexer::{DCToken, Span};
-use crate::dcfile::*;
 use crate::dcnumeric::*;
 use crate::dctype::*;
 
-use log::log_enabled;
-use log::Level;
 use plex::parser;
-use std::cell::RefCell;
 use std::mem::discriminant;
-use std::rc::Rc;
 
 parser! {
     fn parse_(DCToken, Span);
@@ -59,25 +53,12 @@ parser! {
 
     // The 'dc_file' production is the root production of the grammar.
     // Plex knows this is the start symbol of our grammar as it is declared first.
-    dc_file: Rc<RefCell<DCFile>> {
-        type_declarations[ast] => {
-            if log_enabled!(Level::Debug) {
-                #[cfg(debug_assertions)]
-                log::debug!("\n{:#?}", ast);
-            }
-            generate_dcf_structure(ast)
-        },
-    }
-
-    // Technically, *this* is the root production of the grammar, but the
-    // `dc_file` production (which is the actual root) handles converting
-    // the Abstract Syntax Tree into the DC file element hierarchy structure.
-    type_declarations: ast::Root {
+    dc_file: ast::Root {
         epsilon => ast::Root {
             type_declarations: vec![],
         },
-        type_declarations[root] Semicolon => root,
-        type_declarations[mut root] type_decl[type_decl] => {
+        dc_file[root] Semicolon => root,
+        dc_file[mut root] type_decl[type_decl] => {
             root.type_declarations.push(type_decl);
             root
         },
@@ -93,11 +74,15 @@ parser! {
 
     // ---------- Python-style Imports ---------- //
 
-    python_style_import: Vec<ast::PythonImport> {
+    python_style_import: ast::PythonImport {
         py_module[(module, module_views)] dclass_import[(class, class_views)] => {
-            // Since more than one `PythonImport` structure can be generated from
-            // one python_style_import non-terminal, we return a vector type.
-            let mut result_vec: Vec<ast::PythonImport> = vec![];
+            // Since we can store multiple module imports with many
+            // symbols each, (via view suffixes on module identifiers)
+            // we store a vector of `PyModuleImport` structs in our result.
+            let mut result = ast::PythonImport {
+                span: span!(),
+                imports: vec![],
+            };
 
             /* NOTE: Workaround for not being able to pass Options through
              * the non-terminal parameters (due to moved values and borrow
@@ -127,7 +112,7 @@ parser! {
             if optional_module_views.is_some() {
                 let mut c_symbol: String = class_symbols.first().unwrap().clone();
 
-                result_vec.push(ast::PythonImport {
+                result.imports.push(ast::PyModuleImport {
                     python_module: module.clone(),
                     symbols: vec![c_symbol],
                 });
@@ -141,20 +126,20 @@ parser! {
                         c_symbol = class_symbols.get(i + 1).unwrap().clone();
                     }
 
-                    result_vec.push(ast::PythonImport {
+                    result.imports.push(ast::PyModuleImport {
                         python_module: full_import,
                         symbols: vec![c_symbol]
                     });
                 }
-                return result_vec;
+                return result;
             }
 
-            result_vec.push(ast::PythonImport {
+            result.imports.push(ast::PyModuleImport {
                 python_module: module,
                 symbols: class_symbols
             });
 
-            result_vec
+            result
         },
     }
 
@@ -248,11 +233,13 @@ parser! {
     keyword_type: ast::KeywordDefinition {
         Keyword Identifier(id) => {
             ast::KeywordDefinition {
+                span: span!(),
                 identifier: id,
             }
         },
         Keyword DCKeyword(historic) => {
             ast::KeywordDefinition {
+                span: span!(),
                 identifier: historic,
             }
         }
@@ -263,6 +250,7 @@ parser! {
     struct_type: ast::Struct {
         Struct Identifier(id) OpenBraces struct_fields[fields] CloseBraces => {
             ast::Struct {
+                span: span!(),
                 identifier: id,
                 fields,
             }
@@ -289,6 +277,7 @@ parser! {
         DClass Identifier(id) optional_inheritance[parents] OpenBraces
         optional_class_fields[fields] CloseBraces => {
             ast::DClass {
+                span: span!(),
                 identifier: id,
                 parents,
                 fields,
@@ -310,6 +299,7 @@ parser! {
         // e.g. "string DcObjectType db" (plain field)
         named_field[_nf] dc_keyword_list[keywords] => {
             ast::AtomicOrMolecular::Atomic(ast::AtomicField {
+                span: span!(),
                 identifier: String::default(),
                 keywords,
                 parameters: vec![],
@@ -369,6 +359,7 @@ parser! {
         Switch OpenParenthesis parameter CloseParenthesis
         OpenBraces switch_fields CloseBraces => {
             ast::Switch {
+                span: span!(),
                 cases: vec![], // TODO
             }
         }
@@ -396,6 +387,7 @@ parser! {
         // docs and Panda source comments, but one atomic name is historically legal.
         Identifier(id) Colon Identifier(first_atomic) molecular_atom_list[mut atomics] => {
             ast::MolecularField {
+                span: span!(),
                 identifier: id,
                 atomic_field_identifiers: {
                     let mut vec: Vec<String> = vec![first_atomic];
@@ -429,6 +421,7 @@ parser! {
     method_as_field: ast::MethodAsField {
         Identifier(id) method_body[parameters] => {
             ast::MethodAsField {
+                span: span!(),
                 identifier: id,
                 parameters,
             }
@@ -509,11 +502,13 @@ parser! {
 
     parameter: ast::Parameter {
         nonmethod_type => ast::Parameter {
+            span: span!(),
             data_type: crate::dctype::DCTypeEnum::TChar,
             identifier: String::default(),
             default_value: None,
         },
         nonmethod_type Equals type_value[value] => ast::Parameter {
+            span: span!(),
             data_type: crate::dctype::DCTypeEnum::TChar,
             identifier: String::default(),
             default_value: Some(value),
@@ -846,29 +841,30 @@ parser! {
 /// Public function for the DC parser, takes in a stream of lexical tokens.
 pub fn parse<I: Iterator<Item = (DCToken, Span)>>(
     i: I,
-) -> Result<Rc<RefCell<DCFile>>, (Option<(DCToken, Span)>, &'static str)> {
+) -> Result<ast::Root, (Option<(DCToken, Span)>, &'static str)> {
     parse_(i)
 }
 
 #[cfg(test)]
 mod unit_testing {
+    use super::ast;
     use super::parse;
-    use super::Rc;
-    use super::RefCell;
-    use crate::dcfile::*;
-    use crate::parser::ast;
     use crate::parser::lexer::Lexer;
 
-    fn parse_dcfile_string(input: &str) -> Rc<RefCell<DCFile>> {
+    fn parse_dcfile_string(input: &str) -> ast::Root {
         let lexer = Lexer::new(input).inspect(|tok| eprintln!("token: {:?}", tok));
-        let dc_file: Rc<RefCell<DCFile>> = parse(lexer).unwrap();
+        let dc_file_ast: ast::Root = parse(lexer).unwrap();
 
-        dc_file
+        dc_file_ast
     }
 
+    /* TODO: This test was for when the parser directly outputted the final
+             DC file element tree. Now, it only outputs the abstract syntax
+             tree, and goes through a more 'decoupled' pipeline to generate
+             the final DC file element tree.
     #[test]
     fn python_module_imports() {
-        let dc_file: &str = "from example_views import DistributedDonut\n\
+        let dc_string: &str = "from example_views import DistributedDonut\n\
                              from views import DistributedDonut/AI/OV\n\
                              from views/AI/OV/UD import DistributedDonut/AI/OV/UD\n\
                              from game.views.Donut/AI import DistributedDonut/AI\n\
@@ -878,15 +874,15 @@ mod unit_testing {
                               */
                              from db.char import DistributedDonut\n";
 
-        let dc_file = parse_dcfile_string(dc_file);
+        let dc_file: Rc<DCFile> = parse_dcfile_string(dc_string);
 
         let expected_num_imports: usize = 10;
-        let mut imports: Vec<ast::PythonImport> = vec![];
+        let mut imports: Vec<ast::PyModuleImport> = vec![];
 
-        assert_eq!(dc_file.borrow_mut().get_num_imports(), expected_num_imports);
+        assert_eq!(dc_file.get_num_imports(), expected_num_imports);
 
         for i in 0..expected_num_imports {
-            imports.push(dc_file.borrow_mut().get_python_import(i));
+            imports.push(dc_file.get_python_import(i));
         }
 
         assert_eq!(imports[0].python_module, "example_views");
@@ -911,6 +907,7 @@ mod unit_testing {
         assert_eq!(imports[8].python_module, "views");
         assert_eq!(imports[8].symbols, vec!["*"]);
     }
+    */
 
     #[test]
     fn legal_python_module_identifiers() {

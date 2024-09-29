@@ -75,6 +75,9 @@ cfg_if! {
         pub mod dcstruct;
         pub mod dctype;
         mod hashgen;
+
+        use dcfile::DCFile;
+        use globals::{DCReadError, ParseError};
     }
 }
 
@@ -108,74 +111,11 @@ fn init_logger() {
     pretty_env_logger::init();
 }
 
-/// Easy to use interface for the DC file parser. Handles reading
-/// the DC files, instantiating the lexer and parser, and either
-/// returns the DCFile object or a Parse/File error.
-///
-/// ## Example Usage
-/// The following is an example of parsing a simple DC file string,
-/// printing its DC hash in hexadecimal notation, and accessing
-/// the elements of a defined Distributed Class:
-/// ```rust
-/// use libdonet::dclass::DClass;
-/// use libdonet::globals::DCReadResult;
-/// use libdonet::read_dc_files;
-///
-/// use std::cell::RefCell;
-/// use std::rc::Rc;
-///
-/// let dc_file = "from game.ai import AnonymousContact/UD
-///                from game.ai import LoginManager/AI
-///                from game.world import DistributedWorld/AI
-///                from game.avatar import DistributedAvatar/AI/OV
-///
-///                dclass AnonymousContact {
-///                  login(string username, string password) clsend airecv;
-///                };
-///
-///                dclass LoginManager {
-///                  login(channel client, string username, string password) airecv;
-///                };
-///
-///                dclass DistributedWorld {
-///                  create_avatar(channel client) airecv;
-///                };
-///
-///                dclass DistributedAvatar {
-///                   set_xyzh(int16 x, int16 y, int16 z, int16 h) broadcast required;
-///                   indicate_intent(int16 / 10, int16 / 10) ownsend airecv;
-///                };";
-///
-/// let dc_read: DCReadResult = read_dc_files(vec![dc_file.into()]);
-///
-/// if let Ok(dc_file) = dc_read {
-///     // Print the DC File's 32-bit hash in hexadecimal format.
-///     println!("{}", dc_file.borrow_mut().get_pretty_hash());
-///     
-///     // Retrieve the `DistributedAvatar` dclass by ID.
-///     let mut avatar_class = dc_file.borrow_mut().get_dclass_by_id(3);
-///
-///     // Print the identifier of the dclass.
-///     println!("{}", Rc::get_mut(&mut avatar_class).expect("Borrow failed!").get_name());
-/// }
-/// ```
-///
-/// The output of the program would be the following:
-/// ```txt
-/// 0x01a5fb0c
-/// DistributedAvatar
-/// ```
-/// <br><img src="https://c.tenor.com/myQHgyWQQ9sAAAAd/tenor.gif">
-///
 #[cfg(feature = "dcfile")]
-pub fn read_dc_files(file_paths: Vec<String>) -> globals::DCReadResult {
-    use crate::parser::lexer::Lexer;
-    use crate::parser::parser::parse;
-    use log::{error, info};
-    use std::cell::RefCell;
+pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadError> {
+    use log::info;
     use std::fs::File;
     use std::io::Read;
-    use std::rc::Rc;
 
     init_logger();
     info!("DC read of {:?}", file_paths);
@@ -195,20 +135,84 @@ pub fn read_dc_files(file_paths: Vec<String>) -> globals::DCReadResult {
             let res: std::io::Result<usize> = dcf.read_to_string(&mut lexer_input);
             if let Err(res_err) = res {
                 // DC file content may not be in proper UTF-8 encoding.
-                return Err(globals::DCReadError::FileError(res_err));
+                return Err(DCReadError::FileError(res_err));
             }
         } else {
             // Failed to open one of the DC files. (most likely permission error)
-            return Err(globals::DCReadError::FileError(io_result.unwrap_err()));
+            return Err(DCReadError::FileError(io_result.unwrap_err()));
         }
     }
+    read_dc(lexer_input)
+}
 
-    let lexer: Lexer<'_> = Lexer::new(&lexer_input);
-    let res: Result<Rc<RefCell<dcfile::DCFile>>, globals::ParseError> = parse(lexer);
+/// Easy to use interface for the DC file parser. Handles reading
+/// the DC files, instantiating the lexer and parser, and either
+/// returns the DCFile object or a Parse/File error.
+///
+/// ## Example Usage
+/// The following is an example of parsing a simple DC file string,
+/// printing its DC hash in hexadecimal notation, and accessing
+/// the elements of a defined Distributed Class:
+/// ```rust
+/// use libdonet::dcfile::DCFile;
+/// use libdonet::dclass::DClass;
+/// use libdonet::globals::DCReadError;
+/// use libdonet::read_dc;
+///
+/// let dc_file = "from game.ai import AnonymousContact/UD
+///                from game.ai import LoginManager/AI
+///                from game.world import DistributedWorld/AI
+///                from game.avatar import DistributedAvatar/AI/OV
+///
+///                typedef uint32 doId;
+///                typedef uint32 zoneId;
+///                typedef uint64 channel;
+///
+///                dclass AnonymousContact {
+///                  login(string username, string password) clsend airecv;
+///                };
+///
+///                dclass LoginManager {
+///                  login(channel client, string username, string password) airecv;
+///                };
+///
+///                dclass DistributedWorld {
+///                  create_avatar(channel client) airecv;
+///                };
+///
+///                dclass DistributedAvatar {
+///                   set_xyzh(int16 x, int16 y, int16 z, int16 h) broadcast required;
+///                   indicate_intent(int16 / 10, int16 / 10) ownsend airecv;
+///                };";
+///
+/// let dc_read: Result<DCFile, DCReadError> = read_dc(dc_file.to_owned());
+///
+/// if let Ok(dc_file) = dc_read {
+///     // Print the DC File's 32-bit hash in hexadecimal format.
+///     println!("{}", dc_file.get_pretty_hash());
+///
+///     // TODO: Retrieve the `DistributedAvatar` dclass by ID.
+///     //let class: &DClass = dc_file.get_dclass_by_id(3);
+///
+///     // TODO: Print the identifier of the dclass.
+///     //println!("{}", class.get_name());
+/// }
+/// ```
+///
+/// The output of the program would be the following:
+/// ```txt
+/// 0x9c737148
+/// DistributedAvatar
+/// ```
+/// <br><img src="https://c.tenor.com/myQHgyWQQ9sAAAAd/tenor.gif">
+///
+#[cfg(feature = "dcfile")]
+pub fn read_dc<'a>(input: String) -> Result<DCFile<'a>, DCReadError> {
+    let res: Result<DCFile, ParseError> = parser::dcparse_pipeline(input);
 
     if let Ok(res_ok) = res {
         Ok(res_ok)
     } else {
-        Err(globals::DCReadError::ParseError(res.unwrap_err()))
+        Err(DCReadError::ParseError(res.unwrap_err()))
     }
 }

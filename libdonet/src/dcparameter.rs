@@ -25,8 +25,8 @@ use std::rc::Rc;
 
 /// Represents the type specification of a parameter within an atomic field.
 #[derive(Debug)]
-pub struct DCParameter {
-    parent: Rc<DCAtomicField>,
+pub struct DCParameter<'dc> {
+    parent: Rc<DCAtomicField<'dc>>,
     base_type: DCTypeDefinition,
     identifier: String,
     type_alias: String,
@@ -34,8 +34,8 @@ pub struct DCParameter {
     has_default_value: bool,
 }
 
-impl DCParameter {
-    pub fn new(method: Rc<DCAtomicField>, dtype: DCTypeDefinition, name: Option<&str>) -> Self {
+impl<'dc> DCParameter<'dc> {
+    pub(crate) fn new(method: Rc<DCAtomicField<'dc>>, dtype: DCTypeDefinition, name: Option<&str>) -> Self {
         Self {
             parent: method,
             base_type: dtype,
@@ -55,7 +55,7 @@ impl DCParameter {
     }
 
     #[inline(always)]
-    pub fn get_atomic_field(&self) -> Rc<DCAtomicField> {
+    pub fn get_atomic_field(&self) -> Rc<DCAtomicField<'dc>> {
         Rc::clone(&self.parent) // clone new rc pointer
     }
 

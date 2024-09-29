@@ -60,12 +60,10 @@ enum FlagArguments {
 fn main() -> std::io::Result<()> {
     use config::*;
     use libdonet::dcfile::DCFile;
-    use libdonet::globals::DCReadResult;
     use libdonet::read_dc_files;
     use log::{error, info};
     use logger::DaemonLogger;
     use service_factory::*;
-    use std::cell::RefCell;
     use std::fs::File;
     use std::io::{Error, ErrorKind, Read};
     use std::rc::Rc;
@@ -205,14 +203,14 @@ fn main() -> std::io::Result<()> {
     cfg_if! {
         if #[cfg(feature = "requires_dc")] {
             let files: Vec<String> = daemon_config.global.dc_files.clone();
-            let dc_read: DCReadResult = read_dc_files(files);
+            let dc_read = read_dc_files(files);
 
             if let Err(dc_err) = dc_read {
                 error!("Failed to parse DC file(s): {:?}", dc_err);
                 return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
             }
 
-            let dc: Rc<RefCell<DCFile>> = dc_read.unwrap();
+            let dc: DCFile = dc_read.unwrap();
         }
     }
 
@@ -349,17 +347,16 @@ fn main() -> std::io::Result<()> {
 }
 
 fn validate_dc_files(files: Vec<String>) -> std::io::Result<()> {
-    use libdonet::globals::DCReadResult;
     use libdonet::read_dc_files;
     use log::{error, info};
     use std::io::{Error, ErrorKind};
 
-    let dc_read: DCReadResult = read_dc_files(files.to_owned());
+    let dc_read = read_dc_files(files.to_owned());
 
     if let Ok(dc_file) = dc_read {
-        let hash: u32 = dc_file.borrow_mut().get_hash();
+        let hash: u32 = dc_file.get_hash();
         let signed: i32 = hash as i32;
-        let pretty: String = dc_file.borrow_mut().get_pretty_hash();
+        let pretty: String = dc_file.get_pretty_hash();
 
         info!(
             "No issues found. File hash is {} (signed {}, hex {})",

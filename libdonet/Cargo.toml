@@ -7,7 +7,7 @@ authors.workspace = true
 homepage.workspace = true
 repository.workspace = true
 readme = "README.md"
-documentation = "https://libdonet.rs"
+documentation = "https://docs.donet-server.org/libdonet/"
 
 [lib]
 name = "libdonet"
@@ -16,14 +16,25 @@ name = "libdonet"
 default = ["datagram", "dcfile"]
 full = ["datagram", "dcfile"]
 datagram = ["dep:serde", "dep:strum"]
-dcfile = ["dep:plex", "dep:multimap"]
+dcfile = ["dep:plex", "dep:thiserror", "dep:anyhow", "dep:multimap"]
 
 [dependencies]
+# Conditional compilation utility
 cfg-if = { version = "1.0.0" }
+# Logging utility
 log = { version = "0.4", features = ["std"] }
 pretty_env_logger = { version = "0.5" }
+# Errors utility
+anyhow = { version = "1.0", optional = true }
+thiserror = { version = "1.0", optional = true }
+# LALR(1) parser proc macro for DC parser
+plex = { version = "0.3", optional = true }
+# Used for DC parser error reporting
+codespan = { version = "0.11", features = ["serialization"] }
+codespan-reporting = { version = "0.11", features = ["serialization"] }
+# Used to store DC element properties
+multimap = { version = "0.9", optional = true }
+# Serialization
 serde = { version = "1", features = ["derive"], optional = true }
 strum = { version = "0.25", features = ["derive"], optional = true }
 strum_macros = { version = "0.25" }
-plex = { version = "0.3", optional = true}
-multimap = { version = "0.9", optional = true}

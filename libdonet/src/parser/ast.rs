@@ -20,6 +20,7 @@
 //!
 //! [`AST`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
+use super::lexer::Span;
 use crate::dctype::*;
 
 /// Paired with the `type_declarations` production in the Context Free Grammar.
@@ -33,7 +34,7 @@ pub struct Root {
 pub enum TypeDeclaration {
     // A single Python-style DC Import line can translate to
     // multiple [`PythonImport`] structures per symbol imported.
-    PythonImport(Vec<PythonImport>),
+    PythonImport(PythonImport),
     KeywordType(KeywordDefinition),
     StructType(Struct),
     DClassType(DClass),
@@ -43,6 +44,12 @@ pub enum TypeDeclaration {
 /// Paired with the `python_style_import` production in the Context Free Grammar.
 #[derive(Debug, Clone)]
 pub struct PythonImport {
+    pub span: Span,
+    pub imports: Vec<PyModuleImport>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PyModuleImport {
     pub python_module: String,
     pub symbols: Vec<String>,
 }
@@ -50,12 +57,14 @@ pub struct PythonImport {
 /// Paired with the `keyword_type` production in the Context Free Grammar.
 #[derive(Debug)]
 pub struct KeywordDefinition {
+    pub span: Span,
     pub identifier: String,
 }
 
 /// Paired with the `struct_type` production in the Context Free Grammar.
 #[derive(Debug)]
 pub struct Struct {
+    pub span: Span,
     pub identifier: String,
     pub fields: Vec<(Parameter, Vec<String>)>,
 }
@@ -66,12 +75,14 @@ pub type StructFields = Vec<(Parameter, Vec<String>)>;
 /// Paired with the `switch_type` production in the Context Free Grammar.
 #[derive(Debug)]
 pub struct Switch {
+    pub span: Span,
     pub cases: Vec<Case>,
 }
 
 /// Paired with the `switch_case` production in the Context Free Grammar.
 #[derive(Debug)]
 pub struct Case {
+    pub span: Span,
     // `None` condition means this is a default case.
     pub condition: Option<TypeValue>,
     pub fields: Vec<(Parameter, Vec<String>)>,
@@ -80,6 +91,7 @@ pub struct Case {
 /// Paired with the `distributed_class_type` production in the Context Free Grammar.
 #[derive(Debug)]
 pub struct DClass {
+    pub span: Span,
     pub identifier: String,
     pub parents: Vec<String>,
     pub fields: ClassFields,
@@ -98,14 +110,16 @@ pub enum AtomicOrMolecular {
 /// The Atomic Field variant of the [`AtomicOrMolecular`] enum.
 #[derive(Debug)]
 pub struct AtomicField {
+    pub span: Span,
     pub identifier: String,
     pub keywords: Vec<String>,
-    pub parameters: Vec<Parameter>,
+    pub parameters: MethodBody,
 }
 
 /// Paired with the `molecular_field` production in the Context Free Grammar.
 #[derive(Debug)]
 pub struct MolecularField {
+    pub span: Span,
     pub identifier: String,
     pub atomic_field_identifiers: Vec<String>,
 }
@@ -116,6 +130,7 @@ pub type MethodBody = Vec<Parameter>;
 /// Paired with the `method_as_field` production in the Context Free Grammar.
 #[derive(Debug)]
 pub struct MethodAsField {
+    pub span: Span,
     pub identifier: String,
     pub parameters: MethodBody,
 }
@@ -123,6 +138,7 @@ pub struct MethodAsField {
 /// Paired with the `parameter` production in the Context Free Grammar.
 #[derive(Debug)]
 pub struct Parameter {
+    pub span: Span,
     pub data_type: DCTypeEnum,
     pub identifier: String,
     pub default_value: Option<TypeValue>,

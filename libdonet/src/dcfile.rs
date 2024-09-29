@@ -25,46 +25,60 @@ use crate::dcstruct::DCStruct;
 use crate::globals;
 use crate::hashgen::DCHashGenerator;
 use crate::parser::ast;
-use std::rc::Rc;
 
 /// Data model that provides a high level representation of a single,
 /// or collection, of DC files and their elements such as class imports,
 /// type definitions, structures, and Distributed Classes.
 #[derive(Debug)]
-pub struct DCFile {
+pub struct DCFile<'dc> {
+    baked_hash: globals::DCFileHash,
     structs: Vec<DCStruct>,
-    dclasses: Vec<DClass>,
-    imports: Vec<ast::PythonImport>,
+    dclasses: Vec<DClass<'dc>>,
+    imports: Vec<ast::PyModuleImport>,
     keywords: Vec<DCKeyword>,
-    field_id_2_field: Vec<Rc<DCField>>,
+    field_id_2_field: Vec<&'dc DCField<'dc>>,
     // TODO: type_id_2_type, type_name_2_type
     all_object_valid: bool,
     inherited_fields_stale: bool,
 }
 
-impl Default for DCFile {
-    fn default() -> Self {
+impl<'dc> DCFile<'dc> {
+    pub(crate) fn new(
+        structs: Vec<DCStruct>,
+        dclasses: Vec<DClass<'dc>>,
+        imports: Vec<ast::PyModuleImport>,
+        keywords: Vec<DCKeyword>,
+        field_id_2_field: Vec<&'dc DCField<'dc>>,
+        all_object_valid: bool,
+        inherited_fields_stale: bool,
+    ) -> Self {
         Self {
-            structs: vec![],
-            dclasses: vec![],
-            imports: vec![],
-            keywords: vec![],
-            field_id_2_field: vec![],
-            all_object_valid: true,
-            inherited_fields_stale: false,
+            baked_hash: 0_u32,
+            structs,
+            dclasses,
+            imports,
+            keywords,
+            field_id_2_field,
+            all_object_valid,
+            inherited_fields_stale,
         }
     }
-}
 
-impl DCFile {
     /// Returns a 32-bit hash index associated with this file.  This number is
     /// guaranteed to be consistent if the contents of the file have not changed,
     /// and it is very likely to be different if the contents of the file do change.
+    ///
+    /// If called more than once, it will reuse the already calculated hash,
+    /// as this structure is guaranteed to be immutable after initialization.
     pub fn get_hash(&self) -> globals::DCFileHash {
-        let mut hashgen: DCHashGenerator = DCHashGenerator::new();
+        if self.baked_hash != 0 {
+            self.baked_hash
+        } else {
+            let mut hashgen: DCHashGenerator = DCHashGenerator::new();
 
-        self.generate_hash(&mut hashgen);
-        hashgen.get_hash()
+            self.generate_hash(&mut hashgen);
+            hashgen.get_hash()
+        }
     }
 
     /// Accumulates the elements of the DC file into the hash.
@@ -84,30 +98,9 @@ impl DCFile {
         }
     }
 
-    /// Performs a semantic analysis on the object and its children
-    /// DC elements. In Panda, this is done on the go as you build the
-    /// DC file tree. Due to how we build it in memory, (and the fact
-    /// that we link all the objects together until we reduce to the
-    /// root production in the CFG) we have to perform this analysis
-    /// until the very end when all the elements are in the DCF struct.
-    pub fn semantic_analysis(&self) -> Result<(), ()> {
-        // Run semantic analysis chain of all distributed class objects.
-        // This should include semantic analysis for DC fields as well.
-        for dclass in &self.dclasses {
-            dclass.semantic_analysis()?;
-        }
-        // TODO!
-        Ok(())
-    }
-
     /// Returns a string with the hash as a pretty format hexadecimal.
     pub fn get_pretty_hash(&self) -> String {
         format!("0x{:0width$x}", self.get_hash(), width = 8) // 2 hex / byte = 8 hex
-    }
-
-    /// Assigns unique ID to the field for the scope of the entire DC file.
-    pub fn add_field(&mut self, _field: DCField) {
-        todo!();
     }
 
     // ---------- Python Imports ---------- //
@@ -116,12 +109,8 @@ impl DCFile {
         self.imports.len()
     }
 
-    pub fn get_python_import(&self, index: usize) -> ast::PythonImport {
+    pub fn get_python_import(&self, index: usize) -> ast::PyModuleImport {
         self.imports.get(index).unwrap().clone()
-    }
-
-    pub fn add_python_import(&mut self, import: ast::PythonImport) {
-        self.imports.push(import);
     }
 
     // ---------- DC Keyword ---------- //
@@ -130,21 +119,11 @@ impl DCFile {
         todo!();
     }
 
-    pub fn get_keyword(&self, _index: usize) -> Rc<DCKeyword> {
+    pub fn get_keyword(&self, _index: usize) -> &'dc DCKeyword {
         todo!();
     }
 
     pub fn has_keyword(&self, _keyword: String) -> bool {
-        todo!();
-    }
-
-    pub fn add_keyword(&mut self, _keyword: DCKeyword) {
-        () // TODO!
-    }
-
-    // ---------- DC Type Definition ---------- //
-
-    pub fn add_typedef(&mut self, _name: String) -> Result<(), ()> {
         todo!();
     }
 
@@ -154,28 +133,16 @@ impl DCFile {
         self.dclasses.len()
     }
 
-    pub fn get_next_dclass_id(&self) -> globals::DClassId {
-        let dc_num: u16 = self.get_num_dclasses().try_into().unwrap();
-        if dc_num == globals::DClassId::MAX {
-            panic!("dcparser: Ran out of 16-bit DClass IDs!");
-        }
-        dc_num - 1_u16
-    }
-
-    pub fn get_dclass(&self, _index: usize) -> Rc<DClass> {
+    pub fn get_dclass(&self, _index: usize) -> &'dc DClass {
         todo!();
     }
 
-    pub fn get_dclass_by_id(&self, _id: globals::DClassId) -> Rc<DClass> {
-        todo!();
+    pub fn get_dclass_by_id(&self, id: globals::DClassId) -> &'dc DClass {
+        self.dclasses.get(usize::from(id)).unwrap()
     }
 
-    pub fn get_dclass_by_name(&self, _name: &str) -> Rc<DClass> {
+    pub fn get_dclass_by_name(&self, _name: &str) -> &'dc DClass {
         todo!();
-    }
-
-    pub fn add_dclass(&mut self, dclass: DClass) {
-        self.dclasses.push(dclass);
     }
 
     // ---------- DC Struct ---------- //
@@ -184,11 +151,94 @@ impl DCFile {
         todo!();
     }
 
-    pub fn get_struct(&self, _index: usize) -> Rc<DCStruct> {
+    pub fn get_struct(&self, _index: usize) -> &'dc DCStruct {
         todo!();
     }
+}
 
-    pub fn add_struct(&mut self, _strct: DCStruct) {
-        todo!();
+pub(crate) mod intermediate {
+    use super::*;
+    use crate::dclass::intermediate::DClass;
+
+    /// DC file structure for internal use by the DC parser.
+    #[derive(Debug)]
+    pub struct DCFile {
+        pub structs: Vec<DCStruct>,
+        pub dclasses: Vec<DClass>,
+        pub imports: Vec<ast::PythonImport>,
+        pub keywords: Vec<DCKeyword>,
+        //pub field_id_2_field: Vec<Rc<DCField>>,
+        // TODO: type_id_2_type, type_name_2_type
+        pub all_object_valid: bool,
+        pub inherited_fields_stale: bool,
+    }
+
+    impl Default for DCFile {
+        fn default() -> Self {
+            Self {
+                structs: vec![],
+                dclasses: vec![],
+                imports: vec![],
+                keywords: vec![],
+                //field_id_2_field: vec![],
+                all_object_valid: true,
+                inherited_fields_stale: false,
+            }
+        }
+    }
+
+    impl DCFile {
+        /// Performs a semantic analysis on the object and its children
+        /// DC elements. In Panda, this is done on the go as you build the
+        /// DC file tree. Due to how we build it in memory, (and the fact
+        /// that we link all the objects together until we reduce to the
+        /// root production in the CFG) we have to perform this analysis
+        /// until the very end when all the elements are in the DCF struct.
+        pub fn semantic_analysis(&self) -> Result<(), ()> {
+            // Run semantic analysis chain of all distributed class objects.
+            // This should include semantic analysis for DC fields as well.
+            //for dclass in &self.dclasses {
+            //dclass.semantic_analysis()?;
+            //}
+            // TODO!
+            Ok(())
+        }
+
+        /// Assigns unique ID to the field for the scope of the entire DC file.
+        pub fn add_field(&mut self, _field: DCField) {
+            todo!();
+        }
+
+        pub fn add_python_import(&mut self, import: ast::PythonImport) {
+            self.imports.push(import);
+        }
+
+        pub fn add_keyword(&mut self, _keyword: DCKeyword) {
+            () // TODO!
+        }
+
+        pub fn add_typedef(&mut self, _name: String) -> Result<(), ()> {
+            todo!();
+        }
+
+        pub fn add_dclass(&mut self, dclass: DClass) {
+            self.dclasses.push(dclass);
+        }
+
+        pub fn get_num_dclasses(&mut self) -> usize {
+            self.dclasses.len()
+        }
+
+        pub fn get_next_dclass_id(&mut self) -> globals::DClassId {
+            let dc_num: u16 = self.get_num_dclasses().try_into().unwrap();
+            if dc_num == globals::DClassId::MAX {
+                panic!("dcparser: Ran out of 16-bit DClass IDs!");
+            }
+            dc_num - 1_u16
+        }
+
+        pub fn add_struct(&mut self, _strct: DCStruct) {
+            todo!();
+        }
     }
 }

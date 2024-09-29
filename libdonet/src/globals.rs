@@ -19,8 +19,6 @@
 //! and the full definition of the network protocol message types.
 
 #[cfg(feature = "dcfile")]
-use crate::dcfile;
-#[cfg(feature = "dcfile")]
 use crate::parser::lexer::{DCToken, Span};
 use cfg_if::cfg_if;
 use std::mem;
@@ -59,9 +57,6 @@ pub const BCHAN_DBSERVERS: Channel = 13;
 
 cfg_if! {
     if #[cfg(feature = "dcfile")] {
-        use std::cell::RefCell;
-        use std::rc::Rc;
-
         // DC File Constants
         pub static HISTORICAL_DC_KEYWORDS: &[&str] = &[
             "ram", "required", "db", "airecv", "ownrecv",
@@ -81,7 +76,6 @@ cfg_if! {
             ParseError(ParseError),
             FileError(std::io::Error),
         }
-        pub type DCReadResult = Result<Rc<RefCell<dcfile::DCFile>>, DCReadError>;
     }
 }
 
