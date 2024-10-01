@@ -65,7 +65,7 @@ impl<'dc> DClass<'dc> {
         hashgen.add_int(self.fields.len().try_into().unwrap());
 
         for field in &self.fields {
-            match &field.deref() {
+            match field {
                 ClassField::Field(field) => field.generate_hash(hashgen),
                 ClassField::Atomic(atomic) => atomic.generate_hash(hashgen),
                 ClassField::Molecular(molecular) => molecular.generate_hash(hashgen),

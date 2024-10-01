@@ -66,7 +66,6 @@ fn main() -> std::io::Result<()> {
     use service_factory::*;
     use std::fs::File;
     use std::io::{Error, ErrorKind, Read};
-    use std::rc::Rc;
     use tokio::runtime::{Builder, Runtime};
     use tokio::task::JoinHandle;
 

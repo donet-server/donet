@@ -25,19 +25,10 @@ use std::vec::Vec;
 use strum::IntoEnumIterator;
 
 /// Representation of a new network message (datagram) to be sent.
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Datagram {
     buffer: Vec<u8>,
     index: usize,
-}
-
-impl Default for Datagram {
-    fn default() -> Self {
-        Self {
-            buffer: vec![],
-            index: 0,
-        }
-    }
 }
 
 impl Datagram {
