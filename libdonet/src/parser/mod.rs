@@ -26,7 +26,6 @@
 //! [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
 pub(crate) mod ast;
-mod error;
 mod generate;
 pub(crate) mod lexer;
 pub(crate) mod parser;

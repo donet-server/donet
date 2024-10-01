@@ -235,11 +235,25 @@ impl<'a> Lexer<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy)]
 pub struct Span {
     pub min: usize,
     pub max: usize,
     pub line: usize,
+}
+
+impl std::fmt::Debug for Span {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "--- LEXER SPAN ---")?;
+        write!(f, "Min: ")?;
+        self.min.fmt(f)?;
+        writeln!(f)?;
+        write!(f, "Max: ")?;
+        self.max.fmt(f)?;
+        writeln!(f)?;
+        write!(f, "Line: ")?;
+        self.line.fmt(f)
+    }
 }
 
 fn span_in(s: &str, t: &str, l: usize) -> Span {
