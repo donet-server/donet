@@ -5,7 +5,7 @@
 //! This program is free software; you can redistribute it and/or modify
 //! it under the terms of the GNU Affero General Public License version 3.
 //! You should have received a copy of this license along
-//! with this source code in a file named "LICENSE."
+//! with this source code in a file named "COPYING."
 //!
 //! This program is distributed in the hope that it will be useful,
 //! but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -29,7 +29,7 @@
 //! See the project source on [GitLab](https://gitlab.com/donet-server/donet). Feel free
 //! to also visit the website, [donet-server.org](https://www.donet-server.org).
 //!
-//! If you're looking for the documentation of **libdonet**, click [here](https://libdonet.rs).
+//! If you're looking for the documentation of **libdonet**, click [here](https://docs.donet-server.org/libdonet).
 
 #![allow(clippy::module_inception)]
 #![deny(unused_extern_crates)]
@@ -376,9 +376,9 @@ fn print_help_page() {
         This binary will look for a configuration file (.toml)\n\
         in the current working directory as \"{}\".\n\
         \n\
-        -h, --help      Print the help page.\n\
-        -v, --version   Print Donet binary build version & info.\n\
-        -c, --validate-dc  Run the libdonet DC parser on the given DC file.\n",
+        -h, --help          Print the help page.\n\
+        -v, --version       Print Donet binary build version & info.\n\
+        -c, --validate-dc   Run the libdonet DC parser on the given DC file.\n",
         BINARY, DEFAULT_TOML
     );
 }
@@ -403,9 +403,18 @@ fn print_version() {
     println!(
         "{}Donet{}, version {} ({} {}-{})\n\
         Revision (Git SHA1): {}\n\n\
-        Released under the AGPL-3.0 license. <https://www.gnu.org/licenses/agpl-3.0.html>\n\
-        Get the source code from: {}\n",
+        This program is free software; you can redistribute it and/or modify\n\
+        it under the terms of the GNU Affero General Public License version 3.\n\
+        You should have received a copy of this license along\n\
+        with this source code in a file named \"COPYING.\"\n\n\
+        This program is distributed in the hope that it will be useful,\n\
+        but WITHOUT ANY WARRANTY; without even the implied warranty of\n\
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the\n\
+        GNU General Public License for more details.\n\n\
+        You should have received a copy of the GNU Affero General Public License\n\
+        along with this program; if not, write to the Free Software Foundation,\n\
+        Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.",
         logger::_ANSI_MAGENTA, logger::_ANSI_RESET,
-        VERSION, bin_arch, bin_platform, bin_env, VCS_TAG, GIT_URL
+        VERSION, bin_arch, bin_platform, bin_env, VCS_TAG
     );
 }
