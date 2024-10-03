@@ -17,11 +17,17 @@
 
 //! Data model representing a DC Struct element. [NEEDS WORK]
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Default, PartialEq)]
 pub struct DCStruct {}
 
 impl DCStruct {
     pub fn new() -> Self {
         Self::default()
+    }
+}
+
+impl std::fmt::Debug for DCStruct {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "struct {{}};") // TODO
     }
 }

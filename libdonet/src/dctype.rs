@@ -45,7 +45,7 @@ pub enum DCTypeEnum {
     TInvalid = 21,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct DCTypeDefinition {
     alias: Option<String>,
     pub data_type: DCTypeEnum,
@@ -64,7 +64,7 @@ impl Default for DCTypeDefinition {
 
 impl DCTypeDefinition {
     /// Creates a new empty DCTypeDefinition struct.
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::default()
     }
 
@@ -115,6 +115,19 @@ impl DCTypeDefinition {
 
     pub fn set_alias(&mut self, alias: String) {
         self.alias = Some(alias);
+    }
+}
+
+impl std::fmt::Debug for DCTypeDefinition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "typedef ")?;
+        self.data_type.fmt(f)?;
+        if self.has_alias() {
+            write!(f, " ")?;
+            self.alias.clone().unwrap().fmt(f)?;
+        }
+        write!(f, ";")?;
+        writeln!(f)
     }
 }
 

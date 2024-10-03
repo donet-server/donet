@@ -24,7 +24,6 @@ use crate::dcfile::DCFile;
 use crate::globals;
 use crate::hashgen::DCHashGenerator;
 use multimap::MultiMap;
-use std::ops::Deref;
 
 pub type FieldName2Field<'dc> = MultiMap<String, &'dc ClassField<'dc>>;
 pub type FieldId2Field<'dc> = MultiMap<globals::FieldId, &'dc ClassField<'dc>>;
@@ -33,7 +32,6 @@ pub type FieldId2Field<'dc> = MultiMap<globals::FieldId, &'dc ClassField<'dc>>;
 /// Contains a map of DC Fields, as well as atomic and
 /// molecular fields that are declared within the class.
 /// Also stores other properties such as its hierarchy.
-#[derive(Debug)]
 pub struct DClass<'dc> {
     dcfile: &'dc DCFile<'dc>,
     class_name: String,
@@ -113,6 +111,41 @@ impl<'dc> DClass<'dc> {
         } else {
             None
         }
+    }
+}
+
+impl<'dc> std::fmt::Debug for DClass<'dc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "dclass ")?;
+        f.write_str(&self.get_name())?;
+
+        if !self.class_parents.is_empty() {
+            write!(f, " : ")?;
+
+            for (i, parent) in self.class_parents.iter().enumerate() {
+                parent.fmt(f)?;
+
+                if i != self.class_parents.len() - 1 {
+                    write!(f, ", ")?;
+                }
+            }
+        }
+        write!(f, " {{  // index ")?;
+        self.class_id.fmt(f)?;
+        writeln!(f)?;
+
+        if let Some(constructor) = self.constructor {
+            constructor.fmt(f)?;
+        }
+
+        for field in &self.fields {
+            match field {
+                ClassField::Atomic(cf) => cf.fmt(f)?,
+                ClassField::Field(cf) => cf.fmt(f)?,
+                ClassField::Molecular(cf) => cf.fmt(f)?,
+            }
+        }
+        writeln!(f, "}};")
     }
 }
 

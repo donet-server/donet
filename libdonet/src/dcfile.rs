@@ -22,6 +22,7 @@ use crate::dcfield::DCField;
 use crate::dckeyword::DCKeyword;
 use crate::dclass::DClass;
 use crate::dcstruct::DCStruct;
+use crate::dctype::DCTypeDefinition;
 use crate::globals;
 use crate::hashgen::DCHashGenerator;
 use crate::parser::ast;
@@ -29,13 +30,13 @@ use crate::parser::ast;
 /// Data model that provides a high level representation of a single,
 /// or collection, of DC files and their elements such as class imports,
 /// type definitions, structures, and Distributed Classes.
-#[derive(Debug)]
 pub struct DCFile<'dc> {
     baked_hash: globals::DCFileHash,
     structs: Vec<DCStruct>,
     dclasses: Vec<DClass<'dc>>,
     imports: Vec<ast::PyModuleImport>,
     keywords: Vec<DCKeyword>,
+    type_defs: Vec<DCTypeDefinition>,
     field_id_2_field: Vec<&'dc DCField<'dc>>,
     // TODO: type_id_2_type, type_name_2_type
     all_object_valid: bool,
@@ -48,6 +49,7 @@ impl<'dc> DCFile<'dc> {
         dclasses: Vec<DClass<'dc>>,
         imports: Vec<ast::PyModuleImport>,
         keywords: Vec<DCKeyword>,
+        type_defs: Vec<DCTypeDefinition>,
         field_id_2_field: Vec<&'dc DCField<'dc>>,
         all_object_valid: bool,
         inherited_fields_stale: bool,
@@ -58,6 +60,7 @@ impl<'dc> DCFile<'dc> {
             dclasses,
             imports,
             keywords,
+            type_defs,
             field_id_2_field,
             all_object_valid,
             inherited_fields_stale,
@@ -153,6 +156,53 @@ impl<'dc> DCFile<'dc> {
 
     pub fn get_struct(&self, _index: usize) -> &'dc DCStruct {
         todo!();
+    }
+}
+
+impl<'dc> std::fmt::Debug for DCFile<'dc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Print Python-style imports
+        if !self.imports.is_empty() {
+            for import in &self.imports {
+                if import.symbols.is_empty() {
+                    write!(f, "import ")?;
+                    f.write_str(&import.python_module)?;
+                    writeln!(f)?;
+                } else {
+                    write!(f, "from ")?;
+                    f.write_str(&import.python_module)?;
+
+                    write!(f, "import ")?;
+                    for (i, symbol) in import.symbols.iter().enumerate() {
+                        f.write_str(symbol)?;
+
+                        if i != import.symbols.len() - 1 {
+                            write!(f, ", ")?;
+                        }
+                    }
+                    writeln!(f)?;
+                }
+            }
+            writeln!(f)?;
+        }
+        // Print type declarations
+        for type_def in &self.type_defs {
+            type_def.fmt(f)?;
+            writeln!(f)?;
+        }
+        for kw in &self.keywords {
+            kw.fmt(f)?;
+            writeln!(f)?;
+        }
+        for strukt in &self.structs {
+            strukt.fmt(f)?;
+            writeln!(f)?;
+        }
+        for dclass in &self.dclasses {
+            dclass.fmt(f)?;
+            writeln!(f)?;
+        }
+        Ok(())
     }
 }
 

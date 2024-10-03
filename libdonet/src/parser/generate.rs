@@ -36,7 +36,7 @@ use crate::dcfile::*;
 ///
 /// [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 pub fn generate_dcf_structure<'a>(_: ast::Root) -> DCFile<'a> {
-    let dc_file: DCFile = DCFile::new(vec![], vec![], vec![], vec![], vec![], true, false);
+    let dc_file: DCFile = DCFile::new(vec![], vec![], vec![], vec![], vec![], vec![], true, false);
 
     /*for type_declaration in ast.type_declarations {
         match type_declaration {
