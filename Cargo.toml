@@ -10,7 +10,7 @@ default-members = [
 resolver = "2"
 
 [workspace.package]
-license = "AGPL-3.0-only"
+license = "AGPL-3.0-or-later"
 authors = [
     "Max Rodriguez <me@maxrdz.com>"
 ]

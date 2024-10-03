@@ -1,24 +1,25 @@
-//! DONET SOFTWARE
-//!
-//! Copyright (c) 2024, Donet Authors.
-//!
-//! This program is free software; you can redistribute it and/or modify
-//! it under the terms of the GNU Affero General Public License version 3.
-//! You should have received a copy of this license along
-//! with this source code in a file named "LICENSE."
-//!
-//! This program is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-//! GNU General Public License for more details.
-//!
-//! You should have received a copy of the GNU Affero General Public License
-//! along with this program; if not, write to the Free Software Foundation,
-//! Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-//!
+/*
+    This file is part of Donet.
+
+    Copyright © 2024 Max Rodriguez
+
+    Donet is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License,
+    as published by the Free Software Foundation, either version 3
+    of the License, or (at your option) any later version.
+
+    Donet is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public
+    License along with Donet. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 //! <img src="https://gitlab.com/donet-server/donet/-/raw/master/logo/donet_banner.png?ref_type=heads" height=10%>
 //!
-//! You can return to the main website for Donet at [`www.donet-server.org`].
+//! You can return to the Donet manual at [`docs.donet-server.org`].
 //!
 //! # libdonet
 //! Provides the necessary utilities and definitions for using the Donet networking protocol.
@@ -43,7 +44,7 @@
 //! - **`datagram`**: Includes Datagram / Datagram Iterator source for writing network packets.
 //! - **`dcfile`**: Includes the DC file lexer, parser, and DC element structures.
 //!
-//! [`www.donet-server.org`]: https://www.donet-server.org/
+//! [`docs.donet-server.org`]: https://docs.donet-server.org/
 
 #![doc(
     html_logo_url = "https://gitlab.com/donet-server/donet/-/raw/master/logo/donet_logo_v3.png?ref_type=heads"

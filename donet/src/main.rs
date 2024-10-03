@@ -1,21 +1,22 @@
-//! DONET SOFTWARE
-//!
-//! Copyright (c) 2024, Donet Authors.
-//!
-//! This program is free software; you can redistribute it and/or modify
-//! it under the terms of the GNU Affero General Public License version 3.
-//! You should have received a copy of this license along
-//! with this source code in a file named "COPYING."
-//!
-//! This program is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-//! GNU General Public License for more details.
-//!
-//! You should have received a copy of the GNU Affero General Public License
-//! along with this program; if not, write to the Free Software Foundation,
-//! Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-//!
+/*
+    This file is part of Donet.
+
+    Copyright © 2024 Max Rodriguez
+
+    Donet is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License,
+    as published by the Free Software Foundation, either version 3
+    of the License, or (at your option) any later version.
+
+    Donet is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public
+    License along with Donet. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 //! <img src="https://gitlab.com/donet-server/donet/-/raw/master/logo/donet_banner.png" height=10%>
 //!
 //! # donet
@@ -403,18 +404,18 @@ fn print_version() {
     println!(
         "{}Donet{}, version {} ({} {}-{})\n\
         Revision (Git SHA1): {}\n\n\
-        This program is free software; you can redistribute it and/or modify\n\
-        it under the terms of the GNU Affero General Public License version 3.\n\
-        You should have received a copy of this license along\n\
-        with this source code in a file named \"COPYING.\"\n\n\
-        This program is distributed in the hope that it will be useful,\n\
+        Donet is free software; you can redistribute it and/or modify\n\
+        it under the terms of the GNU Affero General Public License,\n\
+        as published by the Free Software Foundation, either version 3\n\
+        of the License, or (at your option) any later version.\n\n\
+        Donet is distributed in the hope that it will be useful,\n\
         but WITHOUT ANY WARRANTY; without even the implied warranty of\n\
         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the\n\
-        GNU General Public License for more details.\n\n\
-        You should have received a copy of the GNU Affero General Public License\n\
-        along with this program; if not, write to the Free Software Foundation,\n\
-        Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.",
+        GNU Affero General Public License for more details.\n\n\
+        You should have received a copy of the GNU Affero General Public\n\
+        License along with Donet. If not, see <https://www.gnu.org/licenses/>.\n\n\
+        The source code is publicly available at {}",
         logger::_ANSI_MAGENTA, logger::_ANSI_RESET,
-        VERSION, bin_arch, bin_platform, bin_env, VCS_TAG
+        VERSION, bin_arch, bin_platform, bin_env, VCS_TAG, GIT_URL
     );
 }
