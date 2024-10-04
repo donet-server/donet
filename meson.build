@@ -1,6 +1,6 @@
 project('donet', 'rust',
           version: '0.1.0',
-    meson_version: '>= 1.5.0',
+    meson_version: '>= 1.1.0',
   default_options: [ 'warning_level=2', 'werror=false', ],
 )
 
