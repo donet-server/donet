@@ -403,7 +403,10 @@ fn print_version() {
 
     println!(
         "{}Donet{}, version {} ({} {}-{})\n\
-        Revision (Git SHA1): {}\n\n\
+        Revision (Git SHA1): {}\n\
+        Compiled on {}\n\
+        Build options: {}\n\
+        Feature Flags: {}\n\n\
         Donet is free software; you can redistribute it and/or modify\n\
         it under the terms of the GNU Affero General Public License,\n\
         as published by the Free Software Foundation, either version 3\n\
@@ -414,8 +417,9 @@ fn print_version() {
         GNU Affero General Public License for more details.\n\n\
         You should have received a copy of the GNU Affero General Public\n\
         License along with Donet. If not, see <https://www.gnu.org/licenses/>.\n\n\
-        The source code is publicly available at {}",
+        The source code is publicly available at {}\n",
         logger::_ANSI_MAGENTA, logger::_ANSI_RESET,
-        VERSION, bin_arch, bin_platform, bin_env, VCS_TAG, GIT_URL
+        VERSION, bin_arch, bin_platform, bin_env, VCS_TAG,
+        COMPILE_TIME, BUILD_OPTIONS, FEATURE_FLAGS, GIT_URL
     );
 }

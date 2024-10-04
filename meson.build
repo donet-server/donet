@@ -1,6 +1,6 @@
 project('donet', 'rust',
           version: '0.1.0',
-    meson_version: '>= 0.62.0',
+    meson_version: '>= 1.5.0',
   default_options: [ 'warning_level=2', 'werror=false', ],
 )
 
@@ -8,9 +8,11 @@ git_bin = find_program('git', required: true)
 cargo_bin  = find_program('cargo', required: true)
 find_program('ninja', required: true)
 sphinx_bin = find_program('sphinx-build', required: false)
+date_bin = find_program('date', required: true)
 
 daemon_bin = meson.project_name() + 'd'
 vcs_tag = run_command(git_bin, 'rev-parse', 'HEAD', check: false).stdout().strip()
+build_timestamp = run_command(date_bin, '--rfc-email', check: false).stdout().strip()
 
 # Used in configuring Sphinx documentation to link sources to the repo.
 git_host = 'gitlab'
@@ -68,8 +70,20 @@ if get_option('build_event_logger')
   message('Building the Event Logger.')
 endif
 
+# Convert FF list to argument string for --features option
+cargo_ff_arg = ''
+first_flag = false
+foreach ff : feature_flags
+  if first_flag == false
+    cargo_ff_arg += ff
+    first_flag = true
+  else
+    cargo_ff_arg += ',' + ff
+  endif
+endforeach
+
 if feature_flags.length() > 0
-  cargo_opts += [ '--no-default-features', '--features', feature_flags ]
+  cargo_opts += [ '--no-default-features', '--features', cargo_ff_arg ]
 else
   message('Building all default Donet services.')
 endif

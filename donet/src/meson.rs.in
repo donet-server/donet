@@ -6,3 +6,6 @@ pub static VERSION: &str = @VERSION@;
 pub static DEFAULT_TOML: &str = "daemon.toml";
 pub static GIT_URL: &str = @GIT_URL@;
 pub static VCS_TAG: &str = @VCS_TAG@;
+pub static COMPILE_TIME: &str = @COMPILE_TIME@;
+pub static BUILD_OPTIONS: &str = @BUILD_OPTIONS@;
+pub static FEATURE_FLAGS: &str = @FEATURE_FLAGS@;
