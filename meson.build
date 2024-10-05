@@ -4,6 +4,16 @@ project('donet', 'rust',
   default_options: [ 'warning_level=2', 'werror=false', ],
 )
 
+# Check MinGW or equivalent for Windows build machines
+# See: https://github.com/mesonbuild/meson/issues/8776
+if build_machine.system() == 'windows'
+  assert(
+    find_program('bash', required: false).found(),
+    'Windows detected, but no GNU core utils found.\n\t' +
+    'A MinGW environment, or equivalent, is required to build Donet.'
+  )
+endif
+
 git_bin = find_program('git', required: true)
 cargo_bin  = find_program('cargo', required: true)
 find_program('ninja', required: true)
@@ -101,15 +111,26 @@ cargo_build = custom_target(
   'cargo-build',
   build_by_default: true,
   build_always_stale: true,
+  output: 'dummy', # See 'outdir' custom target
+  console: true,
+  env: cargo_env,
+  command: [
+    cargo_bin, 'build', cargo_opts,
+  ]
+)
+
+# Replace below with `--out-dir` cargo option once stable.
+# Issue: https://github.com/rust-lang/cargo/issues/6790
+custom_target(
+  'outdir',
+  build_by_default: true,
+  build_always_stale: true,
   output: meson.project_name(),
   console: true,
   command: [
-    'env', cargo_env, cargo_bin, 'build',
-    cargo_opts,
-    # Replace below with `--out-dir` once stable.
-    # Issue: https://github.com/rust-lang/cargo/issues/6790#issuecomment-655728327=
-    '&&', 'cp', 'target' / rust_target / daemon_bin, '@OUTPUT@',
-  ]
+    'cp', 'target' / rust_target / daemon_bin, '@BUILD_ROOT@' / meson.project_name(),
+  ],
+  depends: cargo_build
 )
 
 cargo_doc = custom_target(
@@ -118,10 +139,20 @@ cargo_doc = custom_target(
   build_always_stale: true,
   output: 'doc',
   console: true,
+  env: cargo_env,
   command: [
-    'env', cargo_env, cargo_bin, 'doc',
-    cargo_opts, '--lib', '--no-deps', '--document-private-items',
-    '--config', 'build.rustdocflags="--default-theme=ayu"'
+    cargo_bin, 'doc', cargo_opts, '--lib', '--no-deps',
+    '--document-private-items', '--config',
+    'build.rustdocflags="--default-theme=ayu"'
+  ],
+)
+
+clippy = custom_target(
+  'clippy',
+  env: cargo_env,
+  output: 'clippy',
+  command: [
+    cargo_bin, 'clippy', cargo_opts,
   ],
 )
 
@@ -129,8 +160,17 @@ run_target(
   'linting',
   env: cargo_env,
   command: [
-    cargo_bin, 'clippy', cargo_opts, '&&',
     cargo_bin, 'fmt', '--all', '--', '--color=always', '--check',
+  ],
+  depends: clippy,
+)
+
+cargo_deny = custom_target(
+  'cargo-deny',
+  env: cargo_env,
+  output: 'cargo-deny',
+  command: [
+    cargo_bin, 'install', 'cargo-deny', '--locked',
   ],
 )
 
@@ -138,10 +178,19 @@ run_target(
   'deny',
   env: cargo_env,
   command: [
-    cargo_bin, 'install', 'cargo-deny', '--locked',
-    '&&', 'env', cargo_env, cargo_bin, 'deny',
-    '--manifest-path', meson.project_source_root() / 'Cargo.toml', 'check'
+    cargo_bin, 'deny', '--manifest-path',
+    meson.project_source_root() / 'Cargo.toml', 'check'
   ],
+  depends: cargo_deny
+)
+
+cargo_tarpaulin = custom_target(
+  'cargo-tarpaulin',
+  output: 'cargo-tarpaulin',
+  env: cargo_env,
+  command: [
+    cargo_bin, 'install', 'cargo-tarpaulin',
+  ]
 )
 
 # Runs cargo-tarpaulin to create code coverage JSON and XML files,
@@ -150,8 +199,7 @@ run_target(
   'code-coverage',
   env: cargo_env,
   command: [
-    cargo_bin, 'install', 'cargo-tarpaulin',
-    '&&', 'env', cargo_env, cargo_bin, 'tarpaulin',
+    cargo_bin, 'tarpaulin',
     '--force-clean',
     '--exclude-files', 'build/*',
     '--exclude-files', 'builddebug/*',
@@ -159,6 +207,7 @@ run_target(
     '--output-dir', meson.project_build_root() / 'target' / 'tarpaulin',
     cargo_opts
   ],
+  depends: cargo_tarpaulin,
 )
 
 # Build unit tests without running. This outputs the binary
