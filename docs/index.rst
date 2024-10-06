@@ -1,12 +1,24 @@
-.. Donet manual master file, created by
-   sphinx-quickstart on Tue Sep 10 12:27:59 2024.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+..
+   This file is part of the Donet reference manual.
+
+   Copyright (c) 2024 Max Rodriguez.
+
+   Permission is granted to copy, distribute and/or modify this document
+   under the terms of the GNU Free Documentation License, Version 1.3
+   or any later version published by the Free Software Foundation;
+   with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+   A copy of the license is included in the section entitled "GNU
+   Free Documentation License".
 
 .. _main-page:
 
-Donet Manual
-============
+Donet Reference Manual
+======================
+
+.. admonition:: Copying Conditions
+
+   The Donet documentation is released under the
+   :ref:`GNU Free Documentation License <license>`.
 
 .. warning::
 
@@ -50,6 +62,7 @@ between the different sections and their contained pages.
    dclanguage
    internal/index
    glossary
+   license
 
 Get in Touch
 ------------
