@@ -24,7 +24,7 @@ use crate::dcatomic::DCAtomicField;
 use crate::dcfield::ClassField;
 use crate::dcfile::DCFile;
 use crate::globals;
-use crate::hashgen::DCHashGenerator;
+use crate::hashgen::*;
 use multimap::MultiMap;
 
 pub type FieldName2Field<'dc> = MultiMap<String, &'dc ClassField<'dc>>;
@@ -48,31 +48,6 @@ pub struct DClass<'dc> {
 }
 
 impl<'dc> DClass<'dc> {
-    /// Accumulates the properties of this DC element into the file hash.
-    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        hashgen.add_string(self.get_name());
-        hashgen.add_int(self.get_num_parents().try_into().unwrap());
-
-        for parent in &self.class_parents {
-            {
-                hashgen.add_int(i32::from(parent.get_dclass_id()));
-            }
-
-            if let Some(constructor) = &self.constructor {
-                constructor.generate_hash(hashgen);
-            }
-        }
-        hashgen.add_int(self.fields.len().try_into().unwrap());
-
-        for field in &self.fields {
-            match field {
-                ClassField::Field(field) => field.generate_hash(hashgen),
-                ClassField::Atomic(atomic) => atomic.generate_hash(hashgen),
-                ClassField::Molecular(molecular) => molecular.generate_hash(hashgen),
-            }
-        }
-    }
-
     pub fn get_field_by_name(&self, name: &str) -> Option<&'dc ClassField> {
         match self.field_name_2_field.get(name) {
             Some(pointer) => Some(pointer),
@@ -112,6 +87,32 @@ impl<'dc> DClass<'dc> {
             Some(atomic)
         } else {
             None
+        }
+    }
+}
+
+impl<'dc> DCHash for DClass<'dc> {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        hashgen.add_string(self.get_name());
+        hashgen.add_int(self.get_num_parents().try_into().unwrap());
+
+        for parent in &self.class_parents {
+            {
+                hashgen.add_int(i32::from(parent.get_dclass_id()));
+            }
+
+            if let Some(constructor) = &self.constructor {
+                constructor.generate_hash(hashgen);
+            }
+        }
+        hashgen.add_int(self.fields.len().try_into().unwrap());
+
+        for field in &self.fields {
+            match field {
+                ClassField::Field(field) => field.generate_hash(hashgen),
+                ClassField::Atomic(atomic) => atomic.generate_hash(hashgen),
+                ClassField::Molecular(molecular) => molecular.generate_hash(hashgen),
+            }
         }
     }
 }

@@ -28,7 +28,7 @@ use crate::dcmolecular::DCMolecularField;
 use crate::dcstruct::DCStruct;
 use crate::dctype::DCTypeDefinition;
 use crate::globals;
-use crate::hashgen::DCHashGenerator;
+use crate::hashgen::*;
 
 /// A field of a Distributed Class. The DCField struct is a base for
 /// struct and dclass fields. In the DC language, there are three types
@@ -101,25 +101,6 @@ impl<'dc> DCField<'dc> {
             has_default_value: false,
             default_value: vec![],
             bogus_field: false,
-        }
-    }
-
-    /// Accumulates the properties of this DC element into the file hash.
-    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self.keyword_list.generate_hash(hashgen);
-        self.field_type.generate_hash(hashgen);
-
-        // It shouldn't be necessary to explicitly add the field ID
-        // to the hash--this is computed based on the relative
-        // position of this field with the other fields, so
-        // adding it explicitly will be redundant.  However,
-        // the field name is significant.
-        hashgen.add_string(self.field_name.clone());
-
-        // The field ID is added to the hash here, since we need to ensure
-        // the hash code comes out different in the DC_MULTIPLE_INHERITANCE case.
-        if globals::DC_MULTIPLE_INHERITANCE {
-            hashgen.add_int(i32::from(self.field_id));
         }
     }
 
@@ -240,5 +221,25 @@ impl<'dc> DCField<'dc> {
 
     fn refresh_default_value(&self) {
         todo!()
+    }
+}
+
+impl<'dc> DCHash for DCField<'dc> {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        self.keyword_list.generate_hash(hashgen);
+        self.field_type.generate_hash(hashgen);
+
+        // It shouldn't be necessary to explicitly add the field ID
+        // to the hash--this is computed based on the relative
+        // position of this field with the other fields, so
+        // adding it explicitly will be redundant.  However,
+        // the field name is significant.
+        hashgen.add_string(self.field_name.clone());
+
+        // The field ID is added to the hash here, since we need to ensure
+        // the hash code comes out different in the DC_MULTIPLE_INHERITANCE case.
+        if globals::DC_MULTIPLE_INHERITANCE {
+            hashgen.add_int(i32::from(self.field_id));
+        }
     }
 }

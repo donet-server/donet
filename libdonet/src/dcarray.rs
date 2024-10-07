@@ -22,7 +22,7 @@
 
 use crate::dcnumeric::DCNumericRange;
 use crate::dctype::{DCTypeDefinition, DCTypeEnum};
-use crate::hashgen::DCHashGenerator;
+use crate::hashgen::*;
 
 pub struct DCArrayType {
     base_type: DCTypeDefinition,
@@ -88,8 +88,25 @@ impl DCArrayType {
         new_array_type
     }
 
-    /// Accumulates the properties of this DC element into the file hash.
-    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+    pub fn get_array_size(&self) -> u16 {
+        self.base_type.size
+    }
+
+    pub fn get_element_type(&self) -> Option<DCTypeDefinition> {
+        self.element_type.clone()
+    }
+
+    pub fn get_range(&self) -> Option<DCNumericRange> {
+        self.array_range.clone()
+    }
+
+    pub fn has_range(&self) -> bool {
+        self.array_range.is_some()
+    }
+}
+
+impl DCHash for DCArrayType {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_type.generate_hash(hashgen);
 
         if let Some(element_type) = self.element_type.clone() {
@@ -108,21 +125,5 @@ impl DCArrayType {
         } else {
             hashgen.add_int(i32::from(self.array_size))
         }
-    }
-
-    pub fn get_array_size(&self) -> u16 {
-        self.base_type.size
-    }
-
-    pub fn get_element_type(&self) -> Option<DCTypeDefinition> {
-        self.element_type.clone()
-    }
-
-    pub fn get_range(&self) -> Option<DCNumericRange> {
-        self.array_range.clone()
-    }
-
-    pub fn has_range(&self) -> bool {
-        self.array_range.is_some()
     }
 }

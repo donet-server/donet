@@ -26,7 +26,7 @@ use crate::dclass::DClass;
 use crate::dcstruct::DCStruct;
 use crate::dctype::DCTypeDefinition;
 use crate::globals;
-use crate::hashgen::DCHashGenerator;
+use crate::hashgen::*;
 use crate::parser::ast;
 
 /// Data model that provides a high level representation of a single,
@@ -79,27 +79,10 @@ impl<'dc> DCFile<'dc> {
         if self.baked_hash != 0 {
             self.baked_hash
         } else {
-            let mut hashgen: DCHashGenerator = DCHashGenerator::new();
+            let mut hashgen: DCHashGenerator = DCHashGenerator::default();
 
             self.generate_hash(&mut hashgen);
             hashgen.get_hash()
-        }
-    }
-
-    /// Accumulates the elements of the DC file into the hash.
-    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        if globals::DC_VIRTUAL_INHERITANCE {
-            // Just to change the hash output in this case.
-            if globals::DC_SORT_INHERITANCE_BY_FILE {
-                hashgen.add_int(1_i32);
-            } else {
-                hashgen.add_int(2_i32);
-            }
-        }
-        hashgen.add_int(self.get_num_dclasses().try_into().unwrap());
-
-        for dclass in &self.dclasses {
-            dclass.generate_hash(hashgen);
         }
     }
 
@@ -158,6 +141,24 @@ impl<'dc> DCFile<'dc> {
 
     pub fn get_struct(&self, _index: usize) -> &'dc DCStruct {
         todo!();
+    }
+}
+
+impl<'dc> DCHash for DCFile<'dc> {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        if globals::DC_VIRTUAL_INHERITANCE {
+            // Just to change the hash output in this case.
+            if globals::DC_SORT_INHERITANCE_BY_FILE {
+                hashgen.add_int(1);
+            } else {
+                hashgen.add_int(2);
+            }
+        }
+        hashgen.add_int(self.get_num_dclasses().try_into().unwrap());
+
+        for dclass in &self.dclasses {
+            dclass.generate_hash(hashgen);
+        }
     }
 }
 

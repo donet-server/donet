@@ -21,44 +21,34 @@
 
 use crate::globals::{DCFileHash, MAX_PRIME_NUMBERS};
 
+/// Trait shared by all DC element structures to generate the DC file hash.
+pub trait DCHash {
+    /// Accumulates the properties of this DC element into the file hash.
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator);
+}
+
 /// Prime number generator based off Panda's.
 pub struct PrimeNumberGenerator {
     primes: Vec<u16>,
 }
 
-/// The following is an excerpt from Panda3D's source:
-///
-/// We multiply each consecutive integer by the next prime number and add it to
-/// the total. This will generate pretty evenly-distributed hash numbers for
-/// an arbitrary sequence of integers.
-///
-/// We do recycle the prime number table at some point, just to keep it from
-/// growing insanely large, however (and to avoid wasting time computing large
-/// prime numbers unnecessarily), and we also truncate the result to the low-
-/// order 32 bits.
-pub struct DCHashGenerator {
-    hash: i32,
-    index: u16,
-    primes: PrimeNumberGenerator,
+impl Default for PrimeNumberGenerator {
+    fn default() -> Self {
+        Self { primes: vec![2_u16] }
+    }
 }
 
 impl PrimeNumberGenerator {
-    pub fn new() -> PrimeNumberGenerator {
-        PrimeNumberGenerator { primes: vec![2_u16] }
-    }
-
-    /* Returns the nth prime number. this[0] returns 2, this[1] returns 3;
-     * successively larger values of n return larger prime numbers, up to the
-     * largest prime number that can be represented in an int.
-     */
+    /// Returns the nth prime number. this[0] returns 2, this[1] returns 3;
+    /// successively larger values of n return larger prime numbers, up to the
+    /// largest prime number that can be represented in an int.
     pub fn get_prime(&mut self, n: u16) -> u16 {
         // Compute the prime numbers between the last-computed prime number and n.
         let mut candidate: u16 = self.primes.last().unwrap() + 1_u16;
 
         while self.primes.len() <= usize::from(n) {
-            /* Is candidate prime?  It is not if any one of the already-found prime
-             * numbers (up to its square root) divides it evenly.
-             */
+            // Is candidate prime?  It is not if any one of the already-found prime
+            // numbers (up to its square root) divides it evenly.
             let mut maybe_prime: bool = true;
             let mut j: usize = 0;
 
@@ -80,21 +70,24 @@ impl PrimeNumberGenerator {
     }
 }
 
-impl Default for DCHashGenerator {
-    fn default() -> Self {
-        Self {
-            hash: 0_i32,
-            index: 0_u16,
-            primes: PrimeNumberGenerator::new(),
-        }
-    }
+/// The following is an excerpt from Panda3D's source:
+///
+/// We multiply each consecutive integer by the next prime number and add it to
+/// the total. This will generate pretty evenly-distributed hash numbers for
+/// an arbitrary sequence of integers.
+///
+/// We do recycle the prime number table at some point, just to keep it from
+/// growing insanely large, however (and to avoid wasting time computing large
+/// prime numbers unnecessarily), and we also truncate the result to the low-
+/// order 32 bits.
+#[derive(Default)]
+pub struct DCHashGenerator {
+    hash: i32,
+    index: u16,
+    primes: PrimeNumberGenerator,
 }
 
 impl DCHashGenerator {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Adds another integer to the hash so far.
     pub fn add_int(&mut self, number: i32) {
         assert!(self.index < MAX_PRIME_NUMBERS);
@@ -128,7 +121,7 @@ mod unit_testing {
 
     #[test]
     fn prime_number_generator_integrity() {
-        let mut generator: PrimeNumberGenerator = PrimeNumberGenerator::new();
+        let mut generator: PrimeNumberGenerator = PrimeNumberGenerator::default();
 
         let prime_numbers: Vec<u16> = vec![
             2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,

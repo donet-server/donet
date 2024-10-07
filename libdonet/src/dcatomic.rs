@@ -24,7 +24,7 @@ use crate::dcfield::DCField;
 use crate::dckeyword::DCKeywordList;
 use crate::dcparameter::DCParameter;
 use crate::dctype::DCTypeDefinition;
-use crate::hashgen::DCHashGenerator;
+use crate::hashgen::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -50,20 +50,6 @@ impl<'dc> DCAtomicField<'dc> {
         }
     }
 
-    /// Accumulates the properties of this DC element into the file hash.
-    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self.base_field.generate_hash(hashgen);
-
-        hashgen.add_int(self.elements.len().try_into().unwrap());
-
-        for param_ptr in &self.elements {
-            let new_ptr: Rc<RefCell<DCParameter>> = Rc::clone(param_ptr);
-            let param = new_ptr.borrow_mut();
-
-            param.generate_hash(hashgen);
-        }
-    }
-
     pub fn get_num_elements(&self) -> usize {
         self.elements.len()
     }
@@ -81,5 +67,20 @@ impl<'dc> DCAtomicField<'dc> {
 
     pub fn add_element(&mut self, element: DCParameter<'dc>) {
         self.elements.push(Rc::new(RefCell::new(element)));
+    }
+}
+
+impl<'dc> DCHash for DCAtomicField<'dc> {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        self.base_field.generate_hash(hashgen);
+
+        hashgen.add_int(self.elements.len().try_into().unwrap());
+
+        for param_ptr in &self.elements {
+            let new_ptr: Rc<RefCell<DCParameter>> = Rc::clone(param_ptr);
+            let param = new_ptr.borrow_mut();
+
+            param.generate_hash(hashgen);
+        }
     }
 }

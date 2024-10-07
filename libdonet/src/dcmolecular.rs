@@ -23,7 +23,7 @@
 use crate::dcatomic::DCAtomicField;
 use crate::dcfield::DCField;
 use crate::dctype::DCTypeDefinition;
-use crate::hashgen::DCHashGenerator;
+use crate::hashgen::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -42,20 +42,6 @@ impl<'dc> DCMolecularField<'dc> {
             base_field: DCField::new(name, DCTypeDefinition::new()),
             atomic_names,
             atomic_fields: vec![],
-        }
-    }
-
-    /// Accumulates the properties of this DC element into the file hash.
-    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self.base_field.generate_hash(hashgen);
-
-        hashgen.add_int(self.atomic_fields.len().try_into().unwrap());
-
-        for atomic_ptr in &self.atomic_fields {
-            let new_ptr: Rc<RefCell<DCAtomicField>> = Rc::clone(atomic_ptr);
-            let atomic_field = new_ptr.borrow_mut();
-
-            atomic_field.generate_hash(hashgen);
         }
     }
 
@@ -87,5 +73,20 @@ impl<'dc> DCMolecularField<'dc> {
         // parsing, we're left with hollow vectors in heap
         // for every damn molecular field in the DC file.
         self.atomic_names.clear();
+    }
+}
+
+impl<'dc> DCHash for DCMolecularField<'dc> {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        self.base_field.generate_hash(hashgen);
+
+        hashgen.add_int(self.atomic_fields.len().try_into().unwrap());
+
+        for atomic_ptr in &self.atomic_fields {
+            let new_ptr: Rc<RefCell<DCAtomicField>> = Rc::clone(atomic_ptr);
+            let atomic_field = new_ptr.borrow_mut();
+
+            atomic_field.generate_hash(hashgen);
+        }
     }
 }
