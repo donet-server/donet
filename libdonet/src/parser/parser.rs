@@ -302,9 +302,9 @@ parser! {
         named_field[_nf] dc_keyword_list[keywords] => {
             ast::AtomicOrMolecular::Atomic(ast::AtomicField {
                 span: span!(),
-                identifier: String::default(),
+                identifier: String::default(), // TODO
                 keywords,
-                parameters: vec![],
+                parameters: vec![], // TODO
             })
         },
         // e.g. "setStats : setAvatarCount, setNewAvatarCount"

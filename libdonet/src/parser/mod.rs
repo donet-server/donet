@@ -28,22 +28,74 @@
 //! [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
 pub(crate) mod ast;
-mod generate;
 pub(crate) mod lexer;
 pub(crate) mod parser;
+mod semantics;
 
 use crate::dcfile::DCFile;
 use crate::globals::ParseError;
+use codespan_reporting::diagnostic::Diagnostic;
+use codespan_reporting::files::{self, SimpleFiles};
+use codespan_reporting::term;
+use multimap::MultiMap;
+use term::termcolor::{ColorChoice, StandardStream};
+
+/// Data stored in memory throughout the DC parser pipeline.
+///
+/// Sets up writer and codespan config for rendering diagnostics
+/// to stderr & storing DC files that implement codespan's File trait.
+struct PipelineData<'a> {
+    _writer: StandardStream,
+    _config: term::Config,
+    pub files: SimpleFiles<&'a str, &'a str>,
+    pub filename_to_id: MultiMap<&'a str, usize>,
+    pub syntax_trees: Vec<ast::Root>,
+}
+
+impl<'a> Default for PipelineData<'a> {
+    fn default() -> Self {
+        Self {
+            _writer: StandardStream::stderr(ColorChoice::Always),
+            _config: term::Config::default(),
+            files: SimpleFiles::new(),
+            filename_to_id: MultiMap::default(),
+            syntax_trees: vec![],
+        }
+    }
+}
+
+impl<'a> PipelineData<'a> {
+    /// Thin wrapper for emitting a codespan diagnostic using `PipelineData` properties.
+    pub fn emit_diagnostic(&mut self, diag: Diagnostic<usize>) -> Result<(), files::Error> {
+        term::emit(&mut self._writer.lock(), &self._config, &self.files, &diag)
+    }
+}
+
+/// Tuple that represents an input file for the DC parser.
+/// The first item is the filename, the second item is the file content.
+pub(crate) type InputFile = (String, String);
 
 /// Runs the entire DC parser pipeline. The input is a single string slice
 /// that represents the raw DC file in UTF-8, and the output is the final
 /// DC element tree data structure to be used by Donet.
-#[inline]
-pub(crate) fn dcparse_pipeline<'a>(input: String) -> Result<DCFile<'a>, ParseError> {
-    let lexer: lexer::Lexer<'_> = lexer::Lexer::new(&input);
-    let ast: ast::Root = parser::parse(lexer)?;
+pub(crate) fn dcparse_pipeline<'a>(inputs: Vec<InputFile>) -> Result<DCFile<'a>, ParseError> {
+    let mut pipeline_data: PipelineData<'_> = PipelineData::default();
 
-    let dc_file: DCFile = generate::generate_dcf_structure(ast);
+    // Create codespan files for each DC file
+    for input in &inputs {
+        let file_id: usize = pipeline_data.files.add(&input.0, &input.1);
 
-    Ok(dc_file)
+        pipeline_data.filename_to_id.insert(&input.0, file_id);
+    }
+
+    // Create an abstract syntax tree per DC file
+    for input in &inputs {
+        let lexer: lexer::Lexer<'_> = lexer::Lexer::new(&input.1);
+        let ast: ast::Root = parser::parse(lexer)?;
+
+        pipeline_data.syntax_trees.push(ast);
+    }
+
+    // Process all abstract syntax trees in semantic analyzer.
+    Ok(semantics::semantic_analyzer(pipeline_data))
 }

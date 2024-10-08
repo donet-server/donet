@@ -30,14 +30,14 @@
 //!
 //! [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
-use super::ast;
+use super::PipelineData;
 use crate::dcfile::*;
 
 /// Takes in the [`Abstract Syntax Tree`] from the DC parser and outputs a
 /// [`crate::dcfile::DCFile`] immutable structure with a static lifetime.
 ///
 /// [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
-pub fn generate_dcf_structure<'a>(_: ast::Root) -> DCFile<'a> {
+pub fn semantic_analyzer<'a>(_: PipelineData) -> DCFile<'a> {
     let dc_file: DCFile = DCFile::new(vec![], vec![], vec![], vec![], vec![], vec![], true, false);
 
     /*for type_declaration in ast.type_declarations {

@@ -112,43 +112,78 @@ fn init_logger() {
     pretty_env_logger::init();
 }
 
+/// Easy to use interface for the DC file parser. Handles reading
+/// the DC files, instantiating the DC parsing pipeline, and either
+/// returns the DCFile object or a Parse/File error.
 #[cfg(feature = "dcfile")]
 pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadError> {
     use log::info;
+    use parser::InputFile;
     use std::fs::File;
-    use std::io::Read;
+    use std::io::{Error, ErrorKind, Read};
+    use std::path::Path;
 
     init_logger();
     info!("DC read of {:?}", file_paths);
 
+    let mut filenames: Vec<String> = vec![];
     let mut file_results: Vec<Result<File, std::io::Error>> = vec![];
-    // All DC files are passed to the lexer as one string.
-    let mut lexer_input: String = String::new();
+    let mut pipeline_input: Vec<parser::InputFile> = vec![];
 
     assert!(!file_paths.is_empty(), "No DC files given!");
 
     for file_path in &file_paths {
+        // Get filename from given path
+        match Path::new(file_path).file_name() {
+            Some(filename_osstr) => {
+                // Convert OsStr to String and store filename
+                filenames.push(filename_osstr.to_string_lossy().into_owned());
+            }
+            None => {
+                // std::path::Path.file_name() **only** returns `None`
+                // if the path terminates in '..'.
+                let filename_err: Error = Error::new(
+                    ErrorKind::InvalidInput,
+                    "Failed to get filename from path because\
+                    path terminates in '..'.",
+                );
+                return Err(DCReadError::FileError(filename_err));
+            }
+        }
+
+        // Open file using path and store result
         file_results.push(File::open(file_path));
     }
 
-    for io_result in file_results {
+    for (index, io_result) in file_results.into_iter().enumerate() {
         if let Ok(mut dcf) = io_result {
-            let res: std::io::Result<usize> = dcf.read_to_string(&mut lexer_input);
+            // Prepare `InputFile` tuple for the pipeline function.
+            let filename: String = filenames.get(index).unwrap().to_owned();
+            let mut in_file: InputFile = (filename, String::default());
+
+            let res: std::io::Result<usize> = dcf.read_to_string(&mut in_file.1);
+
             if let Err(res_err) = res {
                 // DC file content may not be in proper UTF-8 encoding.
                 return Err(DCReadError::FileError(res_err));
             }
+            pipeline_input.push(in_file);
         } else {
             // Failed to open one of the DC files. (most likely permission error)
             return Err(DCReadError::FileError(io_result.unwrap_err()));
         }
     }
-    read_dc(lexer_input)
+
+    let res: Result<DCFile, ParseError> = parser::dcparse_pipeline(pipeline_input);
+
+    if let Ok(res_ok) = res {
+        Ok(res_ok)
+    } else {
+        Err(DCReadError::ParseError(res.unwrap_err()))
+    }
 }
 
-/// Easy to use interface for the DC file parser. Handles reading
-/// the DC files, instantiating the lexer and parser, and either
-/// returns the DCFile object or a Parse/File error.
+/// Front end to the libdonet DC parser pipeline.
 ///
 /// ## Example Usage
 /// The following is an example of parsing a simple DC file string,
@@ -209,7 +244,9 @@ pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadEr
 ///
 #[cfg(feature = "dcfile")]
 pub fn read_dc<'a>(input: String) -> Result<DCFile<'a>, DCReadError> {
-    let res: Result<DCFile, ParseError> = parser::dcparse_pipeline(input);
+    let dcparse_input: Vec<parser::InputFile> = vec![("input.dc".to_string(), input)];
+
+    let res: Result<DCFile, ParseError> = parser::dcparse_pipeline(dcparse_input);
 
     if let Ok(res_ok) = res {
         Ok(res_ok)

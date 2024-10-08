@@ -26,6 +26,9 @@ log = { version = "0.4", features = ["std"] }
 pretty_env_logger = { version = "0.5" }
 # LALR(1) parser proc macro for DC parser
 plex = { version = "0.3", optional = true }
+# Used for DC parser error reporting
+codespan = { version = "0.11", features = ["serialization"] }
+codespan-reporting = { version = "0.11", features = ["serialization"] }
 # Used to store DC element properties
 multimap = { version = "0.9", optional = true }
 # Serialization
