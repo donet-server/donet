@@ -12,8 +12,8 @@
 
 .. _building-linux:
 
-Building Donet on Linux
-=======================
+Building on GNU/Linux
+=====================
 
 Getting a copy of the code
 --------------------------
@@ -26,7 +26,7 @@ On your computer, clone with:
 
 .. code-block:: shell
 
-    git clone https://gitlab.com/donet-server/donet.git
+    $ git clone https://gitlab.com/donet-server/donet.git
 
 Building from source
 --------------------
@@ -39,8 +39,8 @@ Run the following Meson commands under the project directory:
 
 .. code-block:: shell
 
-    meson setup build -Dprofile=debug
-    meson compile -C build
+    $ meson setup build -Dprofile=debug
+    $ meson compile -C build
 
 .. note::
 
@@ -54,8 +54,8 @@ libdonet, please run code linting and unit testing before pushing:
 
 .. code-block:: shell
 
-    meson compile linting -C build
-    meson compile tests -C build
+    $ meson compile linting -C build
+    $ meson compile tests -C build
 
 These checks should go over all source files in the ``donet/`` and
 ``libdonet/`` source directories.
@@ -68,7 +68,7 @@ These checks should go over all source files in the ``donet/`` and
 
     .. code-block:: shell
 
-        meson setup build -Dbuild_state_server=true
+        $ meson setup build -Dbuild_state_server=true
 
     If any ``build_*`` Meson options are passed,
     ``--no-default-features`` is passed to cargo build, which disables

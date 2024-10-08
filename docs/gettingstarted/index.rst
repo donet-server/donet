@@ -20,3 +20,4 @@ Getting Started
     :caption: Table of Contents
 
     building-linux
+    building-windows
