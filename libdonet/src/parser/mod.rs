@@ -75,8 +75,8 @@ impl<'a> PipelineData<'a> {
 /// The first item is the filename, the second item is the file content.
 pub(crate) type InputFile = (String, String);
 
-/// Runs the entire DC parser pipeline. The input is a single string slice
-/// that represents the raw DC file in UTF-8, and the output is the final
+/// Runs the entire DC parser pipeline. The input is an array of strings
+/// that represent the input DC files in UTF-8, and the output is the final
 /// DC element tree data structure to be used by Donet.
 pub(crate) fn dcparse_pipeline<'a>(inputs: Vec<InputFile>) -> Result<DCFile<'a>, ParseError> {
     let mut pipeline_data: PipelineData<'_> = PipelineData::default();

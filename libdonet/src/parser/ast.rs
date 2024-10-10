@@ -22,7 +22,7 @@
 //!
 //! [`AST`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
-use super::lexer::Span;
+use super::lexer::{DCToken, Span};
 use crate::dctype::*;
 
 /// Paired with the `type_declarations` production in the Context Free Grammar.
@@ -129,6 +129,9 @@ pub struct MolecularField {
 /// Paired with the `method_body` production in the Context Free Grammar.
 pub type MethodBody = Vec<Parameter>;
 
+/// Paired with the `parameter_values` production in the Context Free Grammar.
+pub type ParameterValues = Vec<TypeValue>;
+
 /// Paired with the `method_as_field` production in the Context Free Grammar.
 #[derive(Debug)]
 pub struct MethodAsField {
@@ -148,6 +151,13 @@ pub struct Parameter {
 
 /// Paired with the `array_expansion` production in the Context Free Grammar.
 pub type ArrayExpansion = (TypeValue, u32);
+
+/// Paired with the `type_or_sized_value` production in the Context Free Grammar.
+#[derive(Debug)]
+pub enum TypeOrSizedValue {
+    TypeValue(TypeValue),
+    SizedValue(DCToken),
+}
 
 /// Paired with the `type_value` production in the Context Free Grammar.
 #[derive(Debug)]
@@ -171,4 +181,39 @@ pub enum CharOrNumber {
     Char(char),
     I64(i64),
     F64(f64),
+}
+
+pub struct DataType {
+    pub span: Span,
+    pub token: DCToken,
+    pub dctype: DCTypeEnum,
+}
+
+impl DataType {
+    pub fn from_token(value: DCToken, span: Span) -> Self {
+        Self {
+            span,
+            token: value.clone(),
+            dctype: match value {
+                DCToken::Float32T => DCTypeEnum::TFloat32,
+                DCToken::Float64T => DCTypeEnum::TFloat64,
+                DCToken::Int8T => DCTypeEnum::TInt8,
+                DCToken::Int16T => DCTypeEnum::TInt16,
+                DCToken::Int32T => DCTypeEnum::TInt32,
+                DCToken::Int64T => DCTypeEnum::TInt64,
+                DCToken::UInt8T => DCTypeEnum::TUInt8,
+                DCToken::UInt16T => DCTypeEnum::TUInt16,
+                DCToken::UInt32T => DCTypeEnum::TUInt32,
+                DCToken::UInt64T => DCTypeEnum::TUInt64,
+                DCToken::Int8ArrayT => DCTypeEnum::TArray,
+                DCToken::Int16ArrayT => DCTypeEnum::TArray,
+                DCToken::Int32ArrayT => DCTypeEnum::TArray,
+                DCToken::UInt8ArrayT => DCTypeEnum::TArray,
+                DCToken::UInt16ArrayT => DCTypeEnum::TArray,
+                DCToken::UInt32ArrayT => DCTypeEnum::TArray,
+                DCToken::UInt32UInt8ArrayT => DCTypeEnum::TArray,
+                _ => panic!("DC token matches no production in CFG."),
+            },
+        }
+    }
 }

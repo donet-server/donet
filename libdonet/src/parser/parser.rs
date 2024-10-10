@@ -289,7 +289,6 @@ parser! {
 
     optional_class_fields: ast::ClassFields {
         epsilon => vec![],
-        optional_class_fields[vector] Semicolon => vector,
         optional_class_fields[mut vector] class_field[field] Semicolon => {
             vector.push(field);
             vector
@@ -370,7 +369,6 @@ parser! {
     switch_fields: () {
         epsilon => {},
         switch_fields switch_case => {},
-        switch_fields type_value Semicolon => {},
         switch_fields named_field Semicolon => {},
         switch_fields Break Semicolon => {},
     }
@@ -415,10 +413,6 @@ parser! {
         OpenParenthesis parameters[params] CloseParenthesis => params,
     }
 
-    method_value: () {
-        OpenParenthesis parameter_values[_] CloseParenthesis => {},
-    }
-
     // e.g. "setName(string)"
     method_as_field: ast::MethodAsField {
         Identifier(id) method_body[parameters] => {
@@ -461,7 +455,7 @@ parser! {
     field_with_name_and_default: () {
         nonmethod_type_with_name Equals type_value => {},
         field_with_name_as_array Equals type_value => {},
-        method_as_field Equals method_value type_value => {},
+        method_as_field Equals type_value => {},
     }
 
     named_field: () {
@@ -521,9 +515,7 @@ parser! {
 
     type_with_array: () {
         numeric_type OpenBrackets array_range CloseBrackets => {},
-        Identifier(_) OpenBrackets array_range CloseBrackets => {
-            // TODO: Check if identifier is a defined type.
-        },
+        Identifier(_) OpenBrackets array_range CloseBrackets => {},
         builtin_array_type OpenBrackets array_range CloseBrackets => {},
         type_with_array OpenBrackets array_range CloseBrackets => {},
     }
@@ -542,6 +534,11 @@ parser! {
         StringLiteral(s) Star unsigned_32_bit_int[f] => (ast::TypeValue::String(s), f),
     }
 
+    array_value: Vec<ast::ArrayExpansion> {
+        OpenBrackets CloseBrackets => vec![],
+        OpenBrackets element_values[ev] CloseBrackets => ev,
+    }
+
     element_values: Vec<ast::ArrayExpansion> {
         array_expansion[ae] => vec![ae],
         element_values[mut ev] Comma array_expansion[ae] => {
@@ -550,30 +547,17 @@ parser! {
         },
     }
 
-    array_value: Vec<ast::ArrayExpansion> {
-        OpenBrackets CloseBrackets => vec![],
-        OpenBrackets element_values[ev] CloseBrackets => ev,
+    parameter_values: ast::ParameterValues {
+        type_value[tv] => vec![tv],
+        parameter_values[mut vec] Comma type_value[tv] => {
+            vec.push(tv);
+            vec
+        },
     }
 
-    struct_value: () {
-        OpenBraces field_values CloseBraces => {},
-    }
-
-    field_values: () {
-        type_value => {},
-        field_values Comma type_value => {},
-        method_value => {},
-        field_values Comma method_value => {},
-    }
-
-    parameter_values: () {
-        type_value => {},
-        parameter_values Comma type_value => {},
-    }
-
-    type_or_sized_value: () {
-        type_value => {},
-        sized_type_token[_] => {},
+    type_or_sized_value: ast::TypeOrSizedValue {
+        type_value[tv] => ast::TypeOrSizedValue::TypeValue(tv),
+        sized_type_token[st] => ast::TypeOrSizedValue::SizedValue(st),
     }
 
     type_value: ast::TypeValue {
@@ -587,7 +571,6 @@ parser! {
         HexLiteral(hs) => ast::TypeValue::String(hs),
         signed_integer[i] => ast::TypeValue::I64(i),
         array_value[av] => ast::TypeValue::ArrayValue(av),
-        struct_value[_] => todo!(), // TODO
     }
 
     numeric_type: DCNumericType {
@@ -666,22 +649,22 @@ parser! {
         //
         // Also because it is 2:27 AM and its giving me a shift-reduce conflict again.
         numeric_type_token[mut nt]
-        OpenParenthesis signed_integer_type[(_, dct)] CloseParenthesis => {
-            if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dct)) {
+        OpenParenthesis signed_integer_type[dt] CloseParenthesis => {
+            if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dt.dctype)) {
                 panic!("{:?}\n{}", span!(), msg);
             }
             nt
         },
         numeric_type_token[mut nt]
-        OpenParenthesis unsigned_integer_type[(_, dct)] CloseParenthesis => {
-            if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dct)) {
+        OpenParenthesis unsigned_integer_type[dt] CloseParenthesis => {
+            if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dt.dctype)) {
                 panic!("{:?}\n{}", span!(), msg);
             }
             nt
         },
         numeric_type_token[mut nt]
-        OpenParenthesis floating_point_type[(_, dct)] CloseParenthesis => {
-            if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dct)) {
+        OpenParenthesis floating_point_type[dt] CloseParenthesis => {
+            if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dt.dctype)) {
                 panic!("{:?}\n{}", span!(), msg);
             }
             nt
@@ -752,15 +735,15 @@ parser! {
         StringT => StringT,
         BlobT => BlobT,
         Blob32T => Blob32T,
-        array_data_type[(tok, _)] => tok,
+        array_data_type[dt] => dt.token,
     }
 
     numeric_type_token: DCNumericType {
         CharT => DCNumericType::new(DCTypeEnum::TChar),
         BoolT => DCNumericType::new(DCTypeEnum::TUInt8), // 'bool' is an alias for uint8
-        signed_integer_type[(_, dct)] => DCNumericType::new(dct),
-        unsigned_integer_type[(_, dct)] => DCNumericType::new(dct),
-        floating_point_type[(_, dct)] => DCNumericType::new(dct),
+        signed_integer_type[dt] => DCNumericType::new(dt.dctype),
+        unsigned_integer_type[dt] => DCNumericType::new(dt.dctype),
+        floating_point_type[dt] => DCNumericType::new(dt.dctype),
     }
 
     char_or_number: ast::CharOrNumber {
@@ -805,33 +788,33 @@ parser! {
         }
     }
 
-    floating_point_type: (DCToken, DCTypeEnum) {
-        Float32T => (Float32T, DCTypeEnum::TFloat32),
-        Float64T => (Float64T, DCTypeEnum::TFloat64),
+    floating_point_type: ast::DataType {
+        Float32T => ast::DataType::from_token(Float32T, span!()),
+        Float64T => ast::DataType::from_token(Float64T, span!()),
     }
 
-    signed_integer_type: (DCToken, DCTypeEnum) {
-        Int8T => (Int8T, DCTypeEnum::TInt8),
-        Int16T => (Int16T, DCTypeEnum::TInt16),
-        Int32T => (Int32T, DCTypeEnum::TInt32),
-        Int64T => (Int64T, DCTypeEnum::TInt64),
+    signed_integer_type: ast::DataType {
+        Int8T => ast::DataType::from_token(Int8T, span!()),
+        Int16T => ast::DataType::from_token(Int16T, span!()),
+        Int32T => ast::DataType::from_token(Int32T, span!()),
+        Int64T => ast::DataType::from_token(Int64T, span!()),
     }
 
-    unsigned_integer_type: (DCToken, DCTypeEnum) {
-        UInt8T => (UInt8T, DCTypeEnum::TUInt8),
-        UInt16T => (UInt16T, DCTypeEnum::TUInt16),
-        UInt32T => (UInt32T, DCTypeEnum::TUInt32),
-        UInt64T => (UInt64T, DCTypeEnum::TUInt64),
+    unsigned_integer_type: ast::DataType {
+        UInt8T => ast::DataType::from_token(UInt8T, span!()),
+        UInt16T => ast::DataType::from_token(UInt16T, span!()),
+        UInt32T => ast::DataType::from_token(UInt32T, span!()),
+        UInt64T => ast::DataType::from_token(UInt64T, span!()),
     }
 
-    array_data_type: (DCToken, DCTypeEnum) {
-        Int8ArrayT => (Int8ArrayT, DCTypeEnum::TArray),
-        Int16ArrayT => (Int16ArrayT, DCTypeEnum::TArray),
-        Int32ArrayT => (Int32ArrayT, DCTypeEnum::TArray),
-        UInt8ArrayT => (UInt8ArrayT, DCTypeEnum::TArray),
-        UInt16ArrayT => (UInt16ArrayT, DCTypeEnum::TArray),
-        UInt32ArrayT => (UInt32ArrayT, DCTypeEnum::TArray),
-        UInt32UInt8ArrayT => (UInt32UInt8ArrayT, DCTypeEnum::TArray),
+    array_data_type: ast::DataType {
+        Int8ArrayT => ast::DataType::from_token(Int8ArrayT, span!()),
+        Int16ArrayT => ast::DataType::from_token(Int16ArrayT, span!()),
+        Int32ArrayT => ast::DataType::from_token(Int32ArrayT, span!()),
+        UInt8ArrayT => ast::DataType::from_token(UInt8ArrayT, span!()),
+        UInt16ArrayT => ast::DataType::from_token(UInt16ArrayT, span!()),
+        UInt32ArrayT => ast::DataType::from_token(UInt32ArrayT, span!()),
+        UInt32UInt8ArrayT => ast::DataType::from_token(UInt32UInt8ArrayT, span!()),
     }
 
     optional_name: Option<String> {
@@ -864,56 +847,26 @@ mod unit_testing {
         dc_file_ast
     }
 
-    /* TODO: This test was for when the parser directly outputted the final
-             DC file element tree. Now, it only outputs the abstract syntax
-             tree, and goes through a more 'decoupled' pipeline to generate
-             the final DC file element tree.
     #[test]
     fn python_module_imports() {
-        let dc_string: &str = "from example_views import DistributedDonut\n\
-                             from views import DistributedDonut/AI/OV\n\
-                             from views/AI/OV/UD import DistributedDonut/AI/OV/UD\n\
-                             from game.views.Donut/AI import DistributedDonut/AI\n\
-                             from views import *\n
-                             /* The next one tests handling legal python identifiers\n\
-                              * that may be lexed as tokens other than Id/Module.
-                              */
-                             from db.char import DistributedDonut\n";
+        let dc_file: ast::Root = parse_dcfile_string(
+            "
+            from example_views import DistributedDonut
+            from views import DistributedDonut/AI/OV
+            from views/AI/OV/UD import DistributedDonut/AI/OV/UD
+            from views/AI import DistributedDonut
+            from game.views.Donut/AI import DistributedDonut/AI
+            from views import *
 
-        let dc_file: Rc<DCFile> = parse_dcfile_string(dc_string);
-
-        let expected_num_imports: usize = 10;
-        let mut imports: Vec<ast::PyModuleImport> = vec![];
-
-        assert_eq!(dc_file.get_num_imports(), expected_num_imports);
-
-        for i in 0..expected_num_imports {
-            imports.push(dc_file.get_python_import(i));
-        }
-
-        assert_eq!(imports[0].python_module, "example_views");
-        assert_eq!(imports[0].symbols, vec!["DistributedDonut"]);
-        assert_eq!(imports[1].python_module, "views");
-        assert_eq!(
-            imports[1].symbols,
-            vec!["DistributedDonut", "DistributedDonutAI", "DistributedDonutOV"]
+            /* The next one tests handling legal python identifiers
+            * that may be lexed as tokens other than Id/Module.
+            */
+            from db.char import DistributedDonut
+            ",
         );
-        assert_eq!(imports[2].python_module, "views");
-        assert_eq!(imports[2].symbols, vec!["DistributedDonut"]);
-        assert_eq!(imports[3].python_module, "viewsAI");
-        assert_eq!(imports[3].symbols, vec!["DistributedDonutAI"]);
-        assert_eq!(imports[4].python_module, "viewsOV");
-        assert_eq!(imports[4].symbols, vec!["DistributedDonutOV"]);
-        assert_eq!(imports[5].python_module, "viewsUD");
-        assert_eq!(imports[5].symbols, vec!["DistributedDonutUD"]);
-        assert_eq!(imports[6].python_module, "game.views.Donut");
-        assert_eq!(imports[6].symbols, vec!["DistributedDonut"]);
-        assert_eq!(imports[7].python_module, "game.views.DonutAI");
-        assert_eq!(imports[7].symbols, vec!["DistributedDonutAI"]);
-        assert_eq!(imports[8].python_module, "views");
-        assert_eq!(imports[8].symbols, vec!["*"]);
+
+        assert_eq!(dc_file.type_declarations.len(), 7);
     }
-    */
 
     #[test]
     fn legal_python_module_identifiers() {
@@ -938,127 +891,265 @@ mod unit_testing {
 
     #[test]
     fn sample_keyword_definitions() {
-        let dc_file: &str = "keyword p2p;\n\
-                             keyword monkey;\n\
-                             // rUDP to donet one day?
-                             keyword unreliable;\n";
-        parse_dcfile_string(dc_file);
+        parse_dcfile_string(
+            "
+            keyword p2p;
+            keyword monkey;
+            keyword unreliable;
+            keyword db;
+            ",
+        );
     }
 
     #[test]
     fn sample_struct_declarations() {
-        let dc_file: &str = "struct GiftItem {\n\
-                                 blob Item;\n\
-                                 string giftTag;\n\
-                             };\n\
-                             struct activity {\n\
-                                string activityName;\n\
-                                uint8 activityId;\n\
-                             };\n\
-                             struct party {\n\
-                                activity activities[];\n\
-                                uint8 status;\n\
-                             };\n";
-        parse_dcfile_string(dc_file);
+        parse_dcfile_string(
+            "
+            struct GiftItem {
+                blob Item;
+                string giftTag;
+            };
+
+            struct Activity {
+                string activityName;
+                uint8 activityId;
+            };
+
+            struct Party {
+                activity activities[];
+                uint8 status;
+            };
+
+            struct Fixture {
+                bool;
+                int32/10 x;
+                int32/10 y;
+                int32/10 z;
+                int16/10 h;
+                int16/10 p;
+                int16/10 r;
+                string state;
+            };
+            ",
+        );
     }
 
     #[test]
     fn sample_distributed_class() {
-        let dc_file: &str = "dclass WelcomeValleyManager : DistributedObject {\n\
-                                 clientSetZone(uint32) airecv clsend;\n\
-                                 requestZoneIdMessage(uint32, uint16) airecv clsend;\n\
-                                 requestZoneIdResponse(uint32, uint16);\n\
-                             };\n\
-                             dclass ToontownDistrictStats {\n\
-                                 settoontownDistrictId(uint32) broadcast required ram;\n\
-                                 setAvatarCount(uint32) broadcast required ram;\n\
-                                 setNewAvatarCount(uint32) broadcast required ram;\n\
-                                 setStats : setAvatarCount, setNewAvatarCount;\n\
-                             };\n\
-                             dclass DistributedChild : DistributedParent, DistributedP2 {\n\
-                             };\n";
-        parse_dcfile_string(dc_file);
+        parse_dcfile_string(
+            "
+            dclass OfflineShardManager : DistributedObject {
+                clientSetZone(uint32) airecv clsend;
+                requestZoneIdMessage(uint32, uint16) airecv clsend;
+                requestZoneIdResponse(uint32, uint16);
+            };
+
+            dclass ShardStats {
+                setShardId(uint32) broadcast required ram;
+                setAvatarCount(uint32) broadcast required ram;
+                setNewAvatarCount(uint32) broadcast required ram;
+                setStats : setAvatarCount, setNewAvatarCount;
+            };
+
+            dclass DistributedChild : Parent, Parent2 {
+            };
+            ",
+        );
     }
 
     #[test]
-    fn sample_switch_type() {
-        let dc_file: &str = "struct BuffData {\n\
-                               switch (uint16) {\n\
-                                 case 0:\n\
-                                   break;\n\
-                                 case 1:\n\
-                                   uint8 val1;\n\
-                                   break;\n\
-                                 case 2:\n\
-                                   uint8 val1;\n\
-                                   uint8 val2;\n\
-                                   break;\n\
-                                 case 3:\n\
-                                   uint8 val1;\n\
-                                   break;\n\
-                                 case 4:\n\
-                                   int16/100 val1;\n\
-                                   break;\n\
-                               };\n\
-                             };\n";
-        parse_dcfile_string(dc_file);
+    fn sample_switch_declarations() {
+        parse_dcfile_string(
+            "
+            struct BuffData {
+                switch (uint16) {
+                    case 0:
+                        break;
+                    case 1:
+                        uint8 val1;
+                        break;
+                    case 2:
+                        uint8 val1;
+                        uint8 val2;
+                        break;
+                    case 3:
+                        uint8 val1;
+                        break;
+                    case 4:
+                        int16/100 val1;
+                        break;
+                };
+            };
+
+            struct WithDefault {
+                switch (uint8) {
+                    case 0:
+                        break;
+                    case 9:
+                    case 10:
+                    case 11:
+                    default:
+                        string val1;
+                        break;
+                };
+            };
+            ",
+        );
     }
 
     #[test]
-    fn test_method_data_types() {
-        let dc_file: &str = "struct MethodDataTypesTest {\n\
-                                 Char character;\n\
-                                 blob Item;\n\
-                                 blob32 pandaOnlyToken;\n\
-                                 float32 astronOnlyToken;\n\
-                                 string giftTag;\n\
-                                 int32(0-990999) testMethodValue;\n\
-                                 int8(-1-1) testNegativeValues;\n\
-                                 int8(-5--99) testNegativeValuesPartTwo;\n\
-                                 int8(+0-+9) plusForPositiveForSomeReason;\n\
-                                 int8array arrayDataTypeTest;
-                                 int16array anotherArray;
-                                 int32array evenMoreComplexArray;
-                                 uint8array byteArray;
-                                 uint16array unsignedIntegerArray;
-                                 uint32array unsignedLongArray;
-                                 uint32uint8array thisWeirdPandaArrayType;
-                             };\n";
-        parse_dcfile_string(dc_file);
+    fn atomic_fields() {
+        parse_dcfile_string(
+            "
+            dclass AtomicFields {
+                simple();
+                keyw0rd() ram;
+                keywords() db ownsend airecv;
+                parameter(string);
+                params(bool, char, float64);
+                named_params(bool flag = true, string text);
+            };
+            ",
+        );
     }
 
     #[test]
-    fn test_value_transforms() {
-        let dc_file: &str = "struct TransformedTypesTest {\n\
-                                 int32%360 angle;\n\
-                                 int32%360/1000 floatingPointAngle;\n\
-                                 int32/1000 efficientFloatIn32Bits;\n\
-                                 float32 waitIsntAstronsFloat32TheSame;\n\
-                                 int16(float32)%360/10 forTheStaticallyTypedLanguages;\n\
-                                 int8(0-1) thisIsLiterallyABoolean;\n\
-                                 bool thisIsLiterallyJustAn8BitInt;\n\
-                                 uint16/1000(0-1) youCanStackThemToo;\n\
-                                 int64/10000(+50-+999) [] thisIsValid;\n\
-                                 int8%10(0-10) anotherOne;\n\
-                                 int16%100/10(-80-+100) lastTest;\n\
-                             };\n";
-        parse_dcfile_string(dc_file);
+    fn molecular_fields() {
+        parse_dcfile_string(
+            "
+            dclass MolecularFields {
+                setXYZ : setX, setY, setZ;
+                setPos : setXYZ;
+                setXY : setX, setY;
+                setHPR : setH, setP, setR;
+            };
+            ",
+        );
+    }
+
+    #[test]
+    fn field_data_types() {
+        parse_dcfile_string(
+            "
+            struct MethodDataTypesTest {
+                Char character;
+                blob Item;
+                blob32 pandaOnlyToken;
+                float32 astronOnlyToken;
+                string giftTag;
+                int32(0-990999) testMethodValue;
+                int8(-1-1) testNegativeValues;
+                int8(-5--99) testNegativeValuesPartTwo;
+                int8(+0-+9) plusForPositiveForSomeReason;
+                int8array arrayDataTypeTest;
+                int16array anotherArray;
+                int32array evenMoreComplexArray;
+                uint8array byteArray;
+                uint16array unsignedIntegerArray;
+                uint32array unsignedLongArray;
+                uint32uint8array thisWeirdPandaArrayType;
+            };
+            ",
+        );
+    }
+
+    #[test]
+    fn value_transforms() {
+        parse_dcfile_string(
+            "
+            struct TransformedTypesTest {
+                int32%360 angle;
+                int32%360/1000 floatingPointAngle;
+                int32/1000 efficientFloatIn32Bits;
+                float32 waitIsntAstronsFloat32TheSame;
+                int16(float32)%360/10 forTheStaticallyTypedLanguages;
+                int8(0-1) thisIsLiterallyABoolean;
+                bool thisIsLiterallyJustAn8BitInt;
+                uint16/1000(0-1) youCanStackThemToo;
+                int64/10000(+50-+999) [] thisIsValid;
+                int8%10(0-10) anotherOne;
+                int16%100/10(-80-+100) lastTest;
+            };
+            ",
+        );
+    }
+
+    #[test]
+    fn parameters_with_default() {
+        parse_dcfile_string(
+            "
+            struct ParamsWithDefaultTest {
+                string = \"\";
+                FriendEntry[] = [];
+                int32 = -99;
+                string = \"VALUE\";
+                uint16 accessLevel = 0;
+                bool = false;
+            };
+            ",
+        );
+    }
+
+    #[test]
+    fn array_ranges() {
+        parse_dcfile_string(
+            "
+            struct ArrayRangesTest {
+                uint32uint8array[0-1] test1;
+                uint32uint8array[0-1][9-99] test2;
+            };
+            ",
+        );
+    }
+
+    #[test]
+    fn array_expansions() {
+        parse_dcfile_string(
+            "
+            struct ArrayExpansionsTest {
+                uint8array test = [0 * 10];
+                int8array test2 = [-1 * 10];
+                int8array test3 = [5 * 5, 10 * 10, -2 * 4];
+            };
+            ",
+        );
     }
 
     #[test]
     fn developer_defined_keywords() {
-        let dc_file: &str = "keyword f6f7;\n\
-                             dclass DistributedDonut {\n\
-                                 testingField() f6f7;\n\
-                             };\n";
-        parse_dcfile_string(dc_file);
+        parse_dcfile_string(
+            "
+            keyword f6f7;
+
+            dclass DistributedDonut {
+                testingField() f6f7;
+            };
+            ",
+        );
     }
 
     #[test]
     fn type_declaration_optional_delimiter() {
-        let dc_file: &str = "typedef int16 test1[2];\n\
-                             typedef int32 test2[2]\n\
-                             typedef int64 test3;";
-        parse_dcfile_string(dc_file);
+        parse_dcfile_string(
+            "
+            typedef int16 test1[2]
+            typedef int32 test2[2]
+            typedef int64 test3
+
+            dclass Bogus {}
+            ",
+        );
+    }
+
+    #[test]
+    fn handle_deprecated_bool_alias() {
+        // The lexer picks up 'bool' as a data type token,
+        // not an identifier, so it would be illegal grammar.
+        // This test ensures we handle this as a deprecation warning.
+        parse_dcfile_string(
+            "
+            typedef uint8 bool;
+            ",
+        );
     }
 }
