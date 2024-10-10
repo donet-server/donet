@@ -47,7 +47,36 @@ pub enum DCTypeEnum {
     TInvalid = 21,
 }
 
-#[derive(Clone, PartialEq, Eq)]
+impl std::fmt::Display for DCTypeEnum {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::TInt8 => write!(f, "int8"),
+            Self::TInt16 => write!(f, "int16"),
+            Self::TInt32 => write!(f, "int32"),
+            Self::TInt64 => write!(f, "int64"),
+            Self::TUInt8 => write!(f, "uint8"),
+            Self::TChar => write!(f, "char"),
+            Self::TUInt16 => write!(f, "uint16"),
+            Self::TUInt32 => write!(f, "uint32"),
+            Self::TUInt64 => write!(f, "uint64"),
+            Self::TFloat32 => write!(f, "float32"),
+            Self::TFloat64 => write!(f, "float64"),
+            Self::TString => write!(f, "string"),
+            Self::TVarString => write!(f, "var string"),
+            Self::TBlob => write!(f, "blob"),
+            Self::TVarBlob => write!(f, "var blob"),
+            Self::TBlob32 => write!(f, "blob32"),
+            Self::TVarBlob32 => write!(f, "var blob32"),
+            Self::TArray => write!(f, "array"),
+            Self::TVarArray => write!(f, "var array"),
+            Self::TStruct => write!(f, "struct"),
+            Self::TMethod => write!(f, "method"),
+            Self::TInvalid => write!(f, "invalid"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DCTypeDefinition {
     alias: Option<String>,
     pub data_type: DCTypeEnum,
@@ -120,7 +149,7 @@ impl DCTypeDefinition {
     }
 }
 
-impl std::fmt::Debug for DCTypeDefinition {
+impl std::fmt::Display for DCTypeDefinition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "typedef ")?;
         self.data_type.fmt(f)?;

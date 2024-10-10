@@ -90,3 +90,9 @@ impl<'dc> DCHash for DCMolecularField<'dc> {
         }
     }
 }
+
+impl<'dc> std::fmt::Display for DCMolecularField<'dc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}

@@ -84,3 +84,9 @@ impl<'dc> DCHash for DCAtomicField<'dc> {
         }
     }
 }
+
+impl<'dc> std::fmt::Display for DCAtomicField<'dc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "TODO")
+    }
+}

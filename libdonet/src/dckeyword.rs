@@ -29,7 +29,7 @@ use std::rc::Rc;
 /// as 4 bytes in modern 32-bit and 64-bit C/C++ compilers.
 pub type HistoricalFlag = i32;
 
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct DCKeyword {
     name: String,
     // This flag is only kept for historical reasons, so we can
@@ -75,7 +75,7 @@ impl DCKeyword {
     }
 }
 
-impl std::fmt::Debug for DCKeyword {
+impl std::fmt::Display for DCKeyword {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "keyword ")?;
         f.write_str(&self.name)?;

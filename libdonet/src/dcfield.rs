@@ -243,3 +243,9 @@ impl<'dc> DCHash for DCField<'dc> {
         }
     }
 }
+
+impl<'dc> std::fmt::Display for DCField<'dc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}

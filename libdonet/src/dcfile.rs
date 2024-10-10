@@ -32,6 +32,7 @@ use crate::parser::ast;
 /// Data model that provides a high level representation of a single,
 /// or collection, of DC files and their elements such as class imports,
 /// type definitions, structures, and Distributed Classes.
+#[derive(Debug)]
 pub struct DCFile<'dc> {
     baked_hash: globals::DCFileHash,
     structs: Vec<DCStruct>,
@@ -162,7 +163,7 @@ impl<'dc> DCHash for DCFile<'dc> {
     }
 }
 
-impl<'dc> std::fmt::Debug for DCFile<'dc> {
+impl<'dc> std::fmt::Display for DCFile<'dc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Print Python-style imports
         if !self.imports.is_empty() {
@@ -175,7 +176,7 @@ impl<'dc> std::fmt::Debug for DCFile<'dc> {
                     write!(f, "from ")?;
                     f.write_str(&import.python_module)?;
 
-                    write!(f, "import ")?;
+                    write!(f, " import ")?;
                     for (i, symbol) in import.symbols.iter().enumerate() {
                         f.write_str(symbol)?;
 
@@ -206,6 +207,40 @@ impl<'dc> std::fmt::Debug for DCFile<'dc> {
             writeln!(f)?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod unit_testing {
+    use super::*;
+
+    #[test]
+    fn write_py_imports() {
+        let imports: Vec<ast::PyModuleImport> = vec![
+            ast::PyModuleImport {
+                python_module: "views".to_string(),
+                symbols: vec![],
+            },
+            ast::PyModuleImport {
+                python_module: "views".to_string(),
+                symbols: vec!["DistributedDonut".to_string()],
+            },
+            ast::PyModuleImport {
+                python_module: "views".to_string(),
+                symbols: vec!["Class".to_string(), "ClassAI".to_string(), "ClassOV".to_string()],
+            },
+        ];
+        let dcf: DCFile<'_> = DCFile::new(vec![], vec![], imports, vec![], vec![], vec![], false, false);
+
+        assert_eq!(
+            dcf.to_string(),
+            "\
+            import views\n\
+            from views import DistributedDonut\n\
+            from views import Class, ClassAI, ClassOV\n\
+            \n\
+            ",
+        );
     }
 }
 

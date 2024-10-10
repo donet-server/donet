@@ -32,12 +32,13 @@
 
 use super::PipelineData;
 use crate::dcfile::*;
+use crate::globals::ParseError;
 
 /// Takes in the [`Abstract Syntax Tree`] from the DC parser and outputs a
 /// [`crate::dcfile::DCFile`] immutable structure with a static lifetime.
 ///
 /// [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
-pub fn semantic_analyzer<'a>(_: PipelineData) -> DCFile<'a> {
+pub fn semantic_analyzer<'a>(_: PipelineData) -> Result<DCFile<'a>, ParseError> {
     let dc_file: DCFile = DCFile::new(vec![], vec![], vec![], vec![], vec![], vec![], true, false);
 
     /*for type_declaration in ast.type_declarations {
@@ -58,5 +59,5 @@ pub fn semantic_analyzer<'a>(_: PipelineData) -> DCFile<'a> {
     // TODO: maybe properly handle semantic errors in the future
     //assert!(dc_file.borrow().semantic_analysis().is_ok());
 
-    dc_file
+    Ok(dc_file)
 }

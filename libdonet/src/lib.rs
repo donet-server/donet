@@ -195,31 +195,35 @@ pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadEr
 /// use libdonet::globals::DCReadError;
 /// use libdonet::read_dc;
 ///
-/// let dc_file = "from game.ai import AnonymousContact/UD
-///                from game.ai import LoginManager/AI
-///                from game.world import DistributedWorld/AI
-///                from game.avatar import DistributedAvatar/AI/OV
+/// let dc_file = "
 ///
-///                typedef uint32 doId;
-///                typedef uint32 zoneId;
-///                typedef uint64 channel;
+/// from game.ai import AnonymousContact/UD
+/// from game.ai import LoginManager/AI
+/// from game.world import DistributedWorld/AI
+/// from game.avatar import DistributedAvatar/AI/OV
 ///
-///                dclass AnonymousContact {
-///                  login(string username, string password) clsend airecv;
-///                };
+/// typedef uint32 doId;
+/// typedef uint32 zoneId;
+/// typedef uint64 channel;
 ///
-///                dclass LoginManager {
-///                  login(channel client, string username, string password) airecv;
-///                };
+/// dclass AnonymousContact {
+///   login(string username, string password) clsend airecv;
+/// };
 ///
-///                dclass DistributedWorld {
-///                  create_avatar(channel client) airecv;
-///                };
+/// dclass LoginManager {
+///   login(channel client, string username, string password) airecv;
+/// };
 ///
-///                dclass DistributedAvatar {
-///                   set_xyzh(int16 x, int16 y, int16 z, int16 h) broadcast required;
-///                   indicate_intent(int16 / 10, int16 / 10) ownsend airecv;
-///                };";
+/// dclass DistributedWorld {
+///   create_avatar(channel client) airecv;
+/// };
+///
+/// dclass DistributedAvatar {
+///   set_xyzh(int16 x, int16 y, int16 z, int16 h) broadcast required;
+///   indicate_intent(int16 / 10, int16 / 10) ownsend airecv;
+/// };
+///
+/// ";
 ///
 /// let dc_read: Result<DCFile, DCReadError> = read_dc(dc_file.to_owned());
 ///

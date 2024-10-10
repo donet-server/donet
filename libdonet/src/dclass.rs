@@ -34,6 +34,7 @@ pub type FieldId2Field<'dc> = MultiMap<globals::FieldId, &'dc ClassField<'dc>>;
 /// Contains a map of DC Fields, as well as atomic and
 /// molecular fields that are declared within the class.
 /// Also stores other properties such as its hierarchy.
+#[derive(Debug)]
 pub struct DClass<'dc> {
     dcfile: &'dc DCFile<'dc>,
     class_name: String,
@@ -117,7 +118,7 @@ impl<'dc> DCHash for DClass<'dc> {
     }
 }
 
-impl<'dc> std::fmt::Debug for DClass<'dc> {
+impl<'dc> std::fmt::Display for DClass<'dc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "dclass ")?;
         f.write_str(&self.get_name())?;

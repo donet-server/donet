@@ -97,5 +97,5 @@ pub(crate) fn dcparse_pipeline<'a>(inputs: Vec<InputFile>) -> Result<DCFile<'a>,
     }
 
     // Process all abstract syntax trees in semantic analyzer.
-    Ok(semantics::semantic_analyzer(pipeline_data))
+    semantics::semantic_analyzer(pipeline_data)
 }
