@@ -36,6 +36,7 @@ pub enum DCToken {
     // BinDigit ::= "0" | "1"
 
     // Integers
+    BooleanLiteral(bool),  // "true" | "false"
     DecimalLiteral(i64),   // ( "1" … "9" ) { DecDigit }
     OctalLiteral(String),  // "0" { OctDigit }
     HexLiteral(String),    // "0" ( "x" | "X" ) HexDigit { HexDigit }
@@ -126,6 +127,9 @@ lexer! {
     // C-style comments '/* ... */'; cannot contain '*/'
     r#"/[*](~(.*[*]/.*))[*]/"# => (DCToken::Comment, text),
     r#"\n"# => (DCToken::Newline, text),
+
+    r#"true"# => (DCToken::BooleanLiteral(true), text),
+    r#"false"# => (DCToken::BooleanLiteral(false), text),
 
     r#"0|([1-9][0-9]*)"# => (DCToken::DecimalLiteral(match text.parse::<i64>() {
         Ok(n) => { n },
@@ -402,13 +406,19 @@ mod unit_testing {
             DCToken::FloatLiteral(0.0),
             DCToken::FloatLiteral(0.9),
             DCToken::FloatLiteral(1.23456789),
+            // Boolean Literal
+            DCToken::BooleanLiteral(true),
+            DCToken::BooleanLiteral(false),
         ];
         lexer_test_for_target(
-            "1 9 10 2010 \
-            01 07 07472 \
-            0xa 0xA 0Xa 0XA 0x123456789abcdef \
-            0b1 0B1 0b0 0b010 0b101110 \
-            0.0 9.0 .0 .9 1.23456789",
+            "
+            1 9 10 2010
+            01 07 07472
+            0xa 0xA 0Xa 0XA 0x123456789abcdef
+            0b1 0B1 0b0 0b010 0b101110
+            0.0 9.0 .0 .9 1.23456789
+            true false
+            ",
             target,
         );
     }

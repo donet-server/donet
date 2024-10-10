@@ -577,6 +577,10 @@ parser! {
     }
 
     type_value: ast::TypeValue {
+        BooleanLiteral(b) => ast::TypeValue::I64(match b {
+            true => 1,
+            false => 0,
+        }),
         DecimalLiteral(i) => ast::TypeValue::I64(i),
         CharacterLiteral(c) => ast::TypeValue::Char(c),
         StringLiteral(s) => ast::TypeValue::String(s),
