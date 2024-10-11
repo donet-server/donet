@@ -1,5 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Days+One&display=swap');
 
+@font-face {
+    font-family: 'Cantarell', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-stretch: 100%;
+    font-display: swap;
+    src: url(../assets/Cantarell-VF.otf) format('otf');
+}
+
 :root {
     --global-max-width: 1440px;
     --global-margin: 8px;
