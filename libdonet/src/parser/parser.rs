@@ -347,7 +347,7 @@ parser! {
         // This rule handles a specific piece of illegal grammar that is legal in Panda.
         // The parser will print a useful message to stdout describing the issue,
         // and will ignore this grammar and continue without a panic.
-        Typedef UInt8T BoolT => println!("{:?}\n\n\"typedef uint8 bool;\" is deprecated!\n\n\
+        Typedef UInt8T BoolT => println!("{}\n\n\"typedef uint8 bool;\" is deprecated!\n\n\
         Cannot declare type alias for uint8 as 'bool', as it is a reserved identifier \
         in the DC language.\nDonet introduces the 'bool' data type, which is an alias \
         for uint8 under the hood.\n", span!()),
@@ -455,7 +455,6 @@ parser! {
     field_with_name_and_default: () {
         nonmethod_type_with_name Equals type_value => {},
         field_with_name_as_array Equals type_value => {},
-        method_as_field Equals type_value => {},
     }
 
     named_field: () {
@@ -601,36 +600,34 @@ parser! {
             match n {
                 DCToken::DecimalLiteral(m) => {
                     if let Err(msg) = nt.set_modulus(m as f64) {
-                        panic!("{:?}\n{}", span!(), msg);
+                        panic!("{}\n{}", span!(), msg);
                     }
                     nt
                 },
                 DCToken::FloatLiteral(m) => {
                     if let Err(msg) = nt.set_modulus(m) {
-                        panic!("{:?}\n{}", span!(), msg);
+                        panic!("{}\n{}", span!(), msg);
                     }
                     nt
                 },
-                _ => panic!("{:?}\nThis shouldn't be possible.", span!()),
+                _ => panic!("{}\nThis shouldn't be possible.", span!()),
             }
         },
-        // FIXME: See if plex has a feature to use **one** block
-        // for multiple production rules.
         numeric_with_explicit_cast[mut nt] Percent number[n] => {
             match n {
                 DCToken::DecimalLiteral(m) => {
                     if let Err(msg) = nt.set_modulus(m as f64) {
-                        panic!("{:?}\n{}", span!(), msg);
+                        panic!("{}\n{}", span!(), msg);
                     }
                     nt
                 },
                 DCToken::FloatLiteral(m) => {
                     if let Err(msg) = nt.set_modulus(m) {
-                        panic!("{:?}\n{}", span!(), msg);
+                        panic!("{}\n{}", span!(), msg);
                     }
                     nt
                 },
-                _ => panic!("{:?}\nThis shouldn't be possible.", span!()),
+                _ => panic!("{}\nThis shouldn't be possible.", span!()),
             }
         },
     }
@@ -651,21 +648,21 @@ parser! {
         numeric_type_token[mut nt]
         OpenParenthesis signed_integer_type[dt] CloseParenthesis => {
             if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dt.dctype)) {
-                panic!("{:?}\n{}", span!(), msg);
+                panic!("{}\n{}", span!(), msg);
             }
             nt
         },
         numeric_type_token[mut nt]
         OpenParenthesis unsigned_integer_type[dt] CloseParenthesis => {
             if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dt.dctype)) {
-                panic!("{:?}\n{}", span!(), msg);
+                panic!("{}\n{}", span!(), msg);
             }
             nt
         },
         numeric_type_token[mut nt]
         OpenParenthesis floating_point_type[dt] CloseParenthesis => {
             if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dt.dctype)) {
-                panic!("{:?}\n{}", span!(), msg);
+                panic!("{}\n{}", span!(), msg);
             }
             nt
         },
@@ -686,7 +683,7 @@ parser! {
         char_or_number[min] Hyphen char_or_number[max] => {
             assert!(
                 discriminant(&min) == discriminant(&max),
-                "{:?}\nCannot define a numeric range with a min and max of different data types!",
+                "{}\nCannot define a numeric range with a min and max of different data types!",
                 span!()
             );
 
@@ -782,7 +779,7 @@ parser! {
                 Ok(n) => { n },
                 Err(err) => {
                     // Downcast failed, number must be out of range.
-                    panic!("{:?}\nNumber out of range for u32.\n{}", span!(), err);
+                    panic!("{}\nNumber out of range for u32.\n{}", span!(), err);
                 },
             }
         }
@@ -982,12 +979,12 @@ mod unit_testing {
             };
 
             struct WithDefault {
-                switch (uint8) {
-                    case 0:
+                switch (char) {
+                    case 'a':
                         break;
-                    case 9:
-                    case 10:
-                    case 11:
+                    case 'b':
+                    case 'c':
+                    case 'd':
                     default:
                         string val1;
                         break;
@@ -1062,13 +1059,49 @@ mod unit_testing {
                 int32%360/1000 floatingPointAngle;
                 int32/1000 efficientFloatIn32Bits;
                 float32 waitIsntAstronsFloat32TheSame;
-                int16(float32)%360/10 forTheStaticallyTypedLanguages;
-                int8(0-1) thisIsLiterallyABoolean;
+                int16(float32) forTheStaticallyTypedLanguages;
+                int16(float64)(0.0-1.0) withRangeTest;
+                int16(float32)%360/10 anotherTest;
+                int16(float64)/10.0 moreTests;
                 bool thisIsLiterallyJustAn8BitInt;
                 uint16/1000(0-1) youCanStackThemToo;
                 int64/10000(+50-+999) [] thisIsValid;
                 int8%10(0-10) anotherOne;
+                int32('a'-'b') numericRangeWithChar;
+                float32(0.1-0.99) floatingRange;
+                float32%10.0 modulusWithFloat;
+                float32(float64)%10.0 coverage;
                 int16%100/10(-80-+100) lastTest;
+            };
+            ",
+        );
+    }
+
+    #[test]
+    fn numeric_ranges() {
+        parse_dcfile_string(
+            "
+            struct NumericRanges {
+                int8(0-1) thisIsLiterallyABoolean;
+                int64(-5) signedRange;
+                int64(+50-+999) thisIsValid;
+                int32('a') numericRangeWithChar;
+                int32('a'-'z') rangeMinMaxWithChar;
+                float32(0.1-0.99) floatingRange;
+                float32(0.1) anotherFloatRange;
+                int32() pandaSaysThisIsLegal;
+            };
+            ",
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn invalid_numeric_ranges() {
+        parse_dcfile_string(
+            "
+            struct InvalidNumericRange {
+                uint64('a'-10);
             };
             ",
         );
@@ -1080,9 +1113,11 @@ mod unit_testing {
             "
             struct ParamsWithDefaultTest {
                 string = \"\";
-                FriendEntry[] = [];
+                MyStruct[] = [];
+                MyStruct strukt[] = [];
                 int32 = -99;
                 string = \"VALUE\";
+                string = 0xabcdef;
                 uint16 accessLevel = 0;
                 bool = false;
             };
@@ -1095,8 +1130,12 @@ mod unit_testing {
         parse_dcfile_string(
             "
             struct ArrayRangesTest {
-                uint32uint8array[0-1] test1;
-                uint32uint8array[0-1][9-99] test2;
+                uint8 test['a'];
+                uint8 test2[9];
+                uint32uint8array[0-1] test3;
+                uint32uint8array[0-1][9-99] test4;
+                uint8 test5['a'-'b'] [ ];
+                string(5) test6; // builtin array type
             };
             ",
         );
@@ -1107,9 +1146,24 @@ mod unit_testing {
         parse_dcfile_string(
             "
             struct ArrayExpansionsTest {
-                uint8array test = [0 * 10];
-                int8array test2 = [-1 * 10];
-                int8array test3 = [5 * 5, 10 * 10, -2 * 4];
+                uint8array test = [0];
+                uint8array test2 = [0 * 10];
+                int8array test3 = [-1 * 10];
+                int8array test4 = [5 * 5, 10 * 10, -2 * 4];
+                uint8array test5 = [0xf * 10];
+                uint8array test6 = [\"TEST\" * 2];
+            };
+            ",
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn integer_literal_overflow() {
+        parse_dcfile_string(
+            "
+            struct OverflowTest {
+                test(uint8array = [0 * 4294967296]);
             };
             ",
         );
@@ -1134,7 +1188,7 @@ mod unit_testing {
             "
             typedef int16 test1[2]
             typedef int32 test2[2]
-            typedef int64 test3
+            typedef uint64 test3
 
             dclass Bogus {}
             ",
