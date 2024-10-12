@@ -6,8 +6,8 @@
     font-weight: 400;
     font-stretch: 100%;
     font-display: swap;
-    src: url(../assets/Cantarell-VF.otf) format('otf');
-}
+    src: url(../Cantarell-VF.otf) format('opentype'), url(../Cantarell-VF.woff2) format('woff2');
+  }
 
 :root {
     --global-max-width: 1440px;
