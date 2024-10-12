@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Days+One&display=swap');
-
 @font-face {
     font-family: "Cantarell var";
     font-weight: 100 900;
@@ -164,6 +162,16 @@ body, .wy-body-for-nav {
 /* make sidebar link click state match the background color */
 .wy-menu-vertical a:active {
     background-color: var(--thulian-clr);
+}
+
+.rst-content h1, .rst-content h2 {
+    font-family: "Cantarell var", "Roboto slab";
+    font-weight: 800;
+}
+
+.rst-content .toctree-wrapper p.caption {
+    font-family: "Cantarell var", "Roboto slab";
+    font-weight: 800;
 }
 
 .rst-content dl.glossary dt {
