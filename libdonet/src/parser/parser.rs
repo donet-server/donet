@@ -572,7 +572,7 @@ parser! {
         array_value[av] => ast::TypeValue::ArrayValue(av),
     }
 
-    numeric_type: DCNumericType {
+    numeric_type: ast::NumericType {
         numeric_type_token[nt] => nt,
         numeric_with_explicit_cast[nt] => nt,
         numeric_with_modulus[nt] => nt,
@@ -580,55 +580,48 @@ parser! {
         numeric_with_range[nt] => nt,
     }
 
-    // TODO: Apply range to DCNumericType struct
-    numeric_with_range: DCNumericType {
-        numeric_type_token[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
-        numeric_with_explicit_cast[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
-        numeric_with_modulus[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
-        numeric_with_divisor[nt] OpenParenthesis numeric_range[_] CloseParenthesis => nt,
-    }
-
-    // TODO: Apply divisor to DCNumericType struct
-    numeric_with_divisor: DCNumericType {
-        numeric_type_token[nt] ForwardSlash number[_] => nt,
-        numeric_with_explicit_cast[nt] ForwardSlash number[_] => nt,
-        numeric_with_modulus[nt] ForwardSlash number[_] => nt,
-    }
-
-    numeric_with_modulus: DCNumericType {
-        numeric_type_token[mut nt] Percent number[n] => {
-            match n {
-                DCToken::DecimalLiteral(m) => {
-                    if let Err(msg) = nt.set_modulus(m as f64) {
-                        panic!("{}\n{}", span!(), msg);
-                    }
-                    nt
-                },
-                DCToken::FloatLiteral(m) => {
-                    if let Err(msg) = nt.set_modulus(m) {
-                        panic!("{}\n{}", span!(), msg);
-                    }
-                    nt
-                },
-                _ => panic!("{}\nThis shouldn't be possible.", span!()),
-            }
+    numeric_with_range: ast::NumericType {
+        numeric_type_token[mut nt] OpenParenthesis numeric_range[nr] CloseParenthesis => {
+            nt.range = nr;
+            nt
         },
-        numeric_with_explicit_cast[mut nt] Percent number[n] => {
-            match n {
-                DCToken::DecimalLiteral(m) => {
-                    if let Err(msg) = nt.set_modulus(m as f64) {
-                        panic!("{}\n{}", span!(), msg);
-                    }
-                    nt
-                },
-                DCToken::FloatLiteral(m) => {
-                    if let Err(msg) = nt.set_modulus(m) {
-                        panic!("{}\n{}", span!(), msg);
-                    }
-                    nt
-                },
-                _ => panic!("{}\nThis shouldn't be possible.", span!()),
-            }
+        numeric_with_explicit_cast[mut nt] OpenParenthesis numeric_range[nr] CloseParenthesis => {
+            nt.range = nr;
+            nt
+        },
+        numeric_with_modulus[mut nt] OpenParenthesis numeric_range[nr] CloseParenthesis => {
+            nt.range = nr;
+            nt
+        },
+        numeric_with_divisor[mut nt] OpenParenthesis numeric_range[nr] CloseParenthesis => {
+            nt.range = nr;
+            nt
+        },
+    }
+
+    numeric_with_divisor: ast::NumericType {
+        numeric_type_token[mut nt] ForwardSlash number[num] => {
+            nt.add_divisor(num);
+            nt
+        },
+        numeric_with_explicit_cast[mut nt] ForwardSlash number[num] => {
+            nt.add_divisor(num);
+            nt
+        },
+        numeric_with_modulus[mut nt] ForwardSlash number[num] => {
+            nt.add_divisor(num);
+            nt
+        },
+    }
+
+    numeric_with_modulus: ast::NumericType {
+        numeric_type_token[mut nt] Percent number[num] => {
+            nt.add_modulus(num);
+            nt
+        },
+        numeric_with_explicit_cast[mut nt] Percent number[num] => {
+            nt.add_modulus(num);
+            nt
         },
     }
 
@@ -639,7 +632,7 @@ parser! {
     // Since we are not expecting the client to use a dynamically typed language, we need
     // to explicitly tell the client what data type to cast to when we perform these
     // operations on numeric types after they are received from the network.
-    numeric_with_explicit_cast: DCNumericType {
+    numeric_with_explicit_cast: ast::NumericType {
         // Explicit casts do not use the `numeric_type_token` non-terminal, because
         // there is zero need to cast any numeric data type to a Char or Bool, since
         // this is used for types that have arithmetic operations applied, such as division.
@@ -647,37 +640,34 @@ parser! {
         // Also because it is 2:27 AM and its giving me a shift-reduce conflict again.
         numeric_type_token[mut nt]
         OpenParenthesis signed_integer_type[dt] CloseParenthesis => {
-            if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dt.dctype)) {
-                panic!("{}\n{}", span!(), msg);
-            }
+            nt.cast = Some(dt);
             nt
         },
         numeric_type_token[mut nt]
         OpenParenthesis unsigned_integer_type[dt] CloseParenthesis => {
-            if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dt.dctype)) {
-                panic!("{}\n{}", span!(), msg);
-            }
+            nt.cast = Some(dt);
             nt
         },
         numeric_type_token[mut nt]
         OpenParenthesis floating_point_type[dt] CloseParenthesis => {
-            if let Err(msg) =  nt.set_explicit_cast(DCTypeDefinition::new_with_type(dt.dctype)) {
-                panic!("{}\n{}", span!(), msg);
-            }
+            nt.cast = Some(dt);
             nt
         },
     }
 
-    numeric_range: Option<DCNumericRange> {
+    numeric_range: Option<ast::NumericRange> {
         epsilon => None,
 
         char_or_number[v] => match v {
             ast::CharOrNumber::Char(c) => {
-                let min_max: u64 = u64::from(c);
-                Some(DCNumericRange::new_unsigned_integer_range(min_max, min_max))
+                let min_max: f64 = f64::from(u32::from(c));
+                Some(min_max .. min_max)
             },
-            ast::CharOrNumber::I64(i) => Some(DCNumericRange::new_integer_range(i, i)),
-            ast::CharOrNumber::F64(f) => Some(DCNumericRange::new_floating_point_range(f, f)),
+            ast::CharOrNumber::I64(i) => {
+                let min_max: f64 = i as f64;
+                Some(min_max .. min_max)
+            },
+            ast::CharOrNumber::F64(f) => Some(f .. f),
         },
 
         char_or_number[min] Hyphen char_or_number[max] => {
@@ -689,21 +679,23 @@ parser! {
 
             match min {
                 ast::CharOrNumber::Char(min_c) => {
-                    let min_u64: u64 = u64::from(min_c);
-                    let max_u64: u64 = match max {
-                        ast::CharOrNumber::Char(max_c) => u64::from(max_c),
-                        _ => panic!("This isn't possible."),
+                    let min: f64 = f64::from(u32::from(min_c));
+                    let max: f64 = match max {
+                        ast::CharOrNumber::Char(max_c) => f64::from(u32::from(max_c)),
+                        _ => panic!("Assertion makes this panic impossible."),
                     };
-                    Some(DCNumericRange::new_unsigned_integer_range(min_u64, max_u64))
+                    Some(min .. max)
                 },
-                ast::CharOrNumber::I64(min_i) => Some(DCNumericRange::new_integer_range(min_i, match max {
-                    ast::CharOrNumber::I64(max_i) => max_i,
-                    _ => panic!("This isn't possible."),
-                })),
-                ast::CharOrNumber::F64(min_f) => Some(DCNumericRange::new_floating_point_range(min_f, match max {
+                ast::CharOrNumber::I64(min_i) => {
+                    Some(min_i as f64 .. match max {
+                        ast::CharOrNumber::I64(max_i) => max_i as f64,
+                        _ => panic!("Assertion makes this panic impossible."),
+                    })
+                },
+                ast::CharOrNumber::F64(min_f) => Some(min_f .. match max {
                     ast::CharOrNumber::F64(max_f) => max_f,
-                    _ => panic!("This isn't possible."),
-                })),
+                    _ => panic!("Assertion makes this panic impossible."),
+                }),
             }
         },
     }
@@ -735,22 +727,22 @@ parser! {
         array_data_type[dt] => dt.token,
     }
 
-    numeric_type_token: DCNumericType {
-        CharT => DCNumericType::new(DCTypeEnum::TChar),
-        BoolT => DCNumericType::new(DCTypeEnum::TUInt8), // 'bool' is an alias for uint8
-        signed_integer_type[dt] => DCNumericType::new(dt.dctype),
-        unsigned_integer_type[dt] => DCNumericType::new(dt.dctype),
-        floating_point_type[dt] => DCNumericType::new(dt.dctype),
+    numeric_type_token: ast::NumericType {
+        CharT => ast::NumericType::from_type(DCTypeEnum::TChar, span!()),
+        // 'bool' is an alias for uint8
+        BoolT => ast::NumericType::from_type(DCTypeEnum::TUInt8, span!()),
+        signed_integer_type[dt] => ast::NumericType::from_type(dt.dctype, span!()),
+        unsigned_integer_type[dt] => ast::NumericType::from_type(dt.dctype, span!()),
+        floating_point_type[dt] => ast::NumericType::from_type(dt.dctype, span!()),
     }
 
     char_or_number: ast::CharOrNumber {
         CharacterLiteral(c) => ast::CharOrNumber::Char(c),
         signed_integer[v] => ast::CharOrNumber::I64(v),
 
-        number[tok] => match tok {
-            DecimalLiteral(dl) => ast::CharOrNumber::I64(dl),
-            FloatLiteral(fl) => ast::CharOrNumber::F64(fl),
-            _ => panic!("'number' non-terminal returned an unexpected DC token!"),
+        number[num] => match num {
+            ast::Number::Decimal(dl) => ast::CharOrNumber::I64(dl),
+            ast::Number::Float(fl) => ast::CharOrNumber::F64(fl),
         },
     }
 
@@ -759,9 +751,9 @@ parser! {
         Hyphen DecimalLiteral(dl) => -dl, // hyphen consumed by lexer, so its parsed as positive
     }
 
-    number: DCToken {
-        DecimalLiteral(dl) => DecimalLiteral(dl),
-        FloatLiteral(fl) => FloatLiteral(fl),
+    number: ast::Number {
+        DecimalLiteral(dl) => ast::Number::Decimal(dl),
+        FloatLiteral(fl) => ast::Number::Float(fl),
     }
 
     char_or_u16: ast::CharOrU16 {
@@ -1059,10 +1051,10 @@ mod unit_testing {
                 int32%360/1000 floatingPointAngle;
                 int32/1000 efficientFloatIn32Bits;
                 float32 waitIsntAstronsFloat32TheSame;
-                int16(float32) forTheStaticallyTypedLanguages;
+                int16(int32) forTheStaticallyTypedLanguages;
                 int16(float64)(0.0-1.0) withRangeTest;
-                int16(float32)%360/10 anotherTest;
-                int16(float64)/10.0 moreTests;
+                int16(float32)%360/10.0 anotherTest;
+                int16(uint32)/10 moreTests;
                 bool thisIsLiterallyJustAn8BitInt;
                 uint16/1000(0-1) youCanStackThemToo;
                 int64/10000(+50-+999) [] thisIsValid;

@@ -168,12 +168,55 @@ pub enum TypeValue {
     ArrayValue(Vec<ArrayExpansion>),
 }
 
-/// Paired with the `char_or_u16` production in the Context Free Grammar.
-#[derive(Clone, Copy)]
-pub enum CharOrU16 {
-    Char(char),
-    U16(u16),
+/// Paired with the `numeric_type` production in the Context Free Grammar.
+#[derive(Debug)]
+pub struct NumericType {
+    pub span: Span,
+    pub base_type: DCTypeEnum,
+    // Transforms
+    pub cast: Option<DataType>,
+    pub modulus: Option<f64>,
+    pub divisor: Option<f64>,
+    pub range: Option<NumericRange>,
 }
+
+impl NumericType {
+    pub fn from_type(value: DCTypeEnum, span: Span) -> Self {
+        Self {
+            span,
+            base_type: value,
+            cast: None,
+            modulus: None,
+            divisor: None,
+            range: None,
+        }
+    }
+
+    pub fn add_modulus(&mut self, value: Number) {
+        match value {
+            Number::Decimal(dl) => {
+                self.modulus = Some(dl as f64);
+            }
+            Number::Float(fl) => {
+                self.modulus = Some(fl);
+            }
+        }
+    }
+
+    pub fn add_divisor(&mut self, value: Number) {
+        match value {
+            Number::Decimal(dl) => {
+                self.divisor = Some(dl as f64);
+            }
+            Number::Float(fl) => {
+                self.divisor = Some(fl);
+            }
+        }
+    }
+}
+
+/// Paired with the `numeric_range` production in the Context Free Grammar.
+pub type NumericRange = std::ops::Range<f64>;
 
 /// Paired with the `char_or_number` production in the Context Free Grammar.
 #[derive(Clone, Copy)]
@@ -183,6 +226,20 @@ pub enum CharOrNumber {
     F64(f64),
 }
 
+/// Paired with the 'number' production in the Context Free Grammar.
+pub enum Number {
+    Decimal(i64),
+    Float(f64),
+}
+
+/// Paired with the `char_or_u16` production in the Context Free Grammar.
+#[derive(Clone, Copy)]
+pub enum CharOrU16 {
+    Char(char),
+    U16(u16),
+}
+
+#[derive(Debug)]
 pub struct DataType {
     pub span: Span,
     pub token: DCToken,
