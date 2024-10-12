@@ -6,7 +6,7 @@ header {
     margin: auto;
     /* Set some properties from style.css of donet website */
     /* Keep exclusive to `header` to not override sphinx css. */
-    font-family: 'Cantarell', sans-serif;
+    font-family: "Cantarell var", sans-serif;
     font-weight: 600;
     color: var(--light-clr);
     margin: 0;
