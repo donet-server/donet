@@ -164,11 +164,7 @@ body, .wy-body-for-nav {
     background-color: var(--thulian-clr);
 }
 
-.rst-content h1, .rst-content h2 {
-    font-family: "Cantarell var", "Roboto slab";
-    font-weight: 800;
-}
-
+.rst-content h1, .rst-content h2, .rst-content h3,
 .rst-content .toctree-wrapper p.caption {
     font-family: "Cantarell var", "Roboto slab";
     font-weight: 800;
