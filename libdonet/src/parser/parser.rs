@@ -35,8 +35,7 @@
 use super::ast;
 use super::lexer::DCToken::*;
 use super::lexer::{DCToken, Span};
-use crate::dcnumeric::*;
-use crate::dctype::*;
+use crate::dctype::DCTypeEnum;
 
 use plex::parser;
 use std::mem::discriminant;
@@ -71,7 +70,7 @@ parser! {
         keyword_type[keyword] => ast::TypeDeclaration::KeywordType(keyword),
         struct_type[strct] => ast::TypeDeclaration::StructType(strct),
         distributed_class_type[dclass] => ast::TypeDeclaration::DClassType(dclass),
-        type_definition => ast::TypeDeclaration::TypedefType(DCTypeDefinition::new()),
+        type_definition => ast::TypeDeclaration::TypedefType,
     }
 
     // ---------- Python-style Imports ---------- //
@@ -247,32 +246,6 @@ parser! {
         }
     }
 
-    // ---------- DC Struct ---------- //
-
-    struct_type: ast::Struct {
-        Struct Identifier(id) OpenBraces struct_fields[fields] CloseBraces => {
-            ast::Struct {
-                span: span!(),
-                identifier: id,
-                fields,
-            }
-        },
-    }
-
-    struct_fields: ast::StructFields {
-        epsilon => vec![],
-        struct_fields[vector] struct_field[_field] Semicolon => {
-            //vector.push(field);
-            vector
-        },
-    }
-
-    struct_field: () {
-        switch_type => {},
-        unnamed_field => {},
-        named_field => {},
-    }
-
     // ---------- Distributed Class ---------- //
 
     distributed_class_type: ast::DClass {
@@ -312,18 +285,6 @@ parser! {
         },
     }
 
-    dc_keyword_list: Vec<String> {
-        epsilon => vec![],
-        dc_keyword_list[mut vector] Identifier(keyword) => {
-            vector.push(keyword);
-            vector
-        }
-        dc_keyword_list[mut vector] DCKeyword(keyword) => {
-            vector.push(keyword);
-            vector
-        }
-    }
-
     optional_inheritance: Vec<String> {
         epsilon => vec![],
         Colon Identifier(parent) class_parents[mut cp] => {
@@ -354,7 +315,62 @@ parser! {
         type_definition OpenBrackets array_range CloseBrackets => {},
     }
 
-    // ---------- Panda DC Switch Statements ---------- //
+    // ---------- Molecular Field ---------- //
+
+    // e.g. "setStats : setAvatarCount, setNewAvatarCount"
+    molecular_field: ast::MolecularField {
+        // Molecular fields require at least one atomic name.
+        // They **should** require a minimum of two as suggested by Astron
+        // docs and Panda source comments, but one atomic name is historically legal.
+        Identifier(id) Colon Identifier(first_atomic) molecular_atom_list[mut atomics] => {
+            ast::MolecularField {
+                span: span!(),
+                identifier: id,
+                atomic_field_identifiers: {
+                    let mut vec: Vec<String> = vec![first_atomic];
+
+                    vec.append(&mut atomics);
+                    vec
+                }
+            }
+        },
+    }
+
+    molecular_atom_list: Vec<String> {
+        epsilon => vec![],
+        molecular_atom_list[mut atomics] Comma Identifier(atomic_name) => {
+            atomics.push(atomic_name);
+            atomics
+        },
+    }
+
+    // ---------- DC Struct ---------- //
+
+    struct_type: ast::Struct {
+        Struct Identifier(id) OpenBraces struct_fields[fields] CloseBraces => {
+            ast::Struct {
+                span: span!(),
+                identifier: id,
+                fields,
+            }
+        },
+    }
+
+    struct_fields: Vec<ast::StructField> {
+        epsilon => vec![],
+        struct_fields[mut vec] struct_field[field] Semicolon => {
+            vec.push(field);
+            vec
+        },
+    }
+
+    struct_field: ast::StructField {
+        switch_type[sw] => ast::StructField::Switch(sw),
+        unnamed_field[pf] => ast::StructField::ParameterField(pf),
+        named_field[nf] => nf.into(),
+    }
+
+    // ---------- DC Switch Statements ---------- //
 
     switch_type: ast::Switch {
         Switch OpenParenthesis parameter CloseParenthesis
@@ -378,39 +394,58 @@ parser! {
         Default Colon => {},
     }
 
-    // ---------- Molecular Field ---------- //
+    // ---------- DC Fields ---------- //
 
-    // e.g. "setStats : setAvatarCount, setNewAvatarCount"
-    molecular_field: ast::MolecularField {
-        // Molecular fields require at least one atomic name.
-        // They **should** require a minimum of two as suggested by Astron
-        // docs and Panda source comments, but one atomic name is historically legal.
-        Identifier(id) Colon Identifier(first_atomic) molecular_atom_list[mut atomics] => {
-            ast::MolecularField {
-                span: span!(),
-                identifier: id,
-                atomic_field_identifiers: {
-                    let mut vec: Vec<String> = vec![first_atomic];
-                    vec.append(&mut atomics);
-                    vec
-                }
-            }
+    named_field: ast::NamedField {
+        method_as_field[mf] => ast::NamedField::MethodAsField(mf),
+        nonmethod_type_with_name[nmt] => {
+            let param: ast::Parameter = nmt.into();
+
+            ast::NamedField::ParameterField(param.into())
+        },
+        field_with_name_as_array[field] => ast::NamedField::ParameterField(field),
+        field_with_name_and_default[field] => ast::NamedField::ParameterField(field),
+    }
+
+    field_with_name_as_array: ast::ParameterField {
+        nonmethod_type_with_name[nmt]
+        OpenBrackets array_range[_] CloseBrackets => {
+            let param: ast::Parameter = nmt.into();
+
+            // FIXME: apply array range
+            param.into()
+        },
+        field_with_name_as_array[pf]
+        OpenBrackets array_range[_] CloseBrackets => {
+            // FIXME: apply array range
+            pf
         },
     }
 
-    molecular_atom_list: Vec<String> {
-        epsilon => vec![],
-        molecular_atom_list[mut atomics] Comma Identifier(atomic_name) => {
-            atomics.push(atomic_name);
-            atomics
+    field_with_name_and_default: ast::ParameterField {
+        nonmethod_type_with_name[nmt] Equals type_value[value] => {
+            let mut param: ast::Parameter = nmt.into();
+
+            param.default_value = Some(value);
+            param.into()
+        },
+        field_with_name_as_array[mut field] Equals type_value[value] => {
+            field.parameter.default_value = Some(value);
+            field
         },
     }
 
-    // ---------- Method ---------- //
+    unnamed_field: ast::ParameterField {
+        nonmethod_type[nmt] => {
+            let param: ast::Parameter = nmt.into();
+            param.into()
+        },
+        nonmethod_type[nmt] Equals type_value[value] => {
+            let mut param: ast::Parameter = nmt.into();
+            param.default_value = Some(value);
 
-    // e.g. "(int8, int16, string, blob)"
-    method_body: ast::MethodBody {
-        OpenParenthesis parameters[params] CloseParenthesis => params,
+            param.into()
+        },
     }
 
     // e.g. "setName(string)"
@@ -424,60 +459,40 @@ parser! {
         },
     }
 
-    nonmethod_type: () {
-        nonmethod_type_no_array => {},
-        #[no_reduce(OpenBrackets)] // avoids conflict with type_with_array rule
-        type_with_array => {},
-    }
-
-    nonmethod_type_no_array: () {
-        #[no_reduce(OpenBrackets)]
-        Identifier(_) => {
-            // TODO: check if it is a defined type, such as an alias / struct.
-        },
-        #[no_reduce(OpenBrackets)]
-        numeric_type => {},
-        #[no_reduce(OpenBrackets)]
-        builtin_array_type => {},
-    }
-
-    nonmethod_type_with_name: () {
-        nonmethod_type Identifier(_) => {},
-    }
-
-    // ---------- DC Fields ---------- //
-
-    field_with_name_as_array: () {
-        nonmethod_type_with_name OpenBrackets array_range CloseBrackets => {},
-        field_with_name_as_array OpenBrackets array_range CloseBrackets => {},
-    }
-
-    field_with_name_and_default: () {
-        nonmethod_type_with_name Equals type_value => {},
-        field_with_name_as_array Equals type_value => {},
-    }
-
-    named_field: () {
-        method_as_field => {},
-        nonmethod_type_with_name => {},
-        field_with_name_as_array => {},
-        field_with_name_and_default => {},
-    }
-
-    unnamed_field: () {
-        nonmethod_type => {},
-        nonmethod_type Equals type_value => {},
+    // e.g. "(int8, int16, string, blob)"
+    method_body: ast::MethodBody {
+        OpenParenthesis parameters[params] CloseParenthesis => params,
     }
 
     // ---------- Parameter Fields ---------- //
 
-    parameter_fields: () {
-        epsilon => {},
-        parameter_fields Comma parameter_field => {},
+    parameter_fields: Vec<ast::ParameterField> {
+        epsilon => vec![],
+        parameter_fields[mut vec] Comma parameter_field[pf] => {
+            vec.push(pf);
+            vec
+        },
     }
 
-    parameter_field: () {
-        parameter[_] dc_keyword_list[_] => {},
+    parameter_field: ast::ParameterField {
+        parameter[param] dc_keyword_list[kl] => {
+            let pf: ast::ParameterField = param.into();
+
+            pf.keywords = kl;
+            pf
+        },
+    }
+
+    dc_keyword_list: ast::KeywordList {
+        epsilon => vec![],
+        dc_keyword_list[mut vec] Identifier(keyword) => {
+            vec.push(keyword);
+            vec
+        }
+        dc_keyword_list[mut vec] DCKeyword(keyword) => {
+            vec.push(keyword);
+            vec
+        }
     }
 
     // ---------- Parameter ---------- //
@@ -496,32 +511,106 @@ parser! {
     }
 
     parameter: ast::Parameter {
-        nonmethod_type => ast::Parameter {
-            span: span!(),
-            data_type: crate::dctype::DCTypeEnum::TChar,
-            identifier: String::default(),
-            default_value: None,
-        },
-        nonmethod_type Equals type_value[value] => ast::Parameter {
-            span: span!(),
-            data_type: crate::dctype::DCTypeEnum::TChar,
-            identifier: String::default(),
-            default_value: Some(value),
+        nonmethod_type[nmt] => nmt.into(),
+        nonmethod_type[nmt] Equals type_value[value] => {
+            let mut param: ast::Parameter = nmt.into();
+
+            param.default_value = Some(value);
+            param
         },
     }
 
     // ---------- DC Data Types ---------- //
 
-    type_with_array: () {
-        numeric_type OpenBrackets array_range CloseBrackets => {},
-        Identifier(_) OpenBrackets array_range CloseBrackets => {},
-        builtin_array_type OpenBrackets array_range CloseBrackets => {},
-        type_with_array OpenBrackets array_range CloseBrackets => {},
+    nonmethod_type_with_name: ast::NonMethodType {
+        nonmethod_type[mut nmt] Identifier(id) => {
+            nmt.identifier = Some(id);
+            nmt
+        },
     }
 
-    builtin_array_type: () {
-        sized_type_token[_] => {},
-        sized_type_token[_] OpenParenthesis array_range CloseParenthesis => {},
+    nonmethod_type: ast::NonMethodType {
+        nonmethod_type_no_array[nmt] => nmt,
+        #[no_reduce(OpenBrackets)] // avoids conflict with `type_with_array`
+        type_with_array[twa] => ast::NonMethodType {
+            span: span!(),
+            identifier: None,
+            data_type: ast::NonMethodDataType::TypeWithArray(twa),
+        },
+    }
+
+    nonmethod_type_no_array: ast::NonMethodType {
+        #[no_reduce(OpenBrackets)]
+        Identifier(id) => ast::NonMethodType {
+            span: span!(),
+            identifier: None,
+            data_type: ast::NonMethodDataType::StructType(id),
+        },
+        #[no_reduce(OpenBrackets)]
+        numeric_type[nt] => ast::NonMethodType {
+            span: span!(),
+            identifier: None,
+            data_type: ast::NonMethodDataType::NumericType(nt),
+        },
+        #[no_reduce(OpenBrackets)]
+        builtin_array_type[twa] => ast::NonMethodType {
+            span: span!(),
+            identifier: None,
+            data_type: ast::NonMethodDataType::TypeWithArray(twa),
+        },
+    }
+
+    type_with_array: ast::TypeWithArray {
+        numeric_type[nt] OpenBrackets array_range[ar] CloseBrackets => {
+            ast::TypeWithArray {
+                span: span!(),
+                data_type: ast::ArrayableType::NumericType(nt),
+                array_ranges: match ar {
+                    Some(range) => vec![range],
+                    None => vec![],
+                },
+            }
+        },
+        Identifier(id) OpenBrackets array_range[ar] CloseBrackets => {
+            ast::TypeWithArray {
+                span: span!(),
+                data_type: ast::ArrayableType::StructType(id),
+                array_ranges: match ar {
+                    Some(range) => vec![range],
+                    None => vec![],
+                },
+            }
+        },
+        builtin_array_type[mut twa] OpenBrackets array_range[ar] CloseBrackets => {
+            if let Some(range) = ar {
+                twa.array_ranges.push(range);
+            }
+            twa
+        },
+        type_with_array[mut twa] OpenBrackets array_range[ar] CloseBrackets => {
+            if let Some(range) = ar {
+                twa.array_ranges.push(range);
+            }
+            twa
+        },
+    }
+
+    builtin_array_type: ast::TypeWithArray {
+        sized_type_token[st] => ast::TypeWithArray {
+            span: span!(),
+            data_type: ast::ArrayableType::SizedType(st),
+            array_ranges: vec![],
+        },
+        sized_type_token[st] OpenParenthesis array_range[ar] CloseParenthesis => {
+            ast::TypeWithArray {
+                span: span!(),
+                data_type: ast::ArrayableType::SizedType(st),
+                array_ranges: match ar {
+                    Some(range) => vec![range],
+                    None => vec![],
+                },
+            }
+        },
     }
 
     // e.g. "[0 * 14]"
@@ -700,31 +789,47 @@ parser! {
         },
     }
 
-    array_range: Option<DCNumericRange> {
+    array_range: Option<ast::NumericRange> {
         epsilon => None,
         char_or_u16[v] => match v {
-            ast::CharOrU16::Char(c) => Some(DCNumericRange::new_unsigned_integer_range(u64::from(c), u64::from(c))),
-            ast::CharOrU16::U16(u) => Some(DCNumericRange::new_unsigned_integer_range(u64::from(u), u64::from(u))),
+            ast::CharOrU16::Char(c) => {
+                let min_max: f64 = f64::from(u32::from(c));
+                Some(min_max .. min_max)
+            },
+            ast::CharOrU16::U16(u) => {
+                let min_max: f64 = f64::from(u);
+                Some(min_max .. min_max)
+            },
         },
         char_or_u16[min] Hyphen char_or_u16[max] => {
-            let min_uint: u64 = match min {
-                ast::CharOrU16::Char(c) => u64::from(c),
-                ast::CharOrU16::U16(u) => u64::from(u),
+            let min_float: f64 = match min {
+                ast::CharOrU16::Char(c) => f64::from(u32::from(c)),
+                ast::CharOrU16::U16(u) => f64::from(u),
             };
-            let max_uint: u64 = match max {
-                ast::CharOrU16::Char(c) => u64::from(c),
-                ast::CharOrU16::U16(u) => u64::from(u),
+            let max_float: f64 = match max {
+                ast::CharOrU16::Char(c) => f64::from(u32::from(c)),
+                ast::CharOrU16::U16(u) => f64::from(u),
             };
-            Some(DCNumericRange::new_unsigned_integer_range(min_uint, max_uint))
+            Some(min_float .. max_float)
         },
     }
 
     // Both of these types represent a sized type (aka, array type)
-    sized_type_token: DCToken {
-        StringT => StringT,
-        BlobT => BlobT,
-        Blob32T => Blob32T,
-        array_data_type[dt] => dt.token,
+    // Strings and blobs are another form of array types.
+    sized_type_token: ast::SizedTypeToken {
+        StringT => ast::SizedTypeToken::String,
+        BlobT => ast::SizedTypeToken::Blob,
+        Blob32T => ast::SizedTypeToken::Blob32,
+        array_data_type[dt] => match dt.token {
+            Int8ArrayT => ast::SizedTypeToken::Int8Array,
+            Int16ArrayT => ast::SizedTypeToken::Int16Array,
+            Int32ArrayT => ast::SizedTypeToken::Int32Array,
+            UInt8ArrayT => ast::SizedTypeToken::UInt8Array,
+            UInt16ArrayT => ast::SizedTypeToken::UInt16Array,
+            UInt32ArrayT => ast::SizedTypeToken::UInt32Array,
+            UInt32UInt8ArrayT => ast::SizedTypeToken::UInt32UInt8Array,
+            _ => panic!("Not possible due to production rules."),
+        },
     }
 
     numeric_type_token: ast::NumericType {

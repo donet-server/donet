@@ -23,7 +23,7 @@
 //! [`AST`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
 use super::lexer::{DCToken, Span};
-use crate::dctype::*;
+use crate::dctype::DCTypeEnum;
 
 /// Paired with the `type_declarations` production in the Context Free Grammar.
 #[derive(Debug)]
@@ -40,7 +40,7 @@ pub enum TypeDeclaration {
     KeywordType(KeywordDefinition),
     StructType(Struct),
     DClassType(DClass),
-    TypedefType(DCTypeDefinition),
+    TypedefType,
 }
 
 /// Paired with the `python_style_import` production in the Context Free Grammar.
@@ -61,33 +61,6 @@ pub struct PyModuleImport {
 pub struct KeywordDefinition {
     pub span: Span,
     pub identifier: String,
-}
-
-/// Paired with the `struct_type` production in the Context Free Grammar.
-#[derive(Debug)]
-pub struct Struct {
-    pub span: Span,
-    pub identifier: String,
-    pub fields: Vec<(Parameter, Vec<String>)>,
-}
-
-/// Paired with the `struct_fields` production in the Context Free Grammar.
-pub type StructFields = Vec<(Parameter, Vec<String>)>;
-
-/// Paired with the `switch_type` production in the Context Free Grammar.
-#[derive(Debug)]
-pub struct Switch {
-    pub span: Span,
-    pub cases: Vec<Case>,
-}
-
-/// Paired with the `switch_case` production in the Context Free Grammar.
-#[derive(Debug)]
-pub struct Case {
-    pub span: Span,
-    // `None` condition means this is a default case.
-    pub condition: Option<TypeValue>,
-    pub fields: Vec<(Parameter, Vec<String>)>,
 }
 
 /// Paired with the `distributed_class_type` production in the Context Free Grammar.
@@ -126,11 +99,55 @@ pub struct MolecularField {
     pub atomic_field_identifiers: Vec<String>,
 }
 
-/// Paired with the `method_body` production in the Context Free Grammar.
-pub type MethodBody = Vec<Parameter>;
-
 /// Paired with the `parameter_values` production in the Context Free Grammar.
 pub type ParameterValues = Vec<TypeValue>;
+
+/// Paired with the `struct_type` production in the Context Free Grammar.
+#[derive(Debug)]
+pub struct Struct {
+    pub span: Span,
+    pub identifier: String,
+    pub fields: Vec<StructField>,
+}
+
+/// Paired with the `struct_field` production in the Context Free Grammar.
+#[derive(Debug)]
+pub enum StructField {
+    ParameterField(ParameterField),
+    MethodAsField(MethodAsField),
+    Switch(Switch),
+}
+
+impl From<NamedField> for StructField {
+    fn from(value: NamedField) -> Self {
+        match value {
+            NamedField::ParameterField(pf) => Self::ParameterField(pf),
+            NamedField::MethodAsField(mf) => Self::MethodAsField(mf),
+        }
+    }
+}
+
+/// Paired with the `switch_type` production in the Context Free Grammar.
+#[derive(Debug)]
+pub struct Switch {
+    pub span: Span,
+    pub cases: Vec<Case>,
+}
+
+/// Paired with the `switch_case` production in the Context Free Grammar.
+#[derive(Debug)]
+pub struct Case {
+    pub span: Span,
+    // `None` condition means this is a default case.
+    pub condition: Option<TypeValue>,
+    pub fields: Vec<ParameterField>,
+}
+
+/// Paired with the `named_field` production in the Context Free Grammar.
+pub enum NamedField {
+    ParameterField(ParameterField),
+    MethodAsField(MethodAsField),
+}
 
 /// Paired with the `method_as_field` production in the Context Free Grammar.
 #[derive(Debug)]
@@ -140,13 +157,76 @@ pub struct MethodAsField {
     pub parameters: MethodBody,
 }
 
+/// Paired with the `method_body` production in the Context Free Grammar.
+pub type MethodBody = Vec<Parameter>;
+
+/// Paired with the `parameter_field` production in the Context Free Grammar.
+#[derive(Debug)]
+pub struct ParameterField {
+    pub parameter: Parameter,
+    pub keywords: KeywordList,
+}
+
+impl From<Parameter> for ParameterField {
+    fn from(value: Parameter) -> Self {
+        Self {
+            parameter: value,
+            keywords: vec![],
+        }
+    }
+}
+
+/// Paired with the `dc_keyword_list` production in the Context Free Grammar.
+pub type KeywordList = Vec<String>;
+
 /// Paired with the `parameter` production in the Context Free Grammar.
 #[derive(Debug)]
 pub struct Parameter {
     pub span: Span,
-    pub data_type: DCTypeEnum,
-    pub identifier: String,
+    pub data_type: NonMethodDataType,
+    pub identifier: Option<String>,
     pub default_value: Option<TypeValue>,
+}
+
+impl From<NonMethodType> for Parameter {
+    fn from(value: NonMethodType) -> Self {
+        Self {
+            span: value.span,
+            data_type: value.data_type,
+            identifier: value.identifier,
+            default_value: None,
+        }
+    }
+}
+
+/// Paired with the `nonmethod_type` production in the Context Free Grammar.
+#[derive(Debug)]
+pub struct NonMethodType {
+    pub span: Span,
+    pub identifier: Option<String>,
+    pub data_type: NonMethodDataType,
+}
+
+#[derive(Debug)]
+pub enum NonMethodDataType {
+    NumericType(NumericType),
+    StructType(String),
+    TypeWithArray(TypeWithArray),
+}
+
+/// Paired with the `type_with_array` production in the Context Free Grammar.
+#[derive(Debug)]
+pub struct TypeWithArray {
+    pub span: Span,
+    pub data_type: ArrayableType,
+    pub array_ranges: Vec<ArrayRange>,
+}
+
+#[derive(Debug)]
+pub enum ArrayableType {
+    NumericType(NumericType),
+    StructType(String),
+    SizedType(SizedTypeToken),
 }
 
 /// Paired with the `array_expansion` production in the Context Free Grammar.
@@ -217,6 +297,24 @@ impl NumericType {
 
 /// Paired with the `numeric_range` production in the Context Free Grammar.
 pub type NumericRange = std::ops::Range<f64>;
+
+/// Paired with the `array_range` production in the Context Free Grammar.
+pub type ArrayRange = std::ops::Range<f64>;
+
+/// Paired with the `sized_type_token` production in the Context Free Grammar.
+#[derive(Debug)]
+pub enum SizedTypeToken {
+    String,
+    Blob,
+    Blob32,
+    Int8Array,
+    Int16Array,
+    Int32Array,
+    UInt8Array,
+    UInt16Array,
+    UInt32Array,
+    UInt32UInt8Array,
+}
 
 /// Paired with the `char_or_number` production in the Context Free Grammar.
 #[derive(Clone, Copy)]
