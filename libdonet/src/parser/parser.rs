@@ -271,13 +271,10 @@ parser! {
     class_field: ast::AtomicOrMolecular {
         // e.g. "setPos(float64 x, float64 y, float64 z) ram broadcast" (atomic)
         // e.g. "string DcObjectType db" (plain field)
-        named_field[_nf] dc_keyword_list[keywords] => {
-            ast::AtomicOrMolecular::Atomic(ast::AtomicField {
-                span: span!(),
-                identifier: String::default(), // TODO
-                keywords,
-                parameters: vec![], // TODO
-            })
+        named_field[nf] dc_keyword_list[keywords] => {
+            ast::AtomicOrMolecular::Atomic(
+                ast::AtomicField::from_named_field(nf, keywords, span!())
+            )
         },
         // e.g. "setStats : setAvatarCount, setNewAvatarCount"
         molecular_field[molecular] => {
@@ -373,25 +370,55 @@ parser! {
     // ---------- DC Switch Statements ---------- //
 
     switch_type: ast::Switch {
-        Switch OpenParenthesis parameter CloseParenthesis
-        OpenBraces switch_fields CloseBraces => {
+        Switch optional_name[id] OpenParenthesis parameter_field[field] CloseParenthesis
+        OpenBraces switch_cases[cases] CloseBraces => {
             ast::Switch {
                 span: span!(),
-                cases: vec![], // TODO
+                identifier: id,
+                key_parameter: field,
+                cases: cases,
             }
         }
     }
 
-    switch_fields: () {
-        epsilon => {},
-        switch_fields switch_case => {},
-        switch_fields named_field Semicolon => {},
-        switch_fields Break Semicolon => {},
+    switch_cases: Vec<ast::Case> {
+        epsilon => vec![],
+        switch_cases[mut vec] switch_case[case] => {
+            vec.push(case);
+            vec
+        },
     }
 
-    switch_case: () {
-        Case type_value Colon => {},
-        Default Colon => {},
+    switch_case: ast::Case {
+        switch_case_body[mut case] optional_break[breaks] => {
+            case.span = span!(); // update span
+            case.breaks = breaks;
+            case
+        }
+    }
+
+    switch_case_body: ast::Case {
+        Default Colon => ast::Case {
+            span: span!(),
+            condition: None, // `None` means default
+            fields: vec![],
+            breaks: false,
+        },
+        Case type_value[condition] Colon => ast::Case {
+            span: span!(),
+            condition: Some(condition),
+            fields: vec![],
+            breaks: false,
+        },
+        switch_case[mut case] parameter_field[field] Semicolon => {
+            case.fields.push(field);
+            case
+        },
+    }
+
+    optional_break: bool {
+        epsilon => false,
+        Break Semicolon => true,
     }
 
     // ---------- DC Fields ---------- //
@@ -476,7 +503,7 @@ parser! {
 
     parameter_field: ast::ParameterField {
         parameter[param] dc_keyword_list[kl] => {
-            let pf: ast::ParameterField = param.into();
+            let mut pf: ast::ParameterField = param.into();
 
             pf.keywords = kl;
             pf
@@ -917,7 +944,7 @@ parser! {
     }
 
     epsilon: () {
-        => {}, // alias for 'epsilon', a.k.a 'none' in GNU Bison
+        => {}, // alias for 'epsilon' (ε), a.k.a 'none' in GNU Bison
     }
 }
 
@@ -984,7 +1011,7 @@ mod unit_testing {
     }
 
     #[test]
-    fn sample_keyword_definitions() {
+    fn keyword_definitions() {
         parse_dcfile_string(
             "
             keyword p2p;
@@ -996,7 +1023,7 @@ mod unit_testing {
     }
 
     #[test]
-    fn sample_struct_declarations() {
+    fn struct_declarations() {
         parse_dcfile_string(
             "
             struct GiftItem {
@@ -1029,7 +1056,7 @@ mod unit_testing {
     }
 
     #[test]
-    fn sample_distributed_class() {
+    fn distributed_class() {
         parse_dcfile_string(
             "
             dclass OfflineShardManager : DistributedObject {
@@ -1052,7 +1079,7 @@ mod unit_testing {
     }
 
     #[test]
-    fn sample_switch_declarations() {
+    fn switch_fields() {
         parse_dcfile_string(
             "
             struct BuffData {
@@ -1073,10 +1100,14 @@ mod unit_testing {
                         int16/100 val1;
                         break;
                 };
-            };
-
-            struct WithDefault {
-                switch (char) {
+                switch OptionalName (uint8) {
+                    case 0:
+                        break;
+                    default:
+                        uint8 value;
+                        break;
+                };
+                switch WithDefault (char) {
                     case 'a':
                         break;
                     case 'b':
@@ -1084,6 +1115,22 @@ mod unit_testing {
                     case 'd':
                     default:
                         string val1;
+                        break;
+                };
+            };
+            ",
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn switch_redundant_break() {
+        parse_dcfile_string(
+            "
+            struct BuffData {
+                switch (uint16) {
+                    case 0:
+                        break;
                         break;
                 };
             };

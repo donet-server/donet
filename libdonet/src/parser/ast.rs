@@ -86,9 +86,28 @@ pub enum AtomicOrMolecular {
 #[derive(Debug)]
 pub struct AtomicField {
     pub span: Span,
-    pub identifier: String,
+    pub identifier: Option<String>,
     pub keywords: Vec<String>,
     pub parameters: MethodBody,
+}
+
+impl AtomicField {
+    pub fn from_named_field(field: NamedField, kw_list: KeywordList, span: Span) -> Self {
+        match field {
+            NamedField::ParameterField(pf) => Self {
+                span,
+                identifier: pf.parameter.identifier.clone(),
+                keywords: kw_list,
+                parameters: vec![pf.parameter],
+            },
+            NamedField::MethodAsField(mf) => Self {
+                span,
+                identifier: Some(mf.identifier),
+                keywords: kw_list,
+                parameters: mf.parameters,
+            },
+        }
+    }
 }
 
 /// Paired with the `molecular_field` production in the Context Free Grammar.
@@ -131,6 +150,8 @@ impl From<NamedField> for StructField {
 #[derive(Debug)]
 pub struct Switch {
     pub span: Span,
+    pub identifier: Option<String>,
+    pub key_parameter: ParameterField,
     pub cases: Vec<Case>,
 }
 
@@ -141,6 +162,7 @@ pub struct Case {
     // `None` condition means this is a default case.
     pub condition: Option<TypeValue>,
     pub fields: Vec<ParameterField>,
+    pub breaks: bool,
 }
 
 /// Paired with the `named_field` production in the Context Free Grammar.
