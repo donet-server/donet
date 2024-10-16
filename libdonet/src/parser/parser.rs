@@ -70,7 +70,10 @@ parser! {
         keyword_type[keyword] => ast::TypeDeclaration::KeywordType(keyword),
         struct_type[strct] => ast::TypeDeclaration::StructType(strct),
         distributed_class_type[dclass] => ast::TypeDeclaration::DClassType(dclass),
-        type_definition => ast::TypeDeclaration::TypedefType,
+        type_definition[type_def] => match type_def {
+            Some(td) => ast::TypeDeclaration::TypedefType(td),
+            None => ast::TypeDeclaration::Ignore,
+        },
     }
 
     // ---------- Python-style Imports ---------- //
@@ -229,6 +232,40 @@ parser! {
         }
     }
 
+    // ---------- Type Definitions ---------- //
+
+    type_definition: Option<ast::TypeDefinition> {
+        Typedef nonmethod_type_with_name[nmt] => {
+            Some(ast::TypeDefinition {
+                span: span!(),
+                deprecated: true,
+                data_type: nmt.data_type,
+                array_range: None,
+                alias_identifier: nmt.identifier,
+            })
+        },
+        // This rule handles a specific piece of illegal grammar that is legal in Panda.
+        // The parser will print a useful message to stdout describing the issue,
+        // and will ignore this grammar and continue without a panic.
+        Typedef UInt8T BoolT => {
+            println!("{}\n\n\"typedef uint8 bool;\" is deprecated!\n\n\
+            Cannot declare type alias for uint8 as 'bool', as it is a reserved identifier \
+            in the DC language.\nDonet introduces the 'bool' data type, which is an alias \
+            for uint8 under the hood.\n", span!());
+            None
+        },
+        type_definition[td] OpenBrackets array_range[ar] CloseBrackets => {
+            if td.is_none() {
+                return td;
+            }
+            let mut type_def = td.unwrap();
+
+            type_def.array_range = ar;
+
+            Some(type_def)
+        },
+    }
+
     // ---------- DC Keyword ---------- //
 
     keyword_type: ast::KeywordDefinition {
@@ -296,20 +333,6 @@ parser! {
             cp.push(class);
             cp
         }
-    }
-
-    // ---------- Type Definitions ---------- //
-
-    type_definition: () {
-        Typedef nonmethod_type_with_name => {},
-        // This rule handles a specific piece of illegal grammar that is legal in Panda.
-        // The parser will print a useful message to stdout describing the issue,
-        // and will ignore this grammar and continue without a panic.
-        Typedef UInt8T BoolT => println!("{}\n\n\"typedef uint8 bool;\" is deprecated!\n\n\
-        Cannot declare type alias for uint8 as 'bool', as it is a reserved identifier \
-        in the DC language.\nDonet introduces the 'bool' data type, which is an alias \
-        for uint8 under the hood.\n", span!()),
-        type_definition OpenBrackets array_range CloseBrackets => {},
     }
 
     // ---------- Molecular Field ---------- //

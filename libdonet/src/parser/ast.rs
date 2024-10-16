@@ -40,7 +40,10 @@ pub enum TypeDeclaration {
     KeywordType(KeywordDefinition),
     StructType(Struct),
     DClassType(DClass),
-    TypedefType,
+    TypedefType(TypeDefinition),
+    // Returned by productions that parsed a type declaration
+    // that may be deprecated, and should not be added to the AST.
+    Ignore,
 }
 
 /// Paired with the `python_style_import` production in the Context Free Grammar.
@@ -54,6 +57,17 @@ pub struct PythonImport {
 pub struct PyModuleImport {
     pub python_module: String,
     pub symbols: Vec<String>,
+}
+
+/// Paired with the `type_definition` production in the Context Free Grammar.
+#[derive(Debug)]
+pub struct TypeDefinition {
+    pub span: Span,
+    // Used if deprecated type aliases are found, such as `typedef uint8 bool;`
+    pub deprecated: bool,
+    pub data_type: NonMethodDataType,
+    pub array_range: Option<ArrayRange>,
+    pub alias_identifier: Option<String>,
 }
 
 /// Paired with the `keyword_type` production in the Context Free Grammar.
