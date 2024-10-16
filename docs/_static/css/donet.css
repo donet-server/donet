@@ -164,9 +164,10 @@ body, .wy-body-for-nav {
     background-color: var(--thulian-clr);
 }
 
+/* Override font for headers to Cantarell to match project branding */
 .rst-content h1, .rst-content h2, .rst-content h3,
 .rst-content .toctree-wrapper p.caption {
-    font-family: "Cantarell var", "Roboto slab";
+    font-family: "Cantarell var", "Roboto slab",ff-tisa-web-pro,Georgia,Arial,sans-serif;
     font-weight: 800;
 }
 
