@@ -410,10 +410,14 @@ parser! {
             fields: vec![],
             breaks: false,
         },
-        switch_case[mut case] parameter_field[field] Semicolon => {
+        switch_case[mut case] switch_field[field] Semicolon => {
             case.fields.push(field);
             case
         },
+    }
+
+    switch_field: ast::NamedField {
+        named_field[nf] => nf,
     }
 
     optional_break: bool {
@@ -1059,6 +1063,14 @@ mod unit_testing {
     fn distributed_class() {
         parse_dcfile_string(
             "
+            dclass Avatar {
+                string name;
+                uint16 health;
+
+                set_xyzh(int16 x, int16 y, int16 z, int16 h) broadcast required;
+                indicate_intent(int16 / 10, int16 / 10) ownsend airecv;
+            };
+
             dclass OfflineShardManager : DistributedObject {
                 clientSetZone(uint32) airecv clsend;
                 requestZoneIdMessage(uint32, uint16) airecv clsend;
@@ -1104,7 +1116,9 @@ mod unit_testing {
                     case 0:
                         break;
                     default:
-                        uint8 value;
+                        uint8 value[0-5];
+                        uint32uint8array value2;
+                        SomeStruct value3;
                         break;
                 };
                 switch WithDefault (char) {

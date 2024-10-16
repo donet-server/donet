@@ -161,11 +161,12 @@ pub struct Case {
     pub span: Span,
     // `None` condition means this is a default case.
     pub condition: Option<TypeValue>,
-    pub fields: Vec<ParameterField>,
-    pub breaks: bool,
+    pub fields: Vec<NamedField>,
+    pub breaks: bool, // if case ends with a break
 }
 
 /// Paired with the `named_field` production in the Context Free Grammar.
+#[derive(Debug)]
 pub enum NamedField {
     ParameterField(ParameterField),
     MethodAsField(MethodAsField),
