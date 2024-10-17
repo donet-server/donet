@@ -30,34 +30,73 @@
 //!
 //! [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
+use super::ast;
 use super::PipelineData;
-use crate::dcfile::*;
+use crate::dcfile;
 use crate::globals::ParseError;
 
 /// Takes in the [`Abstract Syntax Tree`] from the DC parser and outputs a
 /// [`crate::dcfile::DCFile`] immutable structure with a static lifetime.
 ///
 /// [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
-pub fn semantic_analyzer<'a>(_: PipelineData) -> Result<DCFile<'a>, ParseError> {
-    let dc_file: DCFile = DCFile::new(vec![], vec![], vec![], vec![], vec![], vec![], true, false);
+pub fn semantic_analyzer<'a>(data: PipelineData) -> Result<dcfile::DCFile<'a>, ParseError> {
+    let mut dc_file: dcfile::intermediate::DCFile = dcfile::intermediate::DCFile::default();
 
-    /*for type_declaration in ast.type_declarations {
-        match type_declaration {
-            ast::TypeDeclaration::PythonImport(imports) => {
-                //for import in imports {
-                    //dc_file.borrow_mut().add_python_import(import);
-                //}
+    // Iterate through all ASTs and add them to our DCFile intermediate object.
+    for ast in data.syntax_trees {
+        for type_declaration in ast.type_declarations {
+            match type_declaration {
+                ast::TypeDeclaration::PythonImport(import) => {
+                    dc_file.add_python_import(import);
+                }
+                ast::TypeDeclaration::KeywordType(_) => {}
+                ast::TypeDeclaration::StructType(_) => {}
+                ast::TypeDeclaration::DClassType(_) => {}
+                ast::TypeDeclaration::TypedefType(_) => {}
+                // Ignore is returned by productions that parsed certain
+                // grammar that may be deprecated but ignored for
+                // compatibility & should not be added to the DC file.
+                ast::TypeDeclaration::Ignore => {}
             }
-            ast::TypeDeclaration::KeywordType(_) => {
-                //dc_file.borrow_mut().add_keyword(keyword);
-            }
-            ast::TypeDeclaration::StructType(_) => {}
-            ast::TypeDeclaration::DClassType(_) => {}
-            ast::TypeDeclaration::TypedefType(_) => {}
         }
-    }*/
-    // TODO: maybe properly handle semantic errors in the future
-    //assert!(dc_file.borrow().semantic_analysis().is_ok());
+    }
+    // Convert intermediate DC file structure to final immutable DC file structure.
+    Ok(dc_file.into())
+}
 
-    Ok(dc_file)
+#[cfg(test)]
+mod unit_testing {
+    use super::*;
+    use crate::read_dc;
+    use dcfile::DCPythonImport;
+
+    #[test]
+    fn python_imports() {
+        let dc_string: &str = "
+            from views import *
+            from views import DistributedDonut
+            from views import Class/AI/OV
+        ";
+
+        let dcf: dcfile::DCFile = read_dc(dc_string.into()).expect("Failed to parse syntax.");
+
+        let num_imports: usize = dcf.get_num_imports();
+        assert_eq!(num_imports, 3);
+
+        let symbols: Vec<Vec<String>> = vec![
+            vec!["*".into()],
+            vec!["DistributedDonut".into()],
+            vec!["Class".into(), "ClassAI".into(), "ClassOV".into()],
+        ];
+
+        for index in 0..num_imports - 1 {
+            let import: &DCPythonImport = dcf.get_python_import(index);
+
+            assert_eq!(import.module, "views");
+
+            let target_symbols: &Vec<String> = symbols.get(index).unwrap();
+
+            assert_eq!(*target_symbols, import.symbols);
+        }
+    }
 }

@@ -29,6 +29,44 @@ use crate::globals;
 use crate::hashgen::*;
 use crate::parser::ast;
 
+/// Represents a Python-style import statement in the DC file.
+#[derive(Debug)]
+pub struct DCPythonImport {
+    pub module: String,
+    pub symbols: Vec<String>,
+}
+
+impl From<ast::PyModuleImport> for DCPythonImport {
+    fn from(value: ast::PyModuleImport) -> Self {
+        Self {
+            module: value.python_module,
+            symbols: value.symbols,
+        }
+    }
+}
+
+impl std::fmt::Display for DCPythonImport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.symbols.is_empty() {
+            write!(f, "import ")?;
+            f.write_str(&self.module)?;
+        } else {
+            write!(f, "from ")?;
+            f.write_str(&self.module)?;
+
+            write!(f, " import ")?;
+            for (i, symbol) in self.symbols.iter().enumerate() {
+                f.write_str(symbol)?;
+
+                if i != self.symbols.len() - 1 {
+                    write!(f, ", ")?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 /// Data model that provides a high level representation of a single,
 /// or collection, of DC files and their elements such as class imports,
 /// type definitions, structures, and Distributed Classes.
@@ -37,7 +75,7 @@ pub struct DCFile<'dc> {
     baked_hash: globals::DCFileHash,
     structs: Vec<DCStruct>,
     dclasses: Vec<DClass<'dc>>,
-    imports: Vec<ast::PyModuleImport>,
+    imports: Vec<DCPythonImport>,
     keywords: Vec<DCKeyword>,
     type_defs: Vec<DCTypeDefinition>,
     field_id_2_field: Vec<&'dc DCField<'dc>>,
@@ -50,7 +88,7 @@ impl<'dc> DCFile<'dc> {
     pub(crate) fn new(
         structs: Vec<DCStruct>,
         dclasses: Vec<DClass<'dc>>,
-        imports: Vec<ast::PyModuleImport>,
+        imports: Vec<DCPythonImport>,
         keywords: Vec<DCKeyword>,
         type_defs: Vec<DCTypeDefinition>,
         field_id_2_field: Vec<&'dc DCField<'dc>>,
@@ -98,8 +136,8 @@ impl<'dc> DCFile<'dc> {
         self.imports.len()
     }
 
-    pub fn get_python_import(&self, index: usize) -> ast::PyModuleImport {
-        self.imports.get(index).unwrap().clone()
+    pub fn get_python_import(&self, index: usize) -> &DCPythonImport {
+        self.imports.get(index).expect("Index out of bounds.")
     }
 
     // ---------- DC Keyword ---------- //
@@ -157,9 +195,27 @@ impl<'dc> DCHash for DCFile<'dc> {
         }
         hashgen.add_int(self.get_num_dclasses().try_into().unwrap());
 
+        for strukt in &self.structs {
+            strukt.generate_hash(hashgen);
+        }
+
         for dclass in &self.dclasses {
             dclass.generate_hash(hashgen);
         }
+    }
+}
+
+impl<'dc> From<intermediate::DCFile> for DCFile<'dc> {
+    fn from(value: intermediate::DCFile) -> Self {
+        let mut imports: Vec<DCPythonImport> = vec![];
+
+        for imp_statement in value.imports {
+            for imp in imp_statement.imports {
+                imports.push(imp.into());
+            }
+        }
+        // TODO!
+        Self::new(vec![], vec![], imports, vec![], vec![], vec![], true, false)
     }
 }
 
@@ -168,40 +224,27 @@ impl<'dc> std::fmt::Display for DCFile<'dc> {
         // Print Python-style imports
         if !self.imports.is_empty() {
             for import in &self.imports {
-                if import.symbols.is_empty() {
-                    write!(f, "import ")?;
-                    f.write_str(&import.python_module)?;
-                    writeln!(f)?;
-                } else {
-                    write!(f, "from ")?;
-                    f.write_str(&import.python_module)?;
-
-                    write!(f, " import ")?;
-                    for (i, symbol) in import.symbols.iter().enumerate() {
-                        f.write_str(symbol)?;
-
-                        if i != import.symbols.len() - 1 {
-                            write!(f, ", ")?;
-                        }
-                    }
-                    writeln!(f)?;
-                }
+                import.fmt(f)?;
+                writeln!(f)?;
             }
             writeln!(f)?;
         }
-        // Print type declarations
+        // Print type definitions
         for type_def in &self.type_defs {
             type_def.fmt(f)?;
             writeln!(f)?;
         }
+        // Print Keyword definitions
         for kw in &self.keywords {
             kw.fmt(f)?;
             writeln!(f)?;
         }
+        // Print Structs
         for strukt in &self.structs {
             strukt.fmt(f)?;
             writeln!(f)?;
         }
+        // Print DClasses
         for dclass in &self.dclasses {
             dclass.fmt(f)?;
             writeln!(f)?;
@@ -215,18 +258,28 @@ mod unit_testing {
     use super::*;
 
     #[test]
-    fn write_py_imports() {
-        let imports: Vec<ast::PyModuleImport> = vec![
-            ast::PyModuleImport {
-                python_module: "views".to_string(),
+    fn write_dc_python_import() {
+        let import: DCPythonImport = DCPythonImport {
+            module: "views".to_string(),
+            symbols: vec![],
+        };
+
+        assert_eq!(import.to_string(), "import views");
+    }
+
+    #[test]
+    fn write_dcfile_py_imports() {
+        let imports: Vec<DCPythonImport> = vec![
+            DCPythonImport {
+                module: "views".to_string(),
                 symbols: vec![],
             },
-            ast::PyModuleImport {
-                python_module: "views".to_string(),
+            DCPythonImport {
+                module: "views".to_string(),
                 symbols: vec!["DistributedDonut".to_string()],
             },
-            ast::PyModuleImport {
-                python_module: "views".to_string(),
+            DCPythonImport {
+                module: "views".to_string(),
                 symbols: vec!["Class".to_string(), "ClassAI".to_string(), "ClassOV".to_string()],
             },
         ];

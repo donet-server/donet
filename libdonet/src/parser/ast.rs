@@ -41,8 +41,9 @@ pub enum TypeDeclaration {
     StructType(Struct),
     DClassType(DClass),
     TypedefType(TypeDefinition),
-    // Returned by productions that parsed a type declaration
-    // that may be deprecated, and should not be added to the AST.
+    // Returned by productions that parsed certain grammar that may be
+    // deprecated but ignored for compatibility & should not be added
+    // to the output DC file element structure.
     Ignore,
 }
 
