@@ -301,7 +301,7 @@ pub(crate) mod intermediate {
     use super::*;
     use crate::dclass::intermediate::DClass;
     use crate::parser::error::{Diagnostic, SemanticError};
-    use crate::parser::PipelineData;
+    use crate::parser::pipeline::PipelineData;
     use anyhow::Result;
     use std::collections::HashSet;
 
@@ -354,8 +354,9 @@ pub(crate) mod intermediate {
             for view_suffix in view_suffixes {
                 if !recorded_suffixes.insert(view_suffix.view.clone()) {
                     let diag: Diagnostic = Diagnostic::error(
-                        data.current_file,
                         view_suffix.span,
+                        data.current_stage(),
+                        data.current_file(),
                         SemanticError::RedundantViewSuffix(view_suffix.view.clone()),
                     );
 

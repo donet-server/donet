@@ -20,9 +20,11 @@
 //! Errors that can be returned by the DC parser pipeline.
 
 use super::lexer::{DCToken, Span};
+use super::pipeline::PipelineStage;
 use codespan_diag::Label;
 use codespan_diag::LabelStyle;
 use codespan_reporting::diagnostic as codespan_diag;
+use std::mem::discriminant;
 use thiserror::Error;
 
 /// Convert `self` type to an error code.
@@ -169,32 +171,36 @@ impl ToErrorCode for SemanticError {
 /// errors from grammar productions. See Donet issue #19.
 #[derive(Debug, Error)]
 pub enum ParseError {
-    #[error("syntax error")]
-    Error(PlexError),
+    #[error("syntax error; {1}, found `{0:?}`")]
+    Error(DCToken, String),
 }
 
 impl ToErrorCode for ParseError {
     fn error_code(&self) -> &str {
         match self {
-            Self::Error(_) => "E0100",
+            Self::Error(_, _) => "E0100",
         }
     }
 }
 
-/// Return type for the LALR parser.
-pub type PlexError = (Option<(DCToken, Span)>, &'static str);
-
 pub(crate) struct Diagnostic {
     span: Span,
+    stage: PipelineStage,
     file_id: usize,
     severity: codespan_diag::Severity,
     error: PipelineError,
 }
 
 impl Diagnostic {
-    pub fn error(file_id: usize, span: Span, err: impl Into<PipelineError>) -> Self {
+    pub fn error(
+        span: Span,
+        pipeline_stage: PipelineStage,
+        file_id: usize,
+        err: impl Into<PipelineError>,
+    ) -> Self {
         Self {
             span,
+            stage: pipeline_stage,
             file_id,
             severity: codespan_diag::Severity::Error,
             error: err.into(),
@@ -215,9 +221,7 @@ impl Into<codespan_diag::Diagnostic<usize>> for Diagnostic {
             )])
             .with_notes({
                 // If error type is from the Plex parser stage, emit the following notice.
-                if std::mem::discriminant(&self.error)
-                    == std::mem::discriminant(&PipelineError::ParseError(ParseError::Error((None, ""))))
-                {
+                if discriminant(&self.stage) == discriminant(&PipelineStage::Parser) {
                     vec![
                         "Syntax errors are limited. Please see issue #19.".into(),
                         "https://gitlab.com/donet-server/donet/-/issues/19".into(),

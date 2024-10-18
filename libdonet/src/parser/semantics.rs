@@ -40,15 +40,18 @@ use anyhow::Result;
 /// and outputs a [`crate::dcfile::DCFile`] immutable structure.
 ///
 /// [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
-pub fn semantic_analyzer<'a>(mut data: PipelineData) -> Result<dcfile::DCFile<'a>, DCReadError> {
+pub fn semantic_analyzer<'a>(mut pipeline: &mut PipelineData) -> Result<dcfile::DCFile<'a>, DCReadError> {
+    // tell the pipeline we are moving onto the next stage
+    pipeline.next_stage();
+
     let mut dc_file: dcfile::intermediate::DCFile = dcfile::intermediate::DCFile::default();
 
     // Iterate through all ASTs and add them to our DCFile intermediate object.
-    for ast in data.syntax_trees.clone() {
+    for ast in pipeline.syntax_trees.clone() {
         for type_declaration in ast.type_declarations {
             match type_declaration {
                 ast::TypeDeclaration::PythonImport(import) => {
-                    dc_file.add_python_import(&mut data, import.clone());
+                    dc_file.add_python_import(&mut pipeline, import.clone());
                 }
                 ast::TypeDeclaration::KeywordType(_) => {}
                 ast::TypeDeclaration::StructType(_) => {}
@@ -60,10 +63,10 @@ pub fn semantic_analyzer<'a>(mut data: PipelineData) -> Result<dcfile::DCFile<'a
                 ast::TypeDeclaration::Ignore => {}
             }
         }
-        data.current_file += 1;
+        pipeline.next_file(); // tell the pipeline we are processing the next file
     }
 
-    if data.errors_emitted > 0 {
+    if pipeline.failing() {
         Err(DCReadError::SemanticError)
     } else {
         // Convert intermediate DC file structure to final immutable DC file structure.
