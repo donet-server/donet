@@ -58,7 +58,6 @@ parser! {
         epsilon => ast::Root {
             type_declarations: vec![],
         },
-        dc_file[root] Semicolon => root,
         dc_file[mut root] type_decl[type_decl] => {
             root.type_declarations.push(type_decl);
             root
@@ -66,11 +65,12 @@ parser! {
     }
 
     type_decl: ast::TypeDeclaration {
+        // only python-style imports do not require a semicolon delimiter
         python_style_import[py_imports] => ast::TypeDeclaration::PythonImport(py_imports),
-        keyword_type[keyword] => ast::TypeDeclaration::KeywordType(keyword),
-        struct_type[strct] => ast::TypeDeclaration::StructType(strct),
-        distributed_class_type[dclass] => ast::TypeDeclaration::DClassType(dclass),
-        type_definition[type_def] => match type_def {
+        keyword_type[keyword] Semicolon => ast::TypeDeclaration::KeywordType(keyword),
+        struct_type[strct] Semicolon => ast::TypeDeclaration::StructType(strct),
+        distributed_class_type[dclass] Semicolon => ast::TypeDeclaration::DClassType(dclass),
+        type_definition[type_def] Semicolon => match type_def {
             Some(td) => ast::TypeDeclaration::TypedefType(td),
             None => ast::TypeDeclaration::Ignore,
         },
@@ -1320,19 +1320,6 @@ mod unit_testing {
             dclass DistributedDonut {
                 testingField() f6f7;
             };
-            ",
-        );
-    }
-
-    #[test]
-    fn type_declaration_optional_delimiter() {
-        parse_dcfile_string(
-            "
-            typedef int16 test1[2]
-            typedef int32 test2[2]
-            typedef uint64 test3
-
-            dclass Bogus {}
             ",
         );
     }
