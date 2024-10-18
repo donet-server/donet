@@ -132,7 +132,15 @@ fn main() -> std::io::Result<()> {
     }
 
     // Read the daemon configuration file
-    let mut conf_file: File = File::open(config_file)?;
+    let mut conf_file: File = match File::open(config_file) {
+        Err(err) => {
+            println!("Could not load TOML configuration.");
+            println!("Donet cannot start without a configuration file present.");
+            return Err(err);
+        }
+        Ok(file) => file,
+    };
+
     let mut contents: String = String::new();
 
     conf_file.read_to_string(&mut contents)?;
