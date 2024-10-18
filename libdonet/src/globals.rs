@@ -20,8 +20,6 @@
 //! Includes definitions of type aliases for Donet concepts,
 //! and the full definition of the network protocol message types.
 
-#[cfg(feature = "dcfile")]
-use crate::parser::lexer::{DCToken, Span};
 use cfg_if::cfg_if;
 use std::mem;
 use std::result::Result;
@@ -69,15 +67,6 @@ cfg_if! {
         pub static DC_VIRTUAL_INHERITANCE: bool = true;
         pub static DC_SORT_INHERITANCE_BY_FILE: bool = false;
         pub static MAX_PRIME_NUMBERS: u16 = 10000;
-
-        // DC Parser Return Types
-        pub type ParseError = (Option<(DCToken, Span)>, &'static str);
-
-        #[derive(Debug)]
-        pub enum DCReadError {
-            ParseError(ParseError),
-            FileError(std::io::Error),
-        }
     }
 }
 

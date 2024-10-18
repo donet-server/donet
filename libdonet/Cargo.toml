@@ -24,6 +24,9 @@ cfg-if = { version = "1.0.0" }
 # Logging utility
 log = { version = "0.4", features = ["std"] }
 pretty_env_logger = { version = "0.5" }
+# Errors utility
+anyhow = { version = "1.0" }
+thiserror = { version = "1.0" }
 # LALR(1) parser proc macro for DC parser
 plex = { version = "0.3", optional = true }
 # Used for DC parser error reporting

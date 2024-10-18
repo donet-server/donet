@@ -71,6 +71,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.89"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86fdf8605db99b54d3cd748a44c6d04df638eb5dafb219b135d0149bd0db01f6"
+
+[[package]]
 name = "arrayvec"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -836,6 +842,7 @@ checksum = "97b3888a4aecf77e811145cadf6eef5901f4782c53886191b2f693f24761847c"
 name = "libdonet"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "cfg-if",
  "codespan",
  "codespan-reporting",
@@ -846,6 +853,7 @@ dependencies = [
  "serde",
  "strum",
  "strum_macros",
+ "thiserror",
 ]
 
 [[package]]

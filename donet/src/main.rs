@@ -206,7 +206,7 @@ fn main() -> std::io::Result<()> {
             let dc_read = read_dc_files(files);
 
             if let Err(dc_err) = dc_read {
-                error!("Failed to parse DC file(s): {:?}", dc_err);
+                error!("Failed to parse DC file(s): {}", dc_err);
                 return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
             }
 

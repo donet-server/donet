@@ -26,13 +26,13 @@ use super::lexer::{DCToken, Span};
 use crate::dctype::DCTypeEnum;
 
 /// Paired with the `type_declarations` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Root {
     pub type_declarations: Vec<TypeDeclaration>,
 }
 
 /// Paired with the `type_decl` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TypeDeclaration {
     // A single Python-style DC Import line can translate to
     // multiple [`PythonImport`] structures per symbol imported.
@@ -51,20 +51,34 @@ pub enum TypeDeclaration {
 #[derive(Debug, Clone)]
 pub struct PythonImport {
     pub span: Span,
-    pub imports: Vec<PyModuleImport>,
+    pub module: SymbolWithViews,
+    pub class: SymbolWithViews,
 }
 
+/// Paired with the `py_module` and `dclass_import`
+/// productions in the Context Free Grammar.
 #[derive(Debug, Clone)]
-pub struct PyModuleImport {
-    pub python_module: String,
-    pub symbols: Vec<String>,
+pub struct SymbolWithViews {
+    pub span: Span,
+    pub symbol: String,
+    pub symbol_views: Vec<ViewSuffix>,
+}
+
+/// Paired with the `view_suffixes` production in the Context Free Grammar.
+pub type ViewSuffixes = Vec<ViewSuffix>;
+
+/// Paired with the `view_suffix` production in the Context Free Grammar.
+#[derive(Debug, Clone)]
+pub struct ViewSuffix {
+    pub span: Span,
+    pub view: String, // 'AI', 'OV', 'UD', etc.
 }
 
 /// Paired with the `type_definition` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TypeDefinition {
     pub span: Span,
-    // Used if deprecated type aliases are found, such as `typedef uint8 bool;`
+    /// Used if deprecated type aliases are found, such as `typedef uint8 bool;`
     pub deprecated: bool,
     pub data_type: NonMethodDataType,
     pub array_range: Option<ArrayRange>,
@@ -72,14 +86,14 @@ pub struct TypeDefinition {
 }
 
 /// Paired with the `keyword_type` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct KeywordDefinition {
     pub span: Span,
     pub identifier: String,
 }
 
 /// Paired with the `distributed_class_type` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DClass {
     pub span: Span,
     pub identifier: String,
@@ -91,14 +105,14 @@ pub struct DClass {
 pub type ClassFields = Vec<AtomicOrMolecular>;
 
 /// Paired with the `class_field` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AtomicOrMolecular {
     Atomic(AtomicField),
     Molecular(MolecularField),
 }
 
 /// The Atomic Field variant of the [`AtomicOrMolecular`] enum.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AtomicField {
     pub span: Span,
     pub identifier: Option<String>,
@@ -126,7 +140,7 @@ impl AtomicField {
 }
 
 /// Paired with the `molecular_field` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MolecularField {
     pub span: Span,
     pub identifier: String,
@@ -137,7 +151,7 @@ pub struct MolecularField {
 pub type ParameterValues = Vec<TypeValue>;
 
 /// Paired with the `struct_type` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Struct {
     pub span: Span,
     pub identifier: String,
@@ -145,7 +159,7 @@ pub struct Struct {
 }
 
 /// Paired with the `struct_field` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum StructField {
     ParameterField(ParameterField),
     MethodAsField(MethodAsField),
@@ -162,7 +176,7 @@ impl From<NamedField> for StructField {
 }
 
 /// Paired with the `switch_type` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Switch {
     pub span: Span,
     pub identifier: Option<String>,
@@ -171,7 +185,7 @@ pub struct Switch {
 }
 
 /// Paired with the `switch_case` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Case {
     pub span: Span,
     // `None` condition means this is a default case.
@@ -181,14 +195,14 @@ pub struct Case {
 }
 
 /// Paired with the `named_field` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NamedField {
     ParameterField(ParameterField),
     MethodAsField(MethodAsField),
 }
 
 /// Paired with the `method_as_field` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MethodAsField {
     pub span: Span,
     pub identifier: String,
@@ -199,7 +213,7 @@ pub struct MethodAsField {
 pub type MethodBody = Vec<Parameter>;
 
 /// Paired with the `parameter_field` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ParameterField {
     pub parameter: Parameter,
     pub keywords: KeywordList,
@@ -218,7 +232,7 @@ impl From<Parameter> for ParameterField {
 pub type KeywordList = Vec<String>;
 
 /// Paired with the `parameter` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Parameter {
     pub span: Span,
     pub data_type: NonMethodDataType,
@@ -238,14 +252,14 @@ impl From<NonMethodType> for Parameter {
 }
 
 /// Paired with the `nonmethod_type` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NonMethodType {
     pub span: Span,
     pub identifier: Option<String>,
     pub data_type: NonMethodDataType,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NonMethodDataType {
     NumericType(NumericType),
     StructType(String),
@@ -253,14 +267,14 @@ pub enum NonMethodDataType {
 }
 
 /// Paired with the `type_with_array` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TypeWithArray {
     pub span: Span,
     pub data_type: ArrayableType,
     pub array_ranges: Vec<ArrayRange>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ArrayableType {
     NumericType(NumericType),
     StructType(String),
@@ -271,14 +285,14 @@ pub enum ArrayableType {
 pub type ArrayExpansion = (TypeValue, u32);
 
 /// Paired with the `type_or_sized_value` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TypeOrSizedValue {
     TypeValue(TypeValue),
     SizedValue(DCToken),
 }
 
 /// Paired with the `type_value` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TypeValue {
     I64(i64),
     Char(char),
@@ -287,7 +301,7 @@ pub enum TypeValue {
 }
 
 /// Paired with the `numeric_type` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NumericType {
     pub span: Span,
     pub base_type: DCTypeEnum,
@@ -340,7 +354,7 @@ pub type NumericRange = std::ops::Range<f64>;
 pub type ArrayRange = std::ops::Range<f64>;
 
 /// Paired with the `sized_type_token` production in the Context Free Grammar.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SizedTypeToken {
     String,
     Blob,
@@ -355,7 +369,7 @@ pub enum SizedTypeToken {
 }
 
 /// Paired with the `char_or_number` production in the Context Free Grammar.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum CharOrNumber {
     Char(char),
     I64(i64),
@@ -369,13 +383,13 @@ pub enum Number {
 }
 
 /// Paired with the `char_or_u16` production in the Context Free Grammar.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum CharOrU16 {
     Char(char),
     U16(u16),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DataType {
     pub span: Span,
     pub token: DCToken,

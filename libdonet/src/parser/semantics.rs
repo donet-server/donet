@@ -31,23 +31,24 @@
 //! [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
 use super::ast;
+use super::error::DCReadError;
 use super::PipelineData;
 use crate::dcfile;
-use crate::globals::ParseError;
+use anyhow::Result;
 
-/// Takes in the [`Abstract Syntax Tree`] from the DC parser and outputs a
-/// [`crate::dcfile::DCFile`] immutable structure with a static lifetime.
+/// Takes in the [`Abstract Syntax Trees`] from the last stage of the pipeline
+/// and outputs a [`crate::dcfile::DCFile`] immutable structure.
 ///
 /// [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
-pub fn semantic_analyzer<'a>(data: PipelineData) -> Result<dcfile::DCFile<'a>, ParseError> {
+pub fn semantic_analyzer<'a>(mut data: PipelineData) -> Result<dcfile::DCFile<'a>, DCReadError> {
     let mut dc_file: dcfile::intermediate::DCFile = dcfile::intermediate::DCFile::default();
 
     // Iterate through all ASTs and add them to our DCFile intermediate object.
-    for ast in data.syntax_trees {
+    for ast in data.syntax_trees.clone() {
         for type_declaration in ast.type_declarations {
             match type_declaration {
                 ast::TypeDeclaration::PythonImport(import) => {
-                    dc_file.add_python_import(import);
+                    dc_file.add_python_import(&mut data, import.clone());
                 }
                 ast::TypeDeclaration::KeywordType(_) => {}
                 ast::TypeDeclaration::StructType(_) => {}
@@ -59,9 +60,15 @@ pub fn semantic_analyzer<'a>(data: PipelineData) -> Result<dcfile::DCFile<'a>, P
                 ast::TypeDeclaration::Ignore => {}
             }
         }
+        data.current_file += 1;
     }
-    // Convert intermediate DC file structure to final immutable DC file structure.
-    Ok(dc_file.into())
+
+    if data.errors_emitted > 0 {
+        Err(DCReadError::SemanticError)
+    } else {
+        // Convert intermediate DC file structure to final immutable DC file structure.
+        Ok(dc_file.into())
+    }
 }
 
 #[cfg(test)]
@@ -98,5 +105,15 @@ mod unit_testing {
 
             assert_eq!(*target_symbols, import.symbols);
         }
+    }
+
+    #[test]
+    #[should_panic]
+    fn redundant_view_suffix() {
+        let dc_string: &str = "
+            from views import Class/AI/OV/OV
+        ";
+
+        let _: dcfile::DCFile = read_dc(dc_string.into()).expect("Should fail.");
     }
 }

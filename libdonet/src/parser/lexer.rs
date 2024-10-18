@@ -250,15 +250,13 @@ pub struct Span {
 
 impl std::fmt::Display for Span {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "--- LEXER SPAN ---")?;
-        write!(f, "Min: ")?;
+        writeln!(f, "--- SPAN ---")?;
+        write!(f, "line: ")?;
+        self.line.fmt(f)?;
+        write!(f, ", min: ")?;
         self.min.fmt(f)?;
-        writeln!(f)?;
-        write!(f, "Max: ")?;
-        self.max.fmt(f)?;
-        writeln!(f)?;
-        write!(f, "Line: ")?;
-        self.line.fmt(f)
+        write!(f, ", max: ")?;
+        self.max.fmt(f)
     }
 }
 

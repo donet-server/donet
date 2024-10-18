@@ -77,8 +77,9 @@ cfg_if! {
         pub mod dctype;
         mod hashgen;
 
+        use anyhow::Result;
         use dcfile::DCFile;
-        use globals::{DCReadError, ParseError};
+        use parser::error::DCReadError;
     }
 }
 
@@ -174,13 +175,7 @@ pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadEr
         }
     }
 
-    let res: Result<DCFile, ParseError> = parser::dcparse_pipeline(pipeline_input);
-
-    if let Ok(res_ok) = res {
-        Ok(res_ok)
-    } else {
-        Err(DCReadError::ParseError(res.unwrap_err()))
-    }
+    parser::dcparse_pipeline(pipeline_input)
 }
 
 /// Front end to the libdonet DC parser pipeline.
@@ -250,11 +245,5 @@ pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadEr
 pub fn read_dc<'a>(input: String) -> Result<DCFile<'a>, DCReadError> {
     let dcparse_input: Vec<parser::InputFile> = vec![("input.dc".to_string(), input)];
 
-    let res: Result<DCFile, ParseError> = parser::dcparse_pipeline(dcparse_input);
-
-    if let Ok(res_ok) = res {
-        Ok(res_ok)
-    } else {
-        Err(DCReadError::ParseError(res.unwrap_err()))
-    }
+    parser::dcparse_pipeline(dcparse_input)
 }

@@ -28,27 +28,31 @@
 //! [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
 pub(crate) mod ast;
+pub mod error;
 pub(crate) mod lexer;
 pub(crate) mod parser;
 mod semantics;
 
 use crate::dcfile::DCFile;
-use crate::globals::ParseError;
+use anyhow::Result;
 use codespan_reporting::diagnostic::Diagnostic;
+use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::files::{self, SimpleFiles};
 use codespan_reporting::term;
-use multimap::MultiMap;
+use error::DCReadError;
 use term::termcolor::{ColorChoice, StandardStream};
 
 /// Data stored in memory throughout the DC parser pipeline.
 ///
 /// Sets up writer and codespan config for rendering diagnostics
 /// to stderr & storing DC files that implement codespan's File trait.
-struct PipelineData<'a> {
+pub(crate) struct PipelineData<'a> {
     _writer: StandardStream,
     _config: term::Config,
+    diagnostics_enabled: bool,
+    errors_emitted: usize,
     pub files: SimpleFiles<&'a str, &'a str>,
-    pub filename_to_id: MultiMap<&'a str, usize>,
+    pub current_file: usize,
     pub syntax_trees: Vec<ast::Root>,
 }
 
@@ -57,8 +61,10 @@ impl<'a> Default for PipelineData<'a> {
         Self {
             _writer: StandardStream::stderr(ColorChoice::Always),
             _config: term::Config::default(),
+            diagnostics_enabled: true,
+            errors_emitted: 0,
             files: SimpleFiles::new(),
-            filename_to_id: MultiMap::default(),
+            current_file: 0,
             syntax_trees: vec![],
         }
     }
@@ -67,6 +73,12 @@ impl<'a> Default for PipelineData<'a> {
 impl<'a> PipelineData<'a> {
     /// Thin wrapper for emitting a codespan diagnostic using `PipelineData` properties.
     pub fn emit_diagnostic(&mut self, diag: Diagnostic<usize>) -> Result<(), files::Error> {
+        if !self.diagnostics_enabled {
+            return Ok(());
+        }
+        if diag.severity == Severity::Error {
+            self.errors_emitted += 1;
+        }
         term::emit(&mut self._writer.lock(), &self._config, &self.files, &diag)
     }
 }
@@ -78,20 +90,39 @@ pub(crate) type InputFile = (String, String);
 /// Runs the entire DC parser pipeline. The input is an array of strings
 /// that represent the input DC files in UTF-8, and the output is the final
 /// DC element tree data structure to be used by Donet.
-pub(crate) fn dcparse_pipeline<'a>(inputs: Vec<InputFile>) -> Result<DCFile<'a>, ParseError> {
+pub(crate) fn dcparse_pipeline<'a>(inputs: Vec<InputFile>) -> Result<DCFile<'a>, DCReadError> {
     let mut pipeline_data: PipelineData<'_> = PipelineData::default();
 
     // Create codespan files for each DC file
     for input in &inputs {
-        let file_id: usize = pipeline_data.files.add(&input.0, &input.1);
-
-        pipeline_data.filename_to_id.insert(&input.0, file_id);
+        let _: usize = pipeline_data.files.add(&input.0, &input.1);
     }
 
     // Create an abstract syntax tree per DC file
     for input in &inputs {
         let lexer: lexer::Lexer<'_> = lexer::Lexer::new(&input.1);
-        let ast: ast::Root = parser::parse(lexer)?;
+
+        let ast: ast::Root = match parser::parse(lexer) {
+            // See issue #19 for why LALR parser cannot return custom errors.
+            Err(err) => {
+                if let Some(parser_err) = err.clone().0 {
+                    let span: lexer::Span = parser_err.1;
+
+                    let diag: error::Diagnostic = error::Diagnostic::error(
+                        pipeline_data.current_file,
+                        span,
+                        error::PipelineError::ParseError(error::ParseError::Error(err.clone())),
+                    );
+
+                    pipeline_data
+                        .emit_diagnostic(diag.into())
+                        .expect("Failed to emit diagnostic.");
+                }
+
+                return Err(DCReadError::ParseError);
+            }
+            Ok(ast) => ast,
+        };
 
         pipeline_data.syntax_trees.push(ast);
     }

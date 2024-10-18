@@ -79,78 +79,19 @@ parser! {
     // ---------- Python-style Imports ---------- //
 
     python_style_import: ast::PythonImport {
-        py_module[(module, module_views)] dclass_import[(class, class_views)] => {
-            // Since we can store multiple module imports with many
-            // symbols each, (via view suffixes on module identifiers)
-            // we store a vector of `PyModuleImport` structs in our result.
-            let mut result = ast::PythonImport {
+        py_module[module] dclass_import[class] => {
+            ast::PythonImport {
                 span: span!(),
-                imports: vec![],
-            };
-
-            /* NOTE: Workaround for not being able to pass Options through
-             * the non-terminal parameters (due to moved values and borrow
-             * checking issues (skill issues)), so we turn the Vectors
-             * (which do implement the Copy trait) into Options here.
-             */
-            let mut optional_module_views: Option<Vec<String>> = None;
-            let mut optional_class_views: Option<Vec<String>> = None;
-
-            if !module_views.is_empty() {
-                optional_module_views = Some(module_views);
+                module,
+                class,
             }
-            if !class_views.is_empty() {
-                optional_class_views = Some(class_views);
-            }
-
-            let mut class_symbols: Vec<String> = vec![class.clone()];
-
-            // Separates "Class/AI/OV" to ["Class", "ClassAI", "ClassOV"]
-            if optional_class_views.is_some() {
-                for class_suffix in &optional_class_views.unwrap() {
-                    class_symbols.push(class.clone() + class_suffix);
-                }
-            }
-
-            // Handles e.g. "from module/AI/OV/UD import DistributedThing/AI/OV/UD"
-            if optional_module_views.is_some() {
-                let mut c_symbol: String = class_symbols.first().unwrap().clone();
-
-                result.imports.push(ast::PyModuleImport {
-                    python_module: module.clone(),
-                    symbols: vec![c_symbol],
-                });
-
-                for (i, module_suffix) in optional_module_views.unwrap().into_iter().enumerate() {
-                    let full_import: String = module.clone() + &module_suffix;
-
-                    if (class_symbols.len() - 1) <= i {
-                        c_symbol = class_symbols.last().unwrap().clone();
-                    } else {
-                        c_symbol = class_symbols.get(i + 1).unwrap().clone();
-                    }
-
-                    result.imports.push(ast::PyModuleImport {
-                        python_module: full_import,
-                        symbols: vec![c_symbol]
-                    });
-                }
-                return result;
-            }
-
-            result.imports.push(ast::PyModuleImport {
-                python_module: module,
-                symbols: class_symbols
-            });
-
-            result
         },
     }
 
     // e.g. "from views ..."
     // e.g. "from game.views.Donut/AI ..."
-    py_module: (String, Vec<String>) {
-        From modules[modules] slash_identifier[views] => {
+    py_module: ast::SymbolWithViews {
+        From modules[modules] view_suffixes[views] => {
 
             // We need to join all module identifiers into one string
             let mut modules_string: String = String::new();
@@ -161,7 +102,12 @@ parser! {
                 }
                 modules_string.push_str(&mod_);
             }
-            (modules_string, views)
+
+            ast::SymbolWithViews {
+                span: span!(),
+                symbol: modules_string,
+                symbol_views: views,
+            }
         }
     }
 
@@ -214,22 +160,37 @@ parser! {
 
     // e.g. "... import DistributedDonut/AI/OV"
     // e.g. "... import *"
-    dclass_import: (String, Vec<String>) {
-        Import Identifier(c) slash_identifier[cs] => (c, cs),
-        Import Star => ("*".to_string(), vec![]),
+    dclass_import: ast::SymbolWithViews {
+        Import Identifier(c) view_suffixes[cs] => ast::SymbolWithViews {
+            span: span!(),
+            symbol: c,
+            symbol_views: cs,
+        },
+        Import Star => ast::SymbolWithViews {
+            span: span!(),
+            symbol: "*".into(),
+            symbol_views: vec![],
+        },
     }
 
     // Bundle up all views of a dclass/module to be imported, into a vector
     // of strings, each corresponding to a view suffix. (AI, UD, OV..)
     //
-    //      slash_identifier -> ε
-    //      slash_identifier -> slash_identifier '/' Identifier
-    slash_identifier: Vec<String> {
+    //      view_suffixes -> ε
+    //      view_suffixes -> view_suffixes '/' Identifier
+    view_suffixes: ast::ViewSuffixes {
         epsilon => vec![],
-        slash_identifier[mut si] ForwardSlash ViewSuffix(id) => {
+        view_suffixes[mut si] ForwardSlash view_suffix[id] => {
             si.push(id);
             si
         }
+    }
+
+    view_suffix: ast::ViewSuffix {
+        ViewSuffix(id) => ast::ViewSuffix {
+            span: span!(),
+            view: id,
+        },
     }
 
     // ---------- Type Definitions ---------- //
