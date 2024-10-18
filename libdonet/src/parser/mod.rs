@@ -61,7 +61,16 @@ impl<'a> Default for PipelineData<'a> {
         Self {
             _writer: StandardStream::stderr(ColorChoice::Always),
             _config: term::Config::default(),
-            diagnostics_enabled: true,
+            diagnostics_enabled: {
+                // Disable diagnostics in unit tests
+                cfg_if! {
+                    if #[cfg(test)] {
+                        false
+                    } else {
+                        true
+                    }
+                }
+            },
             errors_emitted: 0,
             files: SimpleFiles::new(),
             current_file: 0,
@@ -73,11 +82,11 @@ impl<'a> Default for PipelineData<'a> {
 impl<'a> PipelineData<'a> {
     /// Thin wrapper for emitting a codespan diagnostic using `PipelineData` properties.
     pub fn emit_diagnostic(&mut self, diag: Diagnostic<usize>) -> Result<(), files::Error> {
-        if !self.diagnostics_enabled {
-            return Ok(());
-        }
         if diag.severity == Severity::Error {
             self.errors_emitted += 1;
+        }
+        if !self.diagnostics_enabled {
+            return Ok(());
         }
         term::emit(&mut self._writer.lock(), &self._config, &self.files, &diag)
     }

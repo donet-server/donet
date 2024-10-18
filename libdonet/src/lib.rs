@@ -187,7 +187,6 @@ pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadEr
 /// ```rust
 /// use libdonet::dcfile::DCFile;
 /// use libdonet::dclass::DClass;
-/// use libdonet::globals::DCReadError;
 /// use libdonet::read_dc;
 ///
 /// let dc_file = "
@@ -220,7 +219,7 @@ pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadEr
 ///
 /// ";
 ///
-/// let dc_read: Result<DCFile, DCReadError> = read_dc(dc_file.to_owned());
+/// let dc_read = read_dc(dc_file.into());
 ///
 /// if let Ok(dc_file) = dc_read {
 ///     // Print the DC File's 32-bit hash in hexadecimal format.
