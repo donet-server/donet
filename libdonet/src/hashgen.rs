@@ -39,7 +39,7 @@ impl Default for PrimeNumberGenerator {
 }
 
 impl PrimeNumberGenerator {
-    /// Returns the nth prime number. this[0] returns 2, this[1] returns 3;
+    /// Returns the nth prime number. this\[0\] returns 2, this\[1\] returns 3;
     /// successively larger values of n return larger prime numbers, up to the
     /// largest prime number that can be represented in an int.
     pub fn get_prime(&mut self, n: u16) -> u16 {
