@@ -59,7 +59,7 @@ between the different sections and their contained pages.
    gettingstarted/index
    protocol/index
    library
-   dclanguage
+   dclanguage/index
    internal/index
    glossary
    license
