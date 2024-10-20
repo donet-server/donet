@@ -21,3 +21,4 @@ Getting Started
 
     building-linux
     building-windows
+    configuration
