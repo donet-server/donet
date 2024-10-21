@@ -18,7 +18,7 @@
 */
 
 use libdonet::datagram::byte_order;
-use libdonet::datagram::datagram::DatagramIterator;
+use libdonet::datagram::iterator::DatagramIterator;
 
 #[rustfmt::skip]
 static JSON_ESCAPES: [u8; 32] = [
@@ -217,11 +217,10 @@ pub fn decode_to_json(out: &mut String, dgi: &mut DatagramIterator) {
 #[cfg(test)]
 mod unit_testing {
     use super::*;
-    use libdonet::datagram::datagram::Datagram;
-    use libdonet::globals::DgResult;
+    use libdonet::datagram::datagram::{Datagram, DatagramError};
 
     #[test]
-    fn fixmap_fixstr_common_usage() -> DgResult {
+    fn fixmap_fixstr_common_usage() -> Result<(), DatagramError> {
         let mut output: String = String::default();
 
         // Unit tests must not be dependent on other tests, so we cannot
@@ -239,14 +238,14 @@ mod unit_testing {
         dg.add_data("test".as_bytes().to_vec())?; // "test"
         dg.add_data(vec![0xc0])?; // null
 
-        decode_to_json(&mut output, &mut DatagramIterator::new(dg));
+        decode_to_json(&mut output, &mut DatagramIterator::from(dg));
 
         assert_eq!(output.as_str(), "{\"test\": true, \"test\": 3, \"test\": null}");
         Ok(())
     }
 
     #[test]
-    fn fixarray_container_decode() -> DgResult {
+    fn fixarray_container_decode() -> Result<(), DatagramError> {
         let mut output: String = String::default();
         let mut dg: Datagram = Datagram::default();
 
@@ -255,14 +254,14 @@ mod unit_testing {
         dg.add_data(vec![0xc1])?; // unused marker
         dg.add_data(vec![0xe0])?; // negative fixint (-32)
 
-        decode_to_json(&mut output, &mut DatagramIterator::new(dg));
+        decode_to_json(&mut output, &mut DatagramIterator::from(dg));
 
         assert_eq!(output.as_str(), "[false, *INVALID*, -32]");
         Ok(())
     }
 
     #[test]
-    fn fixext_decode() -> DgResult {
+    fn fixext_decode() -> Result<(), DatagramError> {
         let mut output: String = String::default();
         let mut dg: Datagram = Datagram::default();
 
@@ -270,14 +269,14 @@ mod unit_testing {
         dg.add_data(vec![0x1])?; // type
         dg.add_data(vec![0xff])?; // value
 
-        decode_to_json(&mut output, &mut DatagramIterator::new(dg));
+        decode_to_json(&mut output, &mut DatagramIterator::from(dg));
 
         assert_eq!(output.as_str(), "ext(1, \"\\xff\")");
         Ok(())
     }
 
     #[test]
-    fn msgpack_floating_types() -> DgResult {
+    fn msgpack_floating_types() -> Result<(), DatagramError> {
         let mut output: String = String::default();
         let mut dg: Datagram = Datagram::default();
 
@@ -287,7 +286,7 @@ mod unit_testing {
         dg.add_data(vec![0xcb])?; // float64
         dg.add_f64(f64::MAX)?; // value
 
-        decode_to_json(&mut output, &mut DatagramIterator::new(dg));
+        decode_to_json(&mut output, &mut DatagramIterator::from(dg));
 
         assert_eq!(output.as_str(), "[4294967300, 18446744073709552000]");
         Ok(())

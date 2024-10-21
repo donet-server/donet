@@ -99,10 +99,10 @@ pub enum SemanticError {
     RedundantDefault,
 
     // molecular fields
-    #[error("`{0}` is not an atomic field")]
-    ExpectedAtomic(String),
     #[error("`mismatched dc keywords in molecule between `{atom1}` and `{atom2}`")]
     MismatchedKeywords { atom1: String, atom2: String },
+    #[error("`{0}` is not an atomic field")]
+    ExpectedAtomic(String),
 
     // numeric ranges
     #[error("invalid range for type")]

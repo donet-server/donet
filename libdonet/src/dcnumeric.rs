@@ -20,7 +20,8 @@
 //! Structure representing data types supported in the DC
 //! language and enforcing numeric limits through constraints.
 
-use crate::datagram::datagram::{Datagram, DatagramIterator};
+use crate::datagram::datagram::Datagram;
+use crate::datagram::iterator::DatagramIterator;
 use crate::dctype::*;
 use crate::hashgen::DCHashGenerator;
 use std::mem::size_of;
@@ -252,9 +253,9 @@ impl DCNumericType {
             return (false, DCNumber::new_integer(0_i64));
         }
 
-        let mut dg = Datagram::new();
+        let mut dg = Datagram::default();
         let _ = dg.add_data(data);
-        let mut dgi = DatagramIterator::new(dg);
+        let mut dgi: DatagramIterator = dg.into();
 
         match self.base_type.data_type {
             DCTypeEnum::TInt8 => (true, DCNumber::new_integer(i64::from(dgi.read_i8()))),

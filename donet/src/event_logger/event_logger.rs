@@ -22,7 +22,8 @@ use crate::config;
 use crate::event::LoggedEvent;
 use crate::network::udp;
 use chrono::{DateTime, Duration, Local, TimeZone};
-use libdonet::datagram::datagram::{Datagram, DatagramIterator};
+use libdonet::datagram::datagram::Datagram;
+use libdonet::datagram::iterator::DatagramIterator;
 use log::{debug, error, info, trace};
 use regex::Regex;
 use std::io::{Error, ErrorKind, Result};
@@ -82,7 +83,7 @@ impl EventLogger {
             let mut event = LoggedEvent::new("log-opened", "EventLogger");
             event.add("msg", "Log opened upon Event Logger startup.");
 
-            dgi = DatagramIterator::new(event.make_datagram());
+            dgi = event.make_datagram().into();
 
             let ip = core::net::Ipv4Addr::new(127, 0, 0, 1);
             let v4addr = core::net::SocketAddrV4::new(ip, 0);
@@ -97,7 +98,7 @@ impl EventLogger {
             let (len, addr) = self.binding.socket.recv_from(&mut buffer).await?;
             trace!("Got packet from {}.", addr);
 
-            dg = Datagram::new();
+            dg = Datagram::default();
 
             // The buffer is always 1 kb in size. Let's make a slice that
             // contains only the length of the datagram received.
@@ -107,7 +108,7 @@ impl EventLogger {
             dg.add_data(buf_slice)
                 .expect("Failed to create dg from buffer slice!");
 
-            dgi = DatagramIterator::new(dg.clone());
+            dgi = dg.clone().into();
 
             // Check Unix timestamp for next rotation and cycle log if expired.
             let unix_time: i64 = Self::get_unix_time();
@@ -225,7 +226,7 @@ impl EventLogger {
         let mut event = LoggedEvent::new("log-opened", "EventLogger");
         event.add("msg", "Log cycled.");
 
-        *dgi = DatagramIterator::new(event.make_datagram());
+        *dgi = DatagramIterator::from(event.make_datagram());
 
         let ip = core::net::Ipv4Addr::new(127, 0, 0, 1);
         let v4addr = core::net::SocketAddrV4::new(ip, 0);

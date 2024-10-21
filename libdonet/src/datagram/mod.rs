@@ -17,7 +17,7 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-//! This module provides [`datagram::Datagram`] and [`datagram::DatagramIterator`].
+//! This module provides [`datagram::Datagram`] and [`iterator::DatagramIterator`].
 //!
 //! Solutions provided by this module:
 //!
@@ -28,3 +28,4 @@
 
 pub mod byte_order;
 pub mod datagram;
+pub mod iterator;

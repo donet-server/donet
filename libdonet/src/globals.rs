@@ -22,7 +22,6 @@
 
 use cfg_if::cfg_if;
 use std::mem;
-use std::result::Result;
 use strum_macros::EnumIter;
 
 // ---------- Type Definitions --------- //
@@ -35,6 +34,13 @@ pub type Zone = u32;
 pub type DClassId = u16;
 pub type FieldId = u16;
 pub type DCFileHash = u32; // 32-bit hash
+
+/// Impl converting protocol enumerator to u16 (MsgType)
+impl From<Protocol> for MsgType {
+    fn from(value: Protocol) -> Self {
+        value as MsgType
+    }
+}
 
 // ---------- Type Limits ---------- //
 
@@ -70,31 +76,7 @@ cfg_if! {
     }
 }
 
-// ---------- Datagram Feature ---------- //
-
-cfg_if! {
-    if #[cfg(feature = "datagram")] {
-
-        // All possible errors that can be returned by
-        // the Datagram and DatagramIterator implementations.
-        #[derive(Debug, PartialEq)]
-        pub enum DgError {
-            DatagramOverflow,
-            DatagramIteratorEOF,
-            //FieldConstraintViolation,
-        }
-
-        pub type DgResult = Result<(), DgError>;
-        pub type DgBufferResult = Result<DgSizeTag, DgError>;
-    }
-}
-
 // ---------- Network Protocol ---------- //
-
-/// Utility for converting protocol enumerator to u16 (MsgType)
-pub fn msg_type(proto_enum: Protocol) -> MsgType {
-    proto_enum as MsgType
-}
 
 #[repr(u16)] // 16-bit alignment
 #[derive(Debug, Copy, Clone, PartialEq, EnumIter)]
@@ -229,12 +211,12 @@ pub enum Protocol {
 
 #[cfg(test)]
 mod unit_testing {
-    use super::{msg_type, Protocol};
+    use super::*;
 
     #[test]
-    fn test_protocol_to_u16_util() {
-        assert_eq!(msg_type(Protocol::MDRemoveChannel), 9001);
-        assert_eq!(msg_type(Protocol::CAAddInterest), 1200);
-        assert_eq!(msg_type(Protocol::SSDeleteAIObjects), 2009);
+    fn msgtype_from_impl() {
+        assert_eq!(MsgType::from(Protocol::MDRemoveChannel), 9001);
+        assert_eq!(MsgType::from(Protocol::CAAddInterest), 1200);
+        assert_eq!(MsgType::from(Protocol::SSDeleteAIObjects), 2009);
     }
 }
