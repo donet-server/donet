@@ -152,7 +152,7 @@ clippy = custom_target(
   env: cargo_env,
   output: 'clippy',
   command: [
-    cargo_bin, 'clippy', cargo_opts,
+    cargo_bin, 'clippy', '--color=always', cargo_opts,
   ],
 )
 
