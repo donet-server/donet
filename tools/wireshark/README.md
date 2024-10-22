@@ -1,1 +1,1 @@
-### To install this lua script to your local Wireshark installation, read the following guide: [https://www.wireshark.org/docs/wsug_html_chunked/ChPluginFolders.html](https://www.wireshark.org/docs/wsug_html_chunked/ChPluginFolders.html)
+### To install this lua script to your local Wireshark installation, read the following guide: [https://docs.donet-server.org/internal/debugging#network-analysis](https://docs.donet-server.org/internal/debugging#network-analysis)
