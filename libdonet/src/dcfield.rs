@@ -30,24 +30,6 @@ use crate::dctype::DCTypeDefinition;
 use crate::globals;
 use crate::hashgen::*;
 
-/// A field of a Distributed Class. The DCField struct is a base for
-/// struct and dclass fields. In the DC language, there are three types
-/// of field declarations, which are: plain fields, atomic, and molecular.
-#[derive(Debug)]
-pub struct DCField<'dc> {
-    keyword_list: DCKeywordList,
-    dclass: Option<&'dc DClass<'dc>>,
-    strukt: Option<&'dc DCStruct>, // 'strukt' due to reserved keyword
-    field_name: String,
-    field_id: globals::FieldId,
-    field_type: DCTypeDefinition,
-    parent_is_dclass: bool,
-    default_value_stale: bool,
-    has_default_value: bool,
-    default_value: Vec<u8>, // stored as byte array
-    bogus_field: bool,
-}
-
 /// Enumerator representing the 3 types of fields that inherit DC Field,
 /// which can legally be declared within a Distributed Class.
 ///
@@ -87,10 +69,54 @@ macro_rules! has_keyword {
     };
 }
 
+/// A field of a Distributed Class. The DCField struct is a base for
+/// struct and dclass fields. In the DC language, there are three types
+/// of field declarations, which are: plain fields, atomic, and molecular.
+#[derive(Debug)]
+pub struct DCField<'dc> {
+    keyword_list: DCKeywordList,
+    dclass: Option<&'dc DClass<'dc>>,
+    strukt: Option<&'dc DCStruct>, // 'strukt' due to reserved keyword
+    field_name: String,
+    field_id: globals::FieldId,
+    field_type: Option<DCTypeDefinition>,
+    parent_is_dclass: bool,
+    default_value_stale: bool,
+    has_default_value: bool,
+    default_value: Vec<u8>, // stored as byte array
+    bogus_field: bool,
+}
+
+impl<'dc> std::fmt::Display for DCField<'dc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "TODO")
+    }
+}
+
+impl<'dc> DCHash for DCField<'dc> {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        self.keyword_list.generate_hash(hashgen);
+        self.field_type.clone().unwrap().generate_hash(hashgen);
+
+        // It shouldn't be necessary to explicitly add the field ID
+        // to the hash--this is computed based on the relative
+        // position of this field with the other fields, so
+        // adding it explicitly will be redundant.  However,
+        // the field name is significant.
+        hashgen.add_string(self.field_name.clone());
+
+        // The field ID is added to the hash here, since we need to ensure
+        // the hash code comes out different in the DC_MULTIPLE_INHERITANCE case.
+        if globals::DC_MULTIPLE_INHERITANCE {
+            hashgen.add_int(i32::from(self.field_id));
+        }
+    }
+}
+
 impl<'dc> DCField<'dc> {
-    pub(crate) fn new(name: &str, dtype: DCTypeDefinition) -> Self {
+    pub(crate) fn new(name: &str, dtype: Option<DCTypeDefinition>) -> Self {
         Self {
-            keyword_list: DCKeywordList::new(),
+            keyword_list: DCKeywordList::default(),
             dclass: None,
             strukt: None,
             field_name: name.to_owned(),
@@ -130,7 +156,7 @@ impl<'dc> DCField<'dc> {
     }
 
     pub fn set_field_type(&mut self, dtype: DCTypeDefinition) {
-        self.field_type = dtype;
+        self.field_type = Some(dtype);
         self.has_default_value = false;
         self.default_value = vec![];
     }
@@ -219,33 +245,7 @@ impl<'dc> DCField<'dc> {
         has_keyword!(self, "airecv")
     }
 
-    fn refresh_default_value(&self) {
-        todo!()
-    }
-}
-
-impl<'dc> DCHash for DCField<'dc> {
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self.keyword_list.generate_hash(hashgen);
-        self.field_type.generate_hash(hashgen);
-
-        // It shouldn't be necessary to explicitly add the field ID
-        // to the hash--this is computed based on the relative
-        // position of this field with the other fields, so
-        // adding it explicitly will be redundant.  However,
-        // the field name is significant.
-        hashgen.add_string(self.field_name.clone());
-
-        // The field ID is added to the hash here, since we need to ensure
-        // the hash code comes out different in the DC_MULTIPLE_INHERITANCE case.
-        if globals::DC_MULTIPLE_INHERITANCE {
-            hashgen.add_int(i32::from(self.field_id));
-        }
-    }
-}
-
-impl<'dc> std::fmt::Display for DCField<'dc> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn _refresh_default_value(&self) {
         todo!()
     }
 }

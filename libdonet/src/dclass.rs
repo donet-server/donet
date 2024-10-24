@@ -48,6 +48,67 @@ pub struct DClass<'dc> {
     field_id_2_field: FieldId2Field<'dc>,
 }
 
+impl<'dc> std::fmt::Display for DClass<'dc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "dclass ")?;
+        f.write_str(&self.get_name())?;
+
+        if !self.class_parents.is_empty() {
+            write!(f, " : ")?;
+
+            for (i, parent) in self.class_parents.iter().enumerate() {
+                parent.fmt(f)?;
+
+                if i != self.class_parents.len() - 1 {
+                    write!(f, ", ")?;
+                }
+            }
+        }
+        write!(f, " {{  // index ")?;
+        self.class_id.fmt(f)?;
+        writeln!(f)?;
+
+        if let Some(constructor) = self.constructor {
+            constructor.fmt(f)?;
+        }
+
+        for field in &self.fields {
+            match field {
+                ClassField::Atomic(cf) => cf.fmt(f)?,
+                ClassField::Field(cf) => cf.fmt(f)?,
+                ClassField::Molecular(cf) => cf.fmt(f)?,
+            }
+        }
+        writeln!(f, "}};")
+    }
+}
+
+impl<'dc> DCHash for DClass<'dc> {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        hashgen.add_string(self.get_name());
+        hashgen.add_int(self.get_num_parents().try_into().unwrap());
+
+        for parent in &self.class_parents {
+            {
+                hashgen.add_int(i32::from(parent.get_dclass_id()));
+            }
+
+            if let Some(constructor) = &self.constructor {
+                constructor.generate_hash(hashgen);
+            }
+        }
+        hashgen.add_int(self.fields.len().try_into().unwrap());
+
+        for field in &self.fields {
+            match field {
+                ClassField::Field(field) => field.generate_hash(hashgen),
+                ClassField::Atomic(atomic) => atomic.generate_hash(hashgen),
+                ClassField::Molecular(molecular) => molecular.generate_hash(hashgen),
+            }
+        }
+    }
+}
+
 impl<'dc> DClass<'dc> {
     pub fn get_field_by_name(&self, name: &str) -> Option<&'dc ClassField> {
         match self.field_name_2_field.get(name) {
@@ -92,68 +153,9 @@ impl<'dc> DClass<'dc> {
     }
 }
 
-impl<'dc> DCHash for DClass<'dc> {
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        hashgen.add_string(self.get_name());
-        hashgen.add_int(self.get_num_parents().try_into().unwrap());
-
-        for parent in &self.class_parents {
-            {
-                hashgen.add_int(i32::from(parent.get_dclass_id()));
-            }
-
-            if let Some(constructor) = &self.constructor {
-                constructor.generate_hash(hashgen);
-            }
-        }
-        hashgen.add_int(self.fields.len().try_into().unwrap());
-
-        for field in &self.fields {
-            match field {
-                ClassField::Field(field) => field.generate_hash(hashgen),
-                ClassField::Atomic(atomic) => atomic.generate_hash(hashgen),
-                ClassField::Molecular(molecular) => molecular.generate_hash(hashgen),
-            }
-        }
-    }
-}
-
-impl<'dc> std::fmt::Display for DClass<'dc> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "dclass ")?;
-        f.write_str(&self.get_name())?;
-
-        if !self.class_parents.is_empty() {
-            write!(f, " : ")?;
-
-            for (i, parent) in self.class_parents.iter().enumerate() {
-                parent.fmt(f)?;
-
-                if i != self.class_parents.len() - 1 {
-                    write!(f, ", ")?;
-                }
-            }
-        }
-        write!(f, " {{  // index ")?;
-        self.class_id.fmt(f)?;
-        writeln!(f)?;
-
-        if let Some(constructor) = self.constructor {
-            constructor.fmt(f)?;
-        }
-
-        for field in &self.fields {
-            match field {
-                ClassField::Atomic(cf) => cf.fmt(f)?,
-                ClassField::Field(cf) => cf.fmt(f)?,
-                ClassField::Molecular(cf) => cf.fmt(f)?,
-            }
-        }
-        writeln!(f, "}};")
-    }
-}
-
-pub(crate) mod intermediate {
+/// Contains intermediate DClass structure and logic
+/// for semantic analysis as the DClass is being built.
+pub(crate) mod interim {
     use crate::globals;
     use crate::parser::ast;
     use crate::parser::lexer::Span;
@@ -172,12 +174,6 @@ pub(crate) mod intermediate {
     }
 
     impl DClass {
-        /// Performs a semantic analysis on the object and its children.
-        pub fn semantic_analysis(&self) -> Result<(), ()> {
-            // TODO!
-            Ok(())
-        }
-
         #[inline(always)]
         pub fn add_parent(&mut self, parent: Rc<RefCell<DClass>>) {
             self.class_parents.push(parent);

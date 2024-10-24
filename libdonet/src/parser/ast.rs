@@ -276,9 +276,9 @@ pub struct TypeWithArray {
 
 #[derive(Debug, Clone)]
 pub enum ArrayableType {
-    NumericType(NumericType),
-    StructType(String),
-    SizedType(SizedTypeToken),
+    Numeric(NumericType),
+    Struct(String),
+    Sized(SizedTypeToken),
 }
 
 /// Paired with the `array_expansion` production in the Context Free Grammar.
@@ -287,8 +287,8 @@ pub type ArrayExpansion = (TypeValue, u32);
 /// Paired with the `type_or_sized_value` production in the Context Free Grammar.
 #[derive(Debug, Clone)]
 pub enum TypeOrSizedValue {
-    TypeValue(TypeValue),
-    SizedValue(DCToken),
+    Type(TypeValue),
+    Sized(DCToken),
 }
 
 /// Paired with the `type_value` production in the Context Free Grammar.

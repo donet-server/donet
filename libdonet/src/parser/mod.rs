@@ -71,7 +71,7 @@ pub(crate) fn dcparse_pipeline<'a>(inputs: Vec<InputFile>) -> Result<DCFile<'a>,
                         span,
                         pipeline_data.current_stage(),
                         pipeline_data.current_file(),
-                        error::PipelineError::ParseError(error::ParseError::Error(token, msg)),
+                        error::PipelineError::Parser(error::ParseError::Error(token, msg)),
                     );
 
                     pipeline_data
@@ -79,7 +79,7 @@ pub(crate) fn dcparse_pipeline<'a>(inputs: Vec<InputFile>) -> Result<DCFile<'a>,
                         .expect("Failed to emit diagnostic.");
                 }
 
-                return Err(DCReadError::ParseError);
+                return Err(DCReadError::Syntax);
             }
             Ok(ast) => ast,
         };

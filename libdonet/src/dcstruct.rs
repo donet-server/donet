@@ -19,25 +19,19 @@
 
 //! Data model representing a DC Struct element. [NEEDS WORK]
 
-use crate::hashgen::{DCHash, DCHashGenerator};
+use crate::hashgen::*;
 
 #[derive(Debug, Default, PartialEq)]
 pub struct DCStruct {}
 
-impl DCStruct {
-    pub fn new() -> Self {
-        Self::default()
+impl std::fmt::Display for DCStruct {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "TODO")
     }
 }
 
 impl DCHash for DCStruct {
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        () // TODO
-    }
-}
-
-impl std::fmt::Display for DCStruct {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "struct {{}};") // TODO
+    fn generate_hash(&self, _: &mut DCHashGenerator) {
+        // TODO
     }
 }

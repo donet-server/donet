@@ -40,25 +40,25 @@ where
 #[error(transparent)]
 pub enum DCReadError {
     #[error("parser error")]
-    ParseError,
+    Syntax,
     #[error("semantics error")]
-    SemanticError,
-    FileError(#[from] std::io::Error),
+    Semantic,
+    IO(#[from] std::io::Error),
 }
 
 #[derive(Debug, Error)]
 #[error(transparent)]
 pub enum PipelineError {
-    ParseError(#[from] ParseError),
-    SemanticError(#[from] SemanticError),
+    Parser(#[from] ParseError),
+    Semantics(#[from] SemanticError),
 }
 
 impl ToErrorCode for PipelineError {
     fn error_code(&self) -> &str {
         // Get the error code from the underlying error type.
         match self {
-            Self::ParseError(err) => err.error_code(),
-            Self::SemanticError(err) => err.error_code(),
+            Self::Parser(err) => err.error_code(),
+            Self::Semantics(err) => err.error_code(),
         }
     }
 }
@@ -209,19 +209,19 @@ impl Diagnostic {
 }
 
 /// Allows converting our Diagnostic type into a codespan Diagnostic type.
-impl Into<codespan_diag::Diagnostic<usize>> for Diagnostic {
-    fn into(self) -> codespan_diag::Diagnostic<usize> {
-        codespan_diag::Diagnostic::new(self.severity)
-            .with_message(self.error.to_string())
-            .with_code(self.error.error_code())
+impl From<Diagnostic> for codespan_diag::Diagnostic<usize> {
+    fn from(val: Diagnostic) -> codespan_diag::Diagnostic<usize> {
+        codespan_diag::Diagnostic::new(val.severity)
+            .with_message(val.error.to_string())
+            .with_code(val.error.error_code())
             .with_labels(vec![Label::new(
                 LabelStyle::Primary,
-                self.file_id,
-                self.span.min..self.span.max,
+                val.file_id,
+                val.span.min..val.span.max,
             )])
             .with_notes({
                 // If error type is from the Plex parser stage, emit the following notice.
-                if discriminant(&self.stage) == discriminant(&PipelineStage::Parser) {
+                if discriminant(&val.stage) == discriminant(&PipelineStage::Parser) {
                     vec![
                         "Syntax errors are limited. Please see issue #19.".into(),
                         "https://gitlab.com/donet-server/donet/-/issues/19".into(),

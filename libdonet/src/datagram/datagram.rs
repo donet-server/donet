@@ -195,7 +195,9 @@ impl Datagram {
     }
 
     /// Adds raw bytes to the datagram via an unsigned 8-bit integer vector.
+    ///
     /// NOTE: not to be confused with add_blob(), which adds a dclass blob to the datagram.
+    ///
     pub fn add_data(&mut self, mut v: Vec<u8>) -> Result<(), DatagramError> {
         if v.len() > globals::DG_SIZE_MAX.into() {
             // check input to avoid panic at .try_into() below
@@ -309,7 +311,7 @@ impl Datagram {
 #[cfg(test)]
 mod unit_testing {
     use super::*;
-    use crate::globals::Protocol;
+    use crate::protocol::Protocol;
 
     #[test]
     fn add_boolean() {

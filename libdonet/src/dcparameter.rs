@@ -22,7 +22,7 @@
 
 use crate::dcatomic::DCAtomicField;
 use crate::dctype::DCTypeDefinition;
-use crate::hashgen::DCHashGenerator;
+use crate::hashgen::*;
 use std::rc::Rc;
 
 /// Represents the type specification of a parameter within an atomic field.
@@ -34,6 +34,18 @@ pub struct DCParameter<'dc> {
     type_alias: String,
     default_value: Vec<u8>,
     has_default_value: bool,
+}
+
+impl<'dc> std::fmt::Display for DCParameter<'dc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "TODO")
+    }
+}
+
+impl<'dc> DCHash for DCParameter<'dc> {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        self.base_type.generate_hash(hashgen);
+    }
 }
 
 impl<'dc> DCParameter<'dc> {
@@ -49,11 +61,6 @@ impl<'dc> DCParameter<'dc> {
             default_value: vec![],
             has_default_value: false,
         }
-    }
-
-    /// Accumulates the properties of this DC element into the file hash.
-    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self.base_type.generate_hash(hashgen);
     }
 
     #[inline(always)]
@@ -85,11 +92,5 @@ impl<'dc> DCParameter<'dc> {
         self.default_value = v;
         self.has_default_value = true;
         Ok(())
-    }
-}
-
-impl<'dc> std::fmt::Display for DCParameter<'dc> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
     }
 }

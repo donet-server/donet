@@ -20,7 +20,7 @@
 //! Representation of arbitrary and historical
 //! keywords as defined in the DC file.
 
-use crate::hashgen::DCHashGenerator;
+use crate::hashgen::*;
 use multimap::MultiMap;
 use std::rc::Rc;
 
@@ -35,6 +35,14 @@ pub struct DCKeyword {
     // This flag is only kept for historical reasons, so we can
     // preserve the DC file's hash code if no new flags are in use.
     historical_flag: HistoricalFlag,
+}
+
+impl std::fmt::Display for DCKeyword {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "keyword ")?;
+        f.write_str(&self.name)?;
+        writeln!(f, ";")
+    }
 }
 
 impl DCKeyword {
@@ -75,14 +83,6 @@ impl DCKeyword {
     }
 }
 
-impl std::fmt::Display for DCKeyword {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "keyword ")?;
-        f.write_str(&self.name)?;
-        writeln!(f, ";")
-    }
-}
-
 /// A map of key/value pairs mapping keyword names to DCKeyword struct pointers.
 pub type KeywordName2Keyword = MultiMap<String, Rc<DCKeyword>>;
 
@@ -114,13 +114,28 @@ impl Default for DCKeywordList {
     }
 }
 
-impl DCKeywordList {
-    pub fn new() -> Self {
-        Self::default()
-    }
+impl std::cmp::PartialEq for DCKeywordList {
+    fn eq(&self, other: &Self) -> bool {
+        let target_kw_map: KeywordName2Keyword = other._get_keywords_by_name_map();
 
-    /// Accumulates the properties of this DC element into the file hash.
-    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        // If our maps are different sizes, they are already not the same.
+        if self.kw_name_2_keyword.len() != target_kw_map.len() {
+            return false;
+        }
+
+        // Since MultiMap does not implement the Eq trait,
+        // we have to iterate through both maps and compare.
+        for key in self.kw_name_2_keyword.keys() {
+            if !target_kw_map.contains_key(key) {
+                return false;
+            }
+        }
+        true // no differences found
+    }
+}
+
+impl DCHash for DCKeywordList {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         if self.flags != !0 {
             // All of the flags are historical flags only, so add just the flags
             // bitmask to keep the hash code the same as it has historically been.
@@ -133,7 +148,9 @@ impl DCKeywordList {
             }
         }
     }
+}
 
+impl DCKeywordList {
     pub fn add_keyword(&mut self, keyword: DCKeyword) -> Result<(), ()> {
         let kw_name: String = keyword.name.clone(); // avoid moving 'name'
 
@@ -171,17 +188,11 @@ impl DCKeywordList {
     }
 
     pub fn get_keyword(&self, index: usize) -> Option<Rc<DCKeyword>> {
-        match self.keywords.get(index) {
-            Some(pointer) => Some(Rc::clone(pointer)), // make a new rc pointer
-            None => None,
-        }
+        self.keywords.get(index).map(Rc::clone)
     }
 
     pub fn get_keyword_by_name(&self, name: String) -> Option<Rc<DCKeyword>> {
-        match self.kw_name_2_keyword.get(&name) {
-            Some(pointer) => Some(Rc::clone(pointer)),
-            None => None,
-        }
+        self.kw_name_2_keyword.get(&name).map(Rc::clone)
     }
 
     /// Returns a clone of this object's keyword array.
@@ -192,25 +203,6 @@ impl DCKeywordList {
     /// Returns a clone of this object's keyword name map.
     pub fn _get_keywords_by_name_map(&self) -> KeywordName2Keyword {
         self.kw_name_2_keyword.clone()
-    }
-
-    /// Compares this Keyword List with another DCKeywordList object.
-    pub fn compare_with(&self, target: &DCKeywordList) -> bool {
-        let target_kw_map: KeywordName2Keyword = target._get_keywords_by_name_map();
-
-        // If our maps are different sizes, they are already not the same.
-        if self.kw_name_2_keyword.len() != target_kw_map.len() {
-            return false;
-        }
-
-        // Since MultiMap does not implement the Eq trait,
-        // we have to iterate through both maps and compare.
-        for key in self.kw_name_2_keyword.keys() {
-            if !target_kw_map.contains_key(key) {
-                return false;
-            }
-        }
-        true // no differences found
     }
 
     /// Overwrites the DCKeywords of this list with the target's DCKeywords.

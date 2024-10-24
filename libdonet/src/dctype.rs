@@ -21,8 +21,7 @@
 //! and developer-defined type alias definitions.
 
 use crate::globals::DgSizeTag;
-use crate::hashgen::DCHashGenerator;
-use strum_macros::EnumIs;
+use crate::hashgen::*;
 
 /// The DCTypeEnum variants have assigned u8 values
 /// to keep compatibility with Astron's DC hash inputs.
@@ -44,7 +43,6 @@ pub enum DCTypeEnum {
 
     // Complex DC Types
     TStruct = 17, TMethod = 18,
-    TInvalid = 21,
 }
 
 impl std::fmt::Display for DCTypeEnum {
@@ -71,7 +69,6 @@ impl std::fmt::Display for DCTypeEnum {
             Self::TVarArray => write!(f, "var array"),
             Self::TStruct => write!(f, "struct"),
             Self::TMethod => write!(f, "method"),
-            Self::TInvalid => write!(f, "invalid"),
         }
     }
 }
@@ -83,40 +80,41 @@ pub struct DCTypeDefinition {
     pub size: DgSizeTag,
 }
 
-impl Default for DCTypeDefinition {
-    fn default() -> Self {
+/// Creates a new DCTypeDefinition struct with a DC type set.
+impl From<DCTypeEnum> for DCTypeDefinition {
+    fn from(value: DCTypeEnum) -> Self {
         Self {
             alias: None,
-            data_type: DCTypeEnum::TInvalid,
+            data_type: value,
             size: 0_u16,
         }
     }
 }
 
-impl DCTypeDefinition {
-    /// Creates a new empty DCTypeDefinition struct.
-    pub(crate) fn new() -> Self {
-        Self::default()
-    }
-
-    /// Creates a new DCTypeDefinition struct with a DC type set.
-    pub fn new_with_type(dt: DCTypeEnum) -> Self {
-        Self {
-            alias: None,
-            data_type: dt,
-            size: 0_u16,
+impl std::fmt::Display for DCTypeDefinition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "typedef ")?;
+        self.data_type.fmt(f)?;
+        if self.has_alias() {
+            write!(f, " ")?;
+            self.alias.clone().unwrap().fmt(f)?;
         }
+        write!(f, ";")?;
+        writeln!(f)
     }
+}
 
-    /// Accumulates the properties of this DC element into the file hash.
-    pub fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+impl DCHash for DCTypeDefinition {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         hashgen.add_int(i32::from(self.data_type.clone() as u8));
 
         if self.alias.is_some() {
             hashgen.add_string(self.alias.clone().unwrap())
         }
     }
+}
 
+impl DCTypeDefinition {
     pub fn get_dc_type(&self) -> DCTypeEnum {
         self.data_type.clone()
     }
@@ -149,83 +147,55 @@ impl DCTypeDefinition {
     }
 }
 
-impl std::fmt::Display for DCTypeDefinition {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "typedef ")?;
-        self.data_type.fmt(f)?;
-        if self.has_alias() {
-            write!(f, " ")?;
-            self.alias.clone().unwrap().fmt(f)?;
-        }
-        write!(f, ";")?;
-        writeln!(f)
-    }
+#[derive(Copy, Clone, PartialEq)] // required for unwrapping when in an option type
+pub enum DCNumber {
+    Integer(i64),
+    UnsignedInteger(u64),
+    FloatingPoint(f64),
 }
 
-// ---------- DC Number ---------- //
-
-#[rustfmt::skip]
-#[derive(Clone, PartialEq, EnumIs)]
-pub enum DCNumberType {
-    None = 0, Int, UInt, Float,
-}
-
-#[repr(C)]
-#[derive(Copy, Clone)] // required for unwrapping when in an option type
-pub union DCNumberValueUnion {
-    pub integer: i64,
-    pub unsigned_integer: u64,
-    pub floating_point: f64,
-}
-
-#[derive(Clone)]
-pub struct DCNumber {
-    pub number_type: DCNumberType,
-    pub value: DCNumberValueUnion,
-}
-
-// We have to manually implement the 'PartialEq' trait
-// due to the usage of a union data type.
-impl PartialEq for DCNumber {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.number_type == rhs.number_type
-    }
-}
-
-impl Default for DCNumber {
-    fn default() -> Self {
-        Self {
-            number_type: DCNumberType::None,
-            value: DCNumberValueUnion { integer: 0_i64 },
+impl From<DCNumber> for i32 {
+    fn from(value: DCNumber) -> i32 {
+        match value {
+            DCNumber::Integer(x) => x as i32,
+            DCNumber::UnsignedInteger(x) => x as i32,
+            DCNumber::FloatingPoint(x) => x as i32,
         }
     }
 }
 
-impl DCNumber {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn new_integer(num: i64) -> Self {
-        Self {
-            number_type: DCNumberType::Int,
-            value: DCNumberValueUnion { integer: num },
+/// Converts a `DCNumber` to an `i64` primitive type.
+///
+/// Panics if `DCNumber` is not of variant `Integer`.
+impl From<DCNumber> for i64 {
+    fn from(value: DCNumber) -> Self {
+        match value {
+            DCNumber::Integer(x) => x,
+            _ => panic!("DCNumber is not of variant `Integer`."),
         }
     }
+}
 
-    pub fn new_unsigned_integer(num: u64) -> Self {
-        Self {
-            number_type: DCNumberType::UInt,
-            value: DCNumberValueUnion {
-                unsigned_integer: num,
-            },
+/// Converts a `DCNumber` to an `u64` primitive type.
+///
+/// Panics if `DCNumber` is not of variant `UnsignedInteger`.
+impl From<DCNumber> for u64 {
+    fn from(value: DCNumber) -> Self {
+        match value {
+            DCNumber::UnsignedInteger(x) => x,
+            _ => panic!("DCNumber is not of variant `UnsignedInteger`."),
         }
     }
+}
 
-    pub fn new_floating_point(num: f64) -> Self {
-        Self {
-            number_type: DCNumberType::Float,
-            value: DCNumberValueUnion { floating_point: num },
+/// Converts a `DCNumber` to an `f64` primitive type.
+///
+/// Panics if `DCNumber` is not of variant `FloatingPoint`.
+impl From<DCNumber> for f64 {
+    fn from(value: DCNumber) -> Self {
+        match value {
+            DCNumber::FloatingPoint(x) => x,
+            _ => panic!("DCNumber is not of variant `FloatingPoint`."),
         }
     }
 }

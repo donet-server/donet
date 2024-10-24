@@ -22,6 +22,7 @@
 use super::datagram::Datagram;
 use crate::datagram::byte_order as endianness;
 use crate::globals;
+use crate::protocol::*;
 use std::mem;
 use strum::IntoEnumIterator;
 use thiserror::Error;
@@ -242,7 +243,7 @@ impl DatagramIterator {
     /// Returns the datagram's message type. Does not advance the index.
     /// Useful for if index needs to be saved or if next field isn't msg type.
     /// If iterating through a fresh datagram, use read_u16.
-    pub fn read_msg_type(&mut self) -> globals::Protocol {
+    pub fn read_msg_type(&mut self) -> Protocol {
         let start_index: usize = self.index;
 
         self.index = 1
@@ -252,7 +253,7 @@ impl DatagramIterator {
         let msg_type: globals::MsgType = self.read_u16(); // read message type
         self.index = start_index; // do not advance dgi index
 
-        for message in globals::Protocol::iter() {
+        for message in Protocol::iter() {
             let msg_id: globals::MsgType = message.into();
             if msg_type == msg_id {
                 return message;
@@ -267,7 +268,6 @@ impl DatagramIterator {
 mod unit_testing {
     use super::*;
     use crate::datagram::datagram::DatagramError;
-    use crate::globals::Protocol;
 
     #[test]
     #[rustfmt::skip]

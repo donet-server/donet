@@ -36,8 +36,8 @@ pub struct DCPythonImport {
     pub symbols: Vec<String>,
 }
 
-impl From<intermediate::PythonImport> for DCPythonImport {
-    fn from(value: intermediate::PythonImport) -> Self {
+impl From<interim::PythonImport> for DCPythonImport {
+    fn from(value: interim::PythonImport) -> Self {
         Self {
             module: value.module,
             symbols: value.symbols,
@@ -84,30 +84,85 @@ pub struct DCFile<'dc> {
     inherited_fields_stale: bool,
 }
 
-impl<'dc> DCFile<'dc> {
-    pub(crate) fn new(
-        structs: Vec<DCStruct>,
-        dclasses: Vec<DClass<'dc>>,
-        imports: Vec<DCPythonImport>,
-        keywords: Vec<DCKeyword>,
-        type_defs: Vec<DCTypeDefinition>,
-        field_id_2_field: Vec<&'dc DCField<'dc>>,
-        all_object_valid: bool,
-        inherited_fields_stale: bool,
-    ) -> Self {
+impl<'dc> From<interim::DCFile> for DCFile<'dc> {
+    fn from(value: interim::DCFile) -> Self {
+        let mut imports: Vec<DCPythonImport> = vec![];
+
+        for imp in value.imports {
+            imports.push(imp.into());
+        }
+
         Self {
             baked_hash: 0_u32,
-            structs,
-            dclasses,
+            structs: vec![],
+            dclasses: vec![],
             imports,
-            keywords,
-            type_defs,
-            field_id_2_field,
-            all_object_valid,
-            inherited_fields_stale,
+            keywords: vec![],
+            type_defs: vec![],
+            field_id_2_field: vec![],
+            all_object_valid: true,
+            inherited_fields_stale: false,
         }
     }
+}
 
+impl<'dc> std::fmt::Display for DCFile<'dc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Print Python-style imports
+        if !self.imports.is_empty() {
+            for import in &self.imports {
+                import.fmt(f)?;
+                writeln!(f)?;
+            }
+            writeln!(f)?;
+        }
+        // Print type definitions
+        for type_def in &self.type_defs {
+            type_def.fmt(f)?;
+            writeln!(f)?;
+        }
+        // Print Keyword definitions
+        for kw in &self.keywords {
+            kw.fmt(f)?;
+            writeln!(f)?;
+        }
+        // Print Structs
+        for strukt in &self.structs {
+            strukt.fmt(f)?;
+            writeln!(f)?;
+        }
+        // Print DClasses
+        for dclass in &self.dclasses {
+            dclass.fmt(f)?;
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
+
+impl<'dc> DCHash for DCFile<'dc> {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        if globals::DC_VIRTUAL_INHERITANCE {
+            // Just to change the hash output in this case.
+            if globals::DC_SORT_INHERITANCE_BY_FILE {
+                hashgen.add_int(1);
+            } else {
+                hashgen.add_int(2);
+            }
+        }
+        hashgen.add_int(self.get_num_dclasses().try_into().unwrap());
+
+        for strukt in &self.structs {
+            strukt.generate_hash(hashgen);
+        }
+
+        for dclass in &self.dclasses {
+            dclass.generate_hash(hashgen);
+        }
+    }
+}
+
+impl<'dc> DCFile<'dc> {
     /// Returns a 32-bit hash index associated with this file.  This number is
     /// guaranteed to be consistent if the contents of the file have not changed,
     /// and it is very likely to be different if the contents of the file do change.
@@ -183,74 +238,6 @@ impl<'dc> DCFile<'dc> {
     }
 }
 
-impl<'dc> DCHash for DCFile<'dc> {
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        if globals::DC_VIRTUAL_INHERITANCE {
-            // Just to change the hash output in this case.
-            if globals::DC_SORT_INHERITANCE_BY_FILE {
-                hashgen.add_int(1);
-            } else {
-                hashgen.add_int(2);
-            }
-        }
-        hashgen.add_int(self.get_num_dclasses().try_into().unwrap());
-
-        for strukt in &self.structs {
-            strukt.generate_hash(hashgen);
-        }
-
-        for dclass in &self.dclasses {
-            dclass.generate_hash(hashgen);
-        }
-    }
-}
-
-impl<'dc> From<intermediate::DCFile> for DCFile<'dc> {
-    fn from(value: intermediate::DCFile) -> Self {
-        let mut imports: Vec<DCPythonImport> = vec![];
-
-        for imp in value.imports {
-            imports.push(imp.into());
-        }
-        // TODO!
-        Self::new(vec![], vec![], imports, vec![], vec![], vec![], true, false)
-    }
-}
-
-impl<'dc> std::fmt::Display for DCFile<'dc> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // Print Python-style imports
-        if !self.imports.is_empty() {
-            for import in &self.imports {
-                import.fmt(f)?;
-                writeln!(f)?;
-            }
-            writeln!(f)?;
-        }
-        // Print type definitions
-        for type_def in &self.type_defs {
-            type_def.fmt(f)?;
-            writeln!(f)?;
-        }
-        // Print Keyword definitions
-        for kw in &self.keywords {
-            kw.fmt(f)?;
-            writeln!(f)?;
-        }
-        // Print Structs
-        for strukt in &self.structs {
-            strukt.fmt(f)?;
-            writeln!(f)?;
-        }
-        // Print DClasses
-        for dclass in &self.dclasses {
-            dclass.fmt(f)?;
-            writeln!(f)?;
-        }
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod unit_testing {
     use super::*;
@@ -281,7 +268,18 @@ mod unit_testing {
                 symbols: vec!["Class".to_string(), "ClassAI".to_string(), "ClassOV".to_string()],
             },
         ];
-        let dcf: DCFile<'_> = DCFile::new(vec![], vec![], imports, vec![], vec![], vec![], false, false);
+
+        let dcf: DCFile<'_> = DCFile {
+            baked_hash: 0_u32,
+            structs: vec![],
+            dclasses: vec![],
+            imports,
+            keywords: vec![],
+            type_defs: vec![],
+            field_id_2_field: vec![],
+            all_object_valid: false,
+            inherited_fields_stale: false,
+        };
 
         assert_eq!(
             dcf.to_string(),
@@ -297,9 +295,9 @@ mod unit_testing {
 
 /// Contains intermediate DC file structure and logic
 /// for semantic analysis as the DC file is being built.
-pub(crate) mod intermediate {
+pub(crate) mod interim {
     use super::*;
-    use crate::dclass::intermediate::DClass;
+    use crate::dclass::interim::DClass;
     use crate::parser::error::{Diagnostic, SemanticError};
     use crate::parser::pipeline::PipelineData;
     use anyhow::Result;
@@ -421,7 +419,7 @@ pub(crate) mod intermediate {
         }
 
         pub fn add_keyword(&mut self, _keyword: DCKeyword) {
-            () // TODO!
+            // TODO!
         }
 
         pub fn add_typedef(&mut self, _name: String) -> Result<(), ()> {

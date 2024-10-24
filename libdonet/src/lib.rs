@@ -54,6 +54,7 @@
 #![deny(unused_extern_crates)]
 
 pub mod globals;
+pub mod protocol;
 
 #[macro_use]
 extern crate cfg_if;
@@ -148,7 +149,7 @@ pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadEr
                     "Failed to get filename from path because\
                     path terminates in '..'.",
                 );
-                return Err(DCReadError::FileError(filename_err));
+                return Err(DCReadError::IO(filename_err));
             }
         }
 
@@ -166,12 +167,12 @@ pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadEr
 
             if let Err(res_err) = res {
                 // DC file content may not be in proper UTF-8 encoding.
-                return Err(DCReadError::FileError(res_err));
+                return Err(DCReadError::IO(res_err));
             }
             pipeline_input.push(in_file);
         } else {
             // Failed to open one of the DC files. (most likely permission error)
-            return Err(DCReadError::FileError(io_result.unwrap_err()));
+            return Err(DCReadError::IO(io_result.unwrap_err()));
         }
     }
 

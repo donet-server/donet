@@ -23,7 +23,6 @@
 use crate::dcfield::DCField;
 use crate::dckeyword::DCKeywordList;
 use crate::dcparameter::DCParameter;
-use crate::dctype::DCTypeDefinition;
 use crate::hashgen::*;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -37,36 +36,9 @@ pub struct DCAtomicField<'dc> {
     elements: Vec<Rc<RefCell<DCParameter<'dc>>>>,
 }
 
-impl<'dc> DCAtomicField<'dc> {
-    pub(crate) fn new(name: &str, bogus_field: bool) -> Self {
-        Self {
-            base_field: {
-                let mut new_dcfield = DCField::new(name, DCTypeDefinition::new());
-
-                new_dcfield.set_bogus_field(bogus_field);
-                new_dcfield
-            },
-            elements: vec![],
-        }
-    }
-
-    pub fn get_num_elements(&self) -> usize {
-        self.elements.len()
-    }
-
-    pub fn get_element(&self, index: usize) -> Option<Rc<RefCell<DCParameter<'dc>>>> {
-        match self.elements.get(index) {
-            Some(pointer) => Some(Rc::clone(pointer)), // make a new rc pointer
-            None => None,
-        }
-    }
-
-    pub fn set_keyword_list(&mut self, kw_list: DCKeywordList) {
-        self.base_field.set_field_keyword_list(kw_list)
-    }
-
-    pub fn add_element(&mut self, element: DCParameter<'dc>) {
-        self.elements.push(Rc::new(RefCell::new(element)));
+impl<'dc> std::fmt::Display for DCAtomicField<'dc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "TODO")
     }
 }
 
@@ -85,8 +57,34 @@ impl<'dc> DCHash for DCAtomicField<'dc> {
     }
 }
 
-impl<'dc> std::fmt::Display for DCAtomicField<'dc> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "TODO")
+impl<'dc> DCAtomicField<'dc> {
+    pub(crate) fn new(name: &str, bogus_field: bool) -> Self {
+        Self {
+            base_field: {
+                let mut new_dcfield = DCField::new(name, None);
+
+                new_dcfield.set_bogus_field(bogus_field);
+                new_dcfield
+            },
+            elements: vec![],
+        }
+    }
+
+    #[inline(always)]
+    pub fn get_num_elements(&self) -> usize {
+        self.elements.len()
+    }
+
+    #[inline(always)]
+    pub fn get_element(&self, index: usize) -> Option<Rc<RefCell<DCParameter<'dc>>>> {
+        self.elements.get(index).map(Rc::clone)
+    }
+
+    pub fn set_keyword_list(&mut self, kw_list: DCKeywordList) {
+        self.base_field.set_field_keyword_list(kw_list)
+    }
+
+    pub fn add_element(&mut self, element: DCParameter<'dc>) {
+        self.elements.push(Rc::new(RefCell::new(element)));
     }
 }

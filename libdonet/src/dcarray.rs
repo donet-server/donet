@@ -21,65 +21,80 @@
 //! type that stores a list of values of the same data type.
 
 use crate::dcnumeric::DCNumericRange;
-use crate::dctype::{DCTypeDefinition, DCTypeEnum};
+use crate::dctype::{DCNumber, DCTypeDefinition, DCTypeEnum};
 use crate::hashgen::*;
 
 pub struct DCArrayType {
-    base_type: DCTypeDefinition,
+    base_type: Option<DCTypeDefinition>,
     element_type: Option<DCTypeDefinition>,
     array_size: u16,
     array_range: Option<DCNumericRange>,
 }
 
+impl DCHash for DCArrayType {
+    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
+        self.base_type.clone().unwrap().generate_hash(hashgen);
+
+        if let Some(element_type) = self.element_type.clone() {
+            element_type.generate_hash(hashgen);
+        }
+        if self.has_range() {
+            hashgen.add_int(self.array_range.as_ref().unwrap().min.into())
+        } else {
+            hashgen.add_int(i32::from(self.array_size))
+        }
+    }
+}
+
 impl DCArrayType {
     pub fn new(element_type: Option<DCTypeDefinition>, size: Option<DCNumericRange>) -> Self {
         let mut new_array_type: Self = Self {
-            base_type: DCTypeDefinition::new(),
+            base_type: None,
             element_type,
             array_size: 0_u16,
             array_range: size,
         };
 
         if new_array_type.array_range.is_none() {
-            new_array_type.array_range = Some(DCNumericRange::new());
+            new_array_type.array_range = None;
             let range: &mut DCNumericRange = new_array_type.array_range.as_mut().unwrap();
-            range.min.value.unsigned_integer = 0_u64;
-            range.max.value.unsigned_integer = u64::MAX;
+
+            range.min = DCNumber::UnsignedInteger(0_u64);
+            range.max = DCNumber::UnsignedInteger(u64::MAX);
         } else {
             let range: &mut DCNumericRange = new_array_type.array_range.as_mut().unwrap();
 
             if range.min == range.max {
-                // unsafe block required due to access of union data type
-                unsafe {
-                    new_array_type.array_size = range.min.value.unsigned_integer.try_into().unwrap();
-                }
+                new_array_type.array_size = u64::from(range.min) as u16;
             }
         }
 
         if new_array_type.element_type.is_some() {
             let e_type: DCTypeDefinition = new_array_type.element_type.clone().unwrap();
 
-            if !e_type.is_variable_length() && new_array_type.base_type.size > 0 {
-                new_array_type.base_type.data_type = DCTypeEnum::TArray;
-                new_array_type.base_type.size = new_array_type.array_size * e_type.get_size();
+            let new_base_type: &mut DCTypeDefinition = new_array_type.base_type.as_mut().unwrap();
+
+            if !e_type.is_variable_length() && new_base_type.size > 0 {
+                new_base_type.data_type = DCTypeEnum::TArray;
+                new_base_type.size = new_array_type.array_size * e_type.get_size();
             } else {
-                new_array_type.base_type.data_type = DCTypeEnum::TVarArray;
-                new_array_type.base_type.size = 0_u16;
+                new_base_type.data_type = DCTypeEnum::TVarArray;
+                new_base_type.size = 0_u16;
             }
 
             match e_type.get_dc_type() {
                 DCTypeEnum::TChar => {
-                    if new_array_type.base_type.data_type == DCTypeEnum::TArray {
-                        new_array_type.base_type.data_type = DCTypeEnum::TString;
+                    if new_base_type.data_type == DCTypeEnum::TArray {
+                        new_base_type.data_type = DCTypeEnum::TString;
                     } else {
-                        new_array_type.base_type.data_type = DCTypeEnum::TVarString;
+                        new_base_type.data_type = DCTypeEnum::TVarString;
                     }
                 }
                 DCTypeEnum::TUInt8 => {
-                    if new_array_type.base_type.data_type == DCTypeEnum::TArray {
-                        new_array_type.base_type.data_type = DCTypeEnum::TBlob;
+                    if new_base_type.data_type == DCTypeEnum::TArray {
+                        new_base_type.data_type = DCTypeEnum::TBlob;
                     } else {
-                        new_array_type.base_type.data_type = DCTypeEnum::TVarBlob;
+                        new_base_type.data_type = DCTypeEnum::TVarBlob;
                     }
                 }
                 _ => {}
@@ -88,42 +103,23 @@ impl DCArrayType {
         new_array_type
     }
 
+    #[inline(always)]
     pub fn get_array_size(&self) -> u16 {
-        self.base_type.size
+        self.base_type.clone().unwrap().size
     }
 
+    #[inline(always)]
     pub fn get_element_type(&self) -> Option<DCTypeDefinition> {
         self.element_type.clone()
     }
 
+    #[inline(always)]
     pub fn get_range(&self) -> Option<DCNumericRange> {
         self.array_range.clone()
     }
 
+    #[inline(always)]
     pub fn has_range(&self) -> bool {
         self.array_range.is_some()
-    }
-}
-
-impl DCHash for DCArrayType {
-    fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self.base_type.generate_hash(hashgen);
-
-        if let Some(element_type) = self.element_type.clone() {
-            element_type.generate_hash(hashgen);
-        } else {
-            // Since we don't have an element type (representing
-            // an 'invalid' element type, if comparing to Astron src)
-            // we just make a new empty DCTypeDefinition, since that
-            // is what Astron's DistributedType::invalid equals to.
-            let empty_dc_type: DCTypeDefinition = DCTypeDefinition::new();
-            empty_dc_type.generate_hash(hashgen);
-        }
-        if self.has_range() {
-            // TODO!
-            //hashgen.add_int(self.array_range.unwrap().min.value.integer)
-        } else {
-            hashgen.add_int(i32::from(self.array_size))
-        }
     }
 }

@@ -29,7 +29,8 @@
     clippy::ptr_arg,
     clippy::redundant_closure_call,
     clippy::enum_variant_names,
-    clippy::let_unit_value
+    clippy::let_unit_value,
+    clippy::unused_unit // non-terminals that return void require `()`
 )]
 
 use super::ast;
@@ -579,7 +580,7 @@ parser! {
         numeric_type[nt] OpenBrackets array_range[ar] CloseBrackets => {
             ast::TypeWithArray {
                 span: span!(),
-                data_type: ast::ArrayableType::NumericType(nt),
+                data_type: ast::ArrayableType::Numeric(nt),
                 array_ranges: match ar {
                     Some(range) => vec![range],
                     None => vec![],
@@ -589,7 +590,7 @@ parser! {
         Identifier(id) OpenBrackets array_range[ar] CloseBrackets => {
             ast::TypeWithArray {
                 span: span!(),
-                data_type: ast::ArrayableType::StructType(id),
+                data_type: ast::ArrayableType::Struct(id),
                 array_ranges: match ar {
                     Some(range) => vec![range],
                     None => vec![],
@@ -613,13 +614,13 @@ parser! {
     builtin_array_type: ast::TypeWithArray {
         sized_type_token[st] => ast::TypeWithArray {
             span: span!(),
-            data_type: ast::ArrayableType::SizedType(st),
+            data_type: ast::ArrayableType::Sized(st),
             array_ranges: vec![],
         },
         sized_type_token[st] OpenParenthesis array_range[ar] CloseParenthesis => {
             ast::TypeWithArray {
                 span: span!(),
-                data_type: ast::ArrayableType::SizedType(st),
+                data_type: ast::ArrayableType::Sized(st),
                 array_ranges: match ar {
                     Some(range) => vec![range],
                     None => vec![],
