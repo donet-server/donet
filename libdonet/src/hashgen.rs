@@ -21,8 +21,9 @@
 
 use crate::globals::{DCFileHash, MAX_PRIME_NUMBERS};
 
-/// Trait shared by all DC element structures to generate the DC file hash.
-pub trait DCHash {
+/// Trait shared by all DC element structures to generate the DC file hash
+/// using the same hashing method as the original DClass library from Panda.
+pub trait LegacyDCHash {
     /// Accumulates the properties of this DC element into the file hash.
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);
 }

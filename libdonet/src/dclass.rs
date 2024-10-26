@@ -83,7 +83,7 @@ impl<'dc> std::fmt::Display for DClass<'dc> {
     }
 }
 
-impl<'dc> DCHash for DClass<'dc> {
+impl<'dc> LegacyDCHash for DClass<'dc> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         hashgen.add_string(self.get_name());
         hashgen.add_int(self.get_num_parents().try_into().unwrap());

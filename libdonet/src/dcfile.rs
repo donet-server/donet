@@ -140,7 +140,7 @@ impl<'dc> std::fmt::Display for DCFile<'dc> {
     }
 }
 
-impl<'dc> DCHash for DCFile<'dc> {
+impl<'dc> LegacyDCHash for DCFile<'dc> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         if globals::DC_VIRTUAL_INHERITANCE {
             // Just to change the hash output in this case.

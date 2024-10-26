@@ -93,7 +93,7 @@ impl<'dc> std::fmt::Display for DCField<'dc> {
     }
 }
 
-impl<'dc> DCHash for DCField<'dc> {
+impl<'dc> LegacyDCHash for DCField<'dc> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.keyword_list.generate_hash(hashgen);
         self.field_type.clone().unwrap().generate_hash(hashgen);
@@ -114,22 +114,6 @@ impl<'dc> DCHash for DCField<'dc> {
 }
 
 impl<'dc> DCField<'dc> {
-    pub(crate) fn new(name: &str, dtype: Option<DCTypeDefinition>) -> Self {
-        Self {
-            keyword_list: DCKeywordList::default(),
-            dclass: None,
-            strukt: None,
-            field_name: name.to_owned(),
-            field_id: 0_u16,
-            field_type: dtype,
-            parent_is_dclass: false,
-            default_value_stale: false,
-            has_default_value: false,
-            default_value: vec![],
-            bogus_field: false,
-        }
-    }
-
     #[inline(always)]
     pub fn get_field_id(&self) -> globals::FieldId {
         self.field_id

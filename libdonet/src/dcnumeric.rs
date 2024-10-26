@@ -23,7 +23,7 @@
 use crate::datagram::datagram::Datagram;
 use crate::datagram::iterator::DatagramIterator;
 use crate::dctype::*;
-use crate::hashgen::{DCHash, DCHashGenerator};
+use crate::hashgen::*;
 use std::mem::{discriminant, size_of};
 
 /// Numeric Range structs are used to represent a range of signed/unsigned
@@ -171,7 +171,7 @@ impl From<DCTypeEnum> for DCNumericType {
     }
 }
 
-impl DCHash for DCNumericType {
+impl LegacyDCHash for DCNumericType {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_type.generate_hash(hashgen);
 

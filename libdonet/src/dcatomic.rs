@@ -42,7 +42,7 @@ impl<'dc> std::fmt::Display for DCAtomicField<'dc> {
     }
 }
 
-impl<'dc> DCHash for DCAtomicField<'dc> {
+impl<'dc> LegacyDCHash for DCAtomicField<'dc> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_field.generate_hash(hashgen);
 
@@ -58,18 +58,6 @@ impl<'dc> DCHash for DCAtomicField<'dc> {
 }
 
 impl<'dc> DCAtomicField<'dc> {
-    pub(crate) fn new(name: &str, bogus_field: bool) -> Self {
-        Self {
-            base_field: {
-                let mut new_dcfield = DCField::new(name, None);
-
-                new_dcfield.set_bogus_field(bogus_field);
-                new_dcfield
-            },
-            elements: vec![],
-        }
-    }
-
     #[inline(always)]
     pub fn get_num_elements(&self) -> usize {
         self.elements.len()

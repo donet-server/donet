@@ -134,7 +134,7 @@ impl std::cmp::PartialEq for DCKeywordList {
     }
 }
 
-impl DCHash for DCKeywordList {
+impl LegacyDCHash for DCKeywordList {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         if self.flags != !0 {
             // All of the flags are historical flags only, so add just the flags

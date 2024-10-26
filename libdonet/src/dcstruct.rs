@@ -30,7 +30,7 @@ impl std::fmt::Display for DCStruct {
     }
 }
 
-impl DCHash for DCStruct {
+impl LegacyDCHash for DCStruct {
     fn generate_hash(&self, _: &mut DCHashGenerator) {
         // TODO
     }

@@ -31,7 +31,7 @@ pub struct DCArrayType {
     array_range: Option<DCNumericRange>,
 }
 
-impl DCHash for DCArrayType {
+impl LegacyDCHash for DCArrayType {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_type.clone().unwrap().generate_hash(hashgen);
 

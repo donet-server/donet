@@ -104,7 +104,7 @@ impl std::fmt::Display for DCTypeDefinition {
     }
 }
 
-impl DCHash for DCTypeDefinition {
+impl LegacyDCHash for DCTypeDefinition {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         hashgen.add_int(i32::from(self.data_type.clone() as u8));
 

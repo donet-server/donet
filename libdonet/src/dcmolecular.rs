@@ -38,7 +38,7 @@ impl<'dc> std::fmt::Display for DCMolecularField<'dc> {
     }
 }
 
-impl<'dc> DCHash for DCMolecularField<'dc> {
+impl<'dc> LegacyDCHash for DCMolecularField<'dc> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_field.generate_hash(hashgen);
 
