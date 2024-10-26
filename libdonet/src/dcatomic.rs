@@ -68,7 +68,7 @@ impl<'dc> DCAtomicField<'dc> {
         self.elements.get(index).map(Rc::clone)
     }
 
-    pub fn set_keyword_list(&mut self, kw_list: DCKeywordList) {
+    pub fn set_keyword_list(&mut self, kw_list: DCKeywordList<'dc>) {
         self.base_field.set_field_keyword_list(kw_list)
     }
 

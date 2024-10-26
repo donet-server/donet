@@ -74,7 +74,7 @@ macro_rules! has_keyword {
 /// of field declarations, which are: plain fields, atomic, and molecular.
 #[derive(Debug)]
 pub struct DCField<'dc> {
-    keyword_list: DCKeywordList,
+    keyword_list: DCKeywordList<'dc>,
     dclass: Option<&'dc DClass<'dc>>,
     strukt: Option<&'dc DCStruct>, // 'strukt' due to reserved keyword
     field_name: String,
@@ -145,7 +145,7 @@ impl<'dc> DCField<'dc> {
         self.default_value = vec![];
     }
 
-    pub fn set_field_keyword_list(&mut self, kw_list: DCKeywordList) {
+    pub fn set_field_keyword_list(&mut self, kw_list: DCKeywordList<'dc>) {
         self.keyword_list = kw_list;
     }
 
