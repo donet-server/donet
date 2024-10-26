@@ -179,6 +179,17 @@ impl<'dc> DCField<'dc> {
         todo!()
     }
 
+    /// Given a blob that represents the packed data for this field, returns a
+    /// string formatting it for human consumption.
+    pub fn format_packed_data(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        _data: &[u8],
+        _show_field_names: bool,
+    ) -> std::fmt::Result {
+        f.write_str("TODO") // TODO
+    }
+
     #[inline(always)]
     pub fn is_bogus_field(&self) -> bool {
         self.bogus_field

@@ -95,8 +95,10 @@ pub enum SemanticError {
     // switches
     #[error("duplicate case value")]
     RedundantCase,
-    #[error("default case is already defined")]
+    #[error("default case already defined")]
     RedundantDefault,
+    #[error("case value type does not match key value type")]
+    InvalidCaseValueType,
 
     // molecular fields
     #[error("`mismatched dc keywords in molecule between `{atom1}` and `{atom2}`")]
@@ -146,6 +148,7 @@ impl ToErrorCode for SemanticError {
             // switches
             Self::RedundantCase => "E0250",
             Self::RedundantDefault => "E0251",
+            Self::InvalidCaseValueType => "E0252",
             // molecular fields
             Self::MismatchedKeywords { atom1: _, atom2: _ } => "E0260",
             Self::ExpectedAtomic(_) => "E0261",

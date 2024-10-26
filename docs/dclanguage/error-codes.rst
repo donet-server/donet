@@ -163,10 +163,31 @@ Erroneous code example:
         switch (uint16) {
             case 0:
                 break;
-            case 1: // error[E0250]: duplicate case value
+            case 1:
                 break;
             default:
+                break;
+            default: // error[E0251]: default case already defined
+                break;
+        };
+    };
 
+E0252
+^^^^^
+
+``InvalidCaseValueType``
+
+Erroneous code example:
+
+.. code-block:: cpp
+
+    struct Donut {
+        switch (uint16) {
+            case 0:
+                break;
+            case 'e':
+            // error[E0252]: case value type does not match key value type
+                break;
         };
     };
 

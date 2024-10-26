@@ -75,6 +75,7 @@ cfg_if! {
         pub mod dcnumeric;
         pub mod dcparameter;
         pub mod dcstruct;
+        pub mod dcswitch;
         pub mod dctype;
         mod hashgen;
 
