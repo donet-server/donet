@@ -169,7 +169,7 @@ impl<'dc> DCFile<'dc> {
     ///
     /// If called more than once, it will reuse the already calculated hash,
     /// as this structure is guaranteed to be immutable after initialization.
-    pub fn get_hash(&self) -> globals::DCFileHash {
+    pub fn get_legacy_hash(&self) -> globals::DCFileHash {
         if self.baked_hash != 0 {
             self.baked_hash
         } else {
@@ -182,7 +182,7 @@ impl<'dc> DCFile<'dc> {
 
     /// Returns a string with the hash as a pretty format hexadecimal.
     pub fn get_pretty_hash(&self) -> String {
-        format!("0x{:0width$x}", self.get_hash(), width = 8) // 2 hex / byte = 8 hex
+        format!("0x{:0width$x}", self.get_legacy_hash(), width = 8) // 2 hex / byte = 8 hex
     }
 
     // ---------- Python Imports ---------- //

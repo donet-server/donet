@@ -362,12 +362,12 @@ fn validate_dc_files(files: Vec<String>) -> std::io::Result<()> {
     let dc_read = read_dc_files(files.to_owned());
 
     if let Ok(dc_file) = dc_read {
-        let hash: u32 = dc_file.get_hash();
+        let hash: u32 = dc_file.get_legacy_hash();
         let signed: i32 = hash as i32;
         let pretty: String = dc_file.get_pretty_hash();
 
         info!(
-            "No issues found. File hash is {} (signed {}, hex {})",
+            "No issues found. Legacy file hash is {} (signed {}, hex {})",
             hash, signed, pretty
         );
         return Ok(());

@@ -69,9 +69,9 @@ cfg_if! {
             "clrecv", "broadcast", "ownsend", "clsend",
         ];
         pub static DC_VIEW_SUFFIXES: &[&str] = &["AI", "OV", "UD"];
-        pub static DC_MULTIPLE_INHERITANCE: bool = true;
-        pub static DC_VIRTUAL_INHERITANCE: bool = true;
-        pub static DC_SORT_INHERITANCE_BY_FILE: bool = false;
+        pub static DC_MULTIPLE_INHERITANCE: bool = true; // panda default
+        pub static DC_VIRTUAL_INHERITANCE: bool = true; // panda default
+        pub static DC_SORT_INHERITANCE_BY_FILE: bool = true; // panda default
         pub static MAX_PRIME_NUMBERS: u16 = 10000;
     }
 }
