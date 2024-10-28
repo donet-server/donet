@@ -53,7 +53,9 @@ pub fn semantic_analyzer<'a>(pipeline: &mut PipelineData) -> Result<dcfile::DCFi
                 ast::TypeDeclaration::PythonImport(import) => {
                     dc_file.add_python_import(pipeline, import.clone());
                 }
-                ast::TypeDeclaration::KeywordType(_) => {}
+                ast::TypeDeclaration::KeywordType(keyword) => {
+                    dc_file.add_keyword(pipeline, keyword);
+                }
                 ast::TypeDeclaration::StructType(_) => {}
                 ast::TypeDeclaration::DClassType(_) => {}
                 ast::TypeDeclaration::TypedefType(_) => {}
@@ -117,6 +119,17 @@ mod unit_testing {
             from views import Class/AI/OV/OV
         ";
 
-        let _: dcfile::DCFile = read_dc(dc_string.into()).expect("Should fail.");
+        let _ = read_dc(dc_string.into()).expect("Should fail.");
+    }
+
+    #[test]
+    #[should_panic]
+    fn keyword_already_defined() {
+        let dc_string: &str = "
+            keyword abcdef;
+            keyword abcdef;
+        ";
+
+        let _ = read_dc(dc_string.into()).expect("Should fail.");
     }
 }

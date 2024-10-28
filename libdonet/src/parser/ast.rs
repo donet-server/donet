@@ -90,6 +90,7 @@ pub struct TypeDefinition {
 pub struct KeywordDefinition {
     pub span: Span,
     pub identifier: String,
+    pub historical: bool,
 }
 
 /// Paired with the `distributed_class_type` production in the Context Free Grammar.

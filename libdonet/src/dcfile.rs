@@ -87,9 +87,14 @@ pub struct DCFile<'dc> {
 impl<'dc> From<interim::DCFile> for DCFile<'dc> {
     fn from(value: interim::DCFile) -> Self {
         let mut imports: Vec<DCPythonImport> = vec![];
+        let mut keywords: Vec<DCKeyword> = vec![];
 
         for imp in value.imports {
             imports.push(imp.into());
+        }
+
+        for kw in value.keywords {
+            keywords.push(kw.into());
         }
 
         Self {
@@ -97,7 +102,7 @@ impl<'dc> From<interim::DCFile> for DCFile<'dc> {
             structs: vec![],
             dclasses: vec![],
             imports,
-            keywords: vec![],
+            keywords,
             type_defs: vec![],
             field_id_2_field: vec![],
             all_object_valid: true,
@@ -296,11 +301,13 @@ mod unit_testing {
 /// Contains intermediate DC file structure and logic
 /// for semantic analysis as the DC file is being built.
 pub(crate) mod interim {
-    use super::*;
+    use super::{ast, globals};
+    use super::{DCField, DCStruct};
+    use crate::dckeyword::interim::DCKeyword;
     use crate::dclass::interim::DClass;
     use crate::parser::error::{Diagnostic, SemanticError};
     use crate::parser::pipeline::PipelineData;
-    use anyhow::Result;
+    use anyhow::{anyhow, Result};
     use std::collections::HashSet;
 
     #[derive(Debug)]
@@ -418,8 +425,25 @@ pub(crate) mod interim {
             }
         }
 
-        pub fn add_keyword(&mut self, _keyword: DCKeyword) {
-            // TODO!
+        pub fn add_keyword(&mut self, pipeline: &mut PipelineData, keyword: ast::KeywordDefinition) {
+            // convert from AST node to its interim struct
+            let new_kw: DCKeyword = keyword.into();
+
+            for kw in &self.keywords {
+                if kw.name == new_kw.name {
+                    let diag: Diagnostic = Diagnostic::error(
+                        new_kw.span,
+                        pipeline,
+                        SemanticError::AlreadyDefined(new_kw.name.clone()),
+                    );
+
+                    pipeline
+                        .emit_diagnostic(diag.into())
+                        .expect("Failed to emit diagnostic.");
+                    return;
+                }
+            }
+            self.keywords.push(new_kw);
         }
 
         pub fn add_typedef(&mut self, _name: String) -> Result<(), ()> {
@@ -430,20 +454,34 @@ pub(crate) mod interim {
             self.dclasses.push(dclass);
         }
 
-        pub fn get_num_dclasses(&mut self) -> usize {
-            self.dclasses.len()
-        }
-
-        pub fn get_next_dclass_id(&mut self) -> globals::DClassId {
-            let dc_num: u16 = self.get_num_dclasses().try_into().unwrap();
-            if dc_num == globals::DClassId::MAX {
-                panic!("dcparser: Ran out of 16-bit DClass IDs!");
-            }
-            dc_num - 1_u16
-        }
-
         pub fn add_struct(&mut self, _strct: DCStruct) {
             todo!();
+        }
+
+        /// Gets the next dclass ID based on the current allocated IDs.
+        ///
+        /// If an error is returned, this DC file has run out of dclass
+        /// IDs to assign. This function will emit the error diagnostic.
+        ///
+        pub fn get_next_dclass_id(
+            &mut self,
+            pipeline: &mut PipelineData,
+            dclass: &DClass, // current dclass ref for diagnostic span
+        ) -> Result<globals::DClassId> {
+            let dc_num: u16 = self.dclasses.len().try_into().unwrap();
+
+            if dc_num == globals::DClassId::MAX {
+                // We have reached the maximum number of dclass declarations.
+                let diag: Diagnostic =
+                    Diagnostic::error(dclass.span, pipeline, SemanticError::DClassOverflow);
+
+                pipeline
+                    .emit_diagnostic(diag.into())
+                    .expect("Failed to emit diagnostic.");
+
+                return Err(anyhow!("Ran out of 16-bit DClass IDs!"));
+            }
+            Ok(dc_num - 1_u16)
         }
     }
 }

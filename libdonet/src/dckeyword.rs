@@ -69,14 +69,6 @@ impl DCKeyword {
     pub fn get_historical_flag(&self) -> HistoricalFlag {
         self.historical_flag
     }
-
-    /// Sets the historical flag bitmask to the bitwise complement of 0
-    /// (!0 in Rust, or ~0 in C/C++), as if the keyword were not one
-    /// of the historically defined keywords.
-    #[inline]
-    pub fn clear_historical_flag(&mut self) {
-        self.historical_flag = !0;
-    }
 }
 
 /// A map of key/value pairs mapping keyword names to DCKeyword struct pointers.
@@ -193,35 +185,41 @@ impl<'dc> DCKeywordList<'dc> {
 /// for semantic analysis as the keyword/lists is being built.
 pub(crate) mod interim {
     use super::HistoricalFlag;
+    use crate::parser::ast;
+    use crate::parser::lexer::Span;
     use multimap::MultiMap;
     use std::rc::Rc;
 
+    #[derive(Debug)]
     pub struct DCKeyword {
+        pub span: Span,
         pub name: String,
         pub historical_flag: HistoricalFlag,
     }
 
-    impl DCKeyword {
-        pub fn new(name: String, historical_flag: Option<HistoricalFlag>) -> Self {
-            if let Some(h_flag) = historical_flag {
-                Self {
-                    name,
-                    historical_flag: h_flag,
-                }
-            } else {
-                Self {
-                    name,
-                    historical_flag: !0, // bitwise complement
-                }
+    impl From<ast::KeywordDefinition> for DCKeyword {
+        fn from(value: ast::KeywordDefinition) -> Self {
+            Self {
+                span: value.span,
+                name: value.identifier,
+                historical_flag: {
+                    if value.historical {
+                        // Sets the historical flag bitmask to the bitwise complement of 0
+                        // (!0 in Rust, or ~0 in C/C++), as if the keyword were not one
+                        // of the historically defined keywords.
+                        !0
+                    } else {
+                        0
+                    }
+                },
             }
         }
     }
 
-    pub type KeywordName2Keyword = MultiMap<String, Rc<DCKeyword>>;
-
+    #[derive(Debug)]
     pub struct DCKeywordList {
         pub keywords: Vec<Rc<DCKeyword>>,
-        pub kw_name_2_keyword: KeywordName2Keyword,
+        pub kw_name_2_keyword: MultiMap<String, Rc<DCKeyword>>,
         pub flags: HistoricalFlag,
     }
 
@@ -258,7 +256,7 @@ pub(crate) mod interim {
         /// Overwrites the DCKeywords of this list with the target's DCKeywords.
         pub fn copy_keywords(&mut self, target: &DCKeywordList) {
             let target_kw_array: Vec<Rc<DCKeyword>> = target._get_keyword_list();
-            let target_kw_map: KeywordName2Keyword = target._get_keywords_by_name_map();
+            let target_kw_map: MultiMap<String, Rc<DCKeyword>> = target._get_keywords_by_name_map();
 
             self.keywords = target_kw_array; // old vec will be dropped from memory
             self.kw_name_2_keyword = target_kw_map;
@@ -270,7 +268,7 @@ pub(crate) mod interim {
         }
 
         /// Returns a clone of this object's keyword name map.
-        pub fn _get_keywords_by_name_map(&self) -> KeywordName2Keyword {
+        pub fn _get_keywords_by_name_map(&self) -> MultiMap<String, Rc<DCKeyword>> {
             self.kw_name_2_keyword.clone()
         }
 

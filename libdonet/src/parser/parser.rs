@@ -235,12 +235,14 @@ parser! {
             ast::KeywordDefinition {
                 span: span!(),
                 identifier: id,
+                historical: false,
             }
         },
         Keyword DCKeyword(historic) => {
             ast::KeywordDefinition {
                 span: span!(),
                 identifier: historic,
+                historical: true,
             }
         }
     }
