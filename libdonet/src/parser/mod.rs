@@ -69,8 +69,7 @@ pub(crate) fn dcparse_pipeline<'a>(inputs: Vec<InputFile>) -> Result<DCFile<'a>,
 
                     let diag: error::Diagnostic = error::Diagnostic::error(
                         span,
-                        pipeline_data.current_stage(),
-                        pipeline_data.current_file(),
+                        &mut pipeline_data,
                         error::PipelineError::Parser(error::ParseError::Error(token, msg)),
                     );
 

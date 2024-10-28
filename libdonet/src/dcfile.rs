@@ -346,19 +346,19 @@ pub(crate) mod interim {
         /// The lexer already generates a specific token type for view suffixes,
         /// and the parser grammar expects this token type, so we already are
         /// guaranteed that the view suffixes are valid.
-        fn check_view_suffixes(data: &mut PipelineData, view_suffixes: &ast::ViewSuffixes) {
+        fn check_view_suffixes(pipeline: &mut PipelineData, view_suffixes: &ast::ViewSuffixes) {
             let mut recorded_suffixes: HashSet<String> = HashSet::default();
 
             for view_suffix in view_suffixes {
                 if !recorded_suffixes.insert(view_suffix.view.clone()) {
                     let diag: Diagnostic = Diagnostic::error(
                         view_suffix.span,
-                        data.current_stage(),
-                        data.current_file(),
+                        pipeline,
                         SemanticError::RedundantViewSuffix(view_suffix.view.clone()),
                     );
 
-                    data.emit_diagnostic(diag.into())
+                    pipeline
+                        .emit_diagnostic(diag.into())
                         .expect("Failed to emit diagnostic.");
                 }
             }
@@ -367,13 +367,13 @@ pub(crate) mod interim {
         /// 'Untangles' a [`ast::PythonImport`], which represents a python import line,
         /// into one or more [`PythonImport`] structures, which represent symbol imports
         /// from a python module (with view suffixes applied) and adds them to the DC file.
-        pub fn add_python_import(&mut self, data: &mut PipelineData, import: ast::PythonImport) {
+        pub fn add_python_import(&mut self, pipeline: &mut PipelineData, import: ast::PythonImport) {
             let mut imports: Vec<PythonImport> = vec![];
             let mut class_symbols: Vec<String> = vec![import.class.symbol.clone()];
 
             // check view suffixes
-            Self::check_view_suffixes(data, &import.module.symbol_views);
-            Self::check_view_suffixes(data, &import.class.symbol_views);
+            Self::check_view_suffixes(pipeline, &import.module.symbol_views);
+            Self::check_view_suffixes(pipeline, &import.class.symbol_views);
 
             // Separates "Class/AI/OV" to ["Class", "ClassAI", "ClassOV"]
             if !import.class.symbol_views.is_empty() {

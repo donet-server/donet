@@ -20,7 +20,7 @@
 //! Errors that can be returned by the DC parser pipeline.
 
 use super::lexer::{DCToken, Span};
-use super::pipeline::PipelineStage;
+use super::pipeline::{PipelineData, PipelineStage};
 use codespan_diag::Label;
 use codespan_diag::LabelStyle;
 use codespan_reporting::diagnostic as codespan_diag;
@@ -195,16 +195,11 @@ pub(crate) struct Diagnostic {
 }
 
 impl Diagnostic {
-    pub fn error(
-        span: Span,
-        pipeline_stage: PipelineStage,
-        file_id: usize,
-        err: impl Into<PipelineError>,
-    ) -> Self {
+    pub fn error(span: Span, pipeline: &mut PipelineData, err: impl Into<PipelineError>) -> Self {
         Self {
             span,
-            stage: pipeline_stage,
-            file_id,
+            stage: pipeline.current_stage(),
+            file_id: pipeline.current_file(),
             severity: codespan_diag::Severity::Error,
             error: err.into(),
         }
