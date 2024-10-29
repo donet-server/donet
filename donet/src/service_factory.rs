@@ -19,11 +19,11 @@
 
 use crate::config;
 #[cfg(feature = "database-server")]
-use crate::database_server::dbserver::{DBCredentials, DatabaseServer};
+use crate::database_server::{DBCredentials, DatabaseServer};
 #[cfg(feature = "event-logger")]
-use crate::event_logger::event_logger::EventLogger;
+use crate::event_logger::EventLogger;
 #[cfg(feature = "message-director")]
-use crate::message_director::message_director::MessageDirector;
+use crate::message_director::MessageDirector;
 use crate::utils;
 use log::{error, info};
 use std::io::{Error, ErrorKind, Result};
