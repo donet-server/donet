@@ -21,11 +21,15 @@ mod channel_map;
 mod subscriber;
 mod upstream;
 
+use crate::config;
 use crate::network::tcp;
+use crate::service::DonetService;
 use channel_map::ChannelMap;
+use libdonet::dcfile::DCFile;
 use log::{error, info};
 use std::io::Result;
 use tokio::net::TcpStream;
+use tokio::task::JoinHandle;
 
 pub struct MessageDirector {
     binding: tcp::Acceptor,
@@ -33,12 +37,15 @@ pub struct MessageDirector {
     channel_map: ChannelMap,
 }
 
-impl MessageDirector {
-    pub async fn new(bind_uri: &str, upstream_uri: Option<String>) -> Result<MessageDirector> {
+impl DonetService for MessageDirector {
+    type Service = Self;
+    type Configuration = config::MessageDirector;
+
+    async fn create(conf: Self::Configuration, _: DCFile<'static>) -> Result<Self::Service> {
         Ok(MessageDirector {
-            binding: tcp::Acceptor::bind(bind_uri).await?,
+            binding: tcp::Acceptor::bind(conf.bind.as_str()).await?,
             upstream: {
-                if let Some(u_uri) = upstream_uri {
+                if let Some(u_uri) = conf.upstream {
                     info!("Message Director will connect to upstream MD.");
                     Some(tcp::Connection::connect(u_uri.as_str()).await?)
                 } else {
@@ -49,9 +56,16 @@ impl MessageDirector {
         })
     }
 
-    /// This is the Message Director's main asynchronous loop.
-    /// Spawned as a Tokio task by the service factory.
-    pub async fn init_network(&self) -> Result<()> {
+    async fn start(conf: config::DonetConfig, dc: DCFile<'static>) -> Result<JoinHandle<Result<()>>> {
+        // We can unwrap safely here since this function only is called if it is `Some`.
+        let service_conf: config::MessageDirector = conf.services.message_director.unwrap();
+
+        let mut md: MessageDirector = MessageDirector::create(service_conf, dc).await?;
+
+        Ok(Self::spawn_async_task(async move { md.main().await }))
+    }
+
+    async fn main(&mut self) -> Result<()> {
         loop {
             match self.binding.socket.accept().await {
                 Ok((socket, address)) => {
@@ -63,7 +77,9 @@ impl MessageDirector {
             }
         }
     }
+}
 
+impl MessageDirector {
     pub async fn handle_datagram(&self, _socket: &TcpStream) -> Result<()> {
         Ok(())
     }

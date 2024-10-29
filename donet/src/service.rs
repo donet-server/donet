@@ -17,13 +17,37 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-use std::error::Error;
+use crate::config;
+use libdonet::dcfile::DCFile;
 use std::future::Future;
+use std::io::Result;
+use tokio::task::JoinHandle;
 
-// MySQL Result (mysql crate API response)
-pub type SqlResult = Result<(), Box<dyn Error>>;
+/// Must be implemented by all Donet services in order to be
+/// bootstrapped on daemon startup using this daemon's configuration.
+pub trait DonetService {
+    type Service;
+    type Configuration;
 
-// Hack to reassure the compiler the result type of a future.
+    async fn create(conf: Self::Configuration, dc: DCFile<'static>) -> Result<Self::Service>;
+    async fn start(conf: config::DonetConfig, dc: DCFile<'static>) -> Result<JoinHandle<Result<()>>>;
+
+    /// This service's main asynchronous loop.
+    async fn main(&mut self) -> Result<()>;
+
+    /// Spawns a new Tokio asynchronous task that executes the given
+    /// async function, and returns its Tokio join handle.
+    fn spawn_async_task(
+        service_loop: impl Future<Output = Result<()>> + Send + 'static,
+    ) -> JoinHandle<Result<()>> {
+        // Hack to reassure the compiler that we want to return an IO result.
+        set_future_return_type::<Result<()>, _>(&service_loop);
+
+        tokio::task::spawn(service_loop)
+    }
+}
+
+/// Hack to reassure the compiler the result type of a future.
 pub fn set_future_return_type<T, F: Future<Output = T>>(_arg: &F) {}
 
 #[cfg(test)]

@@ -17,22 +17,28 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::utils;
+use crate::config;
+use crate::service::DonetService;
+use libdonet::dcfile::DCFile;
 use libdonet::globals;
 use log::{error, info};
 use mysql::prelude::*;
 use mysql::*;
-use std::vec::Vec;
+use std::io::{Error, ErrorKind, Result};
+use tokio::task::JoinHandle;
 
-pub struct DBCredentials<'a> {
-    pub host: &'a str,
+// MySQL Result (mysql crate API response)
+pub type SqlResult = std::result::Result<(), Box<dyn std::error::Error>>;
+
+pub struct DBCredentials {
+    pub host: String,
     pub port: i16,
-    pub database: &'a str,
-    pub user: &'a str,
-    pub password: &'a str,
+    pub database: String,
+    pub user: String,
+    pub password: String,
 }
 
-// Rust representations of SQL db tables
+/// Native representation of SQL db tables
 #[derive(Debug, PartialEq, Eq)]
 struct Object {
     doid: globals::DoId,       // INT UNSIGNED NOT NULL PRIMARY KEY
@@ -40,9 +46,9 @@ struct Object {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-struct DClass<'a> {
+struct DClass {
     dclass: globals::DClassId, // SMALLINT UNSIGNED NOT NULL PRIMARY KEY
-    name: &'a str,             // VARCHAR(32) NOT NULL
+    name: String,              // VARCHAR(32) NOT NULL
     storable: bool,            // BOOLEAN NOT NULL
 }
 
@@ -57,14 +63,41 @@ struct Field {
     parameters: Vec<Vec<u8>>,  // NOT NULL
 }
 
-pub struct DatabaseServer<'a> {
-    _sql_pool: Pool, // NOTE: afaik, we don't need to use this, but we need it to live.
+pub struct DatabaseServer {
+    dc_file: DCFile<'static>,
+    _sql_pool: Pool,
     sql_conn: PooledConn,
-    _credentials: DBCredentials<'a>,
+    _credentials: DBCredentials,
 }
 
-impl DatabaseServer<'_> {
-    pub fn new(creds: DBCredentials) -> DatabaseServer {
+impl DonetService for DatabaseServer {
+    type Service = Self;
+    type Configuration = config::DBServer;
+
+    async fn create(conf: Self::Configuration, dc: DCFile<'static>) -> Result<Self::Service> {
+        // TODO: Check for db backend type once we have multiple DB backend support.
+        let sql_config: config::SQL;
+        let host_port: Vec<&str>;
+
+        if conf.sql.is_some() {
+            sql_config = conf.sql.unwrap();
+            host_port = sql_config.host.rsplit(':').collect();
+        } else {
+            error!("Incomplete configuration for DB server service.");
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Missing database backend credentials.",
+            ));
+        }
+
+        let creds: DBCredentials = DBCredentials {
+            host: host_port[1].to_owned(),
+            port: host_port[0].parse::<i16>().unwrap(),
+            database: sql_config.database.to_owned(),
+            user: sql_config.user.to_owned(),
+            password: sql_config.pass.to_owned(),
+        };
+
         let port_str: &str = &creds.port.to_string();
         let url: String = format!(
             "mysql://{}:{}@{}:{}/{}",
@@ -79,7 +112,7 @@ impl DatabaseServer<'_> {
                 creds.user, creds.host, port_str, creds.database
             )
         );
-        let p_res: Result<Pool, Error> = Pool::new(url_str); // FIXME: This is not async!
+        let p_res: std::result::Result<Pool, mysql::Error> = Pool::new(url_str); // FIXME: This is not async!
 
         // FIXME: Clippy recommends bad code, so we're ignoring, but we need to fix later.
         #[allow(clippy::needless_late_init)]
@@ -96,7 +129,7 @@ impl DatabaseServer<'_> {
             panic!("An error occurred while connecting to the SQL database.");
         }
 
-        let c_res: Result<PooledConn, Error> = pool.get_conn();
+        let c_res: std::result::Result<PooledConn, mysql::Error> = pool.get_conn();
 
         #[allow(clippy::needless_late_init)]
         let conn: PooledConn;
@@ -111,21 +144,39 @@ impl DatabaseServer<'_> {
             panic!("An error occurred while connecting to the SQL database.");
         }
 
-        DatabaseServer {
+        Ok(DatabaseServer {
+            dc_file: dc,
             _sql_pool: pool,
             sql_conn: conn,
             _credentials: creds,
-        }
+        })
     }
 
-    pub fn init_service(&mut self) -> utils::SqlResult {
-        self.check_database_tables()?;
+    async fn start(conf: config::DonetConfig, dc: DCFile<'static>) -> Result<JoinHandle<Result<()>>> {
+        // NOTE: We are unwrapping an Option without checking,
+        // as this method can only be called if 'database_server'
+        // is of a 'Some' type, which guarantees no panic scenario.
+        let db_server_conf: config::DBServer = conf.services.database_server.unwrap();
+
+        let mut db: DatabaseServer = DatabaseServer::create(db_server_conf, dc).await?;
+        let res: Result<()> = db.main().await;
+
+        if res.is_err() {
+            error!("Failed to initialize the Database Server.");
+        }
+        Ok(Self::spawn_async_task(async move { db.main().await }))
+    }
+
+    async fn main(&mut self) -> Result<()> {
+        self.check_database_tables().unwrap(); // FIXME
         Ok(())
     }
+}
 
+impl DatabaseServer {
     // If the Objects, DClasses, & Fields tables do not exist in the
     // database, then we will create the required tables automatically.
-    pub fn check_database_tables(&mut self) -> utils::SqlResult {
+    fn check_database_tables(&mut self) -> SqlResult {
         self.sql_conn.query_drop(
             r"CREATE TABLE IF NOT EXISTS objects (
                                     doid INT UNSIGNED NOT NULL PRIMARY KEY,

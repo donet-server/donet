@@ -46,12 +46,23 @@ mod meson;
 #[cfg(feature = "message-director")]
 mod message_director;
 mod network;
-mod service_factory;
-mod utils;
+mod service;
 
 #[macro_use]
 extern crate cfg_if;
 use meson::*;
+
+use config::*;
+use libdonet::dcfile::DCFile;
+use libdonet::dconfig::DCFileConfig;
+use libdonet::read_dc_files;
+use log::{error, info};
+use logger::DaemonLogger;
+use service::*;
+use std::fs::File;
+use std::io::{Error, ErrorKind, Read};
+use tokio::runtime::{Builder, Runtime};
+use tokio::task::JoinHandle;
 
 #[derive(Clone, Copy)]
 enum FlagArguments {
@@ -59,18 +70,6 @@ enum FlagArguments {
 }
 
 fn main() -> std::io::Result<()> {
-    use config::*;
-    use libdonet::dcfile::DCFile;
-    use libdonet::dconfig::DCFileConfig;
-    use libdonet::read_dc_files;
-    use log::{error, info};
-    use logger::DaemonLogger;
-    use service_factory::*;
-    use std::fs::File;
-    use std::io::{Error, ErrorKind, Read};
-    use tokio::runtime::{Builder, Runtime};
-    use tokio::task::JoinHandle;
-
     let args: Vec<String> = std::env::args().collect();
     let mut config_file: &str = DEFAULT_TOML;
     let mut want_dc_check: bool = false;
@@ -235,20 +234,6 @@ fn main() -> std::io::Result<()> {
     let daemon_async_main = async move {
         let services: Services = daemon_config.services.clone();
 
-        // New service instances on the main thread's stack
-        #[cfg(feature = "client-agent")]
-        let ca_service: ClientAgentService;
-        #[cfg(feature = "message-director")]
-        let md_service: MessageDirectorService;
-        #[cfg(feature = "state-server")]
-        let ss_service: StateServerService;
-        #[cfg(feature = "database-server")]
-        let db_service: DatabaseServerService;
-        #[cfg(feature = "dbss")]
-        let dbss_service: DBSSService;
-        #[cfg(feature = "event-logger")]
-        let el_service: EventLoggerService;
-
         // Tokio join handles for spawned tasks of services started.
         let mut service_handles: Vec<JoinHandle<std::io::Result<()>>> = vec![];
 
@@ -268,20 +253,19 @@ fn main() -> std::io::Result<()> {
         cfg_if! {
             if #[cfg(feature = "client-agent")] {
                 if want_client_agent {
-                    let ca_factory: ClientAgentService = ClientAgentService {};
-                    ca_service = ca_factory.create()?;
-
-                    ca_service.start(daemon_config.clone()).await?;
+                    info!("Booting Client Agent service.");
+                    todo!("CA not yet implemented.")
                 }
             }
         }
         cfg_if! {
             if #[cfg(feature = "message-director")] {
-                if want_message_director {
-                    let md_factory: MessageDirectorService = MessageDirectorService {};
-                    md_service = md_factory.create()?;
+                use crate::message_director::MessageDirector;
 
-                    let handle = md_service.start(daemon_config.clone()).await?;
+                if want_message_director {
+                    info!("Booting Message Director service.");
+
+                    let handle = MessageDirector::start(daemon_config.clone(), dc.clone()).await?;
                     service_handles.push(handle);
                 }
             }
@@ -289,44 +273,42 @@ fn main() -> std::io::Result<()> {
         cfg_if! {
             if #[cfg(feature = "state-server")] {
                 if want_state_server {
-                    let ss_factory: StateServerService = StateServerService {};
-                    ss_service = ss_factory.create()?;
-
-                    ss_service.start(daemon_config.clone()).await?;
+                    info!("Booting State Server service.");
+                    todo!("SS not yet implemented.")
                 }
             }
         }
         cfg_if! {
             if #[cfg(feature = "database-server")] {
                 if want_database_server {
-                    let db_factory: DatabaseServerService = DatabaseServerService {};
-                    db_service = db_factory.create()?;
-
-                    db_service.start(daemon_config.clone()).await?;
+                    info!("Booting Database Server service.");
+                    todo!("DB not yet implemented.")
                 }
             }
         }
         cfg_if! {
             if #[cfg(feature = "dbss")] {
                 if want_dbss {
-                    let dbss_factory: DBSSService = DBSSService {};
-                    dbss_service = dbss_factory.create()?;
-
-                    dbss_service.start(daemon_config.clone()).await?;
+                    info!("Booting DBSS service.");
+                    todo!("DBSS not yet implemented.")
                 }
             }
         }
         cfg_if! {
             if #[cfg(feature = "event-logger")] {
-                if want_event_logger {
-                    let el_factory: EventLoggerService = EventLoggerService {};
-                    el_service = el_factory.create()?;
+                use crate::event_logger::EventLogger;
 
-                    let handle = el_service.start(daemon_config.clone()).await?;
+                if want_event_logger {
+                    info!("Booting Event Logger service.");
+
+                    let handle = EventLogger::start(daemon_config.clone(), dc.clone()).await?;
                     service_handles.push(handle);
                 }
             }
         }
+        // spawned services were given copies of these; drop originals.
+        drop(dc);
+        drop(daemon_config);
 
         match tokio::signal::ctrl_c().await {
             Ok(()) => {
@@ -352,7 +334,7 @@ fn main() -> std::io::Result<()> {
     };
 
     // Hack to reassure the compiler that I want to return an IO result.
-    utils::set_future_return_type::<std::io::Result<()>, _>(&daemon_async_main);
+    service::set_future_return_type::<std::io::Result<()>, _>(&daemon_async_main);
 
     tokio_runtime.block_on(daemon_async_main)
 }

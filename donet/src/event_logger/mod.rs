@@ -22,9 +22,11 @@ mod msgpack;
 use crate::config;
 use crate::event::LoggedEvent;
 use crate::network::udp;
+use crate::service::DonetService;
 use chrono::{DateTime, Duration, Local, TimeZone};
 use libdonet::datagram::datagram::Datagram;
 use libdonet::datagram::iterator::DatagramIterator;
+use libdonet::dcfile::DCFile;
 use log::{debug, error, info, trace};
 use regex::Regex;
 use std::io::{Error, ErrorKind, Result};
@@ -33,6 +35,7 @@ use std::time::SystemTime;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::Mutex;
+use tokio::task::JoinHandle;
 
 /// Interval unit types for log rotation intervals.
 #[derive(Debug, PartialEq, Eq)]
@@ -58,8 +61,11 @@ pub struct EventLogger {
     next_rotation: i64, // unix timestamp
 }
 
-impl EventLogger {
-    pub async fn new(conf: config::EventLogger) -> Result<Self> {
+impl DonetService for EventLogger {
+    type Service = Self;
+    type Configuration = config::EventLogger;
+
+    async fn create(conf: Self::Configuration, _: DCFile<'static>) -> Result<Self::Service> {
         Ok(Self {
             binding: udp::Socket::bind(&conf.bind).await?,
             log_format: format!("{}{}", conf.output, conf.log_format),
@@ -69,9 +75,16 @@ impl EventLogger {
         })
     }
 
-    /// This is Event Logger's main asynchronous loop.
-    /// Spawned as a Tokio task by the service factory.
-    pub async fn start_receive(&mut self) -> Result<()> {
+    async fn start(conf: config::DonetConfig, dc: DCFile<'static>) -> Result<JoinHandle<Result<()>>> {
+        // We can unwrap safely here since this function only is called if it is `Some`.
+        let service_conf = conf.services.event_logger.unwrap();
+
+        let mut service: EventLogger = EventLogger::create(service_conf, dc).await?;
+
+        Ok(Self::spawn_async_task(async move { service.main().await }))
+    }
+
+    async fn main(&mut self) -> Result<()> {
         self.open_log().await?;
 
         let mut buffer = [0_u8; 1024]; // 1 kb
@@ -127,7 +140,9 @@ impl EventLogger {
             };
         }
     }
+}
 
+impl EventLogger {
     /// Takes in `DatagramIterator` with packet data and modifies output string stream.
     /// Expects datagram bytes to follow the [`MessagePack`] format.
     ///
@@ -294,23 +309,50 @@ mod unit_testing {
     use crate::config;
     use crate::event::LoggedEvent;
     use crate::network::udp;
+    use crate::service::DonetService;
     use libdonet::datagram::datagram::Datagram;
+    use libdonet::dconfig::DCFileConfig;
     use std::io::Error;
     use std::result::Result;
 
     #[tokio::test]
     async fn basic_message_test() -> Result<(), Error> {
-        let conf = config::EventLogger {
-            bind: "127.0.0.0:7197".to_string(),
-            output: "./".to_string(),
-            log_format: "el-%Y-%m-%d-%H-%M-%S.log".to_string(),
-            rotate_interval: "1d".to_string(),
+        // All services must be passed a DC file, but the event logger
+        // does not use the DC file, so we just need to pass it a dummy one.
+        let dc = libdonet::read_dc(DCFileConfig::default(), "".into()).unwrap();
+
+        let conf: config::DonetConfig = config::DonetConfig {
+            daemon: config::Daemon {
+                name: String::default(),
+                id: None,
+                log_level: None,
+            },
+            global: config::Global {
+                eventlogger: String::default(),
+                dc_files: vec![],
+                dc_multiple_inheritance: None,
+                dc_sort_inheritance_by_file: None,
+                dc_virtual_inheritance: None,
+            },
+            services: config::Services {
+                event_logger: Some(config::EventLogger {
+                    bind: "127.0.0.0:7197".to_string(),
+                    output: "./".to_string(),
+                    log_format: "el-%Y-%m-%d-%H-%M-%S.log".to_string(),
+                    rotate_interval: "1d".to_string(),
+                }),
+                client_agent: None,
+                message_director: None,
+                state_server: None,
+                database_server: None,
+                dbss: None,
+            },
         };
 
-        let _: EventLogger = EventLogger::new(conf).await?;
+        let _ = EventLogger::start(conf, dc).await?;
 
         let sock: udp::Socket = udp::Socket::bind("127.0.0.1:2816").await?;
-        let mut dg: Datagram;
+        let dg: Datagram;
 
         let mut new_log = LoggedEvent::new("test", "Unit Test Socket");
         new_log.add("msg", "This is a test log message.");
