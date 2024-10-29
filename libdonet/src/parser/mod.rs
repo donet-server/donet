@@ -35,6 +35,7 @@ pub(crate) mod pipeline;
 mod semantics;
 
 use crate::dcfile::DCFile;
+use crate::dconfig::*;
 use anyhow::Result;
 use error::DCReadError;
 use pipeline::PipelineData;
@@ -46,8 +47,12 @@ pub(crate) type InputFile = (String, String);
 /// Runs the entire DC parser pipeline. The input is an array of strings
 /// that represent the input DC files in UTF-8, and the output is the final
 /// DC element tree data structure to be used by Donet.
-pub(crate) fn dcparse_pipeline<'a>(inputs: Vec<InputFile>) -> Result<DCFile<'a>, DCReadError> {
-    let mut pipeline_data: PipelineData<'_> = PipelineData::default();
+pub(crate) fn dcparse_pipeline<'a>(
+    config: DCFileConfig,
+    inputs: Vec<InputFile>,
+) -> Result<DCFile<'a>, DCReadError> {
+    // Create new pipeline data struct with [`DCFileConfig`]
+    let mut pipeline_data: PipelineData<'_> = PipelineData::from(config);
 
     // Create codespan files for each DC file
     for input in &inputs {

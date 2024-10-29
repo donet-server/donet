@@ -23,6 +23,7 @@
 use crate::dcfield::DCField;
 use crate::dckeyword::DCKeyword;
 use crate::dclass::DClass;
+use crate::dconfig::*;
 use crate::dcstruct::DCStruct;
 use crate::dctype::DCTypeDefinition;
 use crate::globals;
@@ -72,8 +73,9 @@ impl std::fmt::Display for DCPythonImport {
 /// type definitions, structures, and Distributed Classes.
 #[derive(Debug)]
 pub struct DCFile<'dc> {
-    baked_hash: globals::DCFileHash,
-    structs: Vec<DCStruct>,
+    config: DCFileConfig,
+    baked_legacy_hash: globals::DCFileHash,
+    structs: Vec<DCStruct<'dc>>,
     dclasses: Vec<DClass<'dc>>,
     imports: Vec<DCPythonImport>,
     keywords: Vec<DCKeyword>,
@@ -98,7 +100,8 @@ impl<'dc> From<interim::DCFile> for DCFile<'dc> {
         }
 
         Self {
-            baked_hash: 0_u32,
+            config: value.config,
+            baked_legacy_hash: 0_u32,
             structs: vec![],
             dclasses: vec![],
             imports,
@@ -113,6 +116,9 @@ impl<'dc> From<interim::DCFile> for DCFile<'dc> {
 
 impl<'dc> std::fmt::Display for DCFile<'dc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // output dc parser configuration variables used
+        f.write_str(&self.config.to_string())?;
+
         // Print Python-style imports
         if !self.imports.is_empty() {
             for import in &self.imports {
@@ -145,11 +151,17 @@ impl<'dc> std::fmt::Display for DCFile<'dc> {
     }
 }
 
+impl<'dc> DCFileConfigAccessor for DCFile<'dc> {
+    fn get_dc_config(&self) -> &DCFileConfig {
+        &self.config
+    }
+}
+
 impl<'dc> LegacyDCHash for DCFile<'dc> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        if globals::DC_VIRTUAL_INHERITANCE {
+        if self.config.dc_virtual_inheritance {
             // Just to change the hash output in this case.
-            if globals::DC_SORT_INHERITANCE_BY_FILE {
+            if self.config.dc_sort_inheritance_by_file {
                 hashgen.add_int(1);
             } else {
                 hashgen.add_int(2);
@@ -175,8 +187,8 @@ impl<'dc> DCFile<'dc> {
     /// If called more than once, it will reuse the already calculated hash,
     /// as this structure is guaranteed to be immutable after initialization.
     pub fn get_legacy_hash(&self) -> globals::DCFileHash {
-        if self.baked_hash != 0 {
-            self.baked_hash
+        if self.baked_legacy_hash != 0 {
+            self.baked_legacy_hash
         } else {
             let mut hashgen: DCHashGenerator = DCHashGenerator::default();
 
@@ -275,7 +287,8 @@ mod unit_testing {
         ];
 
         let dcf: DCFile<'_> = DCFile {
-            baked_hash: 0_u32,
+            config: DCFileConfig::default(),
+            baked_legacy_hash: 0_u32,
             structs: vec![],
             dclasses: vec![],
             imports,
@@ -289,6 +302,11 @@ mod unit_testing {
         assert_eq!(
             dcf.to_string(),
             "\
+            /*\n\
+            DC_MULTIPLE_INHERITANCE = true\n\
+            DC_SORT_INHERITANCE_BY_FILE = true\n\
+            DC_VIRTUAL_INHERITANCE = true\n\
+            */\n\n\
             import views\n\
             from views import DistributedDonut\n\
             from views import Class, ClassAI, ClassOV\n\
@@ -301,10 +319,10 @@ mod unit_testing {
 /// Contains intermediate DC file structure and logic
 /// for semantic analysis as the DC file is being built.
 pub(crate) mod interim {
-    use super::{ast, globals};
-    use super::{DCField, DCStruct};
+    use super::{ast, globals, DCField, DCFileConfig};
     use crate::dckeyword::interim::DCKeyword;
     use crate::dclass::interim::DClass;
+    use crate::dcstruct::interim::DCStruct;
     use crate::parser::error::{Diagnostic, SemanticError};
     use crate::parser::pipeline::PipelineData;
     use anyhow::{anyhow, Result};
@@ -319,6 +337,7 @@ pub(crate) mod interim {
     /// DC file structure for internal use by the DC parser.
     #[derive(Debug)]
     pub(crate) struct DCFile {
+        pub config: DCFileConfig,
         pub structs: Vec<DCStruct>,
         pub dclasses: Vec<DClass>,
         pub imports: Vec<PythonImport>,
@@ -329,9 +348,10 @@ pub(crate) mod interim {
         pub inherited_fields_stale: bool,
     }
 
-    impl Default for DCFile {
-        fn default() -> Self {
+    impl From<DCFileConfig> for DCFile {
+        fn from(value: DCFileConfig) -> Self {
             Self {
+                config: value,
                 structs: vec![],
                 dclasses: vec![],
                 imports: vec![],

@@ -25,6 +25,7 @@ use crate::dcatomic::DCAtomicField;
 use crate::dckeyword::{DCKeywordList, IdentifyKeyword};
 use crate::dclass::DClass;
 use crate::dcmolecular::DCMolecularField;
+use crate::dconfig::*;
 use crate::dcstruct::DCStruct;
 use crate::dctype::DCTypeDefinition;
 use crate::globals;
@@ -60,6 +61,15 @@ pub enum StructField<'dc> {
     Molecular(DCMolecularField<'dc>),
 }
 
+/// A DC field element can be declared within a dclass or a
+/// struct declaration. The DC field element must have a
+/// reference to its parent, which is stored in this enum type.
+#[derive(Debug)]
+pub enum FieldParent<'dc> {
+    DClass(&'dc DClass<'dc>),
+    Strukt(&'dc DCStruct<'dc>), // 'strukt' due to reserved keyword
+}
+
 /// Macro for Panda historical keywords inline functions.
 macro_rules! has_keyword {
     ($self:ident, $i:literal) => {
@@ -75,12 +85,10 @@ macro_rules! has_keyword {
 #[derive(Debug)]
 pub struct DCField<'dc> {
     keyword_list: DCKeywordList<'dc>,
-    dclass: Option<&'dc DClass<'dc>>,
-    strukt: Option<&'dc DCStruct>, // 'strukt' due to reserved keyword
+    parent_element: FieldParent<'dc>,
     field_name: String,
     field_id: globals::FieldId,
     field_type: Option<DCTypeDefinition>,
-    parent_is_dclass: bool,
     default_value_stale: bool,
     has_default_value: bool,
     default_value: Vec<u8>, // stored as byte array
@@ -93,6 +101,15 @@ impl<'dc> std::fmt::Display for DCField<'dc> {
     }
 }
 
+impl<'dc> DCFileConfigAccessor for DCField<'dc> {
+    fn get_dc_config(&self) -> &DCFileConfig {
+        match self.parent_element {
+            FieldParent::DClass(dc) => dc.get_dc_config(),
+            FieldParent::Strukt(s) => s.get_dc_config(),
+        }
+    }
+}
+
 impl<'dc> LegacyDCHash for DCField<'dc> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.keyword_list.generate_hash(hashgen);
@@ -100,14 +117,15 @@ impl<'dc> LegacyDCHash for DCField<'dc> {
 
         // It shouldn't be necessary to explicitly add the field ID
         // to the hash--this is computed based on the relative
-        // position of this field with the other fields, so
-        // adding it explicitly will be redundant.  However,
-        // the field name is significant.
+        // position of this field with the other fields, so adding it
+        // explicitly will be redundant. However, the field name is
+        // significant.
         hashgen.add_string(self.field_name.clone());
 
-        // The field ID is added to the hash here, since we need to ensure
-        // the hash code comes out different in the DC_MULTIPLE_INHERITANCE case.
-        if globals::DC_MULTIPLE_INHERITANCE {
+        // The field ID is added to the hash here, since we need to
+        // ensure the hash code comes out different in the
+        // DC_MULTIPLE_INHERITANCE case.
+        if self.get_dc_config().dc_multiple_inheritance {
             hashgen.add_int(i32::from(self.field_id));
         }
     }
@@ -124,9 +142,14 @@ impl<'dc> DCField<'dc> {
         self.field_name.clone()
     }
 
-    pub fn get_dclass(&self) -> &'static DClass {
-        assert!(self.parent_is_dclass);
-        self.dclass.unwrap()
+    /// Gets the parent DClass element reference.
+    ///
+    /// Panics if this field's parent element is not a DClass.
+    pub fn get_dclass(&self) -> &'dc DClass {
+        match self.parent_element {
+            FieldParent::DClass(dclass_ref) => dclass_ref,
+            FieldParent::Strukt(_) => panic!("Field parent is not a DClass."),
+        }
     }
 
     #[inline(always)]
@@ -158,16 +181,6 @@ impl<'dc> DCField<'dc> {
     #[inline(always)]
     pub fn set_bogus_field(&mut self, is_bogus: bool) {
         self.bogus_field = is_bogus
-    }
-
-    pub fn set_parent_struct(&mut self, parent: &'dc DCStruct) {
-        assert!(self.dclass.is_none());
-        self.strukt = Some(parent);
-    }
-
-    pub fn set_parent_dclass(&mut self, parent: &'dc DClass<'dc>) {
-        assert!(self.strukt.is_none());
-        self.dclass = Some(parent);
     }
 
     #[inline(always)]

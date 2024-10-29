@@ -61,6 +61,7 @@ enum FlagArguments {
 fn main() -> std::io::Result<()> {
     use config::*;
     use libdonet::dcfile::DCFile;
+    use libdonet::dconfig::DCFileConfig;
     use libdonet::read_dc_files;
     use log::{error, info};
     use logger::DaemonLogger;
@@ -146,14 +147,15 @@ fn main() -> std::io::Result<()> {
     conf_file.read_to_string(&mut contents)?;
     drop(conf_file); // we're in the main scope, so lets drop manually here
 
-    let toml_parse: Result<DonetConfig, toml::de::Error> = toml::from_str(contents.as_str());
+    // Deserialize the TOML config file to our [`DonetConfig`] struct.
+    let daemon_config: DonetConfig = match toml::from_str(contents.as_str()) {
+        Ok(config) => config,
+        Err(err) => {
+            error!("An error occurred while parsing the TOML configuration.");
+            return Err(Error::new(ErrorKind::InvalidInput, err.message()));
+        }
+    };
     drop(contents);
-
-    if let Err(toml_error) = toml_parse {
-        error!("An error occurred while parsing the TOML configuration.");
-        return Err(Error::new(ErrorKind::InvalidInput, toml_error.message()));
-    }
-    let daemon_config: DonetConfig = toml_parse.unwrap();
 
     // Now that configuration file is parsed, we can create the logger.
     if let Some(log_level) = &daemon_config.daemon.log_level {
@@ -199,7 +201,7 @@ fn main() -> std::io::Result<()> {
 
     // If `--validate-dc` argument was received, parse DC files and exit.
     if want_dc_check {
-        return validate_dc_files(dc_check_files);
+        return validate_dc_files(&daemon_config, dc_check_files);
     }
     drop(args);
 
@@ -210,15 +212,16 @@ fn main() -> std::io::Result<()> {
     // Services like the Event Logger and Message Director do not need the DC file.
     cfg_if! {
         if #[cfg(feature = "requires_dc")] {
+            let conf: DCFileConfig = daemon_config.clone().into();
             let files: Vec<String> = daemon_config.global.dc_files.clone();
-            let dc_read = read_dc_files(files);
 
-            if let Err(dc_err) = dc_read {
-                error!("Failed to parse DC file(s): {}", dc_err);
-                return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
-            }
-
-            let dc: DCFile = dc_read.unwrap();
+            let dc: DCFile = match read_dc_files(conf, files) {
+                Ok(dc) => dc,
+                Err(dc_err) => {
+                    error!("Failed to parse DC file(s): {}", dc_err);
+                    return Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."));
+                }
+            };
         }
     }
 
@@ -354,27 +357,33 @@ fn main() -> std::io::Result<()> {
     tokio_runtime.block_on(daemon_async_main)
 }
 
-fn validate_dc_files(files: Vec<String>) -> std::io::Result<()> {
+fn validate_dc_files(conf: &config::DonetConfig, files: Vec<String>) -> std::io::Result<()> {
+    use libdonet::dconfig::DCFileConfig;
     use libdonet::read_dc_files;
     use log::{error, info};
     use std::io::{Error, ErrorKind};
 
-    let dc_read = read_dc_files(files.to_owned());
+    // DC parser pipeline requires configuration; Build from TOML config.
+    let dc_config: DCFileConfig = conf.clone().into();
 
-    if let Ok(dc_file) = dc_read {
-        let hash: u32 = dc_file.get_legacy_hash();
-        let signed: i32 = hash as i32;
-        let pretty: String = dc_file.get_pretty_hash();
+    match read_dc_files(dc_config, files.to_owned()) {
+        Ok(dc_file) => {
+            let hash: u32 = dc_file.get_legacy_hash();
+            let signed: i32 = hash as i32;
+            let pretty: String = dc_file.get_pretty_hash();
 
-        info!(
-            "No issues found. Legacy file hash is {} (signed {}, hex {})",
-            hash, signed, pretty
-        );
-        return Ok(());
+            info!(
+                "No issues found. Legacy file hash is {} (signed {}, hex {})",
+                hash, signed, pretty
+            );
+            Ok(())
+        }
+        Err(err) => {
+            error!("Failed to parse DC file: {:?}", err);
+
+            Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."))
+        }
     }
-    error!("Failed to parse DC file: {:?}", dc_read.unwrap_err());
-
-    Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."))
 }
 
 fn print_help_page() {

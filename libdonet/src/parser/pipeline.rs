@@ -21,6 +21,7 @@
 //! data stored in memory throughout the DC parser pipeline.
 
 use super::ast;
+use crate::dconfig::*;
 use codespan_reporting::diagnostic::Diagnostic;
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::files::{self, SimpleFiles};
@@ -50,6 +51,7 @@ impl PipelineStage {
 /// Sets up writer and codespan config for rendering diagnostics
 /// to stderr & storing DC files that implement codespan's File trait.
 pub(crate) struct PipelineData<'a> {
+    dc_parser_config: DCFileConfig,
     stage: PipelineStage,
     _writer: StandardStream,
     _config: term::Config,
@@ -60,9 +62,27 @@ pub(crate) struct PipelineData<'a> {
     pub syntax_trees: Vec<ast::Root>,
 }
 
-impl<'a> Default for PipelineData<'a> {
-    fn default() -> Self {
+/// If the [`PipelineData`] structure is dropped, this means the
+/// pipeline finished, either with success or error.
+///
+/// Upon drop, emit a final diagnostic with the finish status of the pipeline.
+impl<'a> Drop for PipelineData<'a> {
+    fn drop(&mut self) {
+        if self.errors_emitted > 0 {
+            let diag = Diagnostic::error().with_message(format!(
+                "Failed to read DC files due to {} previous errors.",
+                self.errors_emitted
+            ));
+
+            self.emit_diagnostic(diag).expect("Failed to emit diagnostic.");
+        }
+    }
+}
+
+impl<'a> From<DCFileConfig> for PipelineData<'a> {
+    fn from(value: DCFileConfig) -> Self {
         Self {
+            dc_parser_config: value,
             stage: PipelineStage::default(),
             _writer: StandardStream::stderr(ColorChoice::Always),
             _config: term::Config::default(),
@@ -81,6 +101,12 @@ impl<'a> Default for PipelineData<'a> {
             current_file: 0,
             syntax_trees: vec![],
         }
+    }
+}
+
+impl<'a> DCFileConfigAccessor for PipelineData<'a> {
+    fn get_dc_config(&self) -> &DCFileConfig {
+        &self.dc_parser_config
     }
 }
 
@@ -121,30 +147,13 @@ impl<'a> PipelineData<'a> {
     }
 }
 
-/// If the [`PipelineData`] structure is dropped, this means the
-/// pipeline finished, either with success or error.
-///
-/// Upon drop, emit a final diagnostic with the finish status of the pipeline.
-impl<'a> Drop for PipelineData<'a> {
-    fn drop(&mut self) {
-        if self.errors_emitted > 0 {
-            let diag = Diagnostic::error().with_message(format!(
-                "Failed to read DC files due to {} previous errors.",
-                self.errors_emitted
-            ));
-
-            self.emit_diagnostic(diag).expect("Failed to emit diagnostic.");
-        }
-    }
-}
-
 #[cfg(test)]
 mod unit_testing {
     use super::*;
 
     #[test]
     fn next_stage_state() {
-        let mut pipeline: PipelineData = PipelineData::default();
+        let mut pipeline: PipelineData = DCFileConfig::default().into();
 
         pipeline.next_file(); // increase file counter to 1
 

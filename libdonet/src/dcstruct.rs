@@ -19,19 +19,36 @@
 
 //! Data model representing a DC Struct element. [NEEDS WORK]
 
+use crate::dcfile::DCFile;
+use crate::dconfig::*;
 use crate::hashgen::*;
 
-#[derive(Debug, Default, PartialEq)]
-pub struct DCStruct {}
+#[derive(Debug)]
+pub struct DCStruct<'dc> {
+    dcfile: &'dc DCFile<'dc>,
+}
 
-impl std::fmt::Display for DCStruct {
+impl<'dc> std::fmt::Display for DCStruct<'dc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "TODO")
     }
 }
 
-impl LegacyDCHash for DCStruct {
+impl<'dc> DCFileConfigAccessor for DCStruct<'dc> {
+    fn get_dc_config(&self) -> &DCFileConfig {
+        self.dcfile.get_dc_config()
+    }
+}
+
+impl<'dc> LegacyDCHash for DCStruct<'dc> {
     fn generate_hash(&self, _: &mut DCHashGenerator) {
         // TODO
     }
+}
+
+/// Contains intermediate DC struct element structure and logic
+/// for semantic analysis as the DC struct is being built.
+pub(crate) mod interim {
+    #[derive(Debug)]
+    pub struct DCStruct {}
 }

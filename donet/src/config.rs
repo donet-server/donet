@@ -37,6 +37,10 @@ pub struct Daemon {
 pub struct Global {
     pub eventlogger: String, // '<host>:<port>'
     pub dc_files: Vec<String>,
+    /// See defaults for config vars below at libdonet's dconfig.rs.
+    pub dc_multiple_inheritance: Option<bool>,
+    pub dc_sort_inheritance_by_file: Option<bool>,
+    pub dc_virtual_inheritance: Option<bool>,
 }
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
@@ -97,4 +101,27 @@ pub struct EventLogger {
     pub output: String,          // path, relative to fs root
     pub log_format: String,      // e.g. "el-%Y-%m-%d-%H-%M-%S.log"
     pub rotate_interval: String, // e.g. "1d"
+}
+
+/// Creates a libdonet DCFileConfig struct from [`DonetConfig`].
+impl From<DonetConfig> for libdonet::dconfig::DCFileConfig {
+    fn from(value: DonetConfig) -> Self {
+        let mut this = Self::default();
+
+        this.dc_multiple_inheritance = value
+            .global
+            .dc_multiple_inheritance
+            .unwrap_or(this.dc_multiple_inheritance);
+
+        this.dc_sort_inheritance_by_file = value
+            .global
+            .dc_sort_inheritance_by_file
+            .unwrap_or(this.dc_sort_inheritance_by_file);
+
+        this.dc_virtual_inheritance = value
+            .global
+            .dc_virtual_inheritance
+            .unwrap_or(this.dc_virtual_inheritance);
+        this
+    }
 }

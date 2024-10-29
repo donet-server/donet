@@ -13,6 +13,12 @@ log_level = "info" # default: "info"
 [global]
 eventlogger = "127.0.0.1:7197"
 dc_files = ["main.dc", "game.dc"]
+# The following global settings are for the DC parser, and are optional.
+# These are used for support with legacy code.
+# They are under the global section as these settings must be the same on all clients.
+dc_multiple_inheritance = true # default: true
+dc_sort_inheritance_by_file = true # default: true
+dc_virtual_inheritance = true # default: true
 
 # The 'services' section describes the service(s) that
 # this daemon should perform as. (e.g. Client Agent, State Server, etc.)

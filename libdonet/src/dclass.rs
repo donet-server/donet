@@ -23,6 +23,7 @@
 use crate::dcatomic::DCAtomicField;
 use crate::dcfield::ClassField;
 use crate::dcfile::DCFile;
+use crate::dconfig::*;
 use crate::globals;
 use crate::hashgen::*;
 use multimap::MultiMap;
@@ -80,6 +81,12 @@ impl<'dc> std::fmt::Display for DClass<'dc> {
             }
         }
         writeln!(f, "}};")
+    }
+}
+
+impl<'dc> DCFileConfigAccessor for DClass<'dc> {
+    fn get_dc_config(&self) -> &DCFileConfig {
+        self.dcfile.get_dc_config()
     }
 }
 

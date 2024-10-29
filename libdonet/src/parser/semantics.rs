@@ -34,6 +34,7 @@ use super::ast;
 use super::error::DCReadError;
 use super::PipelineData;
 use crate::dcfile;
+use crate::dconfig::*;
 use anyhow::Result;
 
 /// Takes in the [`Abstract Syntax Trees`] from the last stage of the pipeline
@@ -44,7 +45,8 @@ pub fn semantic_analyzer<'a>(pipeline: &mut PipelineData) -> Result<dcfile::DCFi
     // tell the pipeline we are moving onto the next stage
     pipeline.next_stage();
 
-    let mut dc_file: dcfile::interim::DCFile = dcfile::interim::DCFile::default();
+    // create a new interim DC file struct from our pipeline's dc parser configuration
+    let mut dc_file = dcfile::interim::DCFile::from(pipeline.get_dc_config().clone());
 
     // Iterate through all ASTs and add them to our DCFile intermediate object.
     for ast in pipeline.syntax_trees.clone() {
@@ -84,13 +86,14 @@ mod unit_testing {
 
     #[test]
     fn python_imports() {
+        let dc_config = DCFileConfig::default();
         let dc_string: &str = "
             from views import *
             from views import DistributedDonut
             from views import Class/AI/OV
         ";
 
-        let dcf: dcfile::DCFile = read_dc(dc_string.into()).expect("Failed to parse syntax.");
+        let dcf: dcfile::DCFile = read_dc(dc_config, dc_string.into()).expect("Failed to parse syntax.");
 
         let num_imports: usize = dcf.get_num_imports();
         assert_eq!(num_imports, 3);
@@ -115,21 +118,23 @@ mod unit_testing {
     #[test]
     #[should_panic]
     fn redundant_view_suffix() {
+        let dc_config = DCFileConfig::default();
         let dc_string: &str = "
             from views import Class/AI/OV/OV
         ";
 
-        let _ = read_dc(dc_string.into()).expect("Should fail.");
+        let _ = read_dc(dc_config, dc_string.into()).expect("Should fail.");
     }
 
     #[test]
     #[should_panic]
     fn keyword_already_defined() {
+        let dc_config = DCFileConfig::default();
         let dc_string: &str = "
             keyword abcdef;
             keyword abcdef;
         ";
 
-        let _ = read_dc(dc_string.into()).expect("Should fail.");
+        let _ = read_dc(dc_config, dc_string.into()).expect("Should fail.");
     }
 }

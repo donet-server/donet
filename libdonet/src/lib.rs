@@ -73,6 +73,7 @@ cfg_if! {
         pub mod dclass;
         pub mod dcmolecular;
         pub mod dcnumeric;
+        pub mod dconfig;
         pub mod dcparameter;
         pub mod dcstruct;
         pub mod dcswitch;
@@ -119,7 +120,10 @@ fn init_logger() {
 /// the DC files, instantiating the DC parsing pipeline, and either
 /// returns the DCFile object or a Parse/File error.
 #[cfg(feature = "dcfile")]
-pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadError> {
+pub fn read_dc_files<'a>(
+    config: dconfig::DCFileConfig,
+    file_paths: Vec<String>,
+) -> Result<DCFile<'a>, DCReadError> {
     use log::info;
     use parser::InputFile;
     use std::fs::File;
@@ -177,7 +181,7 @@ pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadEr
         }
     }
 
-    parser::dcparse_pipeline(pipeline_input)
+    parser::dcparse_pipeline(config, pipeline_input)
 }
 
 /// Front end to the libdonet DC parser pipeline.
@@ -189,6 +193,7 @@ pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadEr
 /// ```rust
 /// use libdonet::dcfile::DCFile;
 /// use libdonet::dclass::DClass;
+/// use libdonet::dconfig::*;
 /// use libdonet::read_dc;
 ///
 /// let dc_file = "
@@ -221,7 +226,8 @@ pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadEr
 ///
 /// ";
 ///
-/// let dc_read = read_dc(dc_file.into());
+/// let dc_conf = DCFileConfig::default();
+/// let dc_read = read_dc(dc_conf, dc_file.into());
 ///
 /// if let Ok(dc_file) = dc_read {
 ///     // Print the DC File's 32-bit hash in hexadecimal format.
@@ -243,8 +249,8 @@ pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadEr
 /// <br><img src="https://c.tenor.com/myQHgyWQQ9sAAAAd/tenor.gif">
 ///
 #[cfg(feature = "dcfile")]
-pub fn read_dc<'a>(input: String) -> Result<DCFile<'a>, DCReadError> {
+pub fn read_dc<'a>(config: dconfig::DCFileConfig, input: String) -> Result<DCFile<'a>, DCReadError> {
     let dcparse_input: Vec<parser::InputFile> = vec![("input.dc".to_string(), input)];
 
-    parser::dcparse_pipeline(dcparse_input)
+    parser::dcparse_pipeline(config, dcparse_input)
 }
