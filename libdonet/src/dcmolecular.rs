@@ -29,7 +29,7 @@ use crate::hashgen::*;
 #[derive(Debug)]
 pub struct DCMolecularField<'dc> {
     base_field: DCField<'dc>,
-    atomic_fields: Vec<DCAtomicField<'dc>>,
+    atomic_fields: Vec<&'dc DCAtomicField<'dc>>,
 }
 
 impl<'dc> std::fmt::Display for DCMolecularField<'dc> {
@@ -51,19 +51,13 @@ impl<'dc> LegacyDCHash for DCMolecularField<'dc> {
 }
 
 impl<'dc> DCMolecularField<'dc> {
-    /// Adds a smart pointer to the original atomic field in our array.
-    pub fn add_atomic_field(&mut self, atomic: DCAtomicField<'dc>) {
-        // We should be receiving our own Rc ptr copy, so just move it into our vec.
-        self.atomic_fields.push(atomic);
-    }
-
     #[inline(always)]
     pub fn get_num_atomics(&self) -> usize {
         self.atomic_fields.len()
     }
 
     #[inline(always)]
-    pub fn get_atomic_field(&self, index: usize) -> Option<&DCAtomicField<'dc>> {
-        self.atomic_fields.get(index)
+    pub fn get_atomic_field(&self, index: usize) -> Option<&'dc DCAtomicField> {
+        self.atomic_fields.get(index).copied()
     }
 }

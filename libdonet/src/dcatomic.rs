@@ -24,8 +24,6 @@ use crate::dcfield::DCField;
 use crate::dckeyword::DCKeywordList;
 use crate::dcparameter::DCParameter;
 use crate::hashgen::*;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 /// Represents an atomic field of a Distributed Class.
 /// This defines the interface to a DClass object, and is
@@ -33,7 +31,7 @@ use std::rc::Rc;
 #[derive(Debug)]
 pub struct DCAtomicField<'dc> {
     base_field: DCField<'dc>,
-    elements: Vec<Rc<RefCell<DCParameter<'dc>>>>,
+    elements: Vec<&'dc DCParameter<'dc>>,
 }
 
 impl<'dc> std::fmt::Display for DCAtomicField<'dc> {
@@ -48,10 +46,7 @@ impl<'dc> LegacyDCHash for DCAtomicField<'dc> {
 
         hashgen.add_int(self.elements.len().try_into().unwrap());
 
-        for param_ptr in &self.elements {
-            let new_ptr: Rc<RefCell<DCParameter>> = Rc::clone(param_ptr);
-            let param = new_ptr.borrow_mut();
-
+        for param in &self.elements {
             param.generate_hash(hashgen);
         }
     }
@@ -64,15 +59,11 @@ impl<'dc> DCAtomicField<'dc> {
     }
 
     #[inline(always)]
-    pub fn get_element(&self, index: usize) -> Option<Rc<RefCell<DCParameter<'dc>>>> {
-        self.elements.get(index).map(Rc::clone)
+    pub fn get_element(&self, index: usize) -> Option<&'dc DCParameter<'dc>> {
+        self.elements.get(index).copied()
     }
 
     pub fn set_keyword_list(&mut self, kw_list: DCKeywordList<'dc>) {
         self.base_field.set_field_keyword_list(kw_list)
-    }
-
-    pub fn add_element(&mut self, element: DCParameter<'dc>) {
-        self.elements.push(Rc::new(RefCell::new(element)));
     }
 }

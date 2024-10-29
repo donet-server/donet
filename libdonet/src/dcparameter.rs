@@ -23,12 +23,11 @@
 use crate::dcatomic::DCAtomicField;
 use crate::dctype::DCTypeDefinition;
 use crate::hashgen::*;
-use std::rc::Rc;
 
 /// Represents the type specification of a parameter within an atomic field.
 #[derive(Debug)]
 pub struct DCParameter<'dc> {
-    parent: Rc<DCAtomicField<'dc>>,
+    parent: &'dc DCAtomicField<'dc>,
     base_type: DCTypeDefinition,
     identifier: Option<String>,
     type_alias: String,
@@ -50,8 +49,8 @@ impl<'dc> LegacyDCHash for DCParameter<'dc> {
 
 impl<'dc> DCParameter<'dc> {
     #[inline(always)]
-    pub fn get_atomic_field(&self) -> Rc<DCAtomicField<'dc>> {
-        Rc::clone(&self.parent) // clone new rc pointer
+    pub fn get_atomic_field(&self) -> &'dc DCAtomicField {
+        self.parent
     }
 
     #[inline(always)]
