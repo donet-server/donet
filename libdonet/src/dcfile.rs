@@ -31,7 +31,7 @@ use crate::hashgen::*;
 use crate::parser::ast;
 
 /// Represents a Python-style import statement in the DC file.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DCPythonImport {
     pub module: String,
     pub symbols: Vec<String>,
@@ -71,7 +71,7 @@ impl std::fmt::Display for DCPythonImport {
 /// Data model that provides a high level representation of a single,
 /// or collection, of DC files and their elements such as class imports,
 /// type definitions, structures, and Distributed Classes.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DCFile<'dc> {
     config: DCFileConfig,
     baked_legacy_hash: globals::DCFileHash,

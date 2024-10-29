@@ -35,7 +35,7 @@ pub type FieldId2Field<'dc> = MultiMap<globals::FieldId, &'dc ClassField<'dc>>;
 /// Contains a map of DC Fields, as well as atomic and
 /// molecular fields that are declared within the class.
 /// Also stores other properties such as its hierarchy.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DClass<'dc> {
     dcfile: &'dc DCFile<'dc>,
     class_name: String,

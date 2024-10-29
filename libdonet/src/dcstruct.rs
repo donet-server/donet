@@ -23,7 +23,7 @@ use crate::dcfile::DCFile;
 use crate::dconfig::*;
 use crate::hashgen::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DCStruct<'dc> {
     dcfile: &'dc DCFile<'dc>,
 }

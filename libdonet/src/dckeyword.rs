@@ -28,7 +28,7 @@ use multimap::MultiMap;
 /// as 4 bytes in modern 32-bit and 64-bit C/C++ compilers.
 pub type HistoricalFlag = i32;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DCKeyword {
     name: String,
     // This flag is only kept for historical reasons, so we can
