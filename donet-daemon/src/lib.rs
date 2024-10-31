@@ -17,18 +17,11 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::network::client::Client;
-use std::io::Result;
-use tokio::net::TcpStream;
+#[macro_use]
+extern crate cfg_if;
 
-pub struct Subscriber {
-    client: Client,
-}
-
-impl Subscriber {
-    pub async fn new(socket: TcpStream) -> Result<Self> {
-        Ok(Self {
-            client: Client::new(socket).await?,
-        })
-    }
-}
+pub mod config;
+pub mod event;
+pub mod logger;
+pub mod meson;
+pub mod service;

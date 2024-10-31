@@ -12,12 +12,12 @@ Online and Pirates of the Caribbean Online, from 2001 to 2013.
 
 ## Getting Started
 
-The Donet repository is a monorepo that houses two different Rust projects:
+The Donet repository is a monorepo that houses two main Rust projects:
 - **donet** - The Donet daemon source, which includes all the Donet services.
 See [donet-server.org](https://www.donet-server.org).
-- **libdonet** - The core utilities for Donet services, including datagram
+- **donet-core** - The core utilities for Donet services, including datagram
 utilities and the DC language parser. See
-[docs.donet-server.org](https://docs.donet-server.org/libdonet).
+[docs.donet-server.org](https://docs.donet-server.org/donet_core).
 
 Please read the
 [introduction to Donet](https://docs.donet-server.org/introduction)

@@ -1,0 +1,22 @@
+[package]
+name = "donet-event-logger"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+name = "donet_event_logger"
+path = "src/lib.rs"
+
+[dependencies]
+donet-core = { version = "0.1.0", path = "../donet-core", features = ["datagram"] }
+donet-daemon = { version = "0.1.0", path = "../donet-daemon" }
+donet-network = { version = "0.1.0", path = "../donet-network" }
+chrono = { workspace = true }
+log = { workspace = true }
+tokio = { workspace = true }
+regex = { version = "1.10" }

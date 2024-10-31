@@ -1,0 +1,25 @@
+[package]
+name = "donet-database"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+publish = false
+
+[features]
+mysql = ["dep:mysql", "dep:mysql_common"]
+default = ["mysql"]
+
+[lib]
+name = "donet_database"
+path = "src/lib.rs"
+
+[dependencies]
+donet-core = { version = "0.1.0", path = "../donet-core", features = ["full"] }
+donet-daemon = { version = "0.1.0", path = "../donet-daemon" }
+log = { workspace = true }
+tokio = { workspace = true }
+mysql = { version = "25", default-features = false, features = ["derive"], optional = true }
+mysql_common = { version = "*", default-features = true, optional = true }

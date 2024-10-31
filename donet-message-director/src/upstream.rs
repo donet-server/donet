@@ -17,8 +17,24 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-//! Thin wrappers around Tokio async TCP/UDP sockets for Donet.
+use donet_core::datagram::datagram::Datagram;
+use donet_network::tcp;
+use std::io::Result;
+use tokio::sync::Mutex;
 
-pub mod client;
-pub mod tcp;
-pub mod udp;
+/// Represents a connection to an upstream Message Director service.
+pub struct UpstreamMD {
+    connection: tcp::Connection,
+    is_sending: bool,
+    queue: Mutex<Vec<Datagram>>,
+}
+
+impl UpstreamMD {
+    async fn connect(address: &str) -> Result<Self> {
+        Ok(Self {
+            connection: tcp::Connection::connect(address).await?,
+            is_sending: false,
+            queue: Mutex::new(vec![]),
+        })
+    }
+}

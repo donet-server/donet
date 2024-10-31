@@ -1,0 +1,22 @@
+[package]
+name = "donet-message-director"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+name = "donet_message_director"
+path = "src/lib.rs"
+
+[dependencies]
+donet-core = { version = "0.1.0", path = "../donet-core", features = ["datagram"] }
+donet-daemon = { version = "0.1.0", path = "../donet-daemon" }
+donet-network = { version = "0.1.0", path = "../donet-network" }
+log = { workspace = true }
+tokio = { workspace = true }
+interval = { version = "1.4", package = "intervallum" }
+multimap = { version = "0.10" }

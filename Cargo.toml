@@ -3,11 +3,28 @@ resolver = "2"
 members = [
     "donet",
     "donet-core",
+    "donet-database",
+    "donet-daemon",
+    "donet-event-logger",
+    "donet-message-director",
+    "donet-network",
 ]
 default-members = [
     "donet",
     "donet-core",
+    "donet-database",
+    "donet-daemon",
+    "donet-event-logger",
+    "donet-message-director",
+    "donet-network",
 ]
+
+[workspace.dependencies]
+cfg-if = "1"
+chrono = "0.4"
+log = { version = "0.4", features = ["std"] }
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "fs", "io-util", "sync", "signal"] }
 
 [workspace.package]
 license = "AGPL-3.0-or-later"

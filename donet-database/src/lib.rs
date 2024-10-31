@@ -17,9 +17,9 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::config;
-use crate::service::*;
 use donet_core::globals;
+use donet_daemon::config;
+use donet_daemon::service::*;
 use log::{error, info};
 use mysql::prelude::*;
 use mysql::*;

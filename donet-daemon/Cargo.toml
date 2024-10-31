@@ -1,0 +1,26 @@
+[package]
+name = "donet-daemon"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+publish = false
+
+[features]
+requires_dc = ["donet-core/dcfile"]
+default = []
+
+[lib]
+name = "donet_daemon"
+path = "src/lib.rs"
+
+[dependencies]
+donet-core = { version = "0.1.0", path = "../donet-core", default-features = false, features = ["datagram"] }
+donet-network = { version = "0.1.0", path = "../donet-network" }
+cfg-if = { workspace = true }
+chrono = { workspace = true }
+log = { workspace = true }
+serde = { workspace = true }
+tokio = { workspace = true }

@@ -19,13 +19,13 @@
 
 mod msgpack;
 
-use crate::config;
-use crate::event::LoggedEvent;
-use crate::network::udp;
-use crate::service::*;
 use chrono::{DateTime, Duration, Local, TimeZone};
 use donet_core::datagram::datagram::Datagram;
 use donet_core::datagram::iterator::DatagramIterator;
+use donet_daemon::config;
+use donet_daemon::event::LoggedEvent;
+use donet_daemon::service::*;
+use donet_network::udp;
 use log::{debug, error, info, trace};
 use regex::Regex;
 use std::io::{Error, ErrorKind, Result};
@@ -306,10 +306,10 @@ impl EventLogger {
 mod unit_testing {
     use super::{EventLogger, Interval, IntervalUnit};
     use crate::config;
-    use crate::event::LoggedEvent;
-    use crate::network::udp;
-    use crate::service::DonetService;
     use donet_core::datagram::datagram::Datagram;
+    use donet_daemon::event::LoggedEvent;
+    use donet_daemon::service::DonetService;
+    use donet_network::udp;
     use std::io::Error;
     use std::result::Result;
 

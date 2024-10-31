@@ -17,24 +17,18 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::network::tcp;
-use donet_core::datagram::datagram::Datagram;
+use donet_network::Client;
 use std::io::Result;
-use tokio::sync::Mutex;
+use tokio::net::TcpStream;
 
-/// Represents a connection to an upstream Message Director service.
-pub struct UpstreamMD {
-    connection: tcp::Connection,
-    is_sending: bool,
-    queue: Mutex<Vec<Datagram>>,
+pub struct Subscriber {
+    client: Client,
 }
 
-impl UpstreamMD {
-    async fn connect(address: &str) -> Result<Self> {
+impl Subscriber {
+    pub async fn new(socket: TcpStream) -> Result<Self> {
         Ok(Self {
-            connection: tcp::Connection::connect(address).await?,
-            is_sending: false,
-            queue: Mutex::new(vec![]),
+            client: Client::new(socket).await?,
         })
     }
 }

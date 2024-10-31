@@ -98,7 +98,7 @@ else
   message('Building all default Donet services.')
 endif
 
-subdir('donet')
+subdir('donet-daemon')
 subdir('docs')
 
 run_target(

@@ -17,8 +17,6 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-//! <img src="https://gitlab.com/donet-server/donet/-/raw/master/logo/donet_banner.png" height=10%>
-//!
 //! # donet
 //! Donet is a free and open source network engine designed after the Distributed Networking
 //! protocol, as defined in the high-level networking API of the [Panda3D](https://panda3d.org)
@@ -30,34 +28,21 @@
 //! See the project source on [GitLab](https://gitlab.com/donet-server/donet). Feel free
 //! to also visit the website, [donet-server.org](https://www.donet-server.org).
 //!
-//! If you're looking for the documentation of **libdonet**, click [here](https://docs.donet-server.org/libdonet).
+//! If you're looking for the documentation of **donet-core**, click [here](https://docs.donet-server.org/donet_core).
 
-#![allow(clippy::module_inception)]
 #![deny(unused_extern_crates)]
-
-mod config;
-#[cfg(feature = "database-server")]
-mod database_server;
-mod event;
-#[cfg(feature = "event-logger")]
-mod event_logger;
-mod logger;
-mod meson;
-#[cfg(feature = "message-director")]
-mod message_director;
-mod network;
-mod service;
 
 #[macro_use]
 extern crate cfg_if;
-use meson::*;
+use donet_daemon::meson::*;
 
-use config::*;
 #[cfg(feature = "requires_dc")]
 use donet_core::{dconfig::DCFileConfig, read_dc_files};
+use donet_daemon::config::*;
+use donet_daemon::logger;
+use donet_daemon::logger::DaemonLogger;
+use donet_daemon::service::*;
 use log::*;
-use logger::DaemonLogger;
-use service::*;
 use std::fs::File;
 use std::io::{Error, ErrorKind, Read};
 use tokio::runtime::{Builder, Runtime};
@@ -265,7 +250,7 @@ fn main() -> std::io::Result<()> {
         }
         cfg_if! {
             if #[cfg(feature = "message-director")] {
-                use crate::message_director::MessageDirector;
+                use donet_message_director::MessageDirector;
 
                 if want_message_director {
                     info!("Booting Message Director service.");
@@ -317,7 +302,7 @@ fn main() -> std::io::Result<()> {
         }
         cfg_if! {
             if #[cfg(feature = "event-logger")] {
-                use crate::event_logger::EventLogger;
+                use donet_event_logger::EventLogger;
 
                 if want_event_logger {
                     info!("Booting Event Logger service.");
@@ -364,13 +349,13 @@ fn main() -> std::io::Result<()> {
     };
 
     // Hack to reassure the compiler that I want to return an IO result.
-    service::set_future_return_type::<std::io::Result<()>, _>(&daemon_async_main);
+    set_future_return_type::<std::io::Result<()>, _>(&daemon_async_main);
 
     tokio_runtime.block_on(daemon_async_main)
 }
 
 #[cfg(feature = "requires_dc")]
-fn validate_dc_files(conf: &config::DonetConfig, files: Vec<String>) -> std::io::Result<()> {
+fn validate_dc_files(conf: &DonetConfig, files: Vec<String>) -> std::io::Result<()> {
     use donet_core::dconfig::DCFileConfig;
     use donet_core::read_dc_files;
     use log::{error, info};

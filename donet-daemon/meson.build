@@ -39,7 +39,7 @@ configure_file(
 # Copy the meson.rs source file to the source directory.
 run_command(
   'cp',
-  meson.project_build_root() / 'donet' / 'meson.rs',
-  meson.project_source_root() / 'donet' / 'src' / 'meson.rs',
+  meson.project_build_root() / 'donet-daemon' / 'meson.rs',
+  meson.project_source_root() / 'donet-daemon' / 'src' / 'meson.rs',
   check: true
 )

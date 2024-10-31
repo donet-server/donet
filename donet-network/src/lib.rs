@@ -17,6 +17,9 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
+pub mod tcp;
+pub mod udp;
+
 use donet_core::datagram::datagram::Datagram;
 use log::debug;
 use std::io::{Error, ErrorKind, Result};

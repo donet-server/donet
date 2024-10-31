@@ -11,12 +11,12 @@ publish = false
 
 [features]
 client-agent = ["requires_dc"]
-message-director = ["dep:interval", "dep:multimap"]
+message-director = ["dep:donet-message-director"]
 state-server = ["requires_dc"]
-database-server = ["requires_dc", "dep:mysql", "dep:mysql_common"]
-dbss = ["state-server", "dep:mysql", "dep:mysql_common"]
-event-logger = ["dep:regex"]
-requires_dc = ["donet-core/dcfile"]
+database-server = ["requires_dc", "dep:donet-database"]
+dbss = ["state-server"]
+event-logger = ["dep:donet-event-logger"]
+requires_dc = ["donet-core/dcfile", "donet-daemon/requires_dc"]
 default = [
   "client-agent", "message-director",
   "state-server", "database-server",
@@ -24,20 +24,12 @@ default = [
 ]
 
 [dependencies]
-# Core library
-donet-core = { path = "../donet-core", version = "0.1.0", default-features = false, features = ["datagram"] }
-# Core dependencies
-cfg-if = { version = "1" }
-chrono = { version = "0.4" }
-log = { version = "0.4", features = ["std"] }
-serde = { version = "1", features = ["derive"] }
-toml = { version = "0.7" }
-tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "fs", "io-util", "sync", "signal"] }
-# Message Director
-interval = { package = "intervallum", version = "1.4", optional = true }
-multimap = { version = "0.10", optional = true }
-# Event Logger
-regex = { version = "1.10", optional = true }
-# Database Backend
-mysql = { version = "25", default-features = false, features = ["derive"], optional = true }
-mysql_common = { version = "*", default-features = true, optional = true }
+donet-core = { version = "0.1.0", path = "../donet-core", default-features = false, features = ["datagram"] }
+donet-daemon = { version = "0.1.0", path = "../donet-daemon", default-features = true }
+donet-database = { version = "0.1.0", path = "../donet-database", optional = true }
+donet-event-logger = { version = "0.1.0", path = "../donet-event-logger", optional = true }
+donet-message-director = { version = "0.1.0", path = "../donet-message-director", optional = true }
+cfg-if = { workspace = true }
+log = { workspace = true }
+toml = "0.7"
+tokio = { workspace = true }
