@@ -111,7 +111,7 @@ cargo_build = custom_target(
   'cargo-build',
   build_by_default: true,
   build_always_stale: true,
-  output: 'dummy', # See 'outdir' custom target
+  output: 'cargo_build', # See 'outdir' custom target
   console: true,
   env: cargo_env,
   command: [
@@ -128,7 +128,7 @@ custom_target(
   output: meson.project_name(),
   console: true,
   command: [
-    'cp', 'target' / rust_target / daemon_bin, '@BUILD_ROOT@' / meson.project_name(),
+    'cp', 'target' / rust_target / daemon_bin, '@BUILD_ROOT@',
   ],
   depends: cargo_build
 )
