@@ -24,8 +24,8 @@ use crate::event::LoggedEvent;
 use crate::network::udp;
 use crate::service::*;
 use chrono::{DateTime, Duration, Local, TimeZone};
-use libdonet::datagram::datagram::Datagram;
-use libdonet::datagram::iterator::DatagramIterator;
+use donet_core::datagram::datagram::Datagram;
+use donet_core::datagram::iterator::DatagramIterator;
 use log::{debug, error, info, trace};
 use regex::Regex;
 use std::io::{Error, ErrorKind, Result};
@@ -309,7 +309,7 @@ mod unit_testing {
     use crate::event::LoggedEvent;
     use crate::network::udp;
     use crate::service::DonetService;
-    use libdonet::datagram::datagram::Datagram;
+    use donet_core::datagram::datagram::Datagram;
     use std::io::Error;
     use std::result::Result;
 

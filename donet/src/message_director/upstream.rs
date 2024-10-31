@@ -18,7 +18,7 @@
 */
 
 use crate::network::tcp;
-use libdonet::datagram::datagram::Datagram;
+use donet_core::datagram::datagram::Datagram;
 use std::io::Result;
 use tokio::sync::Mutex;
 

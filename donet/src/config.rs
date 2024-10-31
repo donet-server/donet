@@ -105,7 +105,7 @@ pub struct EventLogger {
 
 /// Creates a libdonet DCFileConfig struct from [`DonetConfig`].
 #[cfg(feature = "requires_dc")]
-impl From<DonetConfig> for libdonet::dconfig::DCFileConfig {
+impl From<DonetConfig> for donet_core::dconfig::DCFileConfig {
     fn from(value: DonetConfig) -> Self {
         let mut this = Self::default();
 

@@ -16,7 +16,7 @@ state-server = ["requires_dc"]
 database-server = ["requires_dc", "dep:mysql", "dep:mysql_common"]
 dbss = ["state-server", "dep:mysql", "dep:mysql_common"]
 event-logger = ["dep:regex"]
-requires_dc = ["libdonet/dcfile"]
+requires_dc = ["donet-core/dcfile"]
 default = [
   "client-agent", "message-director",
   "state-server", "database-server",
@@ -25,7 +25,7 @@ default = [
 
 [dependencies]
 # Core library
-libdonet = { path = "../libdonet", version = "0.1.0", default-features = false, features = ["datagram"] }
+donet-core = { path = "../donet-core", version = "0.1.0", default-features = false, features = ["datagram"] }
 # Core dependencies
 cfg-if = { version = "1" }
 chrono = { version = "0.4" }

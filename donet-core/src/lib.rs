@@ -17,11 +17,7 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-//! <img src="https://gitlab.com/donet-server/donet/-/raw/master/logo/donet_banner.png?ref_type=heads" height=10%>
-//!
-//! You can return to the Donet manual at [`docs.donet-server.org`].
-//!
-//! # libdonet
+//! # donet-core
 //! Provides the necessary utilities and definitions for using the Donet networking protocol.
 //!
 //! These utilities include a lexer, parser, and high-level representation of the parsed DC
@@ -32,7 +28,7 @@
 //! The recommended way to get started is to enable all features.
 //! Do this by enabling the `full` feature flag:
 //! ```toml
-//! libdonet = { version = "0.1.0", features = ["full"] }
+//! donet-core = { version = "0.1.0", features = ["full"] }
 //! ```
 //!
 //! ### Feature Flags
@@ -40,9 +36,11 @@
 //! It is possible to just enable certain features over others.
 //! Below is a list of the available feature flags.
 //!
-//! - **`full`**: Enables all feature flags available for libdonet.
+//! - **`full`**: Enables all feature flags available for donet-core.
 //! - **`datagram`**: Includes Datagram / Datagram Iterator source for writing network packets.
 //! - **`dcfile`**: Includes the DC file lexer, parser, and DC element structures.
+//!
+//! You can return to the Donet manual at [`docs.donet-server.org`].
 //!
 //! [`docs.donet-server.org`]: https://docs.donet-server.org/
 
@@ -186,17 +184,17 @@ pub fn read_dc_files<'a>(
     parser::dcparse_pipeline(config, pipeline_input)
 }
 
-/// Front end to the libdonet DC parser pipeline.
+/// Front end to the donet-core DC parser pipeline.
 ///
 /// ## Example Usage
 /// The following is an example of parsing a simple DC file string,
 /// printing its DC hash in hexadecimal notation, and accessing
 /// the elements of a defined Distributed Class:
 /// ```rust
-/// use libdonet::dcfile::DCFile;
-/// use libdonet::dclass::DClass;
-/// use libdonet::dconfig::*;
-/// use libdonet::read_dc;
+/// use donet_core::dcfile::DCFile;
+/// use donet_core::dclass::DClass;
+/// use donet_core::dconfig::*;
+/// use donet_core::read_dc;
 ///
 /// let dc_file = "
 ///

@@ -17,7 +17,7 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-use libdonet::datagram::datagram::Datagram;
+use donet_core::datagram::datagram::Datagram;
 
 /// This structure provides a generic and easy to use interface to build
 /// new events to be sent to the Event Logger in the [`MessagePack`] format.

@@ -511,13 +511,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "donet-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cfg-if",
+ "codespan",
+ "codespan-reporting",
+ "log",
+ "multimap 0.9.1",
+ "plex",
+ "pretty_env_logger",
+ "serde",
+ "strum",
+ "strum_macros",
+ "thiserror",
+]
+
+[[package]]
 name = "donetd"
 version = "0.1.0"
 dependencies = [
  "cfg-if",
  "chrono",
+ "donet-core",
  "intervallum",
- "libdonet",
  "log",
  "multimap 0.10.0",
  "mysql",
@@ -863,24 +881,6 @@ name = "libc"
 version = "0.2.155"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97b3888a4aecf77e811145cadf6eef5901f4782c53886191b2f693f24761847c"
-
-[[package]]
-name = "libdonet"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "cfg-if",
- "codespan",
- "codespan-reporting",
- "log",
- "multimap 0.9.1",
- "plex",
- "pretty_env_logger",
- "serde",
- "strum",
- "strum_macros",
- "thiserror",
-]
 
 [[package]]
 name = "libloading"

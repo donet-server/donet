@@ -1,20 +1,20 @@
 [workspace]
+resolver = "2"
 members = [
-    "libdonet",
-    "donet"
+    "donet",
+    "donet-core",
 ]
 default-members = [
-    "libdonet",
-    "donet"
+    "donet",
+    "donet-core",
 ]
-resolver = "2"
 
 [workspace.package]
 license = "AGPL-3.0-or-later"
 authors = [
     "Max Rodriguez <me@maxrdz.com>"
 ]
-homepage = "https://gitlab.com/donet-server/donet/"
+homepage = "https://www.donet-server.org"
 repository = "https://gitlab.com/donet-server/donet/"
 
 [profile.release]

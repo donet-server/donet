@@ -31,7 +31,7 @@ git_host_repo = 'donet'
 git_url = 'https://gitlab.com/' + git_host_user + '/' + git_host_repo
 
 donet_website_url = 'https://www.donet-server.org'
-libdonet_website_url = 'https://docs.donet-server.org/libdonet'
+libdonet_website_url = 'https://docs.donet-server.org/donet_core'
 sphinx_website_url = 'https://docs.donet-server.org'
 
 cargo_opts = [ '--manifest-path', meson.project_source_root() / 'Cargo.toml' ]

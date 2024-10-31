@@ -17,8 +17,8 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-use libdonet::datagram::byte_order;
-use libdonet::datagram::iterator::DatagramIterator;
+use donet_core::datagram::byte_order;
+use donet_core::datagram::iterator::DatagramIterator;
 
 #[rustfmt::skip]
 static JSON_ESCAPES: [u8; 32] = [
@@ -217,7 +217,7 @@ pub fn decode_to_json(out: &mut String, dgi: &mut DatagramIterator) {
 #[cfg(test)]
 mod unit_testing {
     use super::*;
-    use libdonet::datagram::datagram::{Datagram, DatagramError};
+    use donet_core::datagram::datagram::{Datagram, DatagramError};
 
     #[test]
     fn fixmap_fixstr_common_usage() -> Result<(), DatagramError> {

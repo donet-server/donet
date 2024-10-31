@@ -54,7 +54,7 @@ use meson::*;
 
 use config::*;
 #[cfg(feature = "requires_dc")]
-use libdonet::{dconfig::DCFileConfig, read_dc_files};
+use donet_core::{dconfig::DCFileConfig, read_dc_files};
 use log::*;
 use logger::DaemonLogger;
 use service::*;
@@ -371,8 +371,8 @@ fn main() -> std::io::Result<()> {
 
 #[cfg(feature = "requires_dc")]
 fn validate_dc_files(conf: &config::DonetConfig, files: Vec<String>) -> std::io::Result<()> {
-    use libdonet::dconfig::DCFileConfig;
-    use libdonet::read_dc_files;
+    use donet_core::dconfig::DCFileConfig;
+    use donet_core::read_dc_files;
     use log::{error, info};
     use std::io::{Error, ErrorKind};
 

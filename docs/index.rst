@@ -32,15 +32,15 @@ Welcome to the Donet network engine documentation. Donet is a
 free and open source networking engine for massive multiplayer
 online games.
 
-The Donet project is a monorepo that houses two different
+The Donet project is a monorepo that houses two main
 projects built with Rust_:
 
 - **donet** - The Donet daemon source, which includes all Donet
   services.
 
-- **libdonet** - The core utilities for the Donet daemon and
+- **donet-core** - The core utilities for the Donet daemon and
   clients, including datagram utilities and the DC language parser.
-  See `docs.donet-server.org/libdonet <https://docs.donet-server.org/libdonet>`__.
+  See `docs.donet-server.org/donet_core <https://docs.donet-server.org/donet_core>`__.
 
 Donet uses Git_ for version control and Meson_ as the build system.
 

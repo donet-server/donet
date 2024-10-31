@@ -17,7 +17,7 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-use libdonet::globals::Channel;
+use donet_core::globals::Channel;
 use multimap::MultiMap;
 use std::collections::HashSet;
 use std::sync::Arc;

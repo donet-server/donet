@@ -25,7 +25,7 @@ use crate::config;
 use crate::network::tcp;
 use crate::service::*;
 use channel_map::*;
-use libdonet::globals::*;
+use donet_core::globals::*;
 use log::{error, info};
 use std::collections::HashSet;
 use std::io::Result;

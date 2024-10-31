@@ -24,7 +24,7 @@ use tokio::task::JoinHandle;
 
 cfg_if! {
     if #[cfg(feature = "requires_dc")] {
-        pub use libdonet::dcfile::DCFile;
+        pub use donet_core::dcfile::DCFile;
     } else {
         /// Dummy DCFile struct for the [`DonetService`] trait
         /// to use on builds that do not require the DC file.

@@ -19,7 +19,7 @@
 
 use crate::config;
 use crate::service::*;
-use libdonet::globals;
+use donet_core::globals;
 use log::{error, info};
 use mysql::prelude::*;
 use mysql::*;

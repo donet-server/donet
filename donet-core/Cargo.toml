@@ -1,5 +1,5 @@
 [package]
-name = "libdonet"
+name = "donet-core"
 version = "0.1.0"
 edition = "2021"
 license.workspace = true
@@ -7,10 +7,11 @@ authors.workspace = true
 homepage.workspace = true
 repository.workspace = true
 readme = "README.md"
-documentation = "https://docs.donet-server.org/libdonet/"
+documentation = "https://docs.donet-server.org/donet_core/"
 
 [lib]
-name = "libdonet"
+name = "donet_core"
+path = "src/lib.rs"
 
 [features]
 default = ["datagram", "dcfile"]

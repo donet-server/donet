@@ -15,9 +15,9 @@
 Library API Reference
 ----------------------
 
-Currently, libdonet's documentation is not generated in
+Currently, donet-core's documentation is not generated in
 Sphinx, but rather using cargo-doc.
 
-The libdonet API reference is available here_.
+The donet-core API reference is available here_.
 
-.. _here: https://docs.donet-server.org/libdonet
+.. _here: https://docs.donet-server.org/donet_core
