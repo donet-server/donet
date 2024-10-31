@@ -53,10 +53,9 @@ extern crate cfg_if;
 use meson::*;
 
 use config::*;
-use libdonet::dcfile::DCFile;
-use libdonet::dconfig::DCFileConfig;
-use libdonet::read_dc_files;
-use log::{error, info};
+#[cfg(feature = "requires_dc")]
+use libdonet::{dconfig::DCFileConfig, read_dc_files};
+use log::*;
 use logger::DaemonLogger;
 use service::*;
 use std::fs::File;
@@ -200,13 +199,21 @@ fn main() -> std::io::Result<()> {
 
     // If `--validate-dc` argument was received, parse DC files and exit.
     if want_dc_check {
-        return validate_dc_files(&daemon_config, dc_check_files);
+        cfg_if! {
+            if #[cfg(feature = "requires_dc")] {
+                return validate_dc_files(&daemon_config, dc_check_files);
+            } else {
+                error!("This build of Donet does not include DC file support.");
+                return Err(Error::new(ErrorKind::Unsupported, "No DC file support."));
+            }
+        }
     }
+
+    // At this point in execution, the program has not exited, which
+    // means all arguments have been read and executed, if executed,
+    // and now we can start the process of booting the Donet daemon.
     drop(args);
 
-    // At this point in execution, the program has not exited,
-    // so we can start the process of booting the Donet daemon.
-    //
     // First step is to read the DC files listed in the daemon configuration.
     // Services like the Event Logger and Message Director do not need the DC file.
     cfg_if! {
@@ -237,17 +244,11 @@ fn main() -> std::io::Result<()> {
         // Tokio join handles for spawned tasks of services started.
         let mut service_handles: Vec<JoinHandle<std::io::Result<()>>> = vec![];
 
-        #[cfg(feature = "client-agent")]
         let want_client_agent: bool = services.client_agent.is_some();
-        #[cfg(feature = "message-director")]
         let want_message_director: bool = services.message_director.is_some();
-        #[cfg(feature = "state-server")]
         let want_state_server: bool = services.state_server.is_some();
-        #[cfg(feature = "database-server")]
         let want_database_server: bool = services.database_server.is_some();
-        #[cfg(feature = "dbss")]
         let want_dbss: bool = services.dbss.is_some();
-        #[cfg(feature = "event-logger")]
         let want_event_logger: bool = services.event_logger.is_some();
 
         cfg_if! {
@@ -255,6 +256,10 @@ fn main() -> std::io::Result<()> {
                 if want_client_agent {
                     info!("Booting Client Agent service.");
                     todo!("CA not yet implemented.")
+                }
+            } else {
+                if want_client_agent {
+                    warn!("This build of Donet has no Client Agent; skipping.");
                 }
             }
         }
@@ -265,8 +270,12 @@ fn main() -> std::io::Result<()> {
                 if want_message_director {
                     info!("Booting Message Director service.");
 
-                    let handle = MessageDirector::start(daemon_config.clone(), dc.clone()).await?;
+                    let handle = MessageDirector::start(daemon_config.clone(), None).await?;
                     service_handles.push(handle);
+                }
+            } else {
+                if want_message_director {
+                    warn!("This build of Donet has no Message Director; skipping.");
                 }
             }
         }
@@ -276,6 +285,10 @@ fn main() -> std::io::Result<()> {
                     info!("Booting State Server service.");
                     todo!("SS not yet implemented.")
                 }
+            } else {
+                if want_state_server {
+                    warn!("This build of Donet has no State Server; skipping.");
+                }
             }
         }
         cfg_if! {
@@ -284,6 +297,10 @@ fn main() -> std::io::Result<()> {
                     info!("Booting Database Server service.");
                     todo!("DB not yet implemented.")
                 }
+            } else {
+                if want_database_server {
+                    warn!("This build of Donet has no Database Server; skipping.");
+                }
             }
         }
         cfg_if! {
@@ -291,6 +308,10 @@ fn main() -> std::io::Result<()> {
                 if want_dbss {
                     info!("Booting DBSS service.");
                     todo!("DBSS not yet implemented.")
+                }
+            } else {
+                if want_dbss {
+                    warn!("This build of Donet has no DBSS; skipping.");
                 }
             }
         }
@@ -301,23 +322,32 @@ fn main() -> std::io::Result<()> {
                 if want_event_logger {
                     info!("Booting Event Logger service.");
 
-                    let handle = EventLogger::start(daemon_config.clone(), dc.clone()).await?;
+                    let handle = EventLogger::start(daemon_config.clone(), None).await?;
                     service_handles.push(handle);
+                }
+            } else {
+                if want_event_logger {
+                    warn!("This build of Donet has no Event Logger; skipping.");
                 }
             }
         }
         // spawned services were given copies of these; drop originals.
+        #[cfg(feature = "requires_dc")]
         drop(dc);
         drop(daemon_config);
 
-        match tokio::signal::ctrl_c().await {
-            Ok(()) => {
-                println!();
-                info!("Received interrupt (Ctrl + C)");
-            }
-            Err(err) => {
-                error!("Unable to listen for shutdown signal: {}", err);
-                panic!("Tokio was not able to listen to the interrupt signal.")
+        if service_handles.is_empty() {
+            warn!("No services spawned, exiting program.")
+        } else {
+            match tokio::signal::ctrl_c().await {
+                Ok(()) => {
+                    println!();
+                    info!("Received interrupt (Ctrl + C)");
+                }
+                Err(err) => {
+                    error!("Unable to listen for shutdown signal: {}", err);
+                    panic!("Tokio was not able to listen to the interrupt signal.")
+                }
             }
         }
         info!("Exiting...");
@@ -339,6 +369,7 @@ fn main() -> std::io::Result<()> {
     tokio_runtime.block_on(daemon_async_main)
 }
 
+#[cfg(feature = "requires_dc")]
 fn validate_dc_files(conf: &config::DonetConfig, files: Vec<String>) -> std::io::Result<()> {
     use libdonet::dconfig::DCFileConfig;
     use libdonet::read_dc_files;

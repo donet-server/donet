@@ -18,8 +18,7 @@
 */
 
 use crate::config;
-use crate::service::DonetService;
-use libdonet::dcfile::DCFile;
+use crate::service::*;
 use libdonet::globals;
 use log::{error, info};
 use mysql::prelude::*;
@@ -74,7 +73,7 @@ impl DonetService for DatabaseServer {
     type Service = Self;
     type Configuration = config::DBServer;
 
-    async fn create(conf: Self::Configuration, dc: DCFile<'static>) -> Result<Self::Service> {
+    async fn create(conf: Self::Configuration, dc: Option<DCFile<'static>>) -> Result<Self::Service> {
         // TODO: Check for db backend type once we have multiple DB backend support.
         let sql_config: config::SQL;
         let host_port: Vec<&str>;
@@ -145,14 +144,14 @@ impl DonetService for DatabaseServer {
         }
 
         Ok(DatabaseServer {
-            dc_file: dc,
+            dc_file: dc.expect("DB server requires the DC file."),
             _sql_pool: pool,
             sql_conn: conn,
             _credentials: creds,
         })
     }
 
-    async fn start(conf: config::DonetConfig, dc: DCFile<'static>) -> Result<JoinHandle<Result<()>>> {
+    async fn start(conf: config::DonetConfig, dc: Option<DCFile<'static>>) -> Result<JoinHandle<Result<()>>> {
         // NOTE: We are unwrapping an Option without checking,
         // as this method can only be called if 'database_server'
         // is of a 'Some' type, which guarantees no panic scenario.

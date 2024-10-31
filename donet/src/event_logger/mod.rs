@@ -22,11 +22,10 @@ mod msgpack;
 use crate::config;
 use crate::event::LoggedEvent;
 use crate::network::udp;
-use crate::service::DonetService;
+use crate::service::*;
 use chrono::{DateTime, Duration, Local, TimeZone};
 use libdonet::datagram::datagram::Datagram;
 use libdonet::datagram::iterator::DatagramIterator;
-use libdonet::dcfile::DCFile;
 use log::{debug, error, info, trace};
 use regex::Regex;
 use std::io::{Error, ErrorKind, Result};
@@ -65,7 +64,7 @@ impl DonetService for EventLogger {
     type Service = Self;
     type Configuration = config::EventLogger;
 
-    async fn create(conf: Self::Configuration, _: DCFile<'static>) -> Result<Self::Service> {
+    async fn create(conf: Self::Configuration, _: Option<DCFile<'static>>) -> Result<Self::Service> {
         Ok(Self {
             binding: udp::Socket::bind(&conf.bind).await?,
             log_format: format!("{}{}", conf.output, conf.log_format),
@@ -75,11 +74,11 @@ impl DonetService for EventLogger {
         })
     }
 
-    async fn start(conf: config::DonetConfig, dc: DCFile<'static>) -> Result<JoinHandle<Result<()>>> {
+    async fn start(conf: config::DonetConfig, _: Option<DCFile<'static>>) -> Result<JoinHandle<Result<()>>> {
         // We can unwrap safely here since this function only is called if it is `Some`.
         let service_conf = conf.services.event_logger.unwrap();
 
-        let mut service: EventLogger = EventLogger::create(service_conf, dc).await?;
+        let mut service: EventLogger = EventLogger::create(service_conf, None).await?;
 
         Ok(Self::spawn_async_task(async move { service.main().await }))
     }
@@ -311,16 +310,11 @@ mod unit_testing {
     use crate::network::udp;
     use crate::service::DonetService;
     use libdonet::datagram::datagram::Datagram;
-    use libdonet::dconfig::DCFileConfig;
     use std::io::Error;
     use std::result::Result;
 
     #[tokio::test]
     async fn basic_message_test() -> Result<(), Error> {
-        // All services must be passed a DC file, but the event logger
-        // does not use the DC file, so we just need to pass it a dummy one.
-        let dc = libdonet::read_dc(DCFileConfig::default(), "".into()).unwrap();
-
         let conf: config::DonetConfig = config::DonetConfig {
             daemon: config::Daemon {
                 name: String::default(),
@@ -349,7 +343,7 @@ mod unit_testing {
             },
         };
 
-        let _ = EventLogger::start(conf, dc).await?;
+        let _ = EventLogger::start(conf, None).await?;
 
         let sock: udp::Socket = udp::Socket::bind("127.0.0.1:2816").await?;
         let dg: Datagram;

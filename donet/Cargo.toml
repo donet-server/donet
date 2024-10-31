@@ -7,17 +7,16 @@ authors.workspace = true
 homepage.workspace = true
 repository.workspace = true
 keywords = ["donet", "dc", "networking", "server", "mmo"]
-readme = "README.md"
 publish = false
 
 [features]
 client-agent = ["requires_dc"]
-message-director = []
+message-director = ["dep:interval", "dep:multimap"]
 state-server = ["requires_dc"]
 database-server = ["requires_dc", "dep:mysql", "dep:mysql_common"]
-dbss = ["requires_dc", "dep:mysql", "dep:mysql_common"]
+dbss = ["state-server", "dep:mysql", "dep:mysql_common"]
 event-logger = ["dep:regex"]
-requires_dc = []
+requires_dc = ["libdonet/dcfile"]
 default = [
   "client-agent", "message-director",
   "state-server", "database-server",
@@ -25,14 +24,20 @@ default = [
 ]
 
 [dependencies]
+# Core library
+libdonet = { path = "../libdonet", version = "0.1.0", default-features = false, features = ["datagram"] }
+# Core dependencies
 cfg-if = { version = "1" }
 chrono = { version = "0.4" }
-libdonet = { path = "../libdonet", version = "0.1.0", features = ["default"] }
 log = { version = "0.4", features = ["std"] }
+serde = { version = "1", features = ["derive"] }
+toml = { version = "0.7" }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "fs", "io-util", "sync", "signal"] }
+# Message Director
+interval = { package = "intervallum", version = "1.4", optional = true }
+multimap = { version = "0.10", optional = true }
+# Event Logger
+regex = { version = "1.10", optional = true }
+# Database Backend
 mysql = { version = "25", default-features = false, features = ["derive"], optional = true }
 mysql_common = { version = "*", default-features = true, optional = true }
-multimap = { version = "0.10" }
-regex = { version = "1.10", optional = true }
-serde = { version = "1", features = ["derive"] }
-tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "fs", "io-util", "sync", "signal"] }
-toml = { version = "0.7" }

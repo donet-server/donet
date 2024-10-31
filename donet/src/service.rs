@@ -18,10 +18,25 @@
 */
 
 use crate::config;
-use libdonet::dcfile::DCFile;
 use std::future::Future;
 use std::io::Result;
 use tokio::task::JoinHandle;
+
+cfg_if! {
+    if #[cfg(feature = "requires_dc")] {
+        pub use libdonet::dcfile::DCFile;
+    } else {
+        /// Dummy DCFile struct for the [`DonetService`] trait
+        /// to use on builds that do not require the DC file.
+        ///
+        /// This struct should never be initialized, as services
+        /// that do not require the DC file will be passed `None`
+        /// instead of `Some(DCFile)`.
+        pub struct DCFile<'dc> {
+            _hack: &'dc str, // required for lifetime parameter
+        }
+    }
+}
 
 /// Must be implemented by all Donet services in order to be
 /// bootstrapped on daemon startup using this daemon's configuration.
@@ -29,8 +44,8 @@ pub trait DonetService {
     type Service;
     type Configuration;
 
-    async fn create(conf: Self::Configuration, dc: DCFile<'static>) -> Result<Self::Service>;
-    async fn start(conf: config::DonetConfig, dc: DCFile<'static>) -> Result<JoinHandle<Result<()>>>;
+    async fn create(conf: Self::Configuration, dc: Option<DCFile<'static>>) -> Result<Self::Service>;
+    async fn start(conf: config::DonetConfig, dc: Option<DCFile<'static>>) -> Result<JoinHandle<Result<()>>>;
 
     /// This service's main asynchronous loop.
     async fn main(&mut self) -> Result<()>;

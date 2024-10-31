@@ -23,28 +23,31 @@ mod upstream;
 
 use crate::config;
 use crate::network::tcp;
-use crate::service::DonetService;
-use channel_map::ChannelMap;
-use libdonet::dcfile::DCFile;
+use crate::service::*;
+use channel_map::*;
+use libdonet::globals::*;
 use log::{error, info};
+use std::collections::HashSet;
 use std::io::Result;
 use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
 
 pub struct MessageDirector {
     binding: tcp::Acceptor,
-    upstream: Option<tcp::Connection>,
+    upstream_md: Option<tcp::Connection>,
     channel_map: ChannelMap,
+    subscribers: HashSet<subscriber::Subscriber>,
+    removed_subscribers: HashSet<subscriber::Subscriber>,
 }
 
 impl DonetService for MessageDirector {
     type Service = Self;
     type Configuration = config::MessageDirector;
 
-    async fn create(conf: Self::Configuration, _: DCFile<'static>) -> Result<Self::Service> {
+    async fn create(conf: Self::Configuration, _: Option<DCFile<'static>>) -> Result<Self::Service> {
         Ok(MessageDirector {
             binding: tcp::Acceptor::bind(conf.bind.as_str()).await?,
-            upstream: {
+            upstream_md: {
                 if let Some(u_uri) = conf.upstream {
                     info!("Message Director will connect to upstream MD.");
                     Some(tcp::Connection::connect(u_uri.as_str()).await?)
@@ -53,14 +56,16 @@ impl DonetService for MessageDirector {
                 }
             },
             channel_map: ChannelMap::default(),
+            subscribers: HashSet::default(),
+            removed_subscribers: HashSet::default(),
         })
     }
 
-    async fn start(conf: config::DonetConfig, dc: DCFile<'static>) -> Result<JoinHandle<Result<()>>> {
+    async fn start(conf: config::DonetConfig, _: Option<DCFile<'static>>) -> Result<JoinHandle<Result<()>>> {
         // We can unwrap safely here since this function only is called if it is `Some`.
         let service_conf: config::MessageDirector = conf.services.message_director.unwrap();
 
-        let mut md: MessageDirector = MessageDirector::create(service_conf, dc).await?;
+        let mut md: MessageDirector = MessageDirector::create(service_conf, None).await?;
 
         Ok(Self::spawn_async_task(async move { md.main().await }))
     }
@@ -71,7 +76,7 @@ impl DonetService for MessageDirector {
                 Ok((socket, address)) => {
                     info!("Received incoming connection from {:?}.", address);
 
-                    self.handle_datagram(&socket).await?;
+                    self.route_datagram(&socket).await?;
                 }
                 Err(socket_err) => error!("Failed to get client: {:?}", socket_err),
             }
@@ -79,8 +84,30 @@ impl DonetService for MessageDirector {
     }
 }
 
+impl ChannelCoordinator for MessageDirector {
+    fn get_channel_map(&mut self) -> &mut ChannelMap {
+        &mut self.channel_map
+    }
+
+    async fn on_add_channel(&self, channel: Channel) {
+        todo!()
+    }
+
+    async fn on_add_range(&self, range: std::ops::Range<Channel>) {
+        todo!()
+    }
+
+    async fn on_remove_channel(&self, channel: Channel) {
+        todo!()
+    }
+
+    async fn on_remove_range(&self, range: std::ops::Range<Channel>) {
+        todo!()
+    }
+}
+
 impl MessageDirector {
-    pub async fn handle_datagram(&self, _socket: &TcpStream) -> Result<()> {
+    pub async fn route_datagram(&self, _socket: &TcpStream) -> Result<()> {
         Ok(())
     }
 }

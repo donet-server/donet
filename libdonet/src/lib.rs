@@ -90,6 +90,7 @@ cfg_if! {
 ///
 /// [`log`]: https://docs.rs/log/latest/log/
 ///
+#[cfg(feature = "dcfile")]
 fn logger_initialized() -> bool {
     use log::Level::*;
 
@@ -109,6 +110,7 @@ fn logger_initialized() -> bool {
 /// [`pretty_env_logger`]: https://docs.rs/pretty_env_logger/latest/pretty_env_logger/
 /// [`log`]: https://docs.rs/log/latest/log/
 ///
+#[cfg(feature = "dcfile")]
 fn init_logger() {
     if logger_initialized() {
         return;
