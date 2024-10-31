@@ -7,6 +7,7 @@ authors.workspace = true
 homepage.workspace = true
 repository.workspace = true
 publish = false
+readme = "README.md"
 
 [lib]
 name = "donet_event_logger"
@@ -16,7 +17,10 @@ path = "src/lib.rs"
 donet-core = { version = "0.1.0", path = "../donet-core", features = ["datagram"] }
 donet-daemon = { version = "0.1.0", path = "../donet-daemon" }
 donet-network = { version = "0.1.0", path = "../donet-network" }
-chrono = { workspace = true }
+chrono = "0.4"
 log = { workspace = true }
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["fs", "sync"] }
 regex = { version = "1.10" }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros"] }

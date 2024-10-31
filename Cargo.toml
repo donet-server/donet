@@ -15,11 +15,8 @@ default-members = [
 ]
 
 [workspace.dependencies]
-cfg-if = "1"
-chrono = "0.4"
 log = { version = "0.4", features = ["std"] }
-serde = { version = "1", features = ["derive"] }
-tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "fs", "io-util", "sync", "signal"] }
+tokio = { version = "1", features = ["rt-multi-thread"] }
 
 [workspace.package]
 license = "AGPL-3.0-or-later"

@@ -8,6 +8,7 @@ homepage.workspace = true
 repository.workspace = true
 keywords = ["donet", "dc", "networking", "server", "mmo"]
 publish = false
+readme = "README.md"
 
 [features]
 client-agent = ["requires_dc"]
@@ -29,7 +30,10 @@ donet-daemon = { version = "0.1.0", path = "../donet-daemon", default-features =
 donet-database = { version = "0.1.0", path = "../donet-database", optional = true }
 donet-event-logger = { version = "0.1.0", path = "../donet-event-logger", optional = true }
 donet-message-director = { version = "0.1.0", path = "../donet-message-director", optional = true }
-cfg-if = { workspace = true }
+cfg-if = "1"
 log = { workspace = true }
 toml = "0.7"
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["signal"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros"] }

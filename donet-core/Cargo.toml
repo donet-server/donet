@@ -20,7 +20,7 @@ datagram = ["dep:serde", "dep:strum"]
 dcfile = ["dep:plex", "dep:multimap"]
 
 [dependencies]
-cfg-if = { workspace = true }
+cfg-if = "1"
 log = { workspace = true }
 pretty_env_logger = { version = "0.5" }
 anyhow = { version = "1.0" }

@@ -7,6 +7,7 @@ authors.workspace = true
 homepage.workspace = true
 repository.workspace = true
 publish = false
+readme = "README.md"
 
 [features]
 mysql = ["dep:mysql", "dep:mysql_common"]
