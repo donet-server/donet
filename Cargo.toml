@@ -12,11 +12,6 @@ members = [
 default-members = [
     "donet",
     "donet-core",
-    "donet-database",
-    "donet-daemon",
-    "donet-event-logger",
-    "donet-message-director",
-    "donet-network",
 ]
 
 [workspace.dependencies]
