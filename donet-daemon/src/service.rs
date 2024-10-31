@@ -44,11 +44,18 @@ pub trait DonetService {
     type Service;
     type Configuration;
 
-    async fn create(conf: Self::Configuration, dc: Option<DCFile<'static>>) -> Result<Self::Service>;
-    async fn start(conf: config::DonetConfig, dc: Option<DCFile<'static>>) -> Result<JoinHandle<Result<()>>>;
+    fn create(
+        conf: Self::Configuration,
+        dc: Option<DCFile<'static>>,
+    ) -> impl Future<Output = Result<Self::Service>> + Send;
+
+    fn start(
+        conf: config::DonetConfig,
+        dc: Option<DCFile<'static>>,
+    ) -> impl Future<Output = Result<JoinHandle<Result<()>>>> + Send;
 
     /// This service's main asynchronous loop.
-    async fn main(&mut self) -> Result<()>;
+    fn main(&mut self) -> impl Future<Output = Result<()>> + Send;
 
     /// Spawns a new Tokio asynchronous task that executes the given
     /// async function, and returns its Tokio join handle.
