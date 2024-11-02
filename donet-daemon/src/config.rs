@@ -56,7 +56,7 @@ pub struct Services {
 #[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct ClientAgent {
     pub bind: String, // '<host>:<port>'
-    pub dc_file_hash: Option<String>,
+    pub dc_file_hash: Option<u32>,
     pub version_string: String,
 }
 
