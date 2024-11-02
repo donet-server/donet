@@ -1,5 +1,5 @@
-FROM ubuntu:24.04 as build
-WORKDIR /usr/local/app
+FROM ubuntu:24.04 AS base
+WORKDIR /
 
 RUN set -ex; \
     apt-get update; \
@@ -12,10 +12,4 @@ RUN apt-get install -y rustup; \
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Expects daemon.toml to be present in the source root dir
 COPY . .
-
-RUN meson setup build -Dprofile=release;
-RUN meson compile -C build;
-
-ENTRYPOINT ["./build/donetd"]

@@ -21,3 +21,7 @@ vendor
 venv/
 test/
 tools/
+
+*.dc
+daemon.toml
+data/

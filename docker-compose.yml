@@ -1,0 +1,34 @@
+name: donet-cluster
+#include:
+#  - application.yaml
+volumes:
+  daemon-data:
+    labels:
+      name: "Daemon Shared Data"
+services:
+  eventlogger:
+    build: ./donet-event-logger
+    ports:
+      - "7197:7197"
+    volumes:
+      - daemon-data:/data:ro
+  mastermd:
+    build: ./donet-message-director
+    ports:
+      - "7199:7199"
+    volumes:
+      - daemon-data:/data:ro
+  #clientagent:
+  #  build: ./donet-client-agent
+  #  ports:
+  #    - "7198:7198"
+  #  volumes:
+  #    - daemon-data:/data:ro
+  #stateserver:
+  #  build: ./donet-state
+  #  volumes:
+  #    - daemon-data:/data:ro
+  #dbserver:
+  #  build: ./donet-database
+  #  volumes:
+  #    - daemon-data:/data:ro
