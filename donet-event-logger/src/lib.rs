@@ -64,13 +64,19 @@ impl DonetService for EventLogger {
     type Service = Self;
     type Configuration = config::EventLogger;
 
-    async fn create(conf: Self::Configuration, _: Option<DCFile<'static>>) -> Result<Self::Service> {
+    async fn create(mut conf: Self::Configuration, _: Option<DCFile<'static>>) -> Result<Self::Service> {
         Ok(Self {
             binding: udp::Socket::bind(&conf.bind).await?,
-            log_format: format!("{}{}", conf.output, conf.log_format),
+            log_format: {
+                // Sanitize input config; Make sure log out path ends with '/'.
+                if conf.output.chars().last().expect("Empty log output path.") != '/' {
+                    conf.output.push('/');
+                }
+                format!("{}{}", conf.output, conf.log_format)
+            },
             log_file: Arc::new(Mutex::new(None)),
             rotation_interval: Self::str_to_interval(&conf.rotate_interval),
-            next_rotation: 0_i64, // set on first log opened
+            next_rotation: 0_i64, // set once first log opened
         })
     }
 
