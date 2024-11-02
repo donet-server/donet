@@ -200,7 +200,7 @@ run_target(
   env: cargo_env,
   command: [
     cargo_bin, 'tarpaulin',
-    '--force-clean',
+    '--force-clean', '--all',
     '--exclude-files', 'build/*',
     '--exclude-files', 'builddebug/*',
     '--out', 'xml',
@@ -233,7 +233,7 @@ test(
   cargo_bin,
   env: cargo_env,
   args: [
-    'test', '--color=always',
+    'test', '--color=always', '--all',
     cargo_opts,
   ],
   is_parallel: false,
