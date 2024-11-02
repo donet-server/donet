@@ -12,7 +12,7 @@ variables:
   GCP_GIT_ACCESS_KEY_SECRET_NAME: "GIT_ACCESS_KEY"
 
 stages:
-  - check
+  - .pre
   - build
   - test
   - deploy
@@ -24,9 +24,12 @@ stages:
   - rustup default stable
   - rustup component add clippy rustfmt
 
+secret_detection:
+  stage: .pre
+
 sync-mirror:
   image: alpine
-  stage: check
+  stage: .pre
   allow_failure: true
   retry: 2
   interruptible: true
@@ -65,14 +68,14 @@ sync-mirror:
 
 commit-validation:
   image: 'python:3.12-alpine'
-  stage: check
+  stage: .pre
   interruptible: true
   script:
     - python build-aux/validate-commit.py "${CI_COMMIT_TITLE}"
 
 typos:
   image: alpine
-  stage: check
+  stage: .pre
   interruptible: true
   script:
     - apk add --no-cache wget tar
@@ -83,7 +86,7 @@ typos:
 
 cargo-deny:
   image: 'ubuntu:latest'
-  stage: check
+  stage: .pre
   allow_failure: true
   interruptible: true
   cache:
@@ -98,7 +101,7 @@ cargo-deny:
 
 cargo-fmt:
   image: 'rust:slim'
-  stage: check
+  stage: .pre
   interruptible: true
   script:
     - rustup component add rustfmt
