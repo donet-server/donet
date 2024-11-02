@@ -50,6 +50,10 @@ endif
 
 feature_flags = []
 
+if get_option('dockerized')
+  feature_flags += ['dockerized']
+endif
+
 if get_option('build_client_agent')
   feature_flags += [ 'client-agent' ]
   message('Building the Client Agent.')

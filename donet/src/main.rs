@@ -55,6 +55,7 @@ enum FlagArguments {
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
+
     let mut config_file: &str = DEFAULT_TOML;
     let mut want_dc_check: bool = false;
     let mut dc_check_files: Vec<String> = vec![];
@@ -244,7 +245,7 @@ fn main() -> std::io::Result<()> {
                 }
             } else {
                 if want_client_agent {
-                    warn!("This build of Donet has no Client Agent; skipping.");
+                    feature_warn("Client Agent");
                 }
             }
         }
@@ -260,7 +261,7 @@ fn main() -> std::io::Result<()> {
                 }
             } else {
                 if want_message_director {
-                    warn!("This build of Donet has no Message Director; skipping.");
+                    feature_warn("Message Director");
                 }
             }
         }
@@ -272,7 +273,7 @@ fn main() -> std::io::Result<()> {
                 }
             } else {
                 if want_state_server {
-                    warn!("This build of Donet has no State Server; skipping.");
+                    feature_warn("State Server");
                 }
             }
         }
@@ -284,7 +285,7 @@ fn main() -> std::io::Result<()> {
                 }
             } else {
                 if want_database_server {
-                    warn!("This build of Donet has no Database Server; skipping.");
+                    feature_warn("Database Server");
                 }
             }
         }
@@ -296,7 +297,7 @@ fn main() -> std::io::Result<()> {
                 }
             } else {
                 if want_dbss {
-                    warn!("This build of Donet has no DBSS; skipping.");
+                    feature_warn("DBSS");
                 }
             }
         }
@@ -312,7 +313,7 @@ fn main() -> std::io::Result<()> {
                 }
             } else {
                 if want_event_logger {
-                    warn!("This build of Donet has no Event Logger; skipping.");
+                    feature_warn("Event Logger");
                 }
             }
         }
@@ -354,36 +355,31 @@ fn main() -> std::io::Result<()> {
     tokio_runtime.block_on(daemon_async_main)
 }
 
-#[cfg(feature = "requires_dc")]
-fn validate_dc_files(conf: &DonetConfig, files: Vec<String>) -> std::io::Result<()> {
-    use donet_core::dconfig::DCFileConfig;
-    use donet_core::read_dc_files;
-    use log::{error, info};
-    use std::io::{Error, ErrorKind};
-
-    // DC parser pipeline requires configuration; Build from TOML config.
-    let dc_config: DCFileConfig = conf.clone().into();
-
-    match read_dc_files(dc_config, files.to_owned()) {
-        Ok(dc_file) => {
-            let hash: u32 = dc_file.get_legacy_hash();
-            let signed: i32 = hash as i32;
-            let pretty: String = dc_file.get_pretty_hash();
-
-            info!(
-                "No issues found. Legacy file hash is {} (signed {}, hex {})",
-                hash, signed, pretty
-            );
-            Ok(())
-        }
-        Err(err) => {
-            error!("Failed to parse DC file: {:?}", err);
-
-            Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."))
+cfg_if! {
+    // In a production environment, multiple Docker containers can
+    // be deployed, each with a specific build of Donet for it to
+    // perform one service and only one service.
+    //
+    // However, all containers may share the same configuration file,
+    // so every daemon will print feature warns for all the services
+    // that it was not built with. Can be avoided by stripping config
+    // files customized to every daemon, but that's inconvenient.
+    //
+    // If we know that this build of Donet is specifically being made
+    // for a docker image, disable these feature warnings.
+    if #[cfg(feature = "dockerized")] {
+        #[allow(dead_code)]
+        fn feature_warn(_: &'static str) {}
+    } else {
+        #[allow(dead_code)]
+        fn feature_warn(name: &'static str) {
+            warn!("This build of Donet has no {}; skipping.", name);
         }
     }
 }
 
+/// Performs the operation for the `-h` flag, or the `--help`
+/// GNU-style long flag in the daemon binary.
 fn print_help_page() {
     println!(
         "Usage:    {} [options] ... [CONFIG_FILE]\n\
@@ -399,6 +395,8 @@ fn print_help_page() {
     );
 }
 
+/// Performs the operation for the `-v` flag, or the `--version`
+/// GNU-style long flag in the daemon binary.
 #[rustfmt::skip]
 fn print_version() {
     let bin_arch: &str = if cfg!(target_arch = "x86") { "x86" }
@@ -437,4 +435,36 @@ fn print_version() {
         VERSION, bin_arch, bin_platform, bin_env, VCS_TAG,
         COMPILE_TIME, BUILD_OPTIONS, FEATURE_FLAGS, GIT_URL
     );
+}
+
+/// Performs the operation for the `-c` flag, or the `--validate-dc`
+/// GNU-style long flag in the daemon binary.
+#[cfg(feature = "requires_dc")]
+fn validate_dc_files(conf: &DonetConfig, files: Vec<String>) -> std::io::Result<()> {
+    use donet_core::dconfig::DCFileConfig;
+    use donet_core::read_dc_files;
+    use log::{error, info};
+    use std::io::{Error, ErrorKind};
+
+    // DC parser pipeline requires configuration; Build from TOML config.
+    let dc_config: DCFileConfig = conf.clone().into();
+
+    match read_dc_files(dc_config, files.to_owned()) {
+        Ok(dc_file) => {
+            let hash: u32 = dc_file.get_legacy_hash();
+            let signed: i32 = hash as i32;
+            let pretty: String = dc_file.get_pretty_hash();
+
+            info!(
+                "No issues found. Legacy file hash is {} (signed {}, hex {})",
+                hash, signed, pretty
+            );
+            Ok(())
+        }
+        Err(err) => {
+            error!("Failed to parse DC file: {:?}", err);
+
+            Err(Error::new(ErrorKind::InvalidInput, "Failed to parse DC file."))
+        }
+    }
 }

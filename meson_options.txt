@@ -8,6 +8,12 @@ option(
   value: 'release',
   description: 'The build profile for Donet. `release` or `debug`.'
 )
+option(
+  'dockerized',
+  type: 'boolean',
+  value: false,
+  description: 'Enabled on builds for Docker images. Disables some warns.'
+)
 option('build_client_agent', type: 'boolean', value: false)
 option('build_message_director', type: 'boolean', value: false)
 option('build_state_server', type: 'boolean', value: false)

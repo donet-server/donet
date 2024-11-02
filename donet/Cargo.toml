@@ -18,6 +18,7 @@ database-server = ["requires_dc", "dep:donet-database"]
 dbss = ["state-server"]
 event-logger = ["dep:donet-event-logger"]
 requires_dc = ["donet-core/dcfile", "donet-daemon/requires_dc"]
+dockerized = []
 default = [
   "client-agent", "message-director",
   "state-server", "database-server",
