@@ -55,6 +55,8 @@ between the different sections and their contained pages.
 .. toctree::
    :maxdepth: 2
 
+   license
+   conduct
    introduction/index
    gettingstarted/index
    protocol/index
@@ -62,7 +64,6 @@ between the different sections and their contained pages.
    dclanguage/index
    internal/index
    glossary
-   license
 
 Get in Touch
 ------------
