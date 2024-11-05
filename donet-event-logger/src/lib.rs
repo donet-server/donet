@@ -309,7 +309,7 @@ impl EventLogger {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::{EventLogger, Interval, IntervalUnit};
     use crate::config;
     use donet_core::datagram::datagram::Datagram;

@@ -117,7 +117,7 @@ impl DCHashGenerator {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::PrimeNumberGenerator;
 
     #[test]

@@ -947,7 +947,7 @@ pub fn parse<I: Iterator<Item = (DCToken, Span)>>(
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::ast;
     use super::parse;
     use crate::parser::lexer::Lexer;

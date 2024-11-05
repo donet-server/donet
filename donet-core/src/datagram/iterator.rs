@@ -265,7 +265,7 @@ impl DatagramIterator {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::*;
     use crate::datagram::datagram::DatagramError;
 

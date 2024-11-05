@@ -58,7 +58,7 @@ impl Connection {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::{Acceptor, Connection};
 
     #[tokio::test]

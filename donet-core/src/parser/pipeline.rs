@@ -148,7 +148,7 @@ impl<'a> PipelineData<'a> {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::*;
 
     #[test]

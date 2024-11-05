@@ -79,7 +79,7 @@ pub fn semantic_analyzer<'a>(pipeline: &mut PipelineData) -> Result<dcfile::DCFi
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::*;
     use crate::read_dc;
     use dcfile::DCPythonImport;

@@ -85,7 +85,7 @@ impl LoggedEvent {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::{Datagram, LoggedEvent};
 
     #[test]

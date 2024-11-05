@@ -40,7 +40,7 @@ impl Socket {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::Socket;
 
     #[tokio::test]

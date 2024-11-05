@@ -215,7 +215,7 @@ pub fn decode_to_json(out: &mut String, dgi: &mut DatagramIterator) {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::*;
     use donet_core::datagram::datagram::{Datagram, DatagramError};
 

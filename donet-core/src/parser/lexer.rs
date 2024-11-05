@@ -297,7 +297,7 @@ impl<'a> Iterator for Lexer<'a> {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::{DCToken, Lexer};
 
     // Utility for unit testing lexer. Gives the test_string to the lexer

@@ -309,7 +309,7 @@ impl Datagram {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::*;
     use crate::protocol::Protocol;
 

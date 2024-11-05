@@ -256,7 +256,7 @@ impl<'dc> DCFile<'dc> {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::*;
 
     #[test]

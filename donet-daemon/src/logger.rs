@@ -85,7 +85,7 @@ pub fn init_logger(logger: &'static dyn log::Log) -> Result<()> {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::{init_logger, DaemonLogger};
     use log::{debug, error, info, trace, warn};
     use std::io::Result;

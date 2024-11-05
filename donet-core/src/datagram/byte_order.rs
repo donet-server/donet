@@ -128,7 +128,7 @@ pub fn swap_be_64(v: u64) -> u64 {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::*;
 
     // Little-endian swap tests

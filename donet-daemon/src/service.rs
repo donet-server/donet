@@ -73,7 +73,7 @@ pub trait DonetService {
 pub fn set_future_return_type<T, F: Future<Output = T>>(_arg: &F) {}
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::set_future_return_type;
     use std::io::Result;
 

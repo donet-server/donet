@@ -74,7 +74,7 @@ cfg_if! {
 }
 
 #[cfg(test)]
-mod unit_testing {
+mod tests {
     use super::*;
 
     #[test]
