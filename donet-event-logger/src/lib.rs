@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -189,7 +189,7 @@ impl EventLogger {
         );
 
         let mut guard = self.log_file.lock().await;
-        let file = guard.as_mut().expect("");
+        let file = guard.as_mut().unwrap();
 
         data.push('\n');
         file.write_all(data.as_bytes()).await?;
@@ -311,57 +311,6 @@ impl EventLogger {
 #[cfg(test)]
 mod tests {
     use super::{EventLogger, Interval, IntervalUnit};
-    use crate::config;
-    use donet_core::datagram::datagram::Datagram;
-    use donet_daemon::event::LoggedEvent;
-    use donet_daemon::service::DonetService;
-    use donet_network::udp;
-    use std::io::Error;
-    use std::result::Result;
-
-    #[tokio::test]
-    async fn basic_message_test() -> Result<(), Error> {
-        let conf: config::DonetConfig = config::DonetConfig {
-            daemon: config::Daemon {
-                name: String::default(),
-                id: None,
-                log_level: None,
-            },
-            global: config::Global {
-                eventlogger: String::default(),
-                dc_files: vec![],
-                dc_multiple_inheritance: None,
-                dc_sort_inheritance_by_file: None,
-                dc_virtual_inheritance: None,
-            },
-            services: config::Services {
-                event_logger: Some(config::EventLogger {
-                    bind: "127.0.0.0:7197".to_string(),
-                    output: "./".to_string(),
-                    log_format: "el-%Y-%m-%d-%H-%M-%S.log".to_string(),
-                    rotate_interval: "1d".to_string(),
-                }),
-                client_agent: None,
-                message_director: None,
-                state_server: None,
-                database_server: None,
-                dbss: None,
-            },
-        };
-
-        let _ = EventLogger::start(conf, None).await?;
-
-        let sock: udp::Socket = udp::Socket::bind("127.0.0.1:2816").await?;
-        let dg: Datagram;
-
-        let mut new_log = LoggedEvent::new("test", "Unit Test Socket");
-        new_log.add("msg", "This is a test log message.");
-
-        dg = new_log.make_datagram();
-
-        sock.socket.send_to(&dg.get_data(), "127.0.0.1:7197").await?;
-        Ok(())
-    }
 
     #[test]
     fn str_to_interval() {

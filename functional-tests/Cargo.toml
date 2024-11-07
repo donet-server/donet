@@ -1,0 +1,26 @@
+[package]
+name = "functional-tests"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+publish = false
+readme = "README.md"
+
+[[test]]
+name = "dc_language"
+
+[[test]]
+name = "event_logger"
+
+[dev-dependencies]
+donet-core = { version = "0.1.0", path = "../donet-core", features = ["full"] }
+donet-daemon = { version = "0.1.0", path = "../donet-daemon" }
+donet-database = { version = "0.1.0", path = "../donet-database" }
+donet-event-logger = { version = "0.1.0", path = "../donet-event-logger" }
+donet-message-director = { version = "0.1.0", path = "../donet-message-director" }
+donet-network = { version = "0.1.0", path = "../donet-network" }
+glob = "0.3"
+tokio = { workspace = true, features = ["macros", "time", "sync"] }

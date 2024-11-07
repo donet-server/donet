@@ -17,14 +17,14 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-//! This test is an integration test for the DC language
-//! as defined in the donet-core library.
+//! This test is a functional test for the donet-core DC parser.
 
 use donet_core::dcfile::DCFile;
 use donet_core::dconfig::*;
 use donet_core::read_dc;
 
-fn main() {
+#[test]
+fn dc_language_functional_testing() {
     // Use default DC language configuration options.
     //
     // DC_MULTIPLE_INHERITANCE == true

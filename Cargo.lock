@@ -707,6 +707,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "functional-tests"
+version = "0.1.0"
+dependencies = [
+ "donet-core",
+ "donet-daemon",
+ "donet-database",
+ "donet-event-logger",
+ "donet-message-director",
+ "donet-network",
+ "glob",
+ "tokio",
+]
+
+[[package]]
 name = "funty"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
