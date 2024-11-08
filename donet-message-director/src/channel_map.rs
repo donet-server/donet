@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -17,38 +17,68 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
+use super::subscriber::*;
 use donet_core::globals::Channel;
+use gcollections::ops::*;
+use interval::interval_set::ToIntervalSet;
+use interval::IntervalSet;
 use multimap::MultiMap;
+use rangemap::RangeMap;
 use std::collections::HashSet;
-use std::sync::Arc;
-use tokio::sync::{Mutex, MutexGuard};
+use std::ops::Range;
+use tokio::sync::MutexGuard;
 
-#[derive(Clone, PartialEq)]
-pub struct ChannelSubscriber {
-    pub subscribed_channels: HashSet<Channel>,
-    pub subscribed_ranges: HashSet<std::ops::Range<Channel>>,
+// Iterates over all ranges in a [`rangemap::RangeMap`], and filters
+// out ranges that do NOT overlap with the given `target` range.
+fn equal_range(
+    map: &RangeMap<Channel, HashSet<SubscriberRef>>,
+    target: Range<Channel>,
+) -> Vec<(&Range<Channel>, &HashSet<SubscriberRef>)> {
+    map.iter()
+        .filter(|(range, _)| {
+            // Check if the range overlaps with the target range
+            range.start < target.end && range.end > target.start
+        })
+        .collect()
 }
 
-pub type ChannelSubscriberRef = Arc<Mutex<ChannelSubscriber>>;
-
+/// Data model to store all channel subscriptions created via a
+/// Message Director service instance.
+///
+/// Functionality with callbacks for handling changes in mapping can
+/// be achieved by implementing the [`ChannelCoordinator`] trait.
 #[derive(Default)]
 pub struct ChannelMap {
-    subscriptions: MultiMap<Channel, ChannelSubscriberRef>,
-    range_subscriptions: MultiMap<Channel, ChannelSubscriberRef>,
+    /// Single channel subscriptions
+    subscriptions: MultiMap<Channel, SubscriberRef>,
+    /// Channel range subscriptions
+    range_subscriptions: RangeMap<Channel, HashSet<SubscriberRef>>,
 }
 
-pub trait ChannelCoordinator {
-    /// Struct implementing this trait must have a [`ChannelMap`] in memory.
+/// Struct implementing this trait must own a [`ChannelMap`].
+pub trait HasChannelMap {
     fn get_channel_map(&mut self) -> &mut ChannelMap;
+}
 
+/// Provides functionality for mapping channels, as [`Channel`],
+/// to objects interested in that channel, as [`ChannelSubscriber`],
+/// using a [`ChannelMap`] structure stored by the implementer.
+///
+/// The implementing type must also implement [`HasChannelMap`],
+/// to guarantee that there is a [`ChannelMap`] in memory.
+pub trait ChannelCoordinator
+where
+    Self: HasChannelMap,
+{
+    // Callbacks that must be implemented manually.
     async fn on_add_channel(&self, channel: Channel);
     async fn on_remove_channel(&self, channel: Channel);
-    async fn on_add_range(&self, range: std::ops::Range<Channel>);
-    async fn on_remove_range(&self, range: std::ops::Range<Channel>);
+    async fn on_add_range(&self, range: Range<Channel>);
+    async fn on_remove_range(&self, range: Range<Channel>);
 
     /// Adds a single channel to the subscriber's subscribed channels map.
-    async fn subscribe_channel(&mut self, sub: ChannelSubscriberRef, chan: Channel) {
-        let mut locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().await;
+    async fn subscribe_channel(&mut self, sub: SubscriberRef, chan: Channel) {
+        let mut locked_sub: MutexGuard<'_, Subscriber> = sub.lock().await;
 
         if Self::is_subscribed(self, sub.clone(), chan).await {
             return;
@@ -64,40 +94,173 @@ pub trait ChannelCoordinator {
     }
 
     /// Removes the given channel from the subscribed channels map.
-    async fn unsubscribe_channel(&self, sub: ChannelSubscriberRef, chan: Channel) {
-        let mut locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().await;
+    ///
+    /// Does nothing if the subscriber is not subscribed to the given
+    /// channel.
+    async fn unsubscribe_channel(&mut self, sub: SubscriberRef, chan: Channel) {
+        let mut locked_sub: MutexGuard<'_, Subscriber> = sub.lock().await;
 
-        if Self::is_subscribed(self, sub.clone(), chan).await {
+        if !Self::is_subscribed(self, sub.clone(), chan).await {
             return;
         }
         locked_sub.subscribed_channels.remove(&chan);
+
+        if Self::remove_subscriber(self, sub.clone(), chan).await {
+            Self::on_remove_channel(self, chan).await;
+        }
     }
 
-    /// Adds an object to be subscribed to a range of channels. The range is inclusive.
-    fn subscribe_range(&mut self, _sub: ChannelSubscriberRef, _min: Channel, _max: Channel) {
-        todo!()
+    /// Adds an object to be subscribed to a range of channels.
+    ///
+    /// The given range is inclusive.
+    async fn subscribe_range(&mut self, sub: SubscriberRef, min: Channel, max: Channel) {
+        {
+            let locked_sub: MutexGuard<'_, Subscriber> = sub.lock().await;
+
+            // Create a new closed interval set using given range
+            let new_interval: IntervalSet<Channel> = vec![(min, max)].to_interval_set();
+
+            // Create a new set with the given subscriber
+            let mut new_sub_set: HashSet<SubscriberRef> = HashSet::default();
+            new_sub_set.insert(sub.clone());
+
+            // Update channel range subscription mappings
+            locked_sub.subscribed_ranges.union(&new_interval);
+
+            self.get_channel_map()
+                .range_subscriptions
+                .insert(min..max, new_sub_set);
+        }
+
+        // Finally, check if any part of this interval is a new range.
+        // (Check if any range of this interval does NOT overlap an existing range.)
+        let new_range: Range<Channel> = min..max;
+
+        // Get overlapping ranges from map's range subscription map.
+        let interval_range: Vec<_> = equal_range(&self.get_channel_map().range_subscriptions, new_range);
+
+        for segment in interval_range {
+            if segment.1.len() == 1 {
+                // There's a segment of the interval that has only one item
+                // (our newly added subscriber), which confirms this IS a new
+                // range. So, we should upstream the range addition.
+                Self::on_add_range(self, min..max).await;
+                break;
+            }
+        }
     }
 
-    /// Performs the reverse of the subscribe_range() method.
-    fn unsubscribe_range(&mut self, _sub: ChannelSubscriberRef, _min: Channel, _max: Channel) {
-        todo!()
+    /// Performs the reverse of the `Self::subscribe_range()` function.
+    ///
+    /// The given range is inclusive.
+    async fn unsubscribe_range(&mut self, sub: SubscriberRef, min: Channel, max: Channel) {
+        // if we have no range subscriptions mapped, do nothing and return early
+        if self.get_channel_map().range_subscriptions.is_empty() {
+            return;
+        }
+
+        // prepare subscriber set
+        let mut sub_set: HashSet<SubscriberRef> = HashSet::default();
+        sub_set.insert(sub.clone());
+
+        // Construct the interval we are removing, bounded to range subscriptions.
+        let map: &mut ChannelMap = self.get_channel_map();
+
+        // We can simply unwrap the first/last as we check that there is at least
+        // one range subscription in the beginning of this function.
+        let rs_first = map.range_subscriptions.first_range_value().unwrap();
+        let rs_last = map.range_subscriptions.last_range_value().unwrap();
+
+        let lower: Channel = rs_first.0.start;
+        let upper: Channel = rs_last.0.end;
+
+        let union_lower: Channel = std::cmp::max(min, lower);
+        let union_upper: Channel = std::cmp::max(max, upper);
+
+        let range: Range<Channel> = union_lower..union_upper;
+
+        let i_set: IntervalSet<Channel> = vec![(union_lower, union_upper)].to_interval_set();
+
+        // Speculate the channel ranges that will have no subscribers
+        // after this subscriber is removed.
+        let mut dead_ranges: IntervalSet<Channel> = i_set.clone();
+        let interval_range = equal_range(&map.range_subscriptions, union_lower..union_upper);
+
+        // go through interval range and remove ranges that will still
+        // have subscribers after this subscriber is removed
+        for (range, range_subs) in interval_range {
+            let has_subscribers: bool = !range_subs.is_empty();
+            let is_only_subscriber: bool = (range_subs.len() == 1) && range_subs.contains(&sub);
+
+            if has_subscribers && !is_only_subscriber {
+                // we are not the last subscriber in this range, so don't delete it
+                dead_ranges = &dead_ranges - vec![(range.start, range.end)].to_interval_set();
+            }
+        }
+
+        // update range mappings on both subscriber and channel map
+        let mut locked_sub: MutexGuard<'_, Subscriber> = sub.lock().await;
+
+        locked_sub.subscribed_ranges = &locked_sub.subscribed_ranges - i_set;
+        map.range_subscriptions.remove(range);
+
+        // clone subscriber's channel subscriptions to avoid double borrow
+        let chans = locked_sub.subscribed_channels.clone();
+
+        // delete single channel subscriptions that fall within the range
+        for channel in &chans {
+            if (min <= *channel) && (*channel <= max) {
+                // we do **not** call `Self::unsubscribe_channel`, because
+                // that might send off an `on_remove_channel` event.
+                // Instead, we should update this manually.
+                Self::remove_subscriber(self, sub.clone(), *channel).await;
+
+                locked_sub.subscribed_channels.remove(channel);
+            }
+        }
+
+        // finally, have our channel coordinator delete any new 'dead' ranges
+        for range in dead_ranges {
+            Self::on_remove_range(self, range.lower()..range.upper()).await;
+        }
     }
 
     /// Removes all channel and range subscriptions from the subscriber.
-    fn unsubscribe_all(&mut self, _sub: ChannelSubscriberRef) {
-        todo!()
+    async fn unsubscribe_all(&mut self, sub: SubscriberRef) {
+        let locked_sub: MutexGuard<'_, Subscriber> = sub.lock().await;
+
+        // take copies of subscriber's subscriptions to release mutex below
+        let single_chan_subs = locked_sub.subscribed_channels.clone();
+        let range_subs = locked_sub.subscribed_ranges.clone();
+
+        // release mutex to allow the unsub function to lock
+        drop(locked_sub);
+
+        for channel in single_chan_subs.into_iter() {
+            // call unsub function, with a clone of our pointer to the sub
+            Self::unsubscribe_channel(self, sub.clone(), channel).await;
+        }
+
+        for range in range_subs.into_iter() {
+            let min: Channel = range.lower();
+            let max: Channel = range.upper();
+
+            Self::unsubscribe_range(self, sub.clone(), min, max).await;
+        }
     }
 
-    /// Removes the given subscriber from the MultiMap for a given channel.
+    /// Removes the given subscriber from the MultiMap for a given
+    /// channel.
     ///
     /// Returns true only if:
     /// a) There are subscribers for the given channel and
-    /// b) The provided subscriber was the last one for the channel, and was removed successfully.
+    /// b) The provided subscriber was the last one for the channel,
+    ///    and was removed successfully.
     ///
-    async fn remove_subscriber(&mut self, sub: ChannelSubscriberRef, chan: Channel) -> bool {
+    async fn remove_subscriber(&mut self, sub: SubscriberRef, chan: Channel) -> bool {
         let map: &mut ChannelMap = self.get_channel_map();
 
-        let locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().await;
+        let locked_sub: MutexGuard<'_, Subscriber> = sub.lock().await;
         let mut sub_count: usize = map.subscriptions.len();
 
         if sub_count == 0 {
@@ -129,21 +292,38 @@ pub trait ChannelCoordinator {
         sub_count == 0
     }
 
-    /// Checks if a given object has a subscription on a channel.
-    async fn is_subscribed(&self, sub: ChannelSubscriberRef, chan: Channel) -> bool {
-        let locked_sub: MutexGuard<'_, ChannelSubscriber> = sub.lock().await;
+    /// Checks if a given subscriber has a subscription on the given
+    /// channel.
+    ///
+    /// Looks over both single and range channel subscriptions.
+    async fn is_subscribed(&self, sub: SubscriberRef, chan: Channel) -> bool {
+        let locked_sub: MutexGuard<'_, Subscriber> = sub.lock().await;
 
         if locked_sub.subscribed_channels.contains(&chan) {
             return true;
         }
-        //if locked_sub.subscribed_ranges.contains(&chan) {
-        //    return true;
-        //}
+        if locked_sub.subscribed_ranges.contains(&chan) {
+            return true;
+        }
         false
     }
 
-    /// Performs the same check as is_subscribed(), but for an array of channels.
-    fn are_subscribed(&self, _subs: &mut [ChannelSubscriber], _chans: &[Channel]) {
-        todo!()
+    /// Populates a set with the subscribers for a list of channels.
+    fn lookup_channels(&mut self, channels: Vec<Channel>, subs: &mut HashSet<SubscriberRef>) {
+        for channel in channels {
+            // Run through single-channel subscriptions map
+            if let Some(chan_subs) = self.get_channel_map().subscriptions.get_vec(&channel) {
+                subs.extend(chan_subs.iter().cloned());
+            }
+
+            // Run through range subscriptions map
+            for (_range, range_subs) in self
+                .get_channel_map()
+                .range_subscriptions
+                .overlapping(channel..channel)
+            {
+                subs.extend(range_subs.iter().cloned());
+            }
+        }
     }
 }

@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -36,8 +36,8 @@ pub struct MessageDirector {
     binding: tcp::Acceptor,
     upstream_md: Option<tcp::Connection>,
     channel_map: ChannelMap,
-    subscribers: HashSet<subscriber::Subscriber>,
-    removed_subscribers: HashSet<subscriber::Subscriber>,
+    subscribers: HashSet<subscriber::SubscriberRef>,
+    removed_subscribers: HashSet<subscriber::SubscriberRef>,
 }
 
 impl DonetService for MessageDirector {
@@ -84,24 +84,26 @@ impl DonetService for MessageDirector {
     }
 }
 
-impl ChannelCoordinator for MessageDirector {
+impl HasChannelMap for MessageDirector {
     fn get_channel_map(&mut self) -> &mut ChannelMap {
         &mut self.channel_map
     }
+}
 
-    async fn on_add_channel(&self, channel: Channel) {
+impl ChannelCoordinator for MessageDirector {
+    async fn on_add_channel(&self, _channel: Channel) {
         todo!()
     }
 
-    async fn on_add_range(&self, range: std::ops::Range<Channel>) {
+    async fn on_add_range(&self, _range: std::ops::Range<Channel>) {
         todo!()
     }
 
-    async fn on_remove_channel(&self, channel: Channel) {
+    async fn on_remove_channel(&self, _channel: Channel) {
         todo!()
     }
 
-    async fn on_remove_range(&self, range: std::ops::Range<Channel>) {
+    async fn on_remove_range(&self, _range: std::ops::Range<Channel>) {
         todo!()
     }
 }

@@ -19,5 +19,7 @@ donet-daemon = { version = "0.1.0", path = "../donet-daemon" }
 donet-network = { version = "0.1.0", path = "../donet-network" }
 log = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
+gcollections = "1.5"
 interval = { version = "1.4", package = "intervallum" }
+rangemap = "1.5"
 multimap = { version = "0.10" }
