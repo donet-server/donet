@@ -96,8 +96,14 @@ machine's network interfaces, such as Ethernet, WI-FI, loopback, etc.
 should be listed in this menu. Interfaces may differ across machines,
 but **loopback (lo)** should be there on all systems. This is the
 network interface that local development applications using Donet
-will communicate through. The reserved IPv4 address for loopback is
-**127.0.0.1**.
+will communicate through.
+
+.. note::
+
+    The reserved IPv4 address range for loopback is **127.0.0.0/8**.
+    For IPv6, it is **::1/128**, where the mask is **128** bits,
+    meaning there is no range of addresses for loopback, but rather
+    only one single address, which is **::1**.
 
 .. image:: wireshark-interfaces.png
     :alt: Wireshark GUI main menu showing a list of network interfaces.
