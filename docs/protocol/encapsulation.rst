@@ -24,6 +24,8 @@ different headers. Both protocols are encapsulated in TCP_.
 .. image:: osi_layers.png
     :alt: Visualization of the layers of a Donet datagram
 
+.. _client-protocol:
+
 Client Protocol
 ---------------
 
@@ -42,6 +44,8 @@ The "length" tag represents the length of the message, in bytes,
 
 This protocol requires a handshake process once the TCP connection
 has been established. See the :ref:`client` for more information.
+
+.. _internal-protocol:
 
 Internal Protocol
 -----------------
