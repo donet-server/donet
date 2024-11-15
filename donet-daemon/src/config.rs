@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -35,7 +35,7 @@ pub struct Daemon {
 
 #[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct Global {
-    pub eventlogger: String, // '<host>:<port>'
+    pub eventlogger: Option<String>, // '<host>:<port>'
     pub dc_files: Vec<String>,
     /// See defaults for config vars below at libdonet's dconfig.rs.
     pub dc_multiple_inheritance: Option<bool>,
@@ -103,7 +103,7 @@ pub struct EventLogger {
     pub rotate_interval: String, // e.g. "1d"
 }
 
-/// Creates a libdonet DCFileConfig struct from [`DonetConfig`].
+/// Creates a donet-core `DCFileConfig` struct from [`DonetConfig`].
 #[cfg(feature = "requires_dc")]
 impl From<DonetConfig> for donet_core::dconfig::DCFileConfig {
     fn from(value: DonetConfig) -> Self {

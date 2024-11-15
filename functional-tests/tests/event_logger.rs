@@ -56,7 +56,7 @@ fn event_logger_functional_testing() -> std::io::Result<()> {
                 log_level: None,
             },
             global: config::Global {
-                eventlogger: String::default(),
+                eventlogger: None,
                 dc_files: vec![],
                 dc_multiple_inheritance: None,
                 dc_sort_inheritance_by_file: None,
