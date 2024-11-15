@@ -1,7 +1,7 @@
 ..
    This file is part of the Donet reference manual.
 
-   Copyright (c) 2024 Max Rodriguez.
+   Copyright (c) 2024 Max Rodriguez <me@maxrdz.com>
 
    Permission is granted to copy, distribute and/or modify this document
    under the terms of the GNU Free Documentation License, Version 1.3
@@ -12,8 +12,8 @@
 
 .. _stateserver:
 
-State Server Messages
-=====================
+State Server
+============
 
 .. _2000:
 
@@ -259,6 +259,11 @@ STATESERVER_GET_ACTIVE_ZONES (2125)
 
 STATESERVER_GET_ACTIVE_ZONES_RESP (2126)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. _dbss:
+
+Database State Server (DBSS)
+============================
 
 .. _2200:
 

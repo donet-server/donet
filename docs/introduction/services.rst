@@ -1,7 +1,7 @@
 ..
    This file is part of the Donet reference manual.
 
-   Copyright (c) 2024 Max Rodriguez.
+   Copyright (c) 2024 Max Rodriguez <me@maxrdz.com>
 
    Permission is granted to copy, distribute and/or modify this document
    under the terms of the GNU Free Documentation License, Version 1.3
@@ -32,6 +32,8 @@ over Distributed Objects and the visibility (or location) of Distributed
 Objects. The Client Agent acts as the border between the untrusted clients and
 the internal server network's 'safe zone' [1]_.
 
+For more details on this service's behavior, see :ref:`clientagent`.
+
 The Message Director
 --------------------
 
@@ -44,6 +46,8 @@ contains any number of destination channels, and most messages include a
 source, or sender channel. Each service tells the Message Director which
 channels it would like to **subscribe** to, and receives messages sent to its
 subscribed channels.
+
+For more details on this service's behavior, see :ref:`messagedirector`.
 
 The State Server
 ----------------
@@ -59,6 +63,8 @@ in the visibility tree. Other services in a Donet cluster may communicate with
 the State Server through a Message Director to **manipulate** and **query**
 Distributed Objects in the State Server's visibility tree.
 
+For more details on this service's behavior, see :ref:`stateserver`.
+
 The Database Server
 -------------------
 
@@ -69,6 +75,8 @@ stores these fields in a **SQL database**, and can **update or query** the
 Distributed Object's field's value. The game/application developer does not
 need to handle Database transactions with the help of this service. The
 successor of this component is the Database State Server.
+
+For more details on this service's behavior, see :ref:`dbserver`.
 
 The Database State Server
 -------------------------
@@ -86,6 +94,8 @@ offline, the DBSS allows you to query and manipulate the object even though it
 is not currently needed in memory as the avatar is not actively 'present' in
 the State Server's visibility tree.
 
+For more details on this service's behavior, see :ref:`dbss`.
+
 The Event Logger
 ----------------
 
@@ -97,8 +107,13 @@ to your server cluster and allows the developer to analyze data in the game,
 depending on what the developer chooses to log. The Event Logger is the only
 service that uses the UDP_ protocol and serialization with MessagePack_.
 
+For more details on this service's behavior, see :ref:`eventlogger`.
+
 .. _UDP: https://en.wikipedia.org/wiki/User_Datagram_Protocol
 .. _MessagePack: https://msgpack.org
+
+Cluster Example
+---------------
 
 The following diagram shows an example of a Donet cluster:
 

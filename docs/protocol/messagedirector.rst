@@ -64,7 +64,12 @@ result in the entire cluster crashing.
 As this service is based on the `Publish-subscribe pattern`_, all
 messages are only routed **downlink**, to the subscribers which
 explicitly requested to be subscribed to a channel or channel range.
-However, **uplink** messages are sent unsolicited.
+All messages received from a downstream node are also sent to the
+upstream message director, if one is configured on that node.
+Currently, **uplink** messages are sent unsolicited, meaning that an
+upstream MD will simply receive *all* traffic that is received by a
+downstream MD node, in hopes that the upstream MD might have someone
+else to route it to.
 
 **Control messages** have the following properties:
 
