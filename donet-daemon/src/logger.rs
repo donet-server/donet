@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -34,7 +34,7 @@ pub struct DaemonLogger {
     pub log_level: Level,
 }
 
-pub static MAX_LOG_LEVEL: LevelFilter = LevelFilter::Debug;
+pub static MAX_LOG_LEVEL: LevelFilter = LevelFilter::Trace;
 
 impl log::Log for DaemonLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {

@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -51,6 +51,16 @@ use tokio::task::JoinHandle;
 #[derive(Clone, Copy)]
 enum FlagArguments {
     DCFilePath,
+}
+
+// Macro for defining global logger static and initializing it.
+macro_rules! init_logger {
+    ($level:expr) => {
+        pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger { log_level: $level };
+        logger::init_logger(&GLOBAL_LOGGER)?;
+
+        info!("Log level set at {}.", $level);
+    };
 }
 
 fn main() -> std::io::Result<()> {
@@ -145,42 +155,24 @@ fn main() -> std::io::Result<()> {
     if let Some(log_level) = &daemon_config.daemon.log_level {
         match log_level.as_str() {
             "error" => {
-                pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger {
-                    log_level: log::Level::Error,
-                };
-                logger::init_logger(&GLOBAL_LOGGER)?;
+                init_logger!(log::Level::Error);
             }
             "warn" => {
-                pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger {
-                    log_level: log::Level::Warn,
-                };
-                logger::init_logger(&GLOBAL_LOGGER)?;
+                init_logger!(log::Level::Warn);
             }
             "info" => {
-                pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger {
-                    log_level: log::Level::Info,
-                };
-                logger::init_logger(&GLOBAL_LOGGER)?;
+                init_logger!(log::Level::Info);
             }
             "debug" => {
-                pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger {
-                    log_level: log::Level::Debug,
-                };
-                logger::init_logger(&GLOBAL_LOGGER)?;
+                init_logger!(log::Level::Debug);
             }
             "trace" => {
-                pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger {
-                    log_level: log::Level::Trace,
-                };
-                logger::init_logger(&GLOBAL_LOGGER)?;
+                init_logger!(log::Level::Trace);
             }
             _ => panic!("Could not initialize logger. Error in log level string in TOML configuration."),
         }
     } else {
-        pub static GLOBAL_LOGGER: DaemonLogger = DaemonLogger {
-            log_level: log::Level::Info,
-        };
-        logger::init_logger(&GLOBAL_LOGGER)?;
+        init_logger!(log::Level::Info);
     }
 
     // If `--validate-dc` argument was received, parse DC files and exit.
