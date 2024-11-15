@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -94,7 +94,9 @@ impl DatagramIterator {
     }
 
     /// Reads the next number of bytes in the datagram.
-    pub fn read_data(&mut self, bytes: globals::DgSizeTag) -> Vec<u8> {
+    pub fn read_data(&mut self, bytes: globals::DgSizeTag) -> Result<Vec<u8>, IteratorError> {
+        self.check_read_length(bytes)?;
+
         let data: Vec<u8> = self.datagram.get_data();
 
         let mut new_data: Vec<u8> = vec![];
@@ -104,7 +106,8 @@ impl DatagramIterator {
             new_data.push(*item);
         }
         self.index += bytes as usize;
-        new_data
+
+        Ok(new_data)
     }
 
     pub fn read_u8(&mut self) -> u8 {
@@ -227,8 +230,27 @@ impl DatagramIterator {
     }
 
     /// Get the recipient count in a datagram message.
-    /// Does not advance the DatagramIterator index.
     pub fn read_recipient_count(&mut self) -> u8 {
+        self.read_u8()
+    }
+
+    /// Returns the datagram's message type as a [`Protocol`] variant.
+    pub fn read_msg_type(&mut self) -> Protocol {
+        let msg_type: globals::MsgType = self.read_u16(); // read message type
+
+        for message in Protocol::iter() {
+            let msg_id: globals::MsgType = message.into();
+            if msg_type == msg_id {
+                return message;
+            }
+        }
+        // FIXME: Throw error instead of panic here.
+        panic!("Tried to read an invalid message type from datagram.");
+    }
+
+    /// Get the recipient count in a datagram message.
+    /// Does not advance the index.
+    pub fn peek_recipient_count(&mut self) -> u8 {
         if self.datagram.size() == 0 {
             // FIXME: error!("Cannot read from an empty datagram!");
             // FIXME: Throw error instead of panic here.
@@ -242,12 +264,12 @@ impl DatagramIterator {
 
     /// Returns the datagram's message type. Does not advance the index.
     /// Useful for if index needs to be saved or if next field isn't msg type.
-    /// If iterating through a fresh datagram, use read_u16.
-    pub fn read_msg_type(&mut self) -> Protocol {
+    /// If iterating through a fresh datagram, use [`Self::read_msg_type()`].
+    pub fn peek_msg_type(&mut self) -> Protocol {
         let start_index: usize = self.index;
 
         self.index = 1
-            + usize::from(self.read_recipient_count()) * mem::size_of::<globals::Channel>()
+            + usize::from(self.peek_recipient_count()) * mem::size_of::<globals::Channel>()
             + mem::size_of::<globals::Channel>(); // seek message type
 
         let msg_type: globals::MsgType = self.read_u16(); // read message type

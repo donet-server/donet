@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -259,12 +259,15 @@ impl Datagram {
 
     /// Appends a generic header for messages that are to be routed to
     /// one or more role instances within the server cluster.
+    ///
     /// Use this method to avoid repetitive code for every internal message.
     ///
     /// The header is formatted as shown below:
-    ///     (recipients: `u8`, recipients: `Vec<Channel>`, sender: `Channel`, message_type: `u16`)
     ///
-    pub fn add_server_header(
+    /// (recipients: [`u8`], recipients: [`Vec<Channel>`],
+    /// sender: [`Channel`], message_type: [`u16`])
+    ///
+    pub fn add_internal_header(
         &mut self,
         to: Vec<globals::Channel>,
         from: globals::Channel,
@@ -285,6 +288,11 @@ impl Datagram {
     /// Appends a control header, which is very similar to a server header,
     /// but it always has only one recipient, which is the control channel,
     /// and does not require a sender (or 'from') channel to be provided.
+    ///
+    /// The sender field is not required as control messages are not
+    /// routed, meaning that the message director will ONLY receive this
+    /// message DIRECTLY from a cluster subscriber, so it can be speculated
+    /// that the sender is the participant on the other end of the connection.
     pub fn add_control_header(&mut self, msg_type: globals::MsgType) -> Result<(), DatagramError> {
         self.add_u8(1)?;
         self.add_channel(globals::CONTROL_CHANNEL)?;
@@ -292,10 +300,17 @@ impl Datagram {
         Ok(())
     }
 
+    /// Returns the size of this [`Datagram`].
     pub fn size(&mut self) -> globals::DgSizeTag {
         self.buffer.len().try_into().unwrap()
     }
 
+    /// Returns a reference to this [`Datagram`]'s byte buffer.
+    pub fn get_buffer(&self) -> &[u8] {
+        &self.buffer
+    }
+
+    /// Similar to [`Self::get_buffer`], but returns a copy of the buffer.
     pub fn get_data(&self) -> Vec<u8> {
         // we can't give out ownership of our vector,
         // so a copy of the vector is made instead
@@ -311,7 +326,7 @@ impl Datagram {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::protocol::Protocol;
+    use crate::Protocol;
 
     #[test]
     fn add_boolean() {
@@ -405,7 +420,7 @@ mod tests {
         let mut dg: Datagram = Datagram::default();
         let mut results: Vec<Result<(), DatagramError>> = vec![];
 
-        results.push(dg.add_server_header(
+        results.push(dg.add_internal_header(
             vec![globals::CHANNEL_MAX], // recipients
             0, // sender
             Protocol::MDAddChannel.into(), // msg type

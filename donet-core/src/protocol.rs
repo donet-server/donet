@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -153,4 +153,7 @@ pub enum Protocol {
     MDRemoveRange = 9003,
     MDAddPostRemove = 9010,
     MDClearPostRemoves = 9011,
+    MDSetConName = 9012,
+    MDSetConUrl = 9013,
+    MDLogMessage = 9014,
 }
