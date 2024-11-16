@@ -901,6 +901,18 @@ local message_table = {
 	},
 }
 
+-- Adds SRC PORT -> DST PORT prefix to the packet info, similar to
+-- how the wireshark TCP dissector formats its pinfo.
+function pinfo_format(pinfo, info)
+    local formatted = pinfo.src_port .. ' → ' .. pinfo.dst_port
+
+    if info ~= nil then
+        formatted = formatted .. " " .. info
+    end
+
+    return formatted
+end
+
 function pretty_msgtype (msgtype)
 	local msg_entry = message_table[msgtype] or {}
 
@@ -1011,7 +1023,7 @@ function p_donet_internal.dissector (buf, pinfo, root)
 
 	if message_count > 0 then
 		pinfo.cols.protocol = "Donet (Internal)"
-		pinfo.cols.info = table.concat(descriptions, "; ")
+		pinfo.cols.info = pinfo_format(pinfo, table.concat(descriptions, "; "))
 	end
 
 	return offset
@@ -1039,7 +1051,7 @@ function p_donet_client.dissector (buf, pinfo, root)
 	if len > 2 then subtree:add(buf(4), "Payload") end -- TODO: Dissect message payload
 
 	pinfo.cols.protocol = "Donet (Client)"
-	pinfo.cols.info = pretty_msgtype(type)
+	pinfo.cols.info = pinfo_format(pinfo, pretty_msgtype(type))
 end
 
 function p_donet_client.init()
