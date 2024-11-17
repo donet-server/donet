@@ -71,18 +71,19 @@ where
     Self: HasChannelMap,
 {
     // Callbacks that must be implemented manually.
-    async fn on_add_channel(&self, channel: Channel);
-    async fn on_remove_channel(&self, channel: Channel);
-    async fn on_add_range(&self, range: Range<Channel>);
-    async fn on_remove_range(&self, range: Range<Channel>);
+    async fn on_add_channel(&mut self, channel: Channel);
+    async fn on_remove_channel(&mut self, channel: Channel);
+    async fn on_add_range(&mut self, range: Range<Channel>);
+    async fn on_remove_range(&mut self, range: Range<Channel>);
 
     /// Adds a single channel to the subscriber's subscribed channels map.
     async fn subscribe_channel(&mut self, sub: SubscriberRef, chan: Channel) {
         let mut locked_sub: MutexGuard<'_, Subscriber> = sub.lock().await;
 
-        if Self::is_subscribed(self, sub.clone(), chan).await {
+        if Self::is_subscribed(self, &locked_sub, chan).await {
             return;
         }
+
         locked_sub.subscribed_channels.insert(chan);
 
         let has_subscriptions: bool = !locked_sub.subscribed_channels.is_empty();
@@ -100,10 +101,14 @@ where
     async fn unsubscribe_channel(&mut self, sub: SubscriberRef, chan: Channel) {
         let mut locked_sub: MutexGuard<'_, Subscriber> = sub.lock().await;
 
-        if !Self::is_subscribed(self, sub.clone(), chan).await {
+        if !Self::is_subscribed(self, &locked_sub, chan).await {
             return;
         }
+
         locked_sub.subscribed_channels.remove(&chan);
+
+        // release mutex to allow the remove sub function to lock
+        drop(locked_sub);
 
         if Self::remove_subscriber(self, sub.clone(), chan).await {
             Self::on_remove_channel(self, chan).await;
@@ -252,10 +257,12 @@ where
     /// Removes the given subscriber from the MultiMap for a given
     /// channel.
     ///
-    /// Returns true only if:
-    /// a) There are subscribers for the given channel and
-    /// b) The provided subscriber was the last one for the channel,
-    ///    and was removed successfully.
+    /// Returns `true` **only** if:
+    ///
+    /// - There are subscribers for the given channel.
+    ///
+    /// - The provided subscriber was the last one for the channel,
+    ///   and was removed successfully.
     ///
     async fn remove_subscriber(&mut self, sub: SubscriberRef, chan: Channel) -> bool {
         let map: &mut ChannelMap = self.get_channel_map();
@@ -296,13 +303,11 @@ where
     /// channel.
     ///
     /// Looks over both single and range channel subscriptions.
-    async fn is_subscribed(&self, sub: SubscriberRef, chan: Channel) -> bool {
-        let locked_sub: MutexGuard<'_, Subscriber> = sub.lock().await;
-
-        if locked_sub.subscribed_channels.contains(&chan) {
+    async fn is_subscribed(&self, sub_lock: &MutexGuard<'_, Subscriber>, chan: Channel) -> bool {
+        if sub_lock.subscribed_channels.contains(&chan) {
             return true;
         }
-        if locked_sub.subscribed_ranges.contains(&chan) {
+        if sub_lock.subscribed_ranges.contains(&chan) {
             return true;
         }
         false

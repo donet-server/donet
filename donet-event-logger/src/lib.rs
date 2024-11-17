@@ -64,8 +64,11 @@ impl DonetService for EventLogger {
     type Service = Self;
     type Configuration = config::EventLogger;
 
-    async fn create(mut conf: Self::Configuration, _: Option<DCFile<'static>>) -> Result<Self::Service> {
-        Ok(Self {
+    async fn create(
+        mut conf: Self::Configuration,
+        _: Option<DCFile<'static>>,
+    ) -> Result<Arc<Mutex<Self::Service>>> {
+        Ok(Arc::new(Mutex::new(Self {
             binding: udp::Socket::bind(&conf.bind).await?,
             log_format: {
                 // Sanitize input config; Make sure log out path ends with '/'.
@@ -77,20 +80,24 @@ impl DonetService for EventLogger {
             log_file: Arc::new(Mutex::new(None)),
             rotation_interval: Self::str_to_interval(&conf.rotate_interval),
             next_rotation: 0_i64, // set once first log opened
-        })
+        })))
     }
 
     async fn start(conf: config::DonetConfig, _: Option<DCFile<'static>>) -> Result<JoinHandle<Result<()>>> {
         // We can unwrap safely here since this function only is called if it is `Some`.
         let service_conf = conf.services.event_logger.unwrap();
 
-        let mut service: EventLogger = EventLogger::create(service_conf, None).await?;
+        let service = EventLogger::create(service_conf, None).await?;
 
-        Ok(Self::spawn_async_task(async move { service.main().await }))
+        Ok(Self::spawn_async_task(
+            async move { EventLogger::main(service).await },
+        ))
     }
 
-    async fn main(&mut self) -> Result<()> {
-        self.open_log().await?;
+    async fn main(service: Arc<Mutex<Self::Service>>) -> Result<()> {
+        let mut service_lock = service.lock().await;
+
+        service_lock.open_log().await?;
 
         let mut buffer = [0_u8; 1024]; // 1 kb
         let mut data: String = String::default();
@@ -108,13 +115,14 @@ impl DonetService for EventLogger {
             let v4addr = core::net::SocketAddrV4::new(ip, 0);
             let addr = std::net::SocketAddr::V4(v4addr);
 
-            self.process_datagram(addr, &mut data, &mut dgi)
+            service_lock
+                .process_datagram(addr, &mut data, &mut dgi)
                 .await
                 .expect("Failed to process log opened event!");
         }
 
         loop {
-            let (len, addr) = self.binding.socket.recv_from(&mut buffer).await?;
+            let (len, addr) = service_lock.binding.socket.recv_from(&mut buffer).await?;
             trace!("Got packet from {}.", addr);
 
             dg = Datagram::default();
@@ -132,11 +140,11 @@ impl DonetService for EventLogger {
             // Check Unix timestamp for next rotation and cycle log if expired.
             let unix_time: i64 = Self::get_unix_time();
 
-            if self.next_rotation <= unix_time {
-                self.rotate_log(&mut data, &mut dgi).await?
+            if service_lock.next_rotation <= unix_time {
+                service_lock.rotate_log(&mut data, &mut dgi).await?
             }
 
-            match self.process_datagram(addr, &mut data, &mut dgi).await {
+            match service_lock.process_datagram(addr, &mut data, &mut dgi).await {
                 Ok(txt) => txt,
                 Err(err) => {
                     error!("Failed to process datagram from {}: {}", addr, err);
@@ -249,6 +257,9 @@ impl EventLogger {
 
         *dgi = DatagramIterator::from(event.make_datagram());
 
+        // create dummy IPv4 address to process our own 'log cycled' event.
+        // the IP version of this address does not matter, as it is only
+        // used by `Self::process_datagram` for logging.
         let ip = core::net::Ipv4Addr::new(127, 0, 0, 1);
         let v4addr = core::net::SocketAddrV4::new(ip, 0);
         let addr = std::net::SocketAddr::V4(v4addr);

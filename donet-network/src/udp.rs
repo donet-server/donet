@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -36,6 +36,10 @@ impl Socket {
             socket,
             address: String::from(uri),
         })
+    }
+
+    pub async fn connect(&mut self, addr: &str) -> Result<()> {
+        self.socket.connect(addr).await
     }
 }
 

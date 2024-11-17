@@ -19,11 +19,12 @@
 
 //! Provides structure for iterating over network packets (datagrams).
 
-use super::datagram::Datagram;
+use super::datagram::{Datagram, DatagramError};
 use crate::datagram::byte_order as endianness;
 use crate::globals;
 use crate::protocol::*;
 use std::mem;
+use std::string::FromUtf8Error;
 use strum::IntoEnumIterator;
 use thiserror::Error;
 
@@ -40,6 +41,10 @@ pub enum IteratorError {
     /// sane range for the given field type.
     #[error("field constraint violation")]
     FieldConstraintViolation,
+    #[error("could not convert bytes to UTF-8")]
+    Utf8Error(FromUtf8Error),
+    #[error("datagram error")]
+    DatagramError(DatagramError),
 }
 
 /// Utility for iterating value by value of a datagram message.
@@ -60,8 +65,8 @@ impl From<Datagram> for DatagramIterator {
 }
 
 impl DatagramIterator {
-    pub fn check_read_length(&mut self, bytes: globals::DgSizeTag) -> Result<(), IteratorError> {
-        let new_index: globals::DgSizeTag = self.index as globals::DgSizeTag + bytes;
+    pub fn check_read_length(&mut self, bytes: usize) -> Result<(), IteratorError> {
+        let new_index: usize = self.index + bytes;
 
         if new_index > self.datagram.size() {
             // FIXME: error!("The DatagramIterator tried to read past the end of the buffer!");
@@ -82,19 +87,19 @@ impl DatagramIterator {
 
     /// Increments the buffer_offset by `bytes` length.
     /// Returns DgError.DatagramIteratorEOF if it's past the end of the buffer.
-    pub fn skip(&mut self, bytes: globals::DgSizeTag) -> Result<(), IteratorError> {
+    pub fn skip(&mut self, bytes: usize) -> Result<(), IteratorError> {
         self.check_read_length(bytes)?;
         self.index += bytes as usize;
         Ok(())
     }
 
     /// Returns the number of unread bytes left in the datagram
-    pub fn get_remaining(&mut self) -> globals::DgSizeTag {
-        self.datagram.size() - self.index as globals::DgSizeTag
+    pub fn get_remaining(&mut self) -> usize {
+        self.datagram.size() - self.index
     }
 
     /// Reads the next number of bytes in the datagram.
-    pub fn read_data(&mut self, bytes: globals::DgSizeTag) -> Result<Vec<u8>, IteratorError> {
+    pub fn read_data(&mut self, bytes: usize) -> Result<Vec<u8>, IteratorError> {
         self.check_read_length(bytes)?;
 
         let data: Vec<u8> = self.datagram.get_data();
@@ -112,7 +117,7 @@ impl DatagramIterator {
 
     pub fn read_u8(&mut self) -> u8 {
         let data: Vec<u8> = self.datagram.get_data();
-        if self.check_read_length(1_u16).is_err() {
+        if self.check_read_length(1).is_err() {
             panic!("Tried to read past the end of a datagram message!");
         }
         let value: u8 = data[self.index];
@@ -122,7 +127,7 @@ impl DatagramIterator {
 
     pub fn read_u16(&mut self) -> u16 {
         let data: Vec<u8> = self.datagram.get_data();
-        if self.check_read_length(2_u16).is_err() {
+        if self.check_read_length(2).is_err() {
             panic!("Tried to read past the end of a datagram message!");
         }
         // bitwise operations to concatenate two u8's into one u16.
@@ -153,7 +158,7 @@ impl DatagramIterator {
 
     pub fn read_u32(&mut self) -> u32 {
         let data: Vec<u8> = self.datagram.get_data();
-        if self.check_read_length(4_u16).is_err() {
+        if self.check_read_length(4).is_err() {
             panic!("Tried to read past the end of a datagram message!");
         }
         let value: u32 = (data[self.index] as u32)
@@ -166,7 +171,7 @@ impl DatagramIterator {
 
     pub fn read_u64(&mut self) -> u64 {
         let data: Vec<u8> = self.datagram.get_data();
-        if self.check_read_length(8_u16).is_err() {
+        if self.check_read_length(8).is_err() {
             panic!("Tried to read past the end of a datagram message!");
         }
         let value: u64 = (data[self.index] as u64)
@@ -213,6 +218,25 @@ impl DatagramIterator {
         data == 1
     }
 
+    /// Attempts to read a `String` data type from the datagram
+    /// as a **UTF-8 string**. Returns a [`String`] if OK.
+    ///
+    /// If the string type payload is not of UTF-8 format, a
+    /// [`IteratorError::Utf8Error`] variant will be returned.
+    pub fn read_string(&mut self) -> Result<String, IteratorError> {
+        let str_len: globals::DgSizeTag = self.read_size();
+
+        let str_bytes: Vec<u8> = self.read_data(usize::from(str_len))?;
+
+        let utf8_str: String = match String::from_utf8(str_bytes) {
+            Ok(data) => data,
+            Err(e) => {
+                return Err(IteratorError::Utf8Error(e));
+            }
+        };
+        Ok(utf8_str)
+    }
+
     pub fn read_size(&mut self) -> globals::DgSizeTag {
         self.read_u16() as globals::DgSizeTag
     }
@@ -227,6 +251,20 @@ impl DatagramIterator {
 
     pub fn read_zone(&mut self) -> globals::Zone {
         self.read_u32() as globals::Zone
+    }
+
+    /// Reads a `blob` data type and returns a [`Datagram`].
+    pub fn read_datagram(&mut self) -> Result<Datagram, IteratorError> {
+        let dg_size: globals::DgSizeTag = self.read_size();
+
+        let dg_payload: Vec<u8> = self.read_data(usize::from(dg_size))?;
+
+        let mut new_dg: Datagram = Datagram::default();
+
+        if let Err(e) = new_dg.add_data(dg_payload) {
+            return Err(IteratorError::DatagramError(e));
+        }
+        Ok(new_dg)
     }
 
     /// Get the recipient count in a datagram message.

@@ -32,10 +32,22 @@ pub enum DatagramError {
 }
 
 /// Representation of a new network message (datagram) to be sent.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct Datagram {
     buffer: Vec<u8>,
     index: usize,
+    /// See [`Datagram::override_cap()`].
+    cap: usize,
+}
+
+impl Default for Datagram {
+    fn default() -> Self {
+        Self {
+            buffer: vec![],
+            index: 0,
+            cap: usize::from(globals::DgSizeTag::MAX),
+        }
+    }
 }
 
 /// Appends another datagram's binary data to this datagram.
@@ -61,15 +73,25 @@ impl std::ops::Add for Datagram {
 
 impl Datagram {
     /// Checks if we can add `length` number of bytes to the datagram.
-    fn check_add_length(&mut self, length: globals::DgSizeTag) -> Result<(), DatagramError> {
-        let new_index: usize = self.index + usize::from(length);
+    fn check_add_length(&mut self, length: usize) -> Result<(), DatagramError> {
+        let new_index: usize = self.index + length;
 
-        if new_index > globals::DG_SIZE_MAX.into() {
+        if new_index > self.cap {
             return Err(DatagramError::DatagramOverflow(
                 "Tried to add data to the datagram past its maximum size!",
             ));
         }
         Ok(())
+    }
+
+    /// Overrides the byte limit for this [`Datagram`].
+    ///
+    /// It should **always** be set to the MAX of the size
+    /// tag type (u16), but it can be overridden for special
+    /// uses, such as processing large buffers that combine
+    /// multiple TCP segments.
+    pub fn override_cap(&mut self, cap: usize) {
+        self.cap = cap;
     }
 
     /// Adds an unsigned 8-bit integer to the datagram that is
@@ -196,10 +218,11 @@ impl Datagram {
 
     /// Adds raw bytes to the datagram via an unsigned 8-bit integer vector.
     ///
-    /// NOTE: not to be confused with add_blob(), which adds a dclass blob to the datagram.
+    /// **NOTE**: not to be confused with add_blob(), which
+    /// adds a dclass blob to the datagram.
     ///
     pub fn add_data(&mut self, mut v: Vec<u8>) -> Result<(), DatagramError> {
-        if v.len() > globals::DG_SIZE_MAX.into() {
+        if v.len() > self.cap {
             // check input to avoid panic at .try_into() below
             return Err(DatagramError::DatagramOverflow(
                 "Given bytes will overflow datagram.",
@@ -247,7 +270,7 @@ impl Datagram {
 
     /// Reserves an amount of bytes in the datagram buffer.
     pub fn add_buffer(&mut self, bytes: globals::DgSizeTag) -> Result<globals::DgSizeTag, DatagramError> {
-        self.check_add_length(bytes)?;
+        self.check_add_length(usize::from(bytes))?;
         // get start length (before push)
         let start: globals::DgSizeTag = self.index as globals::DgSizeTag;
         for _n in 1..bytes {
@@ -301,8 +324,8 @@ impl Datagram {
     }
 
     /// Returns the size of this [`Datagram`].
-    pub fn size(&mut self) -> globals::DgSizeTag {
-        self.buffer.len().try_into().unwrap()
+    pub fn size(&mut self) -> usize {
+        self.buffer.len()
     }
 
     /// Returns a reference to this [`Datagram`]'s byte buffer.
@@ -382,10 +405,10 @@ mod tests {
             assert!(dg_res.is_ok());
         }
 
-        let dg_size: globals::DgSizeTag = dg.size();
+        let dg_size: usize = dg.size();
         let dg_buffer: Vec<u8> = dg.get_data();
 
-        assert_eq!(dg_buffer.len() as u16, dg_size); // verify buffer length
+        assert_eq!(dg_buffer.len(), dg_size); // verify buffer length
         assert_eq!(dg_size, 82); // total in bytes
     }
 
@@ -403,10 +426,10 @@ mod tests {
         assert!(addition.is_ok());
         dg = addition.unwrap();
 
-        let dg_size: globals::DgSizeTag = dg.size();
+        let dg_size: usize = dg.size();
         let dg_buffer: Vec<u8> = dg.get_data();
 
-        assert_eq!(dg_buffer.len() as u16, dg_size);
+        assert_eq!(dg_buffer.len(), dg_size);
         assert_eq!(dg_buffer, vec![
             u8::MAX, u8::MAX, u8::MAX, u8::MAX,
             u8::MAX, u8::MAX, u8::MAX, u8::MAX,
@@ -431,10 +454,10 @@ mod tests {
         for dg_res in &results {
             assert!(dg_res.is_ok());
         }
-        let dg_size: globals::DgSizeTag = dg.size();
+        let dg_size: usize = dg.size();
         let dg_buffer: Vec<u8> = dg.get_data();
 
-        assert_eq!(dg_buffer.len() as u16, dg_size);
+        assert_eq!(dg_buffer.len(), dg_size);
         assert_eq!(dg_buffer, vec![
             1, u8::MAX, u8::MAX, u8::MAX, u8::MAX, // recipients
             u8::MAX, u8::MAX, u8::MAX, u8::MAX,
@@ -454,7 +477,7 @@ mod tests {
         assert_eq!(res_1.unwrap(), 0, "add_buffer() didn't return start of reserve.");
         assert_eq!(
             dg.size() + 1,
-            globals::DG_SIZE_MAX,
+            usize::from(globals::DG_SIZE_MAX),
             "Datagram didn't add 2^16 bytes to the buffer."
         );
 

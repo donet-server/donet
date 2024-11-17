@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -24,6 +24,8 @@ use log::{error, info};
 use mysql::prelude::*;
 use mysql::*;
 use std::io::{Error, ErrorKind, Result};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
 // MySQL Result (mysql crate API response)
@@ -73,7 +75,10 @@ impl DonetService for DatabaseServer {
     type Service = Self;
     type Configuration = config::DBServer;
 
-    async fn create(conf: Self::Configuration, dc: Option<DCFile<'static>>) -> Result<Self::Service> {
+    async fn create(
+        conf: Self::Configuration,
+        dc: Option<DCFile<'static>>,
+    ) -> Result<Arc<Mutex<Self::Service>>> {
         // TODO: Check for db backend type once we have multiple DB backend support.
         let sql_config: config::SQL;
         let host_port: Vec<&str>;
@@ -143,12 +148,12 @@ impl DonetService for DatabaseServer {
             panic!("An error occurred while connecting to the SQL database.");
         }
 
-        Ok(DatabaseServer {
+        Ok(Arc::new(Mutex::new(DatabaseServer {
             dc_file: dc.expect("DB server requires the DC file."),
             _sql_pool: pool,
             sql_conn: conn,
             _credentials: creds,
-        })
+        })))
     }
 
     async fn start(conf: config::DonetConfig, dc: Option<DCFile<'static>>) -> Result<JoinHandle<Result<()>>> {
@@ -157,17 +162,17 @@ impl DonetService for DatabaseServer {
         // is of a 'Some' type, which guarantees no panic scenario.
         let db_server_conf: config::DBServer = conf.services.database_server.unwrap();
 
-        let mut db: DatabaseServer = DatabaseServer::create(db_server_conf, dc).await?;
-        let res: Result<()> = db.main().await;
+        let service = DatabaseServer::create(db_server_conf, dc).await?;
 
-        if res.is_err() {
-            error!("Failed to initialize the Database Server.");
-        }
-        Ok(Self::spawn_async_task(async move { db.main().await }))
+        Ok(Self::spawn_async_task(async move {
+            DatabaseServer::main(service).await
+        }))
     }
 
-    async fn main(&mut self) -> Result<()> {
-        self.check_database_tables().unwrap(); // FIXME
+    async fn main(service: Arc<Mutex<Self::Service>>) -> Result<()> {
+        let mut locked_service = service.lock().await;
+
+        locked_service.check_database_tables().unwrap(); // FIXME
         Ok(())
     }
 }

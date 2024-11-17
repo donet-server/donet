@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -25,3 +25,4 @@ pub mod event;
 pub mod logger;
 pub mod meson;
 pub mod service;
+pub mod subscriber;

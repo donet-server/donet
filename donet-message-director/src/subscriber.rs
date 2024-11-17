@@ -17,14 +17,18 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
+use core::net::SocketAddr;
+use donet_core::datagram::datagram::*;
 use donet_core::globals::Channel;
 use donet_network::Client;
+use donet_network::HasClient;
 use gcollections::ops::*;
 use interval::IntervalSet;
+use log::trace;
+use multimap::MultiMap;
 use std::collections::HashSet;
-use std::io::Result;
+use std::error::Error;
 use std::sync::Arc;
-use tokio::net::TcpStream;
 use tokio::sync::{Mutex, MutexGuard};
 
 /// A wrapper that holds a thread-safe [`std::sync::Arc`] pointer to
@@ -33,22 +37,34 @@ use tokio::sync::{Mutex, MutexGuard};
 ///
 /// This wrapper exists so it can manually implement the
 /// [`core::cmp::Eq`] and [`std::hash::Hash`] traits, where only the
-/// raw pointer of the underlying [`std::sync::Arc`] is used for
-/// comparison of references and to hash a reference, allowing this
-/// wrapper to be stored in a [`std::collections::HashSet`].
+/// subscriber's remote IPv4/6 address is used for comparison of
+/// references and to hash a reference, allowing this wrapper to be
+/// stored in a [`std::collections::HashSet`].
 ///
-/// The [`std::sync::Arc`]'s inner pointer should stay the same,
-/// which means the comparison and hash of this structure should
-/// always be the same, satisfying the requirements for a hash set.
+/// The remote address is immutable and should never change, which
+/// means the comparison and hash of this structure should always be
+/// the same, satisfying the requirements for a hash set.
 #[derive(Clone)]
 pub struct SubscriberRef {
+    hash_key: SocketAddr,
     pointer: Arc<Mutex<Subscriber>>,
 }
 
 impl From<Subscriber> for SubscriberRef {
     fn from(value: Subscriber) -> Self {
         Self {
+            hash_key: value.remote,
             pointer: Arc::new(Mutex::new(value)),
+        }
+    }
+}
+
+/// Dummy [`SubscriberRef`] for finding in hash set.
+impl From<SocketAddr> for SubscriberRef {
+    fn from(value: SocketAddr) -> Self {
+        Self {
+            hash_key: value,
+            pointer: Arc::new(Mutex::new(value.into())),
         }
     }
 }
@@ -56,10 +72,10 @@ impl From<Subscriber> for SubscriberRef {
 /// Must implement [`core::cmp::PartialEq`] to store in a
 /// [`std::collections::HashSet`] structure.
 ///
-/// Compares the raw pointers of both [`std::sync::Arc`] pointers.
+/// Compares the remote IPv4/6 address of both subscribers.
 impl PartialEq for SubscriberRef {
     fn eq(&self, other: &Self) -> bool {
-        self.get_ptr_address() == other.get_ptr_address()
+        self.hash_key == other.hash_key
     }
 }
 
@@ -71,7 +87,7 @@ impl Eq for SubscriberRef {}
 /// Hashes the raw pointer of the [`std::sync::Arc`].
 impl std::hash::Hash for SubscriberRef {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        state.write_usize(self.get_ptr_address());
+        self.hash_key.hash(state);
     }
 }
 
@@ -81,38 +97,113 @@ impl SubscriberRef {
         self.pointer.lock().await
     }
 
-    /// Returns the raw pointer of the underlying [`std::sync::Arc`].
-    ///
-    /// We do not need to dereference this raw pointer, so simply
-    /// retrieving it and converting it to a `usize` is safe.
-    pub fn get_ptr_address(&self) -> usize {
-        Arc::as_ptr(&self.pointer) as *const () as usize
+    /// Get a clone of the underlying [`std::sync::Arc`]
+    /// pointer to the [`Subscriber`] mutex.
+    pub fn get_ptr(&self) -> Arc<Mutex<Subscriber>> {
+        self.pointer.clone()
+    }
+
+    /// Quick way to get the remote address without locking
+    /// the underlying [`Subscriber`]'s mutex.
+    pub fn get_remote(&self) -> SocketAddr {
+        self.hash_key
     }
 }
 
 /// Simple representation of a participant, or subscriber,
 /// that is connected to a Message Director instance.
 pub struct Subscriber {
-    client: Client,
+    /// Remote IPv4/6 address of this subscriber.
+    ///
+    /// This is the unique identifier for this subscriber.
+    remote: SocketAddr,
+    /// [`Client`] for this subscriber. Can be `None`, as
+    /// a dummy [`Subscriber`] struct can be created for
+    /// looking up a [`SubscriberRef`] in a hash set.
+    client: Option<Arc<Mutex<Client>>>,
+    /// The name for this downstream connection.
+    pub connection_name: Option<String>,
+    /// The web URL for this downstream connection.
+    pub connection_web_url: Option<String>,
     /// Single channel subscriptions
     pub subscribed_channels: HashSet<Channel>,
     /// Channel range subscriptions
     pub subscribed_ranges: IntervalSet<Channel>,
+    /// Datagrams scheduled to be distributed upon
+    /// this subscriber's unexpected disconnect.
+    pub post_removes: MultiMap<Channel, Datagram>,
+}
+
+/// Creates a new [`Subscriber`] from a [`SocketAddr`],
+/// should be the remote address of the subscriber.
+///
+/// This can also be used to make a dummy
+/// [`SubscriberRef`] for looking up a subscriber
+/// in a hash set.
+impl From<SocketAddr> for Subscriber {
+    fn from(value: SocketAddr) -> Self {
+        Self {
+            client: None,
+            remote: value,
+            connection_name: None,
+            connection_web_url: None,
+            subscribed_channels: HashSet::default(),
+            subscribed_ranges: IntervalSet::empty(),
+            post_removes: MultiMap::default(),
+        }
+    }
 }
 
 impl PartialEq for Subscriber {
     fn eq(&self, other: &Self) -> bool {
-        (self.subscribed_channels == other.subscribed_channels)
-            && (self.subscribed_ranges == other.subscribed_ranges)
+        self.remote == other.remote
+    }
+}
+
+impl HasClient for Subscriber {
+    fn get_client(&self) -> Arc<Mutex<Client>> {
+        self.client
+            .as_ref()
+            .expect("Tried to get client on dummy sub.")
+            .clone()
     }
 }
 
 impl Subscriber {
-    pub async fn new(socket: TcpStream) -> Result<Self> {
-        Ok(Self {
-            client: Client::new(socket).await?,
+    pub async fn new(client: Client) -> Self {
+        Self {
+            remote: client.get_remote(),
+            client: Some(Arc::new(Mutex::new(client))),
+            connection_name: None,
+            connection_web_url: None,
             subscribed_channels: HashSet::default(),
             subscribed_ranges: IntervalSet::empty(),
-        })
+            post_removes: MultiMap::default(),
+        }
+    }
+
+    /// Handles a [`Datagram`] that the Message Director received,
+    /// and needs to be routed to this subscriber.
+    pub async fn handle_datagram(&mut self, dg: &mut Datagram) -> Result<(), impl Error> {
+        trace!("Sending datagram downstream to {}", self.remote);
+
+        assert!(
+            self.client.is_some(),
+            "Called handle_datagram() on a dummy Subscriber!"
+        );
+
+        // if assertion passed, we can safely unwrap
+        let client: Arc<Mutex<Client>> = self.client.clone().unwrap();
+        let mut locked_client = client.lock().await;
+
+        locked_client.stage_datagram(dg.clone()).await
+    }
+
+    pub async fn receive_disconnect(&mut self) {
+        () // TODO!
+    }
+
+    pub async fn post_remove(&mut self) {
+        () // TODO!
     }
 }

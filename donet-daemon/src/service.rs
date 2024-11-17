@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -20,6 +20,8 @@
 use crate::config;
 use std::future::Future;
 use std::io::Result;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
 cfg_if! {
@@ -40,6 +42,11 @@ cfg_if! {
 
 /// Must be implemented by all Donet services in order to be
 /// bootstrapped on daemon startup using this daemon's configuration.
+///
+/// A service's main data structure, [`Self::Service`], **must**
+/// be wrapped in a [`std::sync::Arc`] and [`tokio::sync::Mutex`], as
+/// it may split certain behavior into separate tokio tasks that all
+/// need a reference to [`Self::Service`].
 pub trait DonetService {
     type Service;
     type Configuration;
@@ -47,7 +54,7 @@ pub trait DonetService {
     fn create(
         conf: Self::Configuration,
         dc: Option<DCFile<'static>>,
-    ) -> impl Future<Output = Result<Self::Service>> + Send;
+    ) -> impl Future<Output = Result<Arc<Mutex<Self::Service>>>> + Send;
 
     fn start(
         conf: config::DonetConfig,
@@ -55,7 +62,7 @@ pub trait DonetService {
     ) -> impl Future<Output = Result<JoinHandle<Result<()>>>> + Send;
 
     /// This service's main asynchronous loop.
-    fn main(&mut self) -> impl Future<Output = Result<()>> + Send;
+    fn main(service: Arc<Mutex<Self::Service>>) -> impl Future<Output = Result<()>> + Send;
 
     /// Spawns a new Tokio asynchronous task that executes the given
     /// async function, and returns its Tokio join handle.
