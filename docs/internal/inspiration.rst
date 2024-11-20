@@ -1,7 +1,7 @@
 ..
    This file is part of the Donet reference manual.
 
-   Copyright (c) 2024 Max Rodriguez.
+   Copyright (c) 2024 Max Rodriguez <me@maxrdz.com>
 
    Permission is granted to copy, distribute and/or modify this document
    under the terms of the GNU Free Documentation License, Version 1.3
@@ -10,13 +10,17 @@
    A copy of the license is included in the section entitled "GNU
    Free Documentation License".
 
-.. _resources:
+.. _inspiration:
 
-Additional Resources
-====================
+Inspiring Documents
+===================
 
-If you wish to learn more about Panda3D's Distributed Networking, you can also
-visit these resources available online:
+The Donet server is based off the legacy networking system developed
+for the Panda3D_ game engine. If you wish to learn more about
+Panda3D's Distributed Networking, you can also visit these resources
+available online:
+
+.. _Panda3D: https://www.panda3d.org
 
 - `October 2003 | Building a MMOG for the Million - Disney's Toontown Online`_
 - `Apr 16, 2008 | The DistributedObject System, client side`_
