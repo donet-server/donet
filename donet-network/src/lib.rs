@@ -21,7 +21,7 @@ pub mod tcp;
 pub mod udp;
 
 use donet_core::datagram::datagram::*;
-use donet_core::datagram::iterator::DatagramIterator;
+use donet_core::datagram::iterator::*;
 use donet_core::globals;
 use log::warn;
 use std::error::Error;
@@ -260,15 +260,16 @@ impl Client {
                 let mut write_buffer_dg: Datagram = Datagram::default();
 
                 {
-                    let mut dgi: DatagramIterator = dg.clone().into();
+                    let mut dgi: DatagramIterator = dg.into();
 
                     // get the size of this datagram to append size tag
-                    let sizetag = dgi.get_remaining();
+                    let sizetag: usize = dgi.get_remaining();
 
                     // read the next bytes based on the size tag
-                    let dg_payload = dgi.read_data(sizetag);
+                    let dg_payload: Result<Vec<u8>, IteratorError> = dgi.read_data(sizetag);
 
                     debug_assert!(dg_payload.is_ok(), "Tried to read past datagram.");
+
                     write_buffer_dg.add_size(sizetag as globals::DgSizeTag).unwrap();
                     write_buffer_dg.add_data(dg_payload.unwrap()).unwrap();
 
@@ -280,7 +281,8 @@ impl Client {
 
                 // send staged datagrams to client
                 wh.writable().await?;
-                wh.write_all(dg.get_buffer()).await?;
+                wh.write_all(write_buffer_dg.get_buffer()).await?;
+                wh.flush().await?;
             }
             todo!("unhandled error. tcp client dg queue receiver returned None.")
         }

@@ -300,6 +300,7 @@ impl MessageDirector {
         let sub_lock = sub.lock().await;
 
         let client = sub_lock.get_client();
+        drop(sub_lock);
 
         let mut client_lock = client.lock().await;
 
