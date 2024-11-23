@@ -113,7 +113,11 @@
             <label for="menutoggle" class="menu-icon">
                 <input type="checkbox" id="menutoggle"/>
                 <img src="{{ pathto('_static/symbolic/open-menu-symbolic.svg', 1) }}" alt="Main Menu" style="filter: brightness(1000%);">
+                {% block mobile_nav %}
                 <nav class="popup-menu">
+                    <a data-toggle="wy-nav-top">
+                        <p>Table of Contents</p>
+                    </a>
                     <a href="@DONET_URL@">
                         <p>Home</p>
                     </a>
@@ -134,6 +138,7 @@
                         <p>GitLab</p>
                     </a>
                 </nav>
+                {% endblock %}
                 <div class="shadow"/>
             </label>
         </div>
@@ -146,6 +151,10 @@
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" {% if theme_style_nav_header_background %} style="background: {{theme_style_nav_header_background}}" {% endif %}>
           {% block sidebartitle %}
+
+          <a data-toggle="wy-nav-top" class="mobile-sidebar-toggle">
+              ← Close Table of Contents
+          </a>
 
           {% include "searchbox.html" %}
 
@@ -179,17 +188,6 @@
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      {# MOBILE NAV, TRIGGLES SIDE NAV ON TOGGLE #}
-      {%- if not theme_display_header %}
-      <nav class="wy-nav-top" aria-label="top navigation">
-        {% block mobile_nav %}
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="{{ pathto(master_doc) }}">{{ project }}</a>
-        {% endblock %}
-      </nav>
-      {%- endif %}
-
       <div class="wy-nav-content">
       {%- block content %}
         {% if theme_style_external_links|tobool %}

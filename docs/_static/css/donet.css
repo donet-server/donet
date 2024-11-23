@@ -66,7 +66,7 @@ body, .wy-body-for-nav {
     }
 }
 
-@media screen and (min-width: 769px) {
+@media screen and (min-width: 768px) {
     .wy-nav-side {
         left: inherit;
     }
@@ -106,7 +106,7 @@ body, .wy-body-for-nav {
 }
 
 /* override table width restrictions */
-@media screen and (min-width: 769px) {
+@media screen and (min-width: 768px) {
 
     /* Allow tables to overflow with scrollbar */
     /* Super useful for Donet protocol reference tables! */
@@ -147,10 +147,6 @@ body, .wy-body-for-nav {
     margin-top: var(--header-height);
     min-height: fit-content;
     padding-bottom: 0;
-}
-
-.wy-side-nav-search {
-    padding-top: 30px;
 }
 
 .wy-side-nav-search > div.version  {
@@ -207,7 +203,7 @@ body, .wy-body-for-nav {
 }
 
 /* For desktop view, set versions width to wy-nav-side's (300px).*/
-@media screen and (min-width: 769px) {
+@media screen and (min-width: 768px) {
     .rst-versions-wrapper {
         width: 300px;
     }
@@ -216,4 +212,21 @@ body, .wy-body-for-nav {
 /* Versions tab covers bottom. Make sure we shrink the TOC. */
 .wy-side-scroll {
     padding-bottom: 40px;
+}
+
+.mobile-sidebar-toggle {
+    visibility: hidden;
+    height: 0;
+}
+
+/* Fix rst content blocking header on mobile when sidebar open. */
+@media screen and (max-width: 768px) {
+    .mobile-sidebar-toggle {
+        visibility: visible;
+        height: auto;
+    }
+
+    .wy-nav-content-wrap.shift {
+        margin-top: var(--header-height);
+    }
 }
