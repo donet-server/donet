@@ -4,4 +4,4 @@
 
 Rust crate for the Event Logger daemon service.
 
-See: https://docs.donet-server.org/introduction/services.html#the-event-logger
+See: https://docs.donet-server.org/master/introduction/services.html#the-event-logger

@@ -17,19 +17,19 @@ The Donet repository is a monorepo that houses two main Rust projects:
 See [donet-server.org](https://www.donet-server.org).
 - **donet-core** - The core utilities for Donet services, including datagram
 utilities and the DC language parser. See
-[docs.donet-server.org](https://docs.donet-server.org/donet_core).
+[docs.donet-server.org](https://docs.donet-server.org/master/library).
 
 Please read the
-[introduction to Donet](https://docs.donet-server.org/introduction)
+[introduction to Donet](https://docs.donet-server.org/master/introduction)
 for an overview of the project and how the engine works.
 
 Before starting your own contribution to Donet, please read over the
-[Contributing Guidelines](https://docs.donet-server.org/internal/guidelines).
+[Contributing Guidelines](https://docs.donet-server.org/master/internal/guidelines).
 
 ## Building
 
 The build instructions are available at
-[docs.donet-server.org](https://docs.donet-server.org/gettingstarted/building-linux).
+[docs.donet-server.org](https://docs.donet-server.org/master/gettingstarted/building-linux).
 
 ## Documentation
 The Donet project documentation is available at
