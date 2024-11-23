@@ -10,7 +10,7 @@ conf.set('SPHINX_URL', sphinx_website_url)
 # The Git branch name is the version name for sphinx docs in the live site
 git_branch = get_option('ci_branch')
 
-if ci_branch = ''
+if ci_branch == ''
   git_branch = run_command(git_bin, 'branch', '--show-current', check: true).stdout().strip()
 endif
 
