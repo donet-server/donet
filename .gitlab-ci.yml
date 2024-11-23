@@ -129,7 +129,7 @@ build:
     - meson compile -C build
     - meson compile linting -C build
 
-unit-testing:
+testing:
   image: 'ubuntu:latest'
   stage: build
   interruptible: true
@@ -148,6 +148,11 @@ documentation:
   image: 'ubuntu:latest'
   stage: build
   interruptible: true
+  rules:
+    - changes:
+        - .gitlab-ci.yml
+        - docs/**/*
+        - donet-core/**/*
   cache:
     key: meson-cache-doc-$CI_COMMIT_BRANCH
     paths:
@@ -163,7 +168,7 @@ documentation:
     - python3 -m venv venv
     - source venv/bin/activate
     - python3 -m pip install -r docs/requirements.txt
-    - meson setup build -Dprofile=debug
+    - meson setup build -Dprofile=debug -Dci_branch=$CI_COMMIT_BRANCH
     - meson compile sphinx -C build
     - meson compile cargo-doc -C build
     - mkdir doc
@@ -178,7 +183,7 @@ cargo-tarpaulin:
   image: 'ubuntu:latest'
   stage: test
   dependencies:
-    - unit-testing
+    - testing
   cache:
     key: meson-cache-tarpaulin-$CI_COMMIT_BRANCH
     paths:
@@ -245,7 +250,9 @@ pages:
   rules:
     - if: ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == "master")
     - changes:
+        - .gitlab-ci.yml
         - docs/**/*
+        - donet-core/**/*
   artifacts:
     expire_in: 1 week
     paths:

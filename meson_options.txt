@@ -9,6 +9,11 @@ option(
   description: 'The build profile for Donet. `release` or `debug`.'
 )
 option(
+  'ci_branch',
+  type: 'string',
+  description: 'Used in a Gitlab CI/CD job. Passes $CI_COMMIT_BRANCH.'
+)
+option(
   'dockerized',
   type: 'boolean',
   value: false,
