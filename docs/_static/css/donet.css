@@ -57,6 +57,7 @@ body, .wy-body-for-nav {
     -webkit-box-shadow: 3px 3px 15px rgba(0,0,0,0.15);
     box-shadow: 3px 3px 15px rgba(0,0,0,0.15);
     overflow-y: auto;
+    height: calc(100% - var(--header-height));
 }
 
 @media screen and (min-width: 1100px) {
@@ -65,7 +66,7 @@ body, .wy-body-for-nav {
     }
 }
 
-@media screen and (min-width: 767px) {
+@media screen and (min-width: 769px) {
     .wy-nav-side {
         left: inherit;
     }
@@ -105,7 +106,7 @@ body, .wy-body-for-nav {
 }
 
 /* override table width restrictions */
-@media screen and (min-width: 767px) {
+@media screen and (min-width: 769px) {
 
     /* Allow tables to overflow with scrollbar */
     /* Super useful for Donet protocol reference tables! */
@@ -144,6 +145,16 @@ body, .wy-body-for-nav {
 /* Sphinx side navbar should not expand above our header */
 .wy-nav-side {
     margin-top: var(--header-height);
+    min-height: fit-content;
+    padding-bottom: 0;
+}
+
+.wy-side-nav-search {
+    padding-top: 30px;
+}
+
+.wy-side-nav-search > div.version  {
+    color: var(--light-clr);
 }
 
 /* make search box border match the background */
@@ -176,4 +187,33 @@ body, .wy-body-for-nav {
     color: inherit;
     border-top: inherit;
     padding: inherit;
+}
+
+.rst-versions {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+.rst-versions .rst-current-version {
+    text-align: left;
+    font-family: "Cantarell var", sans-serif;
+    font-weight: 600;
+    color: var(--light-pink);
+}
+
+.rst-versions .rst-current-version > .fa-caret-down {
+    margin-right: var(--global-margin);
+}
+
+/* For desktop view, set versions width to wy-nav-side's (300px).*/
+@media screen and (min-width: 769px) {
+    .rst-versions-wrapper {
+        width: 300px;
+    }
+}
+
+/* Versions tab covers bottom. Make sure we shrink the TOC. */
+.wy-side-scroll {
+    padding-bottom: 40px;
 }

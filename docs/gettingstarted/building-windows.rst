@@ -1,7 +1,7 @@
 ..
    This file is part of the Donet reference manual.
 
-   Copyright (c) 2024 Max Rodriguez.
+   Copyright (c) 2024 Max Rodriguez <me@maxrdz.com>
 
    Permission is granted to copy, distribute and/or modify this document
    under the terms of the GNU Free Documentation License, Version 1.3
@@ -33,7 +33,6 @@ have it installed, open the Visual Studio Installer and modify your
 installation.
 
 .. image:: visual_studio_install.png
-    :scale: 50%
     :alt: A screenshot of the Microsoft Visual Studio installer,
           viewing the current visual studio installation entry.
 
@@ -71,7 +70,6 @@ instructions given by the installer. If you see the following,
 you have installed the Rust toolchain on your PC successfully.
 
 .. image:: windows_rustup.png
-    :scale: 50%
     :alt: A screenshot of the command prompt after installing
           Rustup successfully.
 
@@ -149,7 +147,6 @@ Run the following Meson commands under the project directory:
     receive the following error upon configuring the build:
 
     .. image:: windows_no_mingw.png
-        :scale: 40%
         :alt: A screenshot of the command prompt with the
               following Meson output, "ERROR: Assert failed:
               Windows detected, but no GNU core utils found.

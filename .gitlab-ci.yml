@@ -3,6 +3,7 @@ include:
   - template: Security/Secret-Detection.gitlab-ci.yml
 
 variables:
+  SPHINX_DEFAULT_DOC_VERSION: "master"
   TYPOS_UPSTREAM: "https://github.com/crate-ci/typos/releases/download/v1.22.7/typos-v1.22.7-x86_64-unknown-linux-musl.tar.gz"
   CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
   GCP_PROJECT_NUMBER: 196424286082
@@ -243,6 +244,8 @@ pages:
     - documentation
   rules:
     - if: ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == "master")
+    - changes:
+        - docs/**/*
   artifacts:
     expire_in: 1 week
     paths:
@@ -251,3 +254,10 @@ pages:
   script:
     - mkdir public
     - mv doc/* public
+    - cd public
+    # Make an index.html file in the `public/` dir to reroute to
+    # the `SPHINX_DEFAULT_DOC_VERSION` subdirectory where the default
+    # documentation version is at.
+    # This makes the user not encounter a 404 at the root of the live site.
+    - touch index.html
+    - echo "<meta http-equiv=\"refresh\" content=\"0; url=/${SPHINX_DEFAULT_DOC_VERSION}\">" > index.html

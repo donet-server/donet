@@ -7,6 +7,9 @@ conf.set('DONET_URL', donet_website_url)
 conf.set('LIBDONET_URL', libdonet_website_url)
 conf.set('SPHINX_URL', sphinx_website_url)
 
+# The Git branch name is the version name for sphinx docs in the live site
+git_branch = run_command(git_bin, 'branch', '--show-current').stdout().strip()
+
 configure_file(
   input: 'conf.py.in',
   output: 'conf.py',
@@ -44,7 +47,7 @@ if sphinx_bin.found()
     command: [
       sphinx_bin, '--jobs', 'auto', '--write-all', '--fresh-env',
       meson.project_source_root() / 'docs',
-      meson.project_build_root() / 'sphinx'
+      meson.project_build_root() / 'sphinx' / git_branch
     ]
   )
 endif
