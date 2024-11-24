@@ -24,16 +24,26 @@ daemon_bin = meson.project_name() + 'd'
 vcs_tag = run_command(git_bin, 'rev-parse', 'HEAD', check: false).stdout().strip()
 build_timestamp = run_command(date_bin, '--rfc-email', check: false).stdout().strip()
 
+# The Git branch name is the version name for sphinx docs in the live site
+git_branch = get_option('ci_branch')
+
+if git_branch == ''
+  git_branch = run_command(git_bin, 'branch', '--show-current', check: true).stdout().strip()
+endif
+
 # Used in configuring Sphinx documentation to link sources to the repo.
+sphinx_version = '7.4'
+sphinx_release = 'master' # Full version tag (major.minor.patch)
+doc_versions = '[["master", "/master"]]' # Python nested list
 git_host = 'gitlab'
 git_host_user = 'donet-server'
 git_host_repo = 'donet'
 git_url = 'https://gitlab.com/' + git_host_user + '/' + git_host_repo
-
 donet_website_url = 'https://www.donet-server.org'
 libdonet_website_url = 'https://docs.donet-server.org/donet_core'
 sphinx_website_url = 'https://docs.donet-server.org'
 
+# Cargo build options and environment variables
 cargo_opts = [ '--manifest-path', meson.project_source_root() / 'Cargo.toml' ]
 cargo_opts += [ '--target-dir', meson.project_build_root()  / 'target' ]
 

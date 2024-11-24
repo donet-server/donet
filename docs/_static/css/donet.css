@@ -149,6 +149,10 @@ body, .wy-body-for-nav {
     padding-bottom: 0;
 }
 
+.wy-side-nav-search {
+    background-color: var(--coral-clr);
+}
+
 .wy-side-nav-search > div.version  {
     color: var(--light-clr);
 }
@@ -186,20 +190,38 @@ body, .wy-body-for-nav {
 }
 
 .rst-versions {
-    position: absolute;
-    bottom: 0;
+    position: inherit;
+    bottom: unset;
     width: 100%;
+    /* Version selector should match nav bar accent color. */
+    background: var(--coral-clr);
 }
 
 .rst-versions .rst-current-version {
     text-align: left;
     font-family: "Cantarell var", sans-serif;
-    font-weight: 600;
-    color: var(--light-pink);
+    font-weight: 400;
+    color: var(--light-clr);
+    background-color: var(--coral-clr);
+    padding-top: 0px !important;
 }
 
 .rst-versions .rst-current-version > .fa-caret-down {
     margin-right: var(--global-margin);
+}
+
+.rst-versions .rst-current-version > span {
+    font-weight: 800;
+}
+
+.rst-other-versions {
+    text-align: left;
+    padding-top: 0px !important;
+}
+
+.rst-other-versions > dd {
+    color: var(--cherry-blosson-clr);
+    font-weight: 800;
 }
 
 /* For desktop view, set versions width to wy-nav-side's (300px).*/
@@ -209,23 +231,23 @@ body, .wy-body-for-nav {
     }
 }
 
-/* Versions tab covers bottom. Make sure we shrink the TOC. */
-.wy-side-scroll {
-    padding-bottom: 40px;
-}
-
 .mobile-sidebar-toggle {
-    visibility: hidden;
+    display: none !important;
     height: 0;
+    width: 100%;
+    text-align: right;
+    font-size: 80% !important;
+    padding: 0 !important;
+    margin-bottom: 0 !important;
 }
 
-/* Fix rst content blocking header on mobile when sidebar open. */
 @media screen and (max-width: 768px) {
     .mobile-sidebar-toggle {
-        visibility: visible;
+        display: inline-block !important;
         height: auto;
     }
 
+    /* Fix rst content blocking header on mobile when sidebar open. */
     .wy-nav-content-wrap.shift {
         margin-top: var(--header-height);
     }

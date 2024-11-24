@@ -1,30 +1,21 @@
-conf = configuration_data()
-conf.set('GIT_HOST', git_host)
-conf.set('GIT_HOST_USER', git_host_user)
-conf.set('GIT_HOST_REPO', git_host_repo)
-conf.set('GIT_URL', git_url)
-conf.set('DONET_URL', donet_website_url)
-conf.set('LIBDONET_URL', libdonet_website_url)
-conf.set('SPHINX_URL', sphinx_website_url)
-
-# The Git branch name is the version name for sphinx docs in the live site
-git_branch = get_option('ci_branch')
-
-if git_branch == ''
-  git_branch = run_command(git_bin, 'branch', '--show-current', check: true).stdout().strip()
-endif
-
 message('Building Sphinx docs with version "' + git_branch + '"')
+
+conf = configuration_data()
+conf.set_quoted('SPHINX_VERSION', sphinx_version)
+conf.set_quoted('SPHINX_RELEASE', sphinx_release)
+conf.set('DOC_VERSIONS', doc_versions)
+conf.set_quoted('GIT_BRANCH', git_branch)
+conf.set_quoted('GIT_HOST', git_host)
+conf.set_quoted('GIT_HOST_USER', git_host_user)
+conf.set_quoted('GIT_HOST_REPO', git_host_repo)
+conf.set_quoted('GIT_URL', git_url)
+conf.set_quoted('DONET_URL', donet_website_url)
+conf.set_quoted('LIBDONET_URL', libdonet_website_url)
+conf.set_quoted('SPHINX_URL', sphinx_website_url)
 
 configure_file(
   input: 'conf.py.in',
   output: 'conf.py',
-  configuration: conf
-)
-
-configure_file(
-  input: '_templates' / 'layout.html.in',
-  output: 'layout.html',
   configuration: conf
 )
 
@@ -33,14 +24,6 @@ run_command(
   'cp',
   meson.project_build_root() / 'docs' / 'conf.py',
   meson.project_source_root() / 'docs' / 'conf.py',
-  check: true
-)
-
-# Copy the configured layout.html file to the _templates directory.
-run_command(
-  'cp',
-  meson.project_build_root() / 'docs' / 'layout.html',
-  meson.project_source_root() / 'docs' / '_templates' / 'layout.html',
   check: true
 )
 

@@ -1,28 +1,35 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+# ----- Meson-configured variables ----- #
 
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+sphinx_version = @SPHINX_VERSION@
+sphinx_release = @SPHINX_RELEASE@
+doc_versions = @DOC_VERSIONS@
+git_branch = @GIT_BRANCH@
+git_host = @GIT_HOST@
+git_host_user = @GIT_HOST_USER@
+git_host_repo = @GIT_HOST_REPO@
+git_url = @GIT_URL@
+donet_url = @DONET_URL@
+libdonet_url = @LIBDONET_URL@
+sphinx_url = @SPHINX_URL@
+
+# ----- Project Information ----- #
 
 project = 'Donet'
 copyright = '2024, The Donet Authors'
 author = 'The Donet Authors'
-needs_sphinx = '7.4'
+needs_sphinx = sphinx_version
 language = 'en'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
-version = 'master'
+version = git_branch
+versions = doc_versions
+
 # Full version tag (major.minor.patch)
-release = 'master'
+release = sphinx_release
 
-versions = [["master", "/master"]]
-
-# -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+# ----- General configuration ----- #
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
@@ -34,14 +41,13 @@ master_doc = 'index'
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'default'
 
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
+# ----- Options for HTML output ----- #
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 html_title = 'Donet Manual'
 html_logo = None
-html_base_url = "https://docs.donet-server.org/"
+html_base_url = sphinx_url
 html_static_path = ['_static']
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -49,13 +55,11 @@ html_static_path = ['_static']
 html_favicon = '_static/favicon/favicon.ico'
 html_theme = 'sphinx_rtd_theme'
 html_theme_options = {
-    'style_nav_header_background': '#f7717d',
-    'logo_only': True,
     'collapse_navigation': False,
     'prev_next_buttons_location': 'both',
     'style_external_links': True,
-    'display_version': True,
 }
+# Variables that can be accessed in template HTML files.
 html_context = {
     'css_files': [
         '_static/pygments.css',
@@ -66,16 +70,25 @@ html_context = {
         '_static/css/donet.css',  # override wide tables in RTD theme
         '_static/css/header.css',
     ],
-    'display_@GIT_HOST@': True,
-    '@GIT_HOST@_user': '@GIT_HOST_USER@',
-    '@GIT_HOST@_repo': '@GIT_HOST_REPO@',
+    f'display_{git_host}': True,
+    f'{git_host}_user': git_host_user,
+    f'{git_host}_repo': git_host_repo,
     # All our rst source files are not in the donet repo root, but
     # under the `docs/` subdir, so we need to adjust this through the
     # `gitlab_version` property, and append `/docs` to the string.
-    '@GIT_HOST@_version': version + '/docs',
+    f'{git_host}_version': git_branch + '/docs',
     'conf_py_path': '/',
     'version': version,
     'versions': versions,
+    # Remaining HTML context vars are Meson-configured vars
+    'git_branch': git_branch,
+    'git_host': git_host,
+    'git_host_user': git_host_user,
+    'git_host_repo': git_host_repo,
+    'git_url': git_url,
+    'donet_url': donet_url,
+    'libdonet_url': libdonet_url,
+    'sphinx_url': sphinx_url,
 }
 # Don't copy the sources; use GitLab links instead.
 html_copy_source = False
