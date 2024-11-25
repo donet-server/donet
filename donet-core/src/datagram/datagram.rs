@@ -288,7 +288,7 @@ impl Datagram {
     /// The header is formatted as shown below:
     ///
     /// (recipients: [`u8`], recipients: [`Vec<Channel>`],
-    /// sender: [`Channel`], message_type: [`u16`])
+    /// sender: [`globals::Channel`], message_type: [`u16`])
     ///
     pub fn add_internal_header(
         &mut self,
@@ -324,7 +324,7 @@ impl Datagram {
     }
 
     /// Returns the size of this [`Datagram`].
-    pub fn size(&mut self) -> usize {
+    pub fn size(&self) -> usize {
         self.buffer.len()
     }
 

@@ -134,7 +134,7 @@ impl DonetService for MessageDirector {
 
     async fn main(service: Arc<Mutex<Self::Service>>) -> Result<()> {
         // create a new mpsc channel for receiving incoming packets
-        let (tx, mut rx) = mpsc::channel::<RecvData>(32);
+        let (tx, mut rx) = mpsc::channel::<RecvData>(100);
 
         let service_clone_for_recv = service.clone();
 
@@ -313,7 +313,7 @@ impl MessageDirector {
     /// These datagrams can come from a subscriber (services or downstream MDs)
     /// or they can come from our upstream MD, if one is configured.
     async fn handle_datagram(&mut self, mut data: RecvData) -> Result<()> {
-        trace!("Processing datagram ...");
+        trace!("Processing datagram of {} bytes...", data.dg.size());
 
         let recp_count: u8 = data.dgi.read_recipient_count();
         trace!("Recipient count: {}", recp_count);

@@ -22,8 +22,9 @@ pub mod udp;
 
 use donet_core::datagram::datagram::*;
 use donet_core::datagram::iterator::*;
-use donet_core::globals;
-use log::warn;
+use donet_core::globals::*;
+use log::{info, warn};
+use std::collections::VecDeque;
 use std::error::Error;
 use std::future::Future;
 use std::io;
@@ -39,7 +40,7 @@ use tokio::task::JoinHandle;
 ///
 /// Tokio gives us entire TCP messages (after reassembling
 /// segments) so we should expect this buffer to fill above
-/// the TCP max segment size (MSS),
+/// the TCP max segment size (MSS).
 const TCP_READ_BUFFER_SIZE: usize = 300 * 1024; // 300 kb
 
 /// Data sent via an MPSC channel from a
@@ -153,82 +154,41 @@ impl Client {
 
     /// Main asynchronous loop for handling receiving TCP packets from this
     /// client's TCP stream.
-    ///
-    /// Handles separating TCP packets into separate Datagrams, if multiple
-    /// found in the packet, and sends each individual datagram over the
-    /// mpsc channel using the given [`mpsc::Sender`].
     fn receive_loop(
         rh: OwnedReadHalf,
         incoming_tx: mpsc::Sender<RecvData>,
     ) -> impl Future<Output = io::Result<()>> + Send {
         async move {
-            // read buffer
-            let mut buffer = [0_u8; TCP_READ_BUFFER_SIZE];
-
-            let mut dg: Datagram;
-            let mut dgi: DatagramIterator;
-
             let remote: SocketAddr = rh.peer_addr()?;
 
             loop {
                 rh.readable().await?;
 
+                // initializing this **after** the `await` point prevents
+                // it from being stored in the async task.
+                let mut buffer = [0_u8; TCP_READ_BUFFER_SIZE];
+
                 match rh.try_read(&mut buffer) {
                     Ok(0) => {
-                        log::info!("Lost connection from {}", remote);
+                        info!("Lost connection from {}", remote);
 
                         return Ok(()); // client closed TCP connection
                     }
                     Ok(len) => {
-                        // make sure any data from the previous packet is cleared
-                        dg = Datagram::default();
+                        let mut dg: Datagram = Datagram::default();
+
                         dg.override_cap(TCP_READ_BUFFER_SIZE);
 
                         // The buffer is always a fixed size. Let's make a slice that
                         // contains only the length of the datagram received.
-                        let mut buf_slice = buffer.to_vec();
+                        let mut buf_slice: Vec<u8> = buffer.to_vec();
                         buf_slice.truncate(len);
 
-                        // ensure that big packets do not crash the server
-                        if let Err(err) = dg.add_data(buf_slice) {
-                            warn!("Received packet that is too big ({} bytes): {}", len, err);
-                        }
+                        // we can safely unwrap here, since the size cap for `dg` was
+                        // overridden to be the size of the read buffer size.
+                        dg.add_data(buf_slice).unwrap();
 
-                        // now read size tags and send individual datagrams via tx
-                        dgi = dg.clone().into();
-
-                        'split_datagrams: loop {
-                            let sizetag = dgi.read_size();
-
-                            let mut individual_dg: Datagram = Datagram::default();
-
-                            let payload: Vec<u8> = match dgi.read_data(sizetag.into()) {
-                                Ok(data) => data,
-                                Err(err) => {
-                                    warn!("Received truncated datagram! {}", err);
-
-                                    // no more bytes to read, break read loop
-                                    break 'split_datagrams;
-                                }
-                            };
-
-                            debug_assert!(individual_dg.add_data(payload).is_ok());
-
-                            incoming_tx
-                                .send(RecvData {
-                                    remote,
-                                    dg: individual_dg.clone(),
-                                    dgi: DatagramIterator::from(individual_dg),
-                                })
-                                .await
-                                .expect("Tried to send received packet, but MPSC channel closed.");
-
-                            // if this packet has no more data, that was
-                            // the last datagram in the packet
-                            if dgi.get_remaining() == 0 {
-                                break 'split_datagrams;
-                            }
-                        }
+                        Self::split_datagrams(remote, &incoming_tx, dg.into()).await;
                         continue;
                     }
                     Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
@@ -238,6 +198,62 @@ impl Client {
                         return Err(err);
                     }
                 }
+            }
+        }
+    }
+
+    /// Handles separating TCP packets into separate Datagrams, if multiple
+    /// found in the packet, and sends each individual datagram over the
+    /// mpsc channel using the given [`mpsc::Sender`].
+    async fn split_datagrams(
+        remote: SocketAddr,
+        incoming_tx: &mpsc::Sender<RecvData>,
+        mut dgi: DatagramIterator,
+    ) {
+        loop {
+            let sizetag: DgSizeTag = dgi.read_size();
+
+            if sizetag == 0 {
+                warn!("Received datagram with a size tag of 0. Skipping.");
+                break;
+            }
+
+            let mut individual_dg: Datagram = Datagram::default();
+
+            let payload: Vec<u8> = match dgi.read_data(sizetag.into()) {
+                Ok(data) => data,
+                Err(err) => {
+                    warn!("Received truncated datagram from {}: {}", remote, err);
+
+                    // no more bytes to read, break read loop
+                    break;
+                }
+            };
+
+            assert!(individual_dg.add_data(payload).is_ok());
+
+            // send individual datagram to the receive ncoming queue
+            incoming_tx
+                .send(RecvData {
+                    remote,
+                    dg: individual_dg.clone(),
+                    dgi: DatagramIterator::from(individual_dg),
+                })
+                .await
+                .expect("Tried to send received packet, but MPSC channel closed.");
+
+            let remaining: usize = dgi.get_remaining();
+
+            // if this packet has at least another size tag ahead,
+            // try separating another datagram
+            if remaining < std::mem::size_of::<DgSizeTag>() {
+                // we *should* have 0 bytes left to read, if this is a
+                // good packet. if not, its truncated (or we read it wrong)
+                if remaining != 0 {
+                    warn!("Received truncated datagram from {}", remote);
+                    break;
+                }
+                break;
             }
         }
     }
@@ -252,15 +268,24 @@ impl Client {
         mut rx: mpsc::Receiver<Datagram>,
     ) -> impl Future<Output = io::Result<()>> + Send {
         async move {
-            // await until notified that a packet was added to the queue
-            //
-            // when this `await` point is reached, the client is unlocked
-            while let Some(dg) = rx.recv().await {
+            loop {
+                let mut buffer: Vec<Datagram> = vec![];
+
+                // await until notified that more packets was added to the queue
+                let n = rx.recv_many(&mut buffer, 1000).await;
+
+                // if `recv_many` returns 0, it means the MPSC channel was closed.
+                if n == 0 {
+                    todo!("unhandled error. tcp client dg queue receiver returned 0.")
+                }
+
+                let mut queue: VecDeque<Datagram> = VecDeque::from(buffer);
+
                 // prepare write buffer by reading the send queue
                 let mut write_buffer_dg: Datagram = Datagram::default();
 
-                {
-                    let mut dgi: DatagramIterator = dg.into();
+                for _ in 1..queue.len() {
+                    let mut dgi: DatagramIterator = queue.pop_front().unwrap().into();
 
                     // get the size of this datagram to append size tag
                     let sizetag: usize = dgi.get_remaining();
@@ -268,9 +293,9 @@ impl Client {
                     // read the next bytes based on the size tag
                     let dg_payload: Result<Vec<u8>, IteratorError> = dgi.read_data(sizetag);
 
-                    debug_assert!(dg_payload.is_ok(), "Tried to read past datagram.");
+                    assert!(dg_payload.is_ok(), "Tried to read past datagram.");
 
-                    write_buffer_dg.add_size(sizetag as globals::DgSizeTag).unwrap();
+                    write_buffer_dg.add_size(sizetag as DgSizeTag).unwrap();
                     write_buffer_dg.add_data(dg_payload.unwrap()).unwrap();
 
                     debug_assert!(
@@ -282,9 +307,7 @@ impl Client {
                 // send staged datagrams to client
                 wh.writable().await?;
                 wh.write_all(write_buffer_dg.get_buffer()).await?;
-                wh.flush().await?;
             }
-            todo!("unhandled error. tcp client dg queue receiver returned None.")
         }
     }
 }

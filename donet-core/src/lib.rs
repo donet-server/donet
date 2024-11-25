@@ -127,7 +127,7 @@ pub fn read_dc_files<'a>(
     config: dconfig::DCFileConfig,
     file_paths: Vec<String>,
 ) -> Result<DCFile<'a>, DCReadError> {
-    use log::info;
+    use log::{info, warn};
     use parser::InputFile;
     use std::fs::File;
     use std::io::{Error, ErrorKind, Read};
@@ -140,7 +140,10 @@ pub fn read_dc_files<'a>(
     let mut file_results: Vec<Result<File, std::io::Error>> = vec![];
     let mut pipeline_input: Vec<parser::InputFile> = vec![];
 
-    assert!(!file_paths.is_empty(), "No DC files given!");
+    if file_paths.is_empty() {
+        warn!("No DC files given! Using empty DC file.");
+        return read_dc(config, String::default());
+    }
 
     for file_path in &file_paths {
         // Get filename from given path
