@@ -189,11 +189,6 @@ cargo-tarpaulin:
   stage: test
   dependencies:
     - testing
-  cache:
-    key: meson-cache-tarpaulin-$CI_COMMIT_BRANCH
-    paths:
-      - build
-    when: 'always'
   artifacts:
     expire_in: 1 week
     name: 'Code Coverage'
