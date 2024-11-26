@@ -47,18 +47,25 @@ sphinx_website_url = 'https://docs.donet-server.org'
 cargo_opts = [ '--manifest-path', meson.project_source_root() / 'Cargo.toml' ]
 cargo_opts += [ '--target-dir', meson.project_build_root()  / 'target' ]
 
-cargo_env = [ 'CARGO_HOME=' + meson.project_build_root()  / 'cargo-home' ]
+cargo_env = environment()
+cargo_env.set('CARGO_HOME', meson.project_build_root() / 'cargo-home')
+
+feature_flags = []
 
 if get_option('profile') == 'release'
   cargo_opts += [ '--release' ]
   rust_target = 'release'
+
   message('Building Donet for Release.')
 else
   rust_target = 'debug'
+  feature_flags += ['tokio_debugging']
+
+  # Needed for Tokio async runtime instrumentation
+  cargo_env.set('RUSTFLAGS', '--cfg tokio_unstable')
+
   message('Building Donet for Debug.')
 endif
-
-feature_flags = []
 
 if get_option('dockerized')
   feature_flags += ['dockerized']

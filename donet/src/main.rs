@@ -64,6 +64,10 @@ macro_rules! init_logger {
 }
 
 fn main() -> std::io::Result<()> {
+    // initialize tokio instrumentation on debug builds
+    #[cfg(debug_assertions)]
+    console_subscriber::init();
+
     let args: Vec<String> = std::env::args().collect();
 
     let mut config_file: &str = DEFAULT_TOML;
