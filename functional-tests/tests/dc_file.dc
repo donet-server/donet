@@ -1,39 +1,3 @@
-/*
-    This file is part of Donet.
-
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
-
-    Donet is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License,
-    as published by the Free Software Foundation, either version 3
-    of the License, or (at your option) any later version.
-
-    Donet is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public
-    License along with Donet. If not, see <https://www.gnu.org/licenses/>.
-*/
-
-//! This test is a functional test for the donet-core DC parser.
-
-use donet_core::dcfile::DCFile;
-use donet_core::dconfig::*;
-use donet_core::read_dc;
-
-#[test]
-fn dc_language_functional_testing() {
-    // Use default DC language configuration options.
-    //
-    // DC_MULTIPLE_INHERITANCE == true
-    // DC_SORT_INHERITANCE_BY_FILE == true
-    // DC_VIRTUAL_INHERITANCE == true
-    let conf: DCFileConfig = DCFileConfig::default();
-
-    let dc: &str = "
-
 // This is a C++ Style comment.
 
 /*
@@ -132,11 +96,11 @@ struct NumericRanges {
 };
 
 struct ParamsWithDefaultTest {
-    string = \"\";
+    string = "";
     MyStruct[] = [];
     MyStruct strukt[] = [];
     int32 = -99;
-    string = \"VALUE\";
+    string = "VALUE";
     string = 0xabcdef;
     uint16 accessLevel = 0;
     bool = false;
@@ -148,7 +112,7 @@ struct ArrayExpansionsTest {
     int8array test3 = [-1 * 10];
     int8array test4 = [5 * 5, 10 * 10, -2 * 4];
     uint8array test5 = [0xf * 10];
-    uint8array test6 = [\"TEST\" * 2];
+    uint8array test6 = ["TEST" * 2];
 };
 
 struct ArrayRangesTest {
@@ -242,8 +206,3 @@ dclass MolecularFields {
     setXY : setX, setY;
     setHPR : setH, setP, setR;
 };
-
-    ";
-
-    let _: DCFile<'_> = read_dc(conf, dc.into()).unwrap();
-}

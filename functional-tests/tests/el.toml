@@ -1,0 +1,12 @@
+[daemon]
+name = "Event Logger Functional Test"
+log_level = "trace"
+
+[global]
+dc_files = []
+
+[services.event_logger]
+bind = "127.0.0.1:19090"
+output = "./"
+log_format = "el-%Y-%m-%d-%H-%M-%S.log"
+rotate_interval = "1d"

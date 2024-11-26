@@ -10,17 +10,13 @@ publish = false
 readme = "README.md"
 
 [[test]]
-name = "dc_language"
+name = "dc_file"
 
 [[test]]
-name = "event_logger"
+name = "el"
 
 [dev-dependencies]
 donet-core = { version = "0.1.0", path = "../donet-core", features = ["full"] }
 donet-daemon = { version = "0.1.0", path = "../donet-daemon" }
-donet-database = { version = "0.1.0", path = "../donet-database" }
-donet-event-logger = { version = "0.1.0", path = "../donet-event-logger" }
-donet-message-director = { version = "0.1.0", path = "../donet-message-director" }
-donet-network = { version = "0.1.0", path = "../donet-network" }
 glob = "0.3"
 tokio = { workspace = true, features = ["macros", "time", "sync"] }
