@@ -18,7 +18,7 @@ database-server = ["requires_dc", "dep:donet-database"]
 dbss = ["state-server"]
 event-logger = ["dep:donet-event-logger"]
 requires_dc = ["donet-core/dcfile", "donet-daemon/requires_dc"]
-tokio_debugging = ["dep:console-subscriber", "tokio/full", "tokio/tracing"]
+tokio_debugging = ["default", "dep:console-subscriber", "tokio/full", "tokio/tracing"]
 dockerized = []
 default = [
   "client-agent", "message-director",
@@ -33,7 +33,7 @@ donet-database = { version = "0.1.0", path = "../donet-database", optional = tru
 donet-event-logger = { version = "0.1.0", path = "../donet-event-logger", optional = true }
 donet-message-director = { version = "0.1.0", path = "../donet-message-director", optional = true }
 cfg-if = "1"
-console-subscriber = { version = "0.4", optional = true}
+console-subscriber = { version = "0.4", optional = true }
 log = { workspace = true }
 toml = "0.7"
 tokio = { workspace = true, features = ["signal"] }
