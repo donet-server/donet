@@ -248,7 +248,7 @@ pages:
     - documentation
   rules:
     - if: ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == "master")
-    - changes:
+      changes:
         - .gitlab-ci.yml
         - docs/**/*
         - donet-core/**/*
