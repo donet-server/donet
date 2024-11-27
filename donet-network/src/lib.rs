@@ -65,6 +65,7 @@ pub trait HasClient {
 }
 
 /// Represents a network client connected over TCP.
+#[derive(Debug)]
 pub struct Client {
     remote: SocketAddr,
     local: SocketAddr,

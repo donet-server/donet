@@ -120,7 +120,7 @@ where
     /// The given range is inclusive.
     async fn subscribe_range(&mut self, sub: SubscriberRef, min: Channel, max: Channel) {
         {
-            let locked_sub: MutexGuard<'_, Subscriber> = sub.lock().await;
+            let mut locked_sub: MutexGuard<'_, Subscriber> = sub.lock().await;
 
             // Create a new closed interval set using given range
             let new_interval: IntervalSet<Channel> = vec![(min, max)].to_interval_set();
@@ -130,7 +130,7 @@ where
             new_sub_set.insert(sub.clone());
 
             // Update channel range subscription mappings
-            locked_sub.subscribed_ranges.union(&new_interval);
+            locked_sub.subscribed_ranges.extend(new_interval);
 
             self.get_channel_map()
                 .range_subscriptions
@@ -330,5 +330,86 @@ where
                 subs.extend(range_subs.iter().cloned());
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::SocketAddr;
+    use std::str::FromStr;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    #[derive(Default)]
+    struct MockChannelCoordinator {
+        map: ChannelMap,
+        // Flags for if an 'on_xxx' callback was triggered.
+        got_add_channel: AtomicBool,
+        got_add_range: AtomicBool,
+        got_remove_channel: AtomicBool,
+        got_remove_range: AtomicBool,
+    }
+
+    impl HasChannelMap for MockChannelCoordinator {
+        fn get_channel_map(&mut self) -> &mut ChannelMap {
+            &mut self.map
+        }
+    }
+
+    impl ChannelCoordinator for MockChannelCoordinator {
+        async fn on_add_channel(&mut self, _channel: Channel) {
+            self.got_add_channel.swap(true, Ordering::SeqCst);
+        }
+
+        async fn on_add_range(&mut self, _range: Range<Channel>) {
+            self.got_add_range.swap(true, Ordering::SeqCst);
+        }
+
+        async fn on_remove_channel(&mut self, _channel: Channel) {
+            self.got_remove_channel.swap(true, Ordering::SeqCst);
+        }
+
+        async fn on_remove_range(&mut self, _range: Range<Channel>) {
+            self.got_remove_range.swap(true, Ordering::SeqCst);
+        }
+    }
+
+    #[tokio::test]
+    async fn single_subscription() {
+        let mut mock = MockChannelCoordinator::default();
+        let mock_sub_1 = SubscriberRef::from(SocketAddr::from_str("127.0.0.1:1").unwrap());
+
+        mock.subscribe_channel(mock_sub_1.clone(), 1000).await;
+
+        // verify that the `on_add_channel` callback was triggered
+        assert!(*mock.got_add_channel.get_mut());
+
+        assert!(mock.is_subscribed(&mock_sub_1.lock().await, 1000).await);
+    }
+
+    #[tokio::test]
+    async fn range_subscription() {
+        let mut mock = MockChannelCoordinator::default();
+        let mock_sub_1 = SubscriberRef::from(SocketAddr::from_str("127.0.0.1:1").unwrap());
+
+        // test range subscription
+        let min: Channel = 1000;
+        let max: Channel = 2000;
+
+        mock.subscribe_range(mock_sub_1.clone(), min, max).await;
+
+        let sub_lock = mock_sub_1.lock().await;
+        eprintln!("{:#?}", sub_lock);
+
+        // verify that the `on_add_range` callback was triggered
+        assert!(*mock.got_add_range.get_mut());
+
+        for i in min..max {
+            eprintln!("{}", i);
+            assert!(mock.is_subscribed(&sub_lock, i).await);
+        }
+
+        assert!(!mock.is_subscribed(&sub_lock, min - 1).await);
+        assert!(!mock.is_subscribed(&sub_lock, max + 1).await);
     }
 }

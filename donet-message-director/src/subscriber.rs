@@ -60,6 +60,9 @@ impl From<Subscriber> for SubscriberRef {
 }
 
 /// Dummy [`SubscriberRef`] for finding in hash set.
+///
+/// Also used for unit testing, where we don't have real
+/// [`Client`] structures to make a [`Subscriber`] from.
 impl From<SocketAddr> for SubscriberRef {
     fn from(value: SocketAddr) -> Self {
         Self {
@@ -112,6 +115,7 @@ impl SubscriberRef {
 
 /// Simple representation of a participant, or subscriber,
 /// that is connected to a Message Director instance.
+#[derive(Debug)]
 pub struct Subscriber {
     /// Remote IPv4/6 address of this subscriber.
     ///
