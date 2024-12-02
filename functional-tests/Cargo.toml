@@ -15,6 +15,9 @@ name = "dc_file"
 [[test]]
 name = "el"
 
+[[test]]
+name = "md"
+
 [dev-dependencies]
 donet-core = { version = "0.1.0", path = "../donet-core", features = ["full"] }
 donet-daemon = { version = "0.1.0", path = "../donet-daemon" }

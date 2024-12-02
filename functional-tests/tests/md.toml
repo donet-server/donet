@@ -1,0 +1,9 @@
+[daemon]
+name = "Message Director Functional Test"
+log_level = "trace"
+
+[global]
+dc_files = []
+
+[services.message_director]
+bind = "127.0.0.1:57123"

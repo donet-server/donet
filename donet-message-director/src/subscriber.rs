@@ -191,7 +191,7 @@ impl Subscriber {
     pub async fn handle_datagram(&mut self, dg: &mut Datagram) -> Result<(), impl Error> {
         trace!("Sending datagram downstream to {}", self.remote);
 
-        assert!(
+        debug_assert!(
             self.client.is_some(),
             "Called handle_datagram() on a dummy Subscriber!"
         );
