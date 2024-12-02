@@ -285,7 +285,7 @@ impl Client {
                 // prepare write buffer by reading the send queue
                 let mut write_buffer_dg: Datagram = Datagram::default();
 
-                for _ in 1..queue.len() {
+                while queue.len() != 0 {
                     let mut dgi: DatagramIterator = queue.pop_front().unwrap().into();
 
                     // get the size of this datagram to append size tag
@@ -308,6 +308,7 @@ impl Client {
                 // send staged datagrams to client
                 wh.writable().await?;
                 wh.write_all(write_buffer_dg.get_buffer()).await?;
+                wh.flush().await?;
             }
         }
     }
