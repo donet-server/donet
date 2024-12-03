@@ -18,5 +18,5 @@ allow = [
     "Apache-2.0 WITH LLVM-exception",
     "MIT",
     "Zlib",
-    "Unicode-DFS-2016",
+    "Unicode-3.0",
 ]
