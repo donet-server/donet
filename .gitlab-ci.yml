@@ -133,11 +133,6 @@ testing:
   image: 'ubuntu:latest'
   stage: build
   interruptible: true
-  cache:
-    key: meson-cache-testing-$CI_COMMIT_BRANCH
-    paths:
-      - build
-    when: 'always'
   artifacts:
     expire_in: 1 week
     name: 'Test Build'
