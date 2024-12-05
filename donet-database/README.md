@@ -4,4 +4,4 @@
 
 Rust crate for the Database Server daemon service.
 
-See: https://docs.donet-server.org/master/introduction/services.html#the-database-server
+See: https://docs.donet-server.org/master/introduction/services#the-database-server

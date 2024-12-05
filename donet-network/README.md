@@ -4,4 +4,4 @@
 
 Rust library for the Donet daemon's TCP/UDP networking.
 
-See: https://docs.donet-server.org/master/protocol/encapsulation.html
+See: https://docs.donet-server.org/master/protocol/encapsulation

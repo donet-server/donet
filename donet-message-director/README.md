@@ -4,4 +4,4 @@
 
 Rust crate for the Message Director daemon service.
 
-See: https://docs.donet-server.org/master/introduction/services.html#the-message-director
+See: https://docs.donet-server.org/master/introduction/services#the-message-director
