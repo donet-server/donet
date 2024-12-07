@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -789,19 +789,19 @@ parser! {
                     let min: f64 = f64::from(u32::from(min_c));
                     let max: f64 = match max {
                         ast::CharOrNumber::Char(max_c) => f64::from(u32::from(max_c)),
-                        _ => panic!("Assertion makes this panic impossible."),
+                        _ => unreachable!("Assertion makes this case impossible."),
                     };
                     Some(min .. max)
                 },
                 ast::CharOrNumber::I64(min_i) => {
                     Some(min_i as f64 .. match max {
                         ast::CharOrNumber::I64(max_i) => max_i as f64,
-                        _ => panic!("Assertion makes this panic impossible."),
+                        _ => unreachable!("Assertion makes this case impossible."),
                     })
                 },
                 ast::CharOrNumber::F64(min_f) => Some(min_f .. match max {
                     ast::CharOrNumber::F64(max_f) => max_f,
-                    _ => panic!("Assertion makes this panic impossible."),
+                    _ => unreachable!("Assertion makes this case impossible."),
                 }),
             }
         },
@@ -846,7 +846,7 @@ parser! {
             UInt16ArrayT => ast::SizedTypeToken::UInt16Array,
             UInt32ArrayT => ast::SizedTypeToken::UInt32Array,
             UInt32UInt8ArrayT => ast::SizedTypeToken::UInt32UInt8Array,
-            _ => panic!("Not possible due to production rules."),
+            _ => unreachable!("Not possible due to production rules."),
         },
     }
 
