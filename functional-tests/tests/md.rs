@@ -27,8 +27,7 @@ use donet_core::datagram::datagram::*;
 use donet_core::globals::*;
 use donet_core::Protocol;
 use std::env;
-use std::io::Read;
-use std::io::Write;
+use std::io::{ErrorKind, Read, Write};
 use std::net::TcpStream;
 use std::process::{Child, Command};
 use std::thread::sleep;
@@ -40,16 +39,9 @@ static DAEMON_TOML: &str = "md.toml";
 /// Must be the same as the one found in the TOML!
 static SERVICE_BIND_ADDR: &str = "127.0.0.1:57123";
 
-static NETWORK_PROCESS_TIME: u64 = 200; // milliseconds
-static TCP_READ_TIMEOUT: u64 = 1000; // milliseconds
-
-/// Utility function for killing all spawned [`Child`] processes.
-fn kill_procs(procs: &mut Vec<Child>) -> std::io::Result<()> {
-    for proc in procs.iter_mut() {
-        proc.kill()?;
-    }
-    Ok(())
-}
+static NETWORK_PROCESS_TIME: u64 = 100; // milliseconds
+static TCP_READ_TIMEOUT: u64 = 100; // milliseconds
+static TCP_READ_BUFFER_SIZE: usize = 206; // bytes
 
 /// Perform an `assert_eq!` where we clean up the spawned
 /// Donet daemon process before actually panicking.
@@ -72,6 +64,85 @@ macro_rules! clean_assert_eq {
             assert_eq!($lhs, $rhs, $str);
         }
     };
+}
+
+/// Write to a TCP stream without the risk of leaving the
+/// Donet daemon running if an IO error is returned.
+macro_rules! clean_sock_write_all {
+    ($proc:expr, $sock:expr, $bytes:expr) => {
+        if let Err(e) = $sock.write_all($bytes) {
+            kill_procs($proc)?;
+            return Err(e);
+        }
+    };
+}
+
+/// Kills child processes before panicking.
+macro_rules! clean_panic {
+    ($proc:expr, $str:tt) => {
+        // curly braces are a hack to stop the compiler
+        // from crying about the '?' operator. Just make
+        // sure you're this macro expands in a function
+        // that returns an [`std::io::Result`] type.
+        {
+            kill_procs($proc)?;
+            panic!($str);
+        }
+    };
+    ($proc:expr, $str:tt, $($f:expr),*) => {
+        {
+            kill_procs($proc)?;
+            panic!($str, $($f),*);
+        }
+    }
+}
+
+/// Reads from a TCP stream without the risk of leaving the
+/// Donet daemon running if an IO error is returned.
+///
+/// Also handles retrying reads if an IO error is returned
+/// at first.
+fn clean_sock_read(
+    procs: &mut Vec<Child>,
+    sock: &mut TcpStream,
+    read_buf: &mut [u8],
+) -> std::io::Result<usize> {
+    let mut i: usize = 0;
+    loop {
+        match sock.read(read_buf) {
+            Ok(read) => {
+                return Ok(read);
+            }
+            Err(err) => {
+                match err.kind() {
+                    // On Unix-like, [`ErrorKind::WouldBlock`] *can* happen in a
+                    // socket that is in blocking mode, if a read timeout is set (which is).
+                    //
+                    // On Windows, reaching the read timeout would return `TimedOut`.
+                    ErrorKind::WouldBlock | ErrorKind::TimedOut | ErrorKind::Interrupted => {
+                        if i != 5 {
+                            eprintln!("Tried to read from sock, got: {}; Retrying.", err);
+
+                            sleep(Duration::from_millis(NETWORK_PROCESS_TIME));
+                            i += 1;
+                            continue;
+                        }
+                        kill_procs(procs)?;
+                        return Err(err);
+                    }
+                    _ => clean_panic!(procs, "Got unexpected IO error: {}", err),
+                }
+            }
+        }
+    }
+}
+
+/// Utility function for killing all spawned [`Child`] processes.
+fn kill_procs(procs: &mut Vec<Child>) -> std::io::Result<()> {
+    for proc in procs.iter_mut() {
+        proc.kill()?;
+    }
+    Ok(())
 }
 
 #[test]
@@ -99,15 +170,16 @@ fn md_functional_testing() -> std::io::Result<()> {
     // setup our TCP socket to interact with the MD as a subscriber
     let mut sock = match TcpStream::connect(SERVICE_BIND_ADDR) {
         Ok(sock) => sock,
-        Err(err) => {
-            kill_procs(&mut procs)?;
-            panic!("Could not connect to the message director.: {}", err);
-        }
+        Err(err) => clean_panic!(&mut procs, "Could not connect to the message director.: {}", err),
     };
+    sock.set_nonblocking(false)
+        .expect("set_nonblocking() call failed");
+
     sock.set_read_timeout(Some(Duration::from_millis(TCP_READ_TIMEOUT)))?;
 
     // run functional tests
     test_add_channels(&mut procs, &mut sock)?;
+    test_add_range(&mut procs, &mut sock)?;
 
     // all tests ran without panicking or returning an error, so lets
     // finally verify that the donet daemon is still standing
@@ -118,11 +190,13 @@ fn md_functional_testing() -> std::io::Result<()> {
 }
 
 fn test_add_channels(procs: &mut Vec<Child>, sock: &mut TcpStream) -> std::io::Result<()> {
+    eprintln!("test_add_channels()");
+
     // subscribe to a channel
     let mut dg: Vec<u8> = msgs::add_channel(401000000);
     dg.append(&mut msgs::add_channel(402000000));
 
-    sock.write_all(&dg)?;
+    clean_sock_write_all!(procs, sock, &dg);
     sleep(Duration::from_millis(NETWORK_PROCESS_TIME));
 
     // send test message to our own subscribed channel
@@ -134,15 +208,15 @@ fn test_add_channels(procs: &mut Vec<Child>, sock: &mut TcpStream) -> std::io::R
 
     let test_dg_raw: &[u8] = test_dg.get_buffer();
 
-    sock.write_all(test_dg_raw)?;
+    clean_sock_write_all!(procs, sock, &test_dg_raw);
     sleep(Duration::from_millis(NETWORK_PROCESS_TIME));
 
     // MD should bounce that message back to us, since we sent it to our
     // channel that we added, so lets read it and verify its integrity
-    let mut read_buf = [0_u8; 1024];
+    let mut read_buf = [0_u8; TCP_READ_BUFFER_SIZE];
 
-    let bytes_read: usize = sock.read(&mut read_buf)?;
-    eprintln!("{:#?}", read_buf);
+    let bytes_read: usize = clean_sock_read(procs, sock, &mut read_buf)?;
+    eprintln!("{:?}", read_buf);
 
     clean_assert_eq!(
         procs,
@@ -156,6 +230,56 @@ fn test_add_channels(procs: &mut Vec<Child>, sock: &mut TcpStream) -> std::io::R
     read_vec.truncate(bytes_read);
 
     clean_assert_eq!(procs, read_vec, test_dg_raw, "did not receive expected datagram");
+
+    Ok(())
+}
+
+fn test_add_range(procs: &mut Vec<Child>, sock: &mut TcpStream) -> std::io::Result<()> {
+    eprintln!("test_add_range()");
+
+    // subscribe to a range of channels
+    let dg: Vec<u8> = msgs::add_range(4000..5000);
+
+    clean_sock_write_all!(procs, sock, &dg);
+    sleep(Duration::from_millis(NETWORK_PROCESS_TIME));
+
+    for channel in 4000..5000 {
+        // just test by 100s (4000, 4100, 4200, ...)
+        if channel % 100 != 0 {
+            continue;
+        }
+        // send test message to our own subscribed channel
+        let mut test_dg: Datagram = Datagram::default();
+        test_dg.add_size(17 + 2).unwrap();
+        test_dg
+            .add_internal_header(vec![channel], 1337, Protocol::SSObjectSetOwner.into())
+            .unwrap();
+
+        let test_dg_raw: &[u8] = test_dg.get_buffer();
+
+        clean_sock_write_all!(procs, sock, &test_dg_raw);
+        sleep(Duration::from_millis(NETWORK_PROCESS_TIME));
+
+        // MD should bounce that message back to us, since we sent it to our
+        // channel that we added, so lets read it and verify its integrity
+        let mut read_buf = [0_u8; TCP_READ_BUFFER_SIZE];
+
+        let bytes_read: usize = clean_sock_read(procs, sock, &mut read_buf)?;
+        eprintln!("{:?}", read_buf);
+
+        clean_assert_eq!(
+            procs,
+            bytes_read,
+            test_dg.size(),
+            "did not receive expected number of bytes. may have also reached read timeout."
+        );
+
+        // convert read buffer to a `Vec<u8>` and truncate to `bytes_read` size.
+        let mut read_vec: Vec<u8> = read_buf.to_vec();
+        read_vec.truncate(bytes_read);
+
+        clean_assert_eq!(procs, read_vec, test_dg_raw, "did not receive expected datagram");
+    }
 
     Ok(())
 }
