@@ -182,7 +182,7 @@ impl EventLogger {
         }
 
         // Remaining bytes should equal the remaining unused buffer.
-        if dgi.get_remaining() as usize != 0 {
+        if dgi.get_remaining() != 0 {
             error!("Received packet with extraneous data from {}", addr);
         }
         trace!("Received: {}", data);

@@ -32,7 +32,7 @@ use donet_network::{tcp, udp};
 use donet_network::{Client, HasClient, RecvData, RecvSendHandles};
 use log::{error, info, trace, warn};
 use std::collections::HashSet;
-use std::io::{Error, ErrorKind, Result};
+use std::io::Result;
 use std::sync::Arc;
 use subscriber::*;
 use tokio::net::TcpStream;
@@ -326,6 +326,7 @@ impl MessageDirector {
         trace!("Recipient Channels: {:?}", recipients);
 
         // check if this is a control message
+        #[allow(clippy::collapsible_if)]
         if recp_count == 1 {
             if *recipients.first().unwrap() == CONTROL_CHANNEL {
                 return self.handle_control_msg(data).await;

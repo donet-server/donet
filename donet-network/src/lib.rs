@@ -153,51 +153,49 @@ impl Client {
         }
     }
 
-    /// Main asynchronous loop for handling receiving TCP packets from this
-    /// client's TCP stream.
-    fn receive_loop(
-        rh: OwnedReadHalf,
-        incoming_tx: mpsc::Sender<RecvData>,
-    ) -> impl Future<Output = io::Result<()>> + Send {
-        async move {
-            let remote: SocketAddr = rh.peer_addr()?;
+    /// Main asynchronous loop for handling receiving TCP packets
+    /// from this client's TCP stream.
+    async fn receive_loop(
+        read_half: OwnedReadHalf,
+        incoming_queue_tx: mpsc::Sender<RecvData>,
+    ) -> io::Result<()> {
+        let remote: SocketAddr = read_half.peer_addr()?;
 
-            loop {
-                rh.readable().await?;
+        loop {
+            read_half.readable().await?;
 
-                // initializing this **after** the `await` point prevents
-                // it from being stored in the async task.
-                let mut buffer = [0_u8; TCP_READ_BUFFER_SIZE];
+            // initializing this **after** the `await` point prevents
+            // it from being stored in the async task.
+            let mut buffer = [0_u8; TCP_READ_BUFFER_SIZE];
 
-                match rh.try_read(&mut buffer) {
-                    Ok(0) => {
-                        info!("Lost connection from {}", remote);
+            match read_half.try_read(&mut buffer) {
+                Ok(0) => {
+                    info!("Lost connection from {}", remote);
 
-                        return Ok(()); // client closed TCP connection
-                    }
-                    Ok(len) => {
-                        let mut dg: Datagram = Datagram::default();
+                    return Ok(()); // client closed TCP connection
+                }
+                Ok(len) => {
+                    let mut dg: Datagram = Datagram::default();
 
-                        dg.override_cap(TCP_READ_BUFFER_SIZE);
+                    dg.override_cap(TCP_READ_BUFFER_SIZE);
 
-                        // The buffer is always a fixed size. Let's make a slice that
-                        // contains only the length of the datagram received.
-                        let mut buf_slice: Vec<u8> = buffer.to_vec();
-                        buf_slice.truncate(len);
+                    // The buffer is always a fixed size. Let's make a slice that
+                    // contains only the length of the datagram received.
+                    let mut buf_slice: Vec<u8> = buffer.to_vec();
+                    buf_slice.truncate(len);
 
-                        // we can safely unwrap here, since the size cap for `dg` was
-                        // overridden to be the size of the read buffer size.
-                        dg.add_data(buf_slice).unwrap();
+                    // we can safely unwrap here, since the size cap for `dg` was
+                    // overridden to be the size of the read buffer size.
+                    dg.add_data(buf_slice).unwrap();
 
-                        Self::split_datagrams(remote, &incoming_tx, dg.into()).await;
-                        continue;
-                    }
-                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                        continue;
-                    }
-                    Err(err) => {
-                        return Err(err);
-                    }
+                    Self::split_datagrams(remote, &incoming_queue_tx, dg.into()).await;
+                    continue;
+                }
+                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                    continue;
+                }
+                Err(err) => {
+                    return Err(err);
                 }
             }
         }
@@ -264,52 +262,50 @@ impl Client {
     ///
     /// The queue of datagrams to be sent is received by this task
     /// via the given [`mpsc::Receiver<Datagram>`] struct.
-    fn send_loop(
-        mut wh: OwnedWriteHalf,
-        mut rx: mpsc::Receiver<Datagram>,
-    ) -> impl Future<Output = io::Result<()>> + Send {
-        async move {
-            loop {
-                let mut buffer: Vec<Datagram> = vec![];
+    async fn send_loop(
+        mut write_half: OwnedWriteHalf,
+        mut send_queue_rx: mpsc::Receiver<Datagram>,
+    ) -> io::Result<()> {
+        loop {
+            let mut buffer: Vec<Datagram> = vec![];
 
-                // await until notified that more packets was added to the queue
-                let n = rx.recv_many(&mut buffer, 1000).await;
+            // await until notified that more packets was added to the queue
+            let n = send_queue_rx.recv_many(&mut buffer, 1000).await;
 
-                // if `recv_many` returns 0, it means the MPSC channel was closed.
-                if n == 0 {
-                    todo!("unhandled error. tcp client dg queue receiver returned 0.")
-                }
-
-                let mut queue: VecDeque<Datagram> = VecDeque::from(buffer);
-
-                // prepare write buffer by reading the send queue
-                let mut write_buffer_dg: Datagram = Datagram::default();
-
-                while queue.len() != 0 {
-                    let mut dgi: DatagramIterator = queue.pop_front().unwrap().into();
-
-                    // get the size of this datagram to append size tag
-                    let sizetag: usize = dgi.get_remaining();
-
-                    // read the next bytes based on the size tag
-                    let dg_payload: Result<Vec<u8>, IteratorError> = dgi.read_data(sizetag);
-
-                    assert!(dg_payload.is_ok(), "Tried to read past datagram.");
-
-                    write_buffer_dg.add_size(sizetag as DgSizeTag).unwrap();
-                    write_buffer_dg.add_data(dg_payload.unwrap()).unwrap();
-
-                    debug_assert!(
-                        dgi.get_remaining() == 0,
-                        "Did not read all bytes from received dg to send."
-                    );
-                }
-
-                // send staged datagrams to client
-                wh.writable().await?;
-                wh.write_all(write_buffer_dg.get_buffer()).await?;
-                wh.flush().await?;
+            // if `recv_many` returns 0, it means the MPSC channel was closed.
+            if n == 0 {
+                todo!("unhandled error. tcp client dg queue receiver returned 0.")
             }
+
+            let mut queue: VecDeque<Datagram> = VecDeque::from(buffer);
+
+            // prepare write buffer by reading the send queue
+            let mut write_buffer_dg: Datagram = Datagram::default();
+
+            while queue.len() != 0 {
+                let mut dgi: DatagramIterator = queue.pop_front().unwrap().into();
+
+                // get the size of this datagram to append size tag
+                let sizetag: usize = dgi.get_remaining();
+
+                // read the next bytes based on the size tag
+                let dg_payload: Result<Vec<u8>, IteratorError> = dgi.read_data(sizetag);
+
+                assert!(dg_payload.is_ok(), "Tried to read past datagram.");
+
+                write_buffer_dg.add_size(sizetag as DgSizeTag).unwrap();
+                write_buffer_dg.add_data(dg_payload.unwrap()).unwrap();
+
+                debug_assert!(
+                    dgi.get_remaining() == 0,
+                    "Did not read all bytes from received dg to send."
+                );
+            }
+
+            // send staged datagrams to client
+            write_half.writable().await?;
+            write_half.write_all(write_buffer_dg.get_buffer()).await?;
+            write_half.flush().await?;
         }
     }
 }
