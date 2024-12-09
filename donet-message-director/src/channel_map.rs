@@ -23,21 +23,22 @@ use gcollections::ops::*;
 use interval::interval_set::ToIntervalSet;
 use interval::IntervalSet;
 use multimap::MultiMap;
-use rangemap::RangeMap;
+use rangemap::RangeInclusiveMap;
 use std::collections::HashSet;
-use std::ops::Range;
+use std::ops::{Range, RangeInclusive};
 use tokio::sync::MutexGuard;
 
-// Iterates over all ranges in a [`rangemap::RangeMap`], and filters
-// out ranges that do NOT overlap with the given `target` range.
+/// Iterates over all ranges in a [`rangemap::RangeInclusiveMap`],
+/// and filters out ranges that do NOT overlap with the given
+/// `target` range.
 fn equal_range(
-    map: &RangeMap<Channel, HashSet<SubscriberRef>>,
+    map: &RangeInclusiveMap<Channel, HashSet<SubscriberRef>>,
     target: Range<Channel>,
-) -> Vec<(&Range<Channel>, &HashSet<SubscriberRef>)> {
+) -> Vec<(&RangeInclusive<Channel>, &HashSet<SubscriberRef>)> {
     map.iter()
         .filter(|(range, _)| {
             // Check if the range overlaps with the target range
-            range.start < target.end && range.end > target.start
+            range.start() < &target.end && range.end() > &target.start
         })
         .collect()
 }
@@ -52,7 +53,7 @@ pub struct ChannelMap {
     /// Single channel subscriptions
     subscriptions: MultiMap<Channel, SubscriberRef>,
     /// Channel range subscriptions
-    range_subscriptions: RangeMap<Channel, HashSet<SubscriberRef>>,
+    range_subscriptions: RangeInclusiveMap<Channel, HashSet<SubscriberRef>>,
 }
 
 /// Struct implementing this trait must own a [`ChannelMap`].
@@ -134,7 +135,7 @@ where
 
             self.get_channel_map()
                 .range_subscriptions
-                .insert(min..max, new_sub_set);
+                .insert(RangeInclusive::new(min, max), new_sub_set);
         }
 
         // Finally, check if any part of this interval is a new range.
@@ -176,8 +177,8 @@ where
         let rs_first = map.range_subscriptions.first_range_value().unwrap();
         let rs_last = map.range_subscriptions.last_range_value().unwrap();
 
-        let lower: Channel = rs_first.0.start;
-        let upper: Channel = rs_last.0.end;
+        let lower: Channel = *rs_first.0.start();
+        let upper: Channel = *rs_last.0.end();
 
         let union_lower: Channel = std::cmp::max(min, lower);
         let union_upper: Channel = std::cmp::max(max, upper);
@@ -199,7 +200,7 @@ where
 
             if has_subscribers && !is_only_subscriber {
                 // we are not the last subscriber in this range, so don't delete it
-                dead_ranges = &dead_ranges - vec![(range.start, range.end)].to_interval_set();
+                dead_ranges = &dead_ranges - vec![(*range.start(), *range.end())].to_interval_set();
             }
         }
 
@@ -207,7 +208,8 @@ where
         let mut locked_sub: MutexGuard<'_, Subscriber> = sub.lock().await;
 
         locked_sub.subscribed_ranges = &locked_sub.subscribed_ranges - i_set;
-        map.range_subscriptions.remove(range);
+        map.range_subscriptions
+            .remove(RangeInclusive::new(range.start, range.end));
 
         // clone subscriber's channel subscriptions to avoid double borrow
         let chans = locked_sub.subscribed_channels.clone();
@@ -325,7 +327,7 @@ where
             for (_range, range_subs) in self
                 .get_channel_map()
                 .range_subscriptions
-                .overlapping(channel..channel)
+                .overlapping(RangeInclusive::new(channel, channel))
             {
                 subs.extend(range_subs.iter().cloned());
             }
