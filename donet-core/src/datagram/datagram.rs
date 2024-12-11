@@ -20,7 +20,7 @@
 //! Provides structure to write network packets (datagrams).
 
 use crate::datagram::byte_order as endianness;
-use crate::globals;
+use crate::globals::*;
 use anyhow::Result;
 use thiserror::Error;
 
@@ -29,6 +29,8 @@ use thiserror::Error;
 pub enum DatagramError {
     #[error("datagram overflow; {0}")]
     DatagramOverflow(&'static str),
+    #[error("impossible cast; {0}")]
+    ImpossibleCast(&'static str),
 }
 
 /// Representation of a new network message (datagram) to be sent.
@@ -36,7 +38,7 @@ pub enum DatagramError {
 pub struct Datagram {
     buffer: Vec<u8>,
     index: usize,
-    /// See [`Datagram::override_cap()`].
+    /// See [`Datagram::override_cap`].
     cap: usize,
 }
 
@@ -45,28 +47,21 @@ impl Default for Datagram {
         Self {
             buffer: vec![],
             index: 0,
-            cap: usize::from(globals::DgSizeTag::MAX),
+            cap: usize::from(DgSizeTag::MAX),
         }
     }
 }
 
-/// Appends another datagram's binary data to this datagram.
+/// Appends another datagram's raw bytes to this datagram.
+///
+/// Consumes the right-hand-side [`Datagram`].
 impl std::ops::Add for Datagram {
     type Output = Result<Datagram, DatagramError>;
 
     fn add(mut self, rhs: Self) -> Self::Output {
         let dg_buffer: Vec<u8> = rhs.get_data();
 
-        if dg_buffer.len() > globals::DG_SIZE_MAX.into() {
-            // Technically should not happen as the datagram given should
-            // keep its buffer under the max dg size, but we should still handle
-            // this error to avoid a panic at self.check_add_length().
-            return Err(DatagramError::DatagramOverflow(
-                "Datagram given will overflow left-hand-side datagram.",
-            ));
-        }
         self.add_data(dg_buffer)?;
-
         Ok(self)
     }
 }
@@ -91,7 +86,7 @@ impl Datagram {
     /// uses, such as processing large buffers that combine
     /// multiple TCP segments.
     pub fn override_cap(&mut self, cap: usize) {
-        self.cap = cap;
+        self.cap = cap
     }
 
     /// Adds an unsigned 8-bit integer to the datagram that is
@@ -114,32 +109,40 @@ impl Datagram {
         Ok(())
     }
 
+    /// Adds an unsigned 16-bit integer value to the datagram.
     pub fn add_u16(&mut self, mut v: u16) -> Result<(), DatagramError> {
         self.check_add_length(2)?;
+
         v = endianness::swap_le_16(v);
-        // NOTE: I feel like there is a simpler way to do this.
-        // Masking each byte and shifting it to the first byte,
-        // then casting it as a u8 to represent one byte.
+
         self.buffer.push((v & 0x00ff) as u8);
         self.buffer.push(((v & 0xff00) >> 8) as u8);
+
         self.index += 2;
         Ok(())
     }
 
+    /// Adds an unsigned 32-bit integer value to the datagram.
     pub fn add_u32(&mut self, mut v: u32) -> Result<(), DatagramError> {
         self.check_add_length(4)?;
+
         v = endianness::swap_le_32(v);
+
         self.buffer.push((v & 0x000000ff) as u8);
         self.buffer.push(((v & 0x0000ff00) >> 8) as u8);
         self.buffer.push(((v & 0x00ff0000) >> 16) as u8);
         self.buffer.push(((v & 0xff000000) >> 24) as u8);
+
         self.index += 4;
         Ok(())
     }
 
+    /// Adds an unsigned 64-bit integer value to the datagram.
     pub fn add_u64(&mut self, mut v: u64) -> Result<(), DatagramError> {
         self.check_add_length(8)?;
+
         v = endianness::swap_le_64(v);
+
         self.buffer.push((v & 0x00000000000000ff) as u8);
         self.buffer.push(((v & 0x000000000000ff00) >> 8) as u8);
         self.buffer.push(((v & 0x0000000000ff0000) >> 16) as u8);
@@ -148,6 +151,7 @@ impl Datagram {
         self.buffer.push(((v & 0x0000ff0000000000) >> 40) as u8);
         self.buffer.push(((v & 0x00ff000000000000) >> 48) as u8);
         self.buffer.push(((v & 0xff00000000000000) >> 56) as u8);
+
         self.index += 8;
         Ok(())
     }
@@ -187,96 +191,109 @@ impl Datagram {
 
     /// Adds a Datagram / Field length tag to the end of the datagram.
     #[inline(always)]
-    pub fn add_size(&mut self, v: globals::DgSizeTag) -> Result<(), DatagramError> {
+    pub fn add_size(&mut self, v: DgSizeTag) -> Result<(), DatagramError> {
         self.add_u16(v)
     }
 
     /// Adds a 64-bit channel ID to the end of the datagram.
     #[inline(always)]
-    pub fn add_channel(&mut self, v: globals::Channel) -> Result<(), DatagramError> {
+    pub fn add_channel(&mut self, v: Channel) -> Result<(), DatagramError> {
         self.add_u64(v)
     }
 
     /// Adds a 32-bit Distributed Object ID to the end of the datagram.
     #[inline(always)]
-    pub fn add_doid(&mut self, v: globals::DoId) -> Result<(), DatagramError> {
+    pub fn add_doid(&mut self, v: DoId) -> Result<(), DatagramError> {
         self.add_u32(v)
     }
 
     /// Adds a 32-bit zone ID to the end of the datagram.
     #[inline(always)]
-    pub fn add_zone(&mut self, v: globals::Zone) -> Result<(), DatagramError> {
+    pub fn add_zone(&mut self, v: Zone) -> Result<(), DatagramError> {
         self.add_u32(v)
     }
 
     /// Added for convenience, rather than adding the parent and the zone separately.
     #[inline(always)]
-    pub fn add_location(&mut self, parent: globals::DoId, zone: globals::Zone) -> Result<(), DatagramError> {
+    pub fn add_location(&mut self, parent: DoId, zone: Zone) -> Result<(), DatagramError> {
         self.add_u32(parent)?;
         self.add_u32(zone)
     }
 
     /// Adds raw bytes to the datagram via an unsigned 8-bit integer vector.
     ///
-    /// **NOTE**: not to be confused with add_blob(), which
+    /// **NOTE**: not to be confused with [`Datagram::add_blob`], which
     /// adds a dclass blob to the datagram.
     ///
-    pub fn add_data(&mut self, mut v: Vec<u8>) -> Result<(), DatagramError> {
-        if v.len() > self.cap {
-            // check input to avoid panic at .try_into() below
-            return Err(DatagramError::DatagramOverflow(
-                "Given bytes will overflow datagram.",
-            ));
-        }
-        self.check_add_length(v.len().try_into().unwrap())?;
-        self.buffer.append(&mut v);
-        self.index += v.len();
+    pub fn add_data(&mut self, mut bytes: Vec<u8>) -> Result<(), DatagramError> {
+        let size: usize = bytes.len();
+
+        self.check_add_length(size)?;
+        self.buffer.append(&mut bytes);
+
+        self.index += size;
         Ok(())
     }
 
     /// Adds a dclass string value to the end of the datagram.
     /// A 16-bit length tag prefix with the string's size in bytes is added.
-    pub fn add_string(&mut self, v: &str) -> Result<(), DatagramError> {
-        if v.len() > globals::DG_SIZE_MAX.into() {
+    pub fn add_string(&mut self, str: &str) -> Result<(), DatagramError> {
+        let size: usize = str.len();
+
+        if size > DG_SIZE_MAX.into() {
             // The string is too big to be described with a 16-bit length tag.
             return Err(DatagramError::DatagramOverflow(
                 "Given string will overflow datagram.",
             ));
         }
         // Add string length to the datagram
-        self.add_u16(v.len().try_into().unwrap())?;
+        self.add_u16(size.try_into().expect("String size should fit u16."))?;
 
         // convert the string into a byte array, as a vector
-        let str_bytes: &mut Vec<u8> = &mut v.as_bytes().to_vec();
+        let mut str_bytes: Vec<u8> = str.as_bytes().to_vec();
 
         // make sure the byte array won't overflow the datagram
-        self.check_add_length(str_bytes.len().try_into().unwrap())?;
-        self.buffer.append(str_bytes);
-        self.index += v.len();
+        self.check_add_length(str_bytes.len())?;
+        self.buffer.append(&mut str_bytes);
+
+        self.index += size;
         Ok(())
     }
 
     /// Adds a dclass blob value (binary data) to the end of the datagram.
     /// A 16-bit length tag prefix with the blob's size in bytes is added.
-    pub fn add_blob(&mut self, mut v: Vec<u8>) -> Result<(), DatagramError> {
+    pub fn add_blob(&mut self, mut bytes: Vec<u8>) -> Result<(), DatagramError> {
+        let size: usize = bytes.len();
+
         // add blob size in bytes
-        self.add_size(v.len().try_into().unwrap())?;
+        self.add_size(match size.try_into() {
+            Ok(n) => n,
+            Err(_) => {
+                return Err(DatagramError::ImpossibleCast(
+                    "Given blob has a size that does not fit in dg size tag.",
+                ))
+            }
+        })?;
+
         // manually check add length before appending byte array
-        self.check_add_length(v.len().try_into().unwrap())?;
-        self.buffer.append(&mut v);
-        self.index += v.len();
+        self.check_add_length(size)?;
+        self.buffer.append(&mut bytes);
+
+        self.index += size;
         Ok(())
     }
 
     /// Reserves an amount of bytes in the datagram buffer.
-    pub fn add_buffer(&mut self, bytes: globals::DgSizeTag) -> Result<globals::DgSizeTag, DatagramError> {
-        self.check_add_length(usize::from(bytes))?;
+    pub fn add_buffer(&mut self, size: usize) -> Result<usize, DatagramError> {
+        self.check_add_length(size)?;
+
         // get start length (before push)
-        let start: globals::DgSizeTag = self.index as globals::DgSizeTag;
-        for _n in 1..bytes {
-            self.buffer.push(0_u8);
+        let start: usize = self.index;
+
+        for _ in 1..size {
+            self.buffer.push(0);
         }
-        self.index += usize::from(bytes);
+        self.index += size;
         Ok(start)
     }
 
@@ -290,22 +307,34 @@ impl Datagram {
     /// (recipients: [`u8`], recipients: [`Vec<Channel>`],
     /// sender: [`globals::Channel`], message_type: [`u16`])
     ///
+    /// # Errors
+    ///
+    /// It is an error for the given `recipients` vector to have a size
+    /// larger than [`std::u8::MAX`]. Else, [`DatagramError::ImpossibleCast`]
+    /// will be returned.
+    ///
     pub fn add_internal_header(
         &mut self,
-        to: Vec<globals::Channel>,
-        from: globals::Channel,
-        msg_type: globals::MsgType,
+        recipients: Vec<Channel>,
+        sender: Channel,
+        msg_type: MsgType,
     ) -> Result<(), DatagramError> {
-        // Add recipient(s) count
-        self.add_u8(to.len().try_into().unwrap())?;
+        let n_recipients: usize = recipients.len();
 
-        for recipient in to {
+        if n_recipients > usize::from(u8::MAX) {
+            return Err(DatagramError::ImpossibleCast(
+                "Cannot convert recipient vec size to u8.",
+            ));
+        }
+        // Add recipient(s) count
+        self.add_u8(n_recipients.try_into().expect("Recipients exceeds u8 limit."))?;
+
+        for recipient in recipients {
             // append each recipient in vector given
             self.add_channel(recipient)?;
         }
-        self.add_channel(from)?;
-        self.add_u16(msg_type)?;
-        Ok(())
+        self.add_channel(sender)?;
+        self.add_u16(msg_type)
     }
 
     /// Appends a control header, which is very similar to a server header,
@@ -316,11 +345,10 @@ impl Datagram {
     /// routed, meaning that the message director will ONLY receive this
     /// message DIRECTLY from a cluster subscriber, so it can be speculated
     /// that the sender is the participant on the other end of the connection.
-    pub fn add_control_header(&mut self, msg_type: globals::MsgType) -> Result<(), DatagramError> {
+    pub fn add_control_header(&mut self, msg_type: MsgType) -> Result<(), DatagramError> {
         self.add_u8(1)?;
-        self.add_channel(globals::CONTROL_CHANNEL)?;
-        self.add_u16(msg_type)?;
-        Ok(())
+        self.add_channel(CONTROL_CHANNEL)?;
+        self.add_u16(msg_type)
     }
 
     /// Returns the size of this [`Datagram`].
@@ -392,11 +420,11 @@ mod tests {
         results.push(dg.add_f64(f64::MAX));
 
         // Types (aliases)
-        results.push(dg.add_size(globals::DG_SIZE_MAX));
-        results.push(dg.add_channel(globals::CHANNEL_MAX));
-        results.push(dg.add_doid(globals::DOID_MAX));
-        results.push(dg.add_zone(globals::ZONE_MAX));
-        results.push(dg.add_location(globals::DOID_MAX, globals::ZONE_MAX));
+        results.push(dg.add_size(DG_SIZE_MAX));
+        results.push(dg.add_channel(CHANNEL_MAX));
+        results.push(dg.add_doid(DOID_MAX));
+        results.push(dg.add_zone(ZONE_MAX));
+        results.push(dg.add_location(DOID_MAX, ZONE_MAX));
         results.push(dg.add_string("TEST")); // 16-bit length prefix + # of chars
         results.push(dg.add_blob(vec![u8::MAX, u8::MAX])); // same prefix as above
         results.push(dg.add_data(vec![u8::MAX, u8::MAX, u8::MAX, u8::MAX]));
@@ -418,7 +446,7 @@ mod tests {
         let mut dg: Datagram = Datagram::default();
         let mut dg_2: Datagram = Datagram::default();
 
-        assert!(dg.add_channel(globals::CHANNEL_MAX).is_ok());
+        assert!(dg.add_channel(CHANNEL_MAX).is_ok());
         assert!(dg_2.add_blob(vec![0, 125, u8::MAX]).is_ok());
 
         let addition = dg.clone() + dg_2;
@@ -444,7 +472,7 @@ mod tests {
         let mut results: Vec<Result<(), DatagramError>> = vec![];
 
         results.push(dg.add_internal_header(
-            vec![globals::CHANNEL_MAX], // recipients
+            vec![CHANNEL_MAX], // recipients
             0, // sender
             Protocol::MDAddChannel.into(), // msg type
         ));
@@ -471,13 +499,13 @@ mod tests {
     #[test]
     fn overflow_test() {
         let mut dg: Datagram = Datagram::default();
-        let res_1: Result<globals::DgSizeTag, DatagramError> = dg.add_buffer(globals::DG_SIZE_MAX);
+        let res_1: Result<usize, DatagramError> = dg.add_buffer(DG_SIZE_MAX.into());
 
         assert!(!res_1.is_err(), "Could not append 2^16 bytes to datagram buffer.");
         assert_eq!(res_1.unwrap(), 0, "add_buffer() didn't return start of reserve.");
         assert_eq!(
             dg.size() + 1,
-            usize::from(globals::DG_SIZE_MAX),
+            usize::from(DG_SIZE_MAX),
             "Datagram didn't add 2^16 bytes to the buffer."
         );
 
