@@ -18,7 +18,7 @@
 */
 
 use donet_core::datagram::byte_order;
-use donet_core::datagram::iterator::DatagramIterator;
+use donet_core::datagram::iterator::*;
 
 #[rustfmt::skip]
 static JSON_ESCAPES: [u8; 32] = [
@@ -30,7 +30,12 @@ static JSON_ESCAPES: [u8; 32] = [
 /// [`MsgPack`] utility for decoding maps and arrays.
 ///
 /// [`MsgPack`]: https://msgpack.org
-fn decode_container(out: &mut String, dgi: &mut DatagramIterator, len: u32, map: bool) {
+fn decode_container(
+    out: &mut String,
+    dgi: &mut DatagramIterator,
+    len: u32,
+    map: bool,
+) -> Result<(), IteratorError> {
     if map {
         out.push('{');
     } else {
@@ -43,11 +48,11 @@ fn decode_container(out: &mut String, dgi: &mut DatagramIterator, len: u32, map:
         }
 
         if map {
-            decode_to_json(out, dgi);
+            decode_to_json(out, dgi)?;
             out.push_str(": ");
         }
 
-        decode_to_json(out, dgi);
+        decode_to_json(out, dgi)?;
     }
 
     if map {
@@ -55,13 +60,14 @@ fn decode_container(out: &mut String, dgi: &mut DatagramIterator, len: u32, map:
     } else {
         out.push(']');
     }
+    Ok(())
 }
 
-fn decode_string(out: &mut String, dgi: &mut DatagramIterator, len: u32) {
+fn decode_string(out: &mut String, dgi: &mut DatagramIterator, len: u32) -> Result<(), IteratorError> {
     out.push('"');
 
     for _i in 0..len {
-        let output: u8 = dgi.read_u8();
+        let output: u8 = dgi.read_u8()?;
 
         if output < 0x20 {
             if JSON_ESCAPES.contains(&output) {
@@ -82,33 +88,37 @@ fn decode_string(out: &mut String, dgi: &mut DatagramIterator, len: u32) {
         out.push_str(&format!("\\x{:0width$x}", output, width = 2)); // 2 hex / byte
     }
     out.push('"');
+
+    Ok(())
 }
 
-fn decode_ext(out: &mut String, dgi: &mut DatagramIterator, len: u32) {
-    out.push_str(&format!("ext({}, ", dgi.read_u8()));
+fn decode_ext(out: &mut String, dgi: &mut DatagramIterator, len: u32) -> Result<(), IteratorError> {
+    out.push_str(&format!("ext({}, ", dgi.read_u8()?));
 
-    decode_string(out, dgi, len);
+    decode_string(out, dgi, len)?;
     out.push(')');
+
+    Ok(())
 }
 
 /// Utility for decoding a [`MsgPack`] datagram into a JSON-format UTF-8 string.
 ///
 /// [`MsgPack`]: https://msgpack.org
-pub fn decode_to_json(out: &mut String, dgi: &mut DatagramIterator) {
-    let marker: u8 = dgi.read_u8();
+pub fn decode_to_json(out: &mut String, dgi: &mut DatagramIterator) -> Result<(), IteratorError> {
+    let marker: u8 = dgi.read_u8()?;
 
     if marker < 0x80 {
         // positive fixint
         out.push_str(&format!("{}", marker));
     } else if marker <= 0x8f {
         // fixmap
-        decode_container(out, dgi, (marker - 0x80).into(), true);
+        decode_container(out, dgi, (marker - 0x80).into(), true)?;
     } else if marker <= 0x9f {
         // fixarray
-        decode_container(out, dgi, (marker - 0x90).into(), false);
+        decode_container(out, dgi, (marker - 0x90).into(), false)?;
     } else if marker <= 0xbf {
         // fixstr
-        decode_string(out, dgi, (marker - 0xa0).into());
+        decode_string(out, dgi, (marker - 0xa0).into())?;
     } else if marker == 0xc0 {
         // nil
         out.push_str("null");
@@ -123,104 +133,105 @@ pub fn decode_to_json(out: &mut String, dgi: &mut DatagramIterator) {
         out.push_str("true");
     } else if marker == 0xc4 {
         // bin8
-        let len: u8 = dgi.read_u8();
-        decode_string(out, dgi, len.into());
+        let len: u8 = dgi.read_u8()?;
+        decode_string(out, dgi, len.into())?;
     } else if marker == 0xc5 {
         // bin16
-        let len: u16 = dgi.read_u16();
-        decode_string(out, dgi, byte_order::swap_be_16(len).into());
+        let len: u16 = dgi.read_u16()?;
+        decode_string(out, dgi, byte_order::swap_be_16(len).into())?;
     } else if marker == 0xc6 {
         // bin32
-        let len: u32 = dgi.read_u32();
-        decode_string(out, dgi, byte_order::swap_be_32(len));
+        let len: u32 = dgi.read_u32()?;
+        decode_string(out, dgi, byte_order::swap_be_32(len))?;
     } else if marker == 0xc7 {
         // ext8
-        let len: u8 = dgi.read_u8();
-        decode_ext(out, dgi, len.into());
+        let len: u8 = dgi.read_u8()?;
+        decode_ext(out, dgi, len.into())?;
     } else if marker == 0xc8 {
         // ext16
-        let len: u16 = dgi.read_u16();
-        decode_ext(out, dgi, byte_order::swap_be_16(len).into());
+        let len: u16 = dgi.read_u16()?;
+        decode_ext(out, dgi, byte_order::swap_be_16(len).into())?;
     } else if marker == 0xc9 {
         // ext32
-        let len: u32 = dgi.read_u32();
-        decode_ext(out, dgi, byte_order::swap_be_32(len));
+        let len: u32 = dgi.read_u32()?;
+        decode_ext(out, dgi, byte_order::swap_be_32(len))?;
     } else if marker == 0xca {
         // float32
-        let data: u32 = dgi.read_u32();
+        let data: u32 = dgi.read_u32()?;
         out.push_str(&format!("{}", byte_order::swap_be_32(data) as f32));
     } else if marker == 0xcb {
         // float64
-        let data: u64 = dgi.read_u64();
+        let data: u64 = dgi.read_u64()?;
         out.push_str(&format!("{}", byte_order::swap_be_64(data) as f64));
     } else if marker == 0xcc {
         // uint8
-        out.push_str(&format!("{}", dgi.read_u8()));
+        out.push_str(&format!("{}", dgi.read_u8()?));
     } else if marker == 0xcd {
         // uint16
-        out.push_str(&format!("{}", byte_order::swap_be_16(dgi.read_u16())));
+        out.push_str(&format!("{}", byte_order::swap_be_16(dgi.read_u16()?)));
     } else if marker == 0xce {
         // uint32
-        out.push_str(&format!("{}", byte_order::swap_be_32(dgi.read_u32())));
+        out.push_str(&format!("{}", byte_order::swap_be_32(dgi.read_u32()?)));
     } else if marker == 0xcf {
         // uint64
-        out.push_str(&format!("{}", byte_order::swap_be_64(dgi.read_u64())));
+        out.push_str(&format!("{}", byte_order::swap_be_64(dgi.read_u64()?)));
     } else if marker == 0xd0 {
         // int8
-        out.push_str(&format!("{}", dgi.read_i8()));
+        out.push_str(&format!("{}", dgi.read_i8()?));
     } else if marker == 0xd1 {
         // int16
-        out.push_str(&format!("{}", byte_order::swap_be_16(dgi.read_u16()) as i16));
+        out.push_str(&format!("{}", byte_order::swap_be_16(dgi.read_u16()?) as i16));
     } else if marker == 0xd2 {
         // int32
-        out.push_str(&format!("{}", byte_order::swap_be_32(dgi.read_u32()) as i32));
+        out.push_str(&format!("{}", byte_order::swap_be_32(dgi.read_u32()?) as i32));
     } else if marker == 0xd3 {
         // int64
-        out.push_str(&format!("{}", byte_order::swap_be_64(dgi.read_u64()) as i64));
+        out.push_str(&format!("{}", byte_order::swap_be_64(dgi.read_u64()?) as i64));
     } else if marker <= 0xd8 {
         // fixext family
-        decode_ext(out, dgi, 1 << (marker - 0xd4));
+        decode_ext(out, dgi, 1 << (marker - 0xd4))?;
     } else if marker == 0xd9 {
         // str8
-        let len: u8 = dgi.read_u8();
-        decode_string(out, dgi, len.into());
+        let len: u8 = dgi.read_u8()?;
+        decode_string(out, dgi, len.into())?;
     } else if marker == 0xda {
         // str16
-        let len: u16 = dgi.read_u16();
-        decode_string(out, dgi, byte_order::swap_be_16(len).into());
+        let len: u16 = dgi.read_u16()?;
+        decode_string(out, dgi, byte_order::swap_be_16(len).into())?;
     } else if marker == 0xdb {
         // str32
-        let len: u32 = dgi.read_u32();
-        decode_string(out, dgi, byte_order::swap_be_32(len));
+        let len: u32 = dgi.read_u32()?;
+        decode_string(out, dgi, byte_order::swap_be_32(len))?;
     } else if marker == 0xdc {
         // array16
-        let len: u16 = dgi.read_u16();
-        decode_container(out, dgi, byte_order::swap_be_16(len).into(), false);
+        let len: u16 = dgi.read_u16()?;
+        decode_container(out, dgi, byte_order::swap_be_16(len).into(), false)?;
     } else if marker == 0xdd {
         // array32
-        let len: u32 = dgi.read_u32();
-        decode_container(out, dgi, byte_order::swap_be_32(len), false);
+        let len: u32 = dgi.read_u32()?;
+        decode_container(out, dgi, byte_order::swap_be_32(len), false)?;
     } else if marker == 0xde {
         // map16
-        let len: u16 = dgi.read_u16();
-        decode_container(out, dgi, byte_order::swap_be_16(len).into(), true);
+        let len: u16 = dgi.read_u16()?;
+        decode_container(out, dgi, byte_order::swap_be_16(len).into(), true)?;
     } else if marker == 0xdf {
         // map32
-        let len: u32 = dgi.read_u32();
-        decode_container(out, dgi, byte_order::swap_be_32(len), true);
+        let len: u32 = dgi.read_u32()?;
+        decode_container(out, dgi, byte_order::swap_be_32(len), true)?;
     } else {
         // everything >= 0xe0 is a negative fixint.
         out.push_str(&format!("{}", marker as i8));
     }
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use donet_core::datagram::datagram::{Datagram, DatagramError};
+    use donet_core::datagram::datagram::*;
 
     #[test]
-    fn fixmap_fixstr_common_usage() -> Result<(), DatagramError> {
+    fn fixmap_fixstr_common_usage() -> std::io::Result<()> {
         let mut output: String = String::default();
 
         // Unit tests must not be dependent on other tests, so we cannot
@@ -238,14 +249,14 @@ mod tests {
         dg.add_data("test".as_bytes().to_vec())?; // "test"
         dg.add_data(vec![0xc0])?; // null
 
-        decode_to_json(&mut output, &mut DatagramIterator::from(dg));
+        decode_to_json(&mut output, &mut DatagramIterator::from(dg))?;
 
         assert_eq!(output.as_str(), "{\"test\": true, \"test\": 3, \"test\": null}");
         Ok(())
     }
 
     #[test]
-    fn fixarray_container_decode() -> Result<(), DatagramError> {
+    fn fixarray_container_decode() -> std::io::Result<()> {
         let mut output: String = String::default();
         let mut dg: Datagram = Datagram::default();
 
@@ -254,14 +265,14 @@ mod tests {
         dg.add_data(vec![0xc1])?; // unused marker
         dg.add_data(vec![0xe0])?; // negative fixint (-32)
 
-        decode_to_json(&mut output, &mut DatagramIterator::from(dg));
+        decode_to_json(&mut output, &mut DatagramIterator::from(dg))?;
 
         assert_eq!(output.as_str(), "[false, *INVALID*, -32]");
         Ok(())
     }
 
     #[test]
-    fn fixext_decode() -> Result<(), DatagramError> {
+    fn fixext_decode() -> std::io::Result<()> {
         let mut output: String = String::default();
         let mut dg: Datagram = Datagram::default();
 
@@ -269,14 +280,14 @@ mod tests {
         dg.add_data(vec![0x1])?; // type
         dg.add_data(vec![0xff])?; // value
 
-        decode_to_json(&mut output, &mut DatagramIterator::from(dg));
+        decode_to_json(&mut output, &mut DatagramIterator::from(dg))?;
 
         assert_eq!(output.as_str(), "ext(1, \"\\xff\")");
         Ok(())
     }
 
     #[test]
-    fn msgpack_floating_types() -> Result<(), DatagramError> {
+    fn msgpack_floating_types() -> std::io::Result<()> {
         let mut output: String = String::default();
         let mut dg: Datagram = Datagram::default();
 
@@ -286,7 +297,7 @@ mod tests {
         dg.add_data(vec![0xcb])?; // float64
         dg.add_f64(f64::MAX)?; // value
 
-        decode_to_json(&mut output, &mut DatagramIterator::from(dg));
+        decode_to_json(&mut output, &mut DatagramIterator::from(dg))?;
 
         assert_eq!(output.as_str(), "[4294967300, 18446744073709552000]");
         Ok(())

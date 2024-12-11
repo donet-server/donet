@@ -29,6 +29,7 @@ use multimap::MultiMap;
 use std::collections::HashSet;
 use std::error::Error;
 use std::sync::Arc;
+use tokio::sync::mpsc;
 use tokio::sync::{Mutex, MutexGuard};
 
 /// A wrapper that holds a thread-safe [`std::sync::Arc`] pointer to
@@ -188,7 +189,10 @@ impl Subscriber {
 
     /// Handles a [`Datagram`] that the Message Director received,
     /// and needs to be routed to this subscriber.
-    pub async fn handle_datagram(&mut self, dg: &mut Datagram) -> Result<(), impl Error> {
+    pub async fn handle_datagram(
+        &mut self,
+        dg: &mut Datagram,
+    ) -> Result<(), mpsc::error::SendError<Datagram>> {
         trace!("Sending datagram downstream to {}", self.remote);
 
         debug_assert!(

@@ -21,7 +21,7 @@
 
 use super::datagram::{Datagram, DatagramError};
 use crate::datagram::byte_order as endianness;
-use crate::globals;
+use crate::globals::*;
 use crate::protocol::*;
 use std::mem;
 use std::string::FromUtf8Error;
@@ -43,8 +43,22 @@ pub enum IteratorError {
     FieldConstraintViolation,
     #[error("could not convert bytes to UTF-8")]
     Utf8Error(FromUtf8Error),
+    #[error("invalid read; {0}")]
+    InvalidRead(&'static str),
     #[error("datagram error")]
     DatagramError(DatagramError),
+}
+
+impl From<IteratorError> for std::io::Error {
+    fn from(value: IteratorError) -> std::io::Error {
+        std::io::Error::new(
+            match &value {
+                IteratorError::EndOfFile => std::io::ErrorKind::UnexpectedEof,
+                _ => std::io::ErrorKind::Other,
+            },
+            value.to_string(),
+        )
+    }
 }
 
 /// Utility for iterating value by value of a datagram message.
@@ -59,7 +73,7 @@ impl From<Datagram> for DatagramIterator {
     fn from(value: Datagram) -> Self {
         Self {
             datagram: value,
-            index: 0_usize,
+            index: 0,
         }
     }
 }
@@ -69,27 +83,28 @@ impl DatagramIterator {
         let new_index: usize = self.index + bytes;
 
         if new_index > self.datagram.size() {
-            // FIXME: error!("The DatagramIterator tried to read past the end of the buffer!");
             return Err(IteratorError::EndOfFile);
         }
         Ok(())
     }
 
-    /// Returns the value of `self.index` in bytes.
-    pub fn tell(&mut self) -> globals::DgSizeTag {
-        self.index as globals::DgSizeTag
+    /// Returns the value of `self.index`, which is in bytes.
+    #[inline]
+    pub fn tell(&mut self) -> usize {
+        self.index
     }
 
-    /// Manually sets the buffer_offset position.
-    pub fn seek(&mut self, to: globals::DgSizeTag) {
-        self.index = to as usize;
+    /// Manually sets the `index` position.
+    #[inline]
+    pub fn seek(&mut self, index: usize) {
+        self.index = index
     }
 
-    /// Increments the buffer_offset by `bytes` length.
+    /// Increments the `index` by `bytes` length.
     /// Returns DgError.DatagramIteratorEOF if it's past the end of the buffer.
     pub fn skip(&mut self, bytes: usize) -> Result<(), IteratorError> {
         self.check_read_length(bytes)?;
-        self.index += bytes as usize;
+        self.index += bytes;
         Ok(())
     }
 
@@ -101,35 +116,38 @@ impl DatagramIterator {
     /// Reads the next number of bytes in the datagram.
     pub fn read_data(&mut self, bytes: usize) -> Result<Vec<u8>, IteratorError> {
         self.check_read_length(bytes)?;
-
         let data: Vec<u8> = self.datagram.get_data();
 
         let mut new_data: Vec<u8> = vec![];
-        let read_end: usize = self.index + bytes as usize;
+        let read_end: usize = self.index + bytes;
 
         for item in data.iter().take(read_end).skip(self.index) {
             new_data.push(*item);
         }
-        self.index += bytes as usize;
+        self.index += bytes;
 
         Ok(new_data)
     }
 
-    pub fn read_u8(&mut self) -> u8 {
+    pub fn read_u8(&mut self) -> Result<u8, IteratorError> {
+        self.check_read_length(1)?;
         let data: Vec<u8> = self.datagram.get_data();
-        if self.check_read_length(1).is_err() {
-            panic!("Tried to read past the end of a datagram message!");
+
+        match data.get(self.index) {
+            Some(v) => {
+                self.index += 1; // bytes
+                Ok(*v)
+            }
+            None => {
+                return Err(IteratorError::EndOfFile);
+            }
         }
-        let value: u8 = data[self.index];
-        self.index += 1; // bytes
-        value
     }
 
-    pub fn read_u16(&mut self) -> u16 {
+    pub fn read_u16(&mut self) -> Result<u16, IteratorError> {
+        self.check_read_length(2)?;
         let data: Vec<u8> = self.datagram.get_data();
-        if self.check_read_length(2).is_err() {
-            panic!("Tried to read past the end of a datagram message!");
-        }
+
         // bitwise operations to concatenate two u8's into one u16.
         // graphical explanation:
         //      a0   (byte 1; 0x28)     b0   (byte 2; 0x23)
@@ -153,27 +171,27 @@ impl DatagramIterator {
         //
         let value: u16 = (data[self.index] as u16) | ((data[self.index + 1] as u16) << 8);
         self.index += 2;
-        endianness::swap_le_16(value)
+
+        Ok(endianness::swap_le_16(value))
     }
 
-    pub fn read_u32(&mut self) -> u32 {
+    pub fn read_u32(&mut self) -> Result<u32, IteratorError> {
+        self.check_read_length(4)?;
         let data: Vec<u8> = self.datagram.get_data();
-        if self.check_read_length(4).is_err() {
-            panic!("Tried to read past the end of a datagram message!");
-        }
+
         let value: u32 = (data[self.index] as u32)
             | ((data[self.index + 1] as u32) << 8)
             | ((data[self.index + 2] as u32) << 16)
             | ((data[self.index + 3] as u32) << 24);
+
         self.index += 4;
-        endianness::swap_le_32(value)
+        Ok(endianness::swap_le_32(value))
     }
 
-    pub fn read_u64(&mut self) -> u64 {
+    pub fn read_u64(&mut self) -> Result<u64, IteratorError> {
+        self.check_read_length(8)?;
         let data: Vec<u8> = self.datagram.get_data();
-        if self.check_read_length(8).is_err() {
-            panic!("Tried to read past the end of a datagram message!");
-        }
+
         let value: u64 = (data[self.index] as u64)
             | ((data[self.index + 1] as u64) << 8)
             | ((data[self.index + 2] as u64) << 16)
@@ -182,40 +200,47 @@ impl DatagramIterator {
             | ((data[self.index + 5] as u64) << 40)
             | ((data[self.index + 6] as u64) << 48)
             | ((data[self.index + 7] as u64) << 56);
+
         self.index += 8;
-        endianness::swap_le_64(value)
+        Ok(endianness::swap_le_64(value))
     }
 
     // Signed integer aliases, same read operation.
-    pub fn read_i8(&mut self) -> i8 {
-        self.read_u8() as i8
+    #[inline]
+    pub fn read_i8(&mut self) -> Result<i8, IteratorError> {
+        self.read_u8().map(|v| v as i8)
     }
 
-    pub fn read_i16(&mut self) -> i16 {
-        self.read_u16() as i16
+    #[inline]
+    pub fn read_i16(&mut self) -> Result<i16, IteratorError> {
+        self.read_u16().map(|v| v as i16)
     }
 
-    pub fn read_i32(&mut self) -> i32 {
-        self.read_u32() as i32
+    #[inline]
+    pub fn read_i32(&mut self) -> Result<i32, IteratorError> {
+        self.read_u32().map(|v| v as i32)
     }
 
-    pub fn read_i64(&mut self) -> i64 {
-        self.read_u64() as i64
+    #[inline]
+    pub fn read_i64(&mut self) -> Result<i64, IteratorError> {
+        self.read_u64().map(|v| v as i64)
     }
 
     /// 32-bit IEEE 754 floating point in native endianness.
-    pub fn read_f32(&mut self) -> f32 {
-        self.read_u32() as f32
+    #[inline]
+    pub fn read_f32(&mut self) -> Result<f32, IteratorError> {
+        self.read_u32().map(|v| v as f32)
     }
 
     /// 64-bit IEEE 754 floating point in native endianness.
-    pub fn read_f64(&mut self) -> f64 {
-        self.read_u64() as f64
+    #[inline]
+    pub fn read_f64(&mut self) -> Result<f64, IteratorError> {
+        self.read_u64().map(|v| v as f64)
     }
 
-    pub fn read_bool(&mut self) -> bool {
-        let data: u8 = self.read_u8();
-        data == 1
+    #[inline]
+    pub fn read_bool(&mut self) -> Result<bool, IteratorError> {
+        Ok(self.read_u8()? == 1)
     }
 
     /// Attempts to read a `String` data type from the datagram
@@ -224,7 +249,7 @@ impl DatagramIterator {
     /// If the string type payload is not of UTF-8 format, a
     /// [`IteratorError::Utf8Error`] variant will be returned.
     pub fn read_string(&mut self) -> Result<String, IteratorError> {
-        let str_len: globals::DgSizeTag = self.read_size();
+        let str_len: DgSizeTag = self.read_size()?;
 
         let str_bytes: Vec<u8> = self.read_data(usize::from(str_len))?;
 
@@ -237,25 +262,29 @@ impl DatagramIterator {
         Ok(utf8_str)
     }
 
-    pub fn read_size(&mut self) -> globals::DgSizeTag {
-        self.read_u16() as globals::DgSizeTag
+    #[inline]
+    pub fn read_size(&mut self) -> Result<DgSizeTag, IteratorError> {
+        self.read_u16().map(|v| v.into())
     }
 
-    pub fn read_channel(&mut self) -> globals::Channel {
-        self.read_u64() as globals::Channel
+    #[inline]
+    pub fn read_channel(&mut self) -> Result<Channel, IteratorError> {
+        self.read_u64().map(|v| v.into())
     }
 
-    pub fn read_doid(&mut self) -> globals::DoId {
-        self.read_u32() as globals::DoId
+    #[inline]
+    pub fn read_doid(&mut self) -> Result<DoId, IteratorError> {
+        self.read_u32().map(|v| v.into())
     }
 
-    pub fn read_zone(&mut self) -> globals::Zone {
-        self.read_u32() as globals::Zone
+    #[inline]
+    pub fn read_zone(&mut self) -> Result<Zone, IteratorError> {
+        self.read_u32().map(|v| v.into())
     }
 
     /// Reads a `blob` data type and returns a [`Datagram`].
     pub fn read_datagram(&mut self) -> Result<Datagram, IteratorError> {
-        let dg_size: globals::DgSizeTag = self.read_size();
+        let dg_size: DgSizeTag = self.read_size()?;
 
         let dg_payload: Vec<u8> = self.read_data(usize::from(dg_size))?;
 
@@ -268,59 +297,60 @@ impl DatagramIterator {
     }
 
     /// Get the recipient count in a datagram message.
-    pub fn read_recipient_count(&mut self) -> u8 {
+    ///
+    /// Alias of [`Datagram::read_u8`].
+    #[inline(always)]
+    pub fn read_recipient_count(&mut self) -> Result<u8, IteratorError> {
         self.read_u8()
     }
 
     /// Returns the datagram's message type as a [`Protocol`] variant.
-    pub fn read_msg_type(&mut self) -> Protocol {
-        let msg_type: globals::MsgType = self.read_u16(); // read message type
+    pub fn read_msg_type(&mut self) -> Result<Protocol, IteratorError> {
+        let msg_type: MsgType = self.read_u16()?; // read message type
 
         for message in Protocol::iter() {
-            let msg_id: globals::MsgType = message.into();
+            let msg_id: MsgType = message.into();
             if msg_type == msg_id {
-                return message;
+                return Ok(message);
             }
         }
-        // FIXME: Throw error instead of panic here.
-        panic!("Tried to read an invalid message type from datagram.");
+        Err(IteratorError::InvalidRead(
+            "Tried to read an invalid message type.",
+        ))
     }
 
     /// Get the recipient count in a datagram message.
     /// Does not advance the index.
-    pub fn peek_recipient_count(&mut self) -> u8 {
-        if self.datagram.size() == 0 {
-            // FIXME: error!("Cannot read from an empty datagram!");
-            // FIXME: Throw error instead of panic here.
-            panic!("Tried to read from an empty datagram.");
-        }
+    pub fn peek_recipient_count(&mut self) -> Result<u8, IteratorError> {
         let start_index: usize = self.index;
-        let value: u8 = self.read_u8();
+        let value: u8 = self.read_u8()?;
         self.index = start_index;
-        value
+        Ok(value)
     }
 
     /// Returns the datagram's message type. Does not advance the index.
     /// Useful for if index needs to be saved or if next field isn't msg type.
-    /// If iterating through a fresh datagram, use [`Self::read_msg_type()`].
-    pub fn peek_msg_type(&mut self) -> Protocol {
+    /// If iterating through a fresh datagram, use [`Self::read_msg_type`].
+    pub fn peek_msg_type(&mut self) -> Result<Protocol, IteratorError> {
         let start_index: usize = self.index;
 
         self.index = 1
-            + usize::from(self.peek_recipient_count()) * mem::size_of::<globals::Channel>()
-            + mem::size_of::<globals::Channel>(); // seek message type
+            + usize::from(self.peek_recipient_count()?) * mem::size_of::<Channel>()
+            + mem::size_of::<Channel>(); // seek message type
 
-        let msg_type: globals::MsgType = self.read_u16(); // read message type
+        let msg_type: MsgType = self.read_u16()?; // read message type
         self.index = start_index; // do not advance dgi index
 
         for message in Protocol::iter() {
-            let msg_id: globals::MsgType = message.into();
+            let msg_id: MsgType = message.into();
+
             if msg_type == msg_id {
-                return message;
+                return Ok(message);
             }
         }
-        // FIXME: Throw error instead of panic here.
-        panic!("Tried to read an invalid message type from datagram.");
+        Err(IteratorError::InvalidRead(
+            "Tried to read an invalid message type.",
+        ))
     }
 }
 
@@ -331,7 +361,7 @@ mod tests {
 
     #[test]
     #[rustfmt::skip]
-    fn dgi_read_integers() {
+    fn dgi_read_integers() -> Result<(), IteratorError> {
         let mut dg: Datagram = Datagram::default();
         let mut results: Vec<Result<(), DatagramError>> = vec![];
 
@@ -355,20 +385,20 @@ mod tests {
         let mut dgi: DatagramIterator = dg.into();
 
         // Read blob type length
-        let res_tag: globals::DgSizeTag = dgi.read_u16();
+        let res_tag: DgSizeTag = dgi.read_u16()?;
         // Unsigned integers
-        let res_u8: u8 = dgi.read_u8();
-        let res_u16: u16 = dgi.read_u16();
-        let res_u32: u32 = dgi.read_u32();
-        let res_u64: u64 = dgi.read_u64();
+        let res_u8: u8 = dgi.read_u8()?;
+        let res_u16: u16 = dgi.read_u16()?;
+        let res_u32: u32 = dgi.read_u32()?;
+        let res_u64: u64 = dgi.read_u64()?;
         // Signed integers
-        let res_i8: i8 = dgi.read_i8();
-        let res_i16: i16 = dgi.read_i16();
-        let res_i32: i32 = dgi.read_i32();
-        let res_i64: i64 = dgi.read_i64();
+        let res_i8: i8 = dgi.read_i8()?;
+        let res_i16: i16 = dgi.read_i16()?;
+        let res_i32: i32 = dgi.read_i32()?;
+        let res_i64: i64 = dgi.read_i64()?;
         // Floating point
-        let res_f32: f32 = dgi.read_f32();
-        let res_f64: f64 = dgi.read_f64();
+        let res_f32: f32 = dgi.read_f32()?;
+        let res_f64: f64 = dgi.read_f64()?;
 
         assert_eq!(res_tag, 42_u16); // DC blob size tag
         assert_eq!(res_u8, u8::MAX);
@@ -382,10 +412,11 @@ mod tests {
         assert_eq!(res_f32, 0.0);
         assert_eq!(res_f64, 0.0);
         assert_eq!(dgi.get_remaining(), 0); // iterator should be exhausted
+        Ok(())
     }
 
     #[test]
-    fn dgi_read_dc_types() {
+    fn dgi_read_dc_types() -> Result<(), IteratorError> {
         let mut dg: Datagram = Datagram::default();
         let mut results: Vec<Result<(), DatagramError>> = vec![];
 
@@ -403,14 +434,14 @@ mod tests {
         let mut dgi: DatagramIterator = dg.into();
 
         // Size Tag
-        let res_size: globals::DgSizeTag = dgi.read_size();
+        let res_size: DgSizeTag = dgi.read_size()?;
         // Boolean
-        let res_bool_false: bool = dgi.read_bool();
-        let res_bool_true: bool = dgi.read_bool();
+        let res_bool_false: bool = dgi.read_bool()?;
+        let res_bool_true: bool = dgi.read_bool()?;
         // DC Types
-        let res_channel: globals::Channel = dgi.read_channel();
-        let res_doid: globals::DoId = dgi.read_doid();
-        let res_zone: globals::Zone = dgi.read_zone();
+        let res_channel: Channel = dgi.read_channel()?;
+        let res_doid: DoId = dgi.read_doid()?;
+        let res_zone: Zone = dgi.read_zone()?;
 
         assert_eq!(res_size, 18_u16); // DC blob size tag
         assert_eq!(res_bool_false, false);
@@ -419,10 +450,11 @@ mod tests {
         assert_eq!(res_doid, 0_u32);
         assert_eq!(res_zone, 0_u32);
         assert_eq!(dgi.get_remaining(), 0); // iterator should be exhausted
+        Ok(())
     }
 
     #[test]
-    fn dgi_read_message_type() {
+    fn dgi_read_message_type() -> Result<(), IteratorError> {
         let mut dg: Datagram = Datagram::default();
 
         let test_msg_types: Vec<Protocol> = vec![
@@ -440,8 +472,9 @@ mod tests {
         let mut dgi: DatagramIterator = dg.into();
 
         for m_type in &test_msg_types {
-            let read_msg_type: globals::MsgType = dgi.read_u16();
-            assert_eq!(read_msg_type, globals::MsgType::from(*m_type));
+            let read_msg_type: MsgType = dgi.read_u16()?;
+            assert_eq!(read_msg_type, MsgType::from(*m_type));
         }
+        Ok(())
     }
 }

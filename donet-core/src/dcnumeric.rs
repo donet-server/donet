@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -20,8 +20,8 @@
 //! Structure representing data types supported in the DC
 //! language and enforcing numeric limits through constraints.
 
-use crate::datagram::datagram::Datagram;
-use crate::datagram::iterator::DatagramIterator;
+use crate::datagram::datagram::*;
+use crate::datagram::iterator::*;
 use crate::dctype::*;
 use crate::hashgen::*;
 use std::mem::{discriminant, size_of};
@@ -258,9 +258,9 @@ impl DCNumericType {
         todo!();
     }
 
-    fn _data_to_number(&self, data: Vec<u8>) -> (bool, DCNumber) {
+    fn data_to_number(&self, data: Vec<u8>) -> Result<(bool, DCNumber), IteratorError> {
         if self.base_type.size != data.len().try_into().unwrap() {
-            return (false, DCNumber::Integer(0_i64));
+            return Ok((false, DCNumber::Integer(0_i64)));
         }
 
         let mut dg = Datagram::default();
@@ -269,19 +269,19 @@ impl DCNumericType {
         let mut dgi: DatagramIterator = dg.into();
 
         match self.base_type.data_type {
-            DCTypeEnum::TInt8 => (true, DCNumber::Integer(i64::from(dgi.read_i8()))),
-            DCTypeEnum::TInt16 => (true, DCNumber::Integer(i64::from(dgi.read_i16()))),
-            DCTypeEnum::TInt32 => (true, DCNumber::Integer(i64::from(dgi.read_i32()))),
-            DCTypeEnum::TInt64 => (true, DCNumber::Integer(dgi.read_i64())),
+            DCTypeEnum::TInt8 => Ok((true, DCNumber::Integer(i64::from(dgi.read_i8()?)))),
+            DCTypeEnum::TInt16 => Ok((true, DCNumber::Integer(i64::from(dgi.read_i16()?)))),
+            DCTypeEnum::TInt32 => Ok((true, DCNumber::Integer(i64::from(dgi.read_i32()?)))),
+            DCTypeEnum::TInt64 => Ok((true, DCNumber::Integer(dgi.read_i64()?))),
             DCTypeEnum::TChar | DCTypeEnum::TUInt8 => {
-                (true, DCNumber::UnsignedInteger(u64::from(dgi.read_u8())))
+                Ok((true, DCNumber::UnsignedInteger(u64::from(dgi.read_u8()?))))
             }
-            DCTypeEnum::TUInt16 => (true, DCNumber::UnsignedInteger(u64::from(dgi.read_u16()))),
-            DCTypeEnum::TUInt32 => (true, DCNumber::UnsignedInteger(u64::from(dgi.read_u32()))),
-            DCTypeEnum::TUInt64 => (true, DCNumber::UnsignedInteger(dgi.read_u64())),
-            DCTypeEnum::TFloat32 => (true, DCNumber::FloatingPoint(f64::from(dgi.read_f32()))),
-            DCTypeEnum::TFloat64 => (true, DCNumber::FloatingPoint(dgi.read_f64())),
-            _ => (false, DCNumber::Integer(0_i64)),
+            DCTypeEnum::TUInt16 => Ok((true, DCNumber::UnsignedInteger(u64::from(dgi.read_u16()?)))),
+            DCTypeEnum::TUInt32 => Ok((true, DCNumber::UnsignedInteger(u64::from(dgi.read_u32()?)))),
+            DCTypeEnum::TUInt64 => Ok((true, DCNumber::UnsignedInteger(dgi.read_u64()?))),
+            DCTypeEnum::TFloat32 => Ok((true, DCNumber::FloatingPoint(f64::from(dgi.read_f32()?)))),
+            DCTypeEnum::TFloat64 => Ok((true, DCNumber::FloatingPoint(dgi.read_f64()?))),
+            _ => Ok((false, DCNumber::Integer(0_i64))),
         }
     }
 }

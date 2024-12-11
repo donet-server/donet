@@ -33,6 +33,12 @@ pub enum DatagramError {
     ImpossibleCast(&'static str),
 }
 
+impl From<DatagramError> for std::io::Error {
+    fn from(value: DatagramError) -> Self {
+        std::io::Error::new(std::io::ErrorKind::Other, value.to_string())
+    }
+}
+
 /// Representation of a new network message (datagram) to be sent.
 #[derive(Debug, Clone)]
 pub struct Datagram {

@@ -104,6 +104,16 @@ impl From<tcp::Connection> for Client {
     }
 }
 
+/// Util macro for truncated datagram scenarios.
+macro_rules! truncated_datagram {
+    ($remote:expr, $err:expr) => {{
+        warn!("Received truncated datagram from {}: {}", $remote, $err);
+
+        // no more bytes to read, break read loop
+        break;
+    }};
+}
+
 impl Client {
     /// Returns the remote IPv4/6 address of this client.
     pub fn get_remote(&self) -> SocketAddr {
@@ -117,7 +127,7 @@ impl Client {
 
     /// Sends the given [`Datagram`] to the send loop task, via the
     /// [`Client`]'s [`mpsc::Sender<Datagram>`].
-    pub async fn stage_datagram(&mut self, dg: Datagram) -> Result<(), impl Error> {
+    pub async fn stage_datagram(&mut self, dg: Datagram) -> Result<(), mpsc::error::SendError<Datagram>> {
         let tx = self
             .send_queue_channel
             .as_mut()
@@ -131,26 +141,21 @@ impl Client {
     /// - The first tuple element is the [`JoinHandle`] for the receive loop.
     ///
     /// - The second tuple element is the [`JoinHandle`] for the send loop.
-    pub fn spawn_recv_send_tasks(
-        &mut self,
-        incoming_tx: mpsc::Sender<RecvData>,
-    ) -> impl Future<Output = RecvSendHandles> + Send + '_ {
-        async move {
-            let read_half = self.tcp_read_half.take().unwrap();
-            let write_half = self.tcp_write_half.take().unwrap();
+    pub async fn spawn_recv_send_tasks(&mut self, incoming_tx: mpsc::Sender<RecvData>) -> RecvSendHandles {
+        let read_half = self.tcp_read_half.take().unwrap();
+        let write_half = self.tcp_write_half.take().unwrap();
 
-            let recv_handle = tokio::spawn(Self::receive_loop(read_half, incoming_tx));
+        let recv_handle = tokio::spawn(Self::receive_loop(read_half, incoming_tx));
 
-            // send channel.
-            // queues datagrams to be sent to the remote address of this client.
-            let (tx, rx) = mpsc::channel::<Datagram>(32);
+        // send channel.
+        // queues datagrams to be sent to the remote address of this client.
+        let (tx, rx) = mpsc::channel::<Datagram>(32);
 
-            self.send_queue_channel = Some(tx);
+        self.send_queue_channel = Some(tx);
 
-            let send_handle = tokio::spawn(Self::send_loop(write_half, rx));
+        let send_handle = tokio::spawn(Self::send_loop(write_half, rx));
 
-            (recv_handle, send_handle)
-        }
+        (recv_handle, send_handle)
     }
 
     /// Main asynchronous loop for handling receiving TCP packets
@@ -210,7 +215,10 @@ impl Client {
         mut dgi: DatagramIterator,
     ) {
         loop {
-            let sizetag: DgSizeTag = dgi.read_size();
+            let sizetag: DgSizeTag = match dgi.read_size() {
+                Ok(size) => size,
+                Err(err) => truncated_datagram!(remote, err),
+            };
 
             if sizetag == 0 {
                 warn!("Received datagram with a size tag of 0. Skipping.");
@@ -221,12 +229,7 @@ impl Client {
 
             let payload: Vec<u8> = match dgi.read_data(sizetag.into()) {
                 Ok(data) => data,
-                Err(err) => {
-                    warn!("Received truncated datagram from {}: {}", remote, err);
-
-                    // no more bytes to read, break read loop
-                    break;
-                }
+                Err(err) => truncated_datagram!(remote, err),
             };
 
             assert!(individual_dg.add_data(payload).is_ok());
@@ -249,8 +252,7 @@ impl Client {
                 // we *should* have 0 bytes left to read, if this is a
                 // good packet. if not, its truncated (or we read it wrong)
                 if remaining != 0 {
-                    warn!("Received truncated datagram from {}", remote);
-                    break;
+                    truncated_datagram!(remote, "Expected more bytes!");
                 }
                 break;
             }
@@ -282,7 +284,7 @@ impl Client {
             // prepare write buffer by reading the send queue
             let mut write_buffer_dg: Datagram = Datagram::default();
 
-            while queue.len() != 0 {
+            while !queue.is_empty() {
                 let mut dgi: DatagramIterator = queue.pop_front().unwrap().into();
 
                 // get the size of this datagram to append size tag

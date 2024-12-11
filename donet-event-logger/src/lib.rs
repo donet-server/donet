@@ -169,7 +169,7 @@ impl EventLogger {
         // new datagram being processed, clear previous data
         data.clear();
 
-        msgpack::decode_to_json(data, dgi);
+        msgpack::decode_to_json(data, dgi)?;
 
         // Verify the msgpack contains a Map from the beginning.
         if let Some(ch) = data.get(0..1) {

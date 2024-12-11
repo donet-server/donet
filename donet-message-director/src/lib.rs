@@ -32,7 +32,7 @@ use donet_network::{tcp, udp};
 use donet_network::{Client, HasClient, RecvData, RecvSendHandles};
 use log::{error, info, trace, warn};
 use std::collections::HashSet;
-use std::io::Result;
+use std::io::{Error, ErrorKind, Result};
 use std::sync::Arc;
 use subscriber::*;
 use tokio::net::TcpStream;
@@ -121,7 +121,7 @@ impl DonetService for MessageDirector {
     async fn start(conf: config::DonetConfig, _: Option<DCFile<'static>>) -> Result<JoinHandle<Result<()>>> {
         let service_conf: CreateInfo = CreateInfo {
             // We can unwrap safely here since this function only is called if it is `Some`.
-            service_conf: conf.services.message_director.unwrap(),
+            service_conf: conf.services.message_director.expect("MD conf not found."),
             event_logger_url: conf.global.eventlogger,
         };
 
@@ -315,59 +315,58 @@ impl MessageDirector {
     async fn handle_datagram(&mut self, mut data: RecvData) -> Result<()> {
         trace!("Processing datagram of {} bytes...", data.dg.size());
 
-        let recp_count: u8 = data.dgi.read_recipient_count();
+        let recp_count: u8 = data.dgi.read_recipient_count()?;
         trace!("Recipient count: {}", recp_count);
 
         let mut recipients: Vec<Channel> = vec![];
 
         for _ in 0..recp_count {
-            recipients.push(data.dgi.read_channel());
+            recipients.push(data.dgi.read_channel()?);
         }
         trace!("Recipient Channels: {:?}", recipients);
 
         // check if this is a control message
         #[allow(clippy::collapsible_if)]
         if recp_count == 1 {
-            if *recipients.first().unwrap() == CONTROL_CHANNEL {
+            if *recipients.first().expect("Zero recipients.") == CONTROL_CHANNEL {
                 return self.handle_control_msg(data).await;
             }
         }
 
         // not a control msg, so there is a sender field ahead
-        let sender: Channel = data.dgi.read_channel();
+        let sender: Channel = data.dgi.read_channel()?;
 
         // Store internal header info into struct
         let header = InternalHeader { sender, recipients };
         trace!("Datagram internal header: {}", &header);
 
         // route the regular internal message
-        self.route_datagram(header, data).await.unwrap();
-        Ok(())
+        self.route_datagram(header, data).await
     }
 
     /// Handles a datagram that is a CONTROL message, a.k.a it had one recipient
     /// and the recipient channel was the control channel (channel 1).
     async fn handle_control_msg(&mut self, mut data: RecvData) -> Result<()> {
-        let msg_type: Protocol = data.dgi.read_msg_type();
+        let msg_type: Protocol = data.dgi.read_msg_type()?;
 
         match msg_type {
             Protocol::MDAddChannel => {
-                let channel: Channel = data.dgi.read_channel();
+                let channel: Channel = data.dgi.read_channel()?;
                 let sub: SubscriberRef = self.get_subscriber_with_remote(data.remote).unwrap();
 
                 self.subscribe_channel(sub, channel).await;
                 Ok(())
             }
             Protocol::MDRemoveChannel => {
-                let channel: Channel = data.dgi.read_channel();
+                let channel: Channel = data.dgi.read_channel()?;
                 let sub: SubscriberRef = self.get_subscriber_with_remote(data.remote).unwrap();
 
                 self.unsubscribe_channel(sub, channel).await;
                 Ok(())
             }
             Protocol::MDAddRange => {
-                let min: Channel = data.dgi.read_channel();
-                let max: Channel = data.dgi.read_channel();
+                let min: Channel = data.dgi.read_channel()?;
+                let max: Channel = data.dgi.read_channel()?;
 
                 let sub: SubscriberRef = self.get_subscriber_with_remote(data.remote).unwrap();
 
@@ -375,8 +374,8 @@ impl MessageDirector {
                 Ok(())
             }
             Protocol::MDRemoveRange => {
-                let min: Channel = data.dgi.read_channel();
-                let max: Channel = data.dgi.read_channel();
+                let min: Channel = data.dgi.read_channel()?;
+                let max: Channel = data.dgi.read_channel()?;
 
                 let sub: SubscriberRef = self.get_subscriber_with_remote(data.remote).unwrap();
 
@@ -384,7 +383,7 @@ impl MessageDirector {
                 Ok(())
             }
             Protocol::MDAddPostRemove => {
-                let sender: Channel = data.dgi.read_channel();
+                let sender: Channel = data.dgi.read_channel()?;
                 let post_remove: Datagram = match data.dgi.read_datagram() {
                     Ok(dg) => dg,
                     Err(err) => {
@@ -402,7 +401,7 @@ impl MessageDirector {
                 Ok(())
             }
             Protocol::MDClearPostRemoves => {
-                let sender: Channel = data.dgi.read_channel();
+                let sender: Channel = data.dgi.read_channel()?;
 
                 let sub: SubscriberRef = self.get_subscriber_with_remote(data.remote).unwrap();
 
@@ -413,7 +412,7 @@ impl MessageDirector {
                 Ok(())
             }
             Protocol::MDSetConName => {
-                let con_name: String = data.dgi.read_string().unwrap();
+                let con_name: String = data.dgi.read_string()?;
                 let sub: SubscriberRef = self.get_subscriber_with_remote(data.remote).unwrap();
 
                 // Set the downstream connection's name
@@ -421,7 +420,7 @@ impl MessageDirector {
                 Ok(())
             }
             Protocol::MDSetConUrl => {
-                let con_web_url: String = data.dgi.read_string().unwrap();
+                let con_web_url: String = data.dgi.read_string()?;
                 let sub: SubscriberRef = self.get_subscriber_with_remote(data.remote).unwrap();
 
                 // Set the downstream connection's web URL
@@ -442,11 +441,7 @@ impl MessageDirector {
 
     /// Handles replicating and routing a datagram to its proper recipients
     /// based on this message director's channel subscriptions map.
-    async fn route_datagram(
-        &mut self,
-        header: InternalHeader,
-        mut data: RecvData,
-    ) -> std::result::Result<(), impl std::error::Error> {
+    async fn route_datagram(&mut self, header: InternalHeader, mut data: RecvData) -> Result<()> {
         let mut receiving_subscribers: HashSet<SubscriberRef> = HashSet::default();
 
         // get all subscribers of the recipient channels
@@ -454,7 +449,9 @@ impl MessageDirector {
 
         // replicate the message to all receiving subscribers
         for sub in receiving_subscribers {
-            sub.lock().await.handle_datagram(&mut data.dg).await.unwrap();
+            if let Err(err) = sub.lock().await.handle_datagram(&mut data.dg).await {
+                return Err(Error::new(ErrorKind::Other, err.to_string()));
+            }
         }
 
         // Next, decide if this message needs to be routed **upstream**.
@@ -469,7 +466,8 @@ impl MessageDirector {
         if self.upstream_md.is_some() && our_subscriber {
             trace!("Routing upstream.");
 
-            let upstream_lock = self.upstream_md.as_ref().unwrap();
+            // safe to unwrap here due to `is_some()` check above.
+            let upstream_lock = self.upstream_md.as_ref().expect("Upstream MD ptr not found.");
 
             upstream_lock.stage_datagram(data.dg.clone()).await;
         } else if !our_subscriber {
@@ -480,8 +478,7 @@ impl MessageDirector {
             // Otherwise, this is the master message director.
             trace!("Not routing upstream; We are the master MD.");
         }
-
-        Ok::<(), mpsc::error::SendError<Datagram>>(())
+        Ok(())
     }
 
     /// Sends the post remove for the given sender by sending it
@@ -506,12 +503,9 @@ impl MessageDirector {
         match &self.event_logger {
             Some(logger) => {
                 let msgpack_blob_len: usize = data.dgi.get_remaining();
+                let msgpack_payload = data.dgi.read_data(msgpack_blob_len)?;
 
-                let msgpack_payload = data.dgi.read_data(msgpack_blob_len);
-
-                debug_assert!(msgpack_payload.is_ok(), "Tried to read past datagram.");
-
-                let _: usize = logger.socket.send(&msgpack_payload.unwrap()).await?;
+                let _: usize = logger.socket.send(&msgpack_payload).await?;
                 Ok(())
             }
             None => {
