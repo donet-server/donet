@@ -21,7 +21,7 @@ use donet_core::datagram::datagram::Datagram;
 use donet_core::Protocol;
 use donet_network::*;
 use std::future::Future;
-use std::io::Result;
+use std::io::{Error, ErrorKind, Result};
 
 /// The [`ClusterSubscriber`] trait must be implemented to
 /// interact with the rest of the Donet cluster of services
@@ -44,10 +44,12 @@ where
             let mut dg: Datagram = Datagram::default();
 
             // TODO: fix clashing result types (core result and IO result)
-            dg.add_control_header(Protocol::MDLogMessage.into()).unwrap();
-            dg.add_blob(msgpack_blob.get_data()).unwrap();
+            dg.add_control_header(Protocol::MDLogMessage.into())?;
+            dg.add_blob(msgpack_blob.get_data())?;
 
-            self.get_client().lock().await.stage_datagram(dg).await;
+            if let Err(err) = self.get_client().lock().await.stage_datagram(dg).await {
+                return Err(Error::new(ErrorKind::Other, err.to_string()));
+            }
             Ok(())
         }
     }
@@ -57,10 +59,12 @@ where
         async move {
             let mut dg: Datagram = Datagram::default();
 
-            dg.add_control_header(Protocol::MDSetConName.into()).unwrap();
-            dg.add_string(&name).unwrap();
+            dg.add_control_header(Protocol::MDSetConName.into())?;
+            dg.add_string(&name)?;
 
-            self.get_client().lock().await.stage_datagram(dg).await;
+            if let Err(err) = self.get_client().lock().await.stage_datagram(dg).await {
+                return Err(Error::new(ErrorKind::Other, err.to_string()));
+            }
             Ok(())
         }
     }
@@ -70,10 +74,12 @@ where
         async move {
             let mut dg: Datagram = Datagram::default();
 
-            dg.add_control_header(Protocol::MDSetConName.into()).unwrap();
-            dg.add_string(&url).unwrap();
+            dg.add_control_header(Protocol::MDSetConName.into())?;
+            dg.add_string(&url)?;
 
-            self.get_client().lock().await.stage_datagram(dg).await;
+            if let Err(err) = self.get_client().lock().await.stage_datagram(dg).await {
+                return Err(Error::new(ErrorKind::Other, err.to_string()));
+            }
             Ok(())
         }
     }

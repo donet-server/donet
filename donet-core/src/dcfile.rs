@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -86,7 +86,7 @@ pub struct DCFile<'dc> {
     inherited_fields_stale: bool,
 }
 
-impl<'dc> From<interim::DCFile> for DCFile<'dc> {
+impl From<interim::DCFile> for DCFile<'_> {
     fn from(value: interim::DCFile) -> Self {
         let mut imports: Vec<DCPythonImport> = vec![];
         let mut keywords: Vec<DCKeyword> = vec![];
@@ -114,7 +114,7 @@ impl<'dc> From<interim::DCFile> for DCFile<'dc> {
     }
 }
 
-impl<'dc> std::fmt::Display for DCFile<'dc> {
+impl std::fmt::Display for DCFile<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // output dc parser configuration variables used
         f.write_str(&self.config.to_string())?;
@@ -151,13 +151,13 @@ impl<'dc> std::fmt::Display for DCFile<'dc> {
     }
 }
 
-impl<'dc> DCFileConfigAccessor for DCFile<'dc> {
+impl DCFileConfigAccessor for DCFile<'_> {
     fn get_dc_config(&self) -> &DCFileConfig {
         &self.config
     }
 }
 
-impl<'dc> LegacyDCHash for DCFile<'dc> {
+impl LegacyDCHash for DCFile<'_> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         if self.config.dc_virtual_inheritance {
             // Just to change the hash output in this case.

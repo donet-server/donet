@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -37,7 +37,7 @@ pub struct SwitchCase<'dc> {
     fields: Vec<DCField<'dc>>,
 }
 
-impl<'dc> std::fmt::Display for SwitchCase<'dc> {
+impl std::fmt::Display for SwitchCase<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.is_default() {
             writeln!(f, "default:")?;
@@ -57,7 +57,7 @@ impl<'dc> std::fmt::Display for SwitchCase<'dc> {
     }
 }
 
-impl<'dc> LegacyDCHash for SwitchCase<'dc> {
+impl LegacyDCHash for SwitchCase<'_> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         if !self.is_default() {
             hashgen.add_blob(self.value.clone());
@@ -104,7 +104,7 @@ pub struct DCSwitch<'dc> {
     cases_by_value: HashMap<Vec<u8>, usize>,
 }
 
-impl<'dc> From<interim::DCSwitch> for DCSwitch<'dc> {
+impl From<interim::DCSwitch> for DCSwitch<'_> {
     fn from(value: interim::DCSwitch) -> Self {
         Self {
             name: value.name,
@@ -117,7 +117,7 @@ impl<'dc> From<interim::DCSwitch> for DCSwitch<'dc> {
     }
 }
 
-impl<'dc> std::fmt::Display for DCSwitch<'dc> {
+impl std::fmt::Display for DCSwitch<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "switch")?;
 
@@ -136,9 +136,11 @@ impl<'dc> std::fmt::Display for DCSwitch<'dc> {
     }
 }
 
-impl<'dc> LegacyDCHash for DCSwitch<'dc> {
+impl LegacyDCHash for DCSwitch<'_> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self.get_name().map(|name| hashgen.add_string(name));
+        if let Some(name) = self.get_name() {
+            hashgen.add_string(name)
+        }
 
         self.key.generate_hash(hashgen);
 

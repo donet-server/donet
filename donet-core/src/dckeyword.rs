@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -91,7 +91,7 @@ pub struct DCKeywordList<'dc> {
     flags: HistoricalFlag,
 }
 
-impl<'dc> std::cmp::PartialEq for DCKeywordList<'dc> {
+impl std::cmp::PartialEq for DCKeywordList<'_> {
     fn eq(&self, other: &Self) -> bool {
         let target_kw_map: KeywordName2Keyword = other._get_keywords_by_name_map();
 
@@ -111,7 +111,7 @@ impl<'dc> std::cmp::PartialEq for DCKeywordList<'dc> {
     }
 }
 
-impl<'dc> std::fmt::Display for DCKeywordList<'dc> {
+impl std::fmt::Display for DCKeywordList<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (i, kw) in self.keywords.iter().enumerate() {
             // We do not call the fmt::Display impl of [`DCKeyword`] here,
@@ -127,7 +127,7 @@ impl<'dc> std::fmt::Display for DCKeywordList<'dc> {
     }
 }
 
-impl<'dc> LegacyDCHash for DCKeywordList<'dc> {
+impl LegacyDCHash for DCKeywordList<'_> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         if self.flags != !0 {
             // All of the flags are historical flags only, so add just the flags

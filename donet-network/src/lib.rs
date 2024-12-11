@@ -25,8 +25,6 @@ use donet_core::datagram::iterator::*;
 use donet_core::globals::*;
 use log::{info, warn};
 use std::collections::VecDeque;
-use std::error::Error;
-use std::future::Future;
 use std::io;
 use std::net::SocketAddr;
 use std::sync::Arc;

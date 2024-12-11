@@ -138,9 +138,7 @@ impl DatagramIterator {
                 self.index += 1; // bytes
                 Ok(*v)
             }
-            None => {
-                return Err(IteratorError::EndOfFile);
-            }
+            None => Err(IteratorError::EndOfFile),
         }
     }
 
@@ -264,22 +262,22 @@ impl DatagramIterator {
 
     #[inline]
     pub fn read_size(&mut self) -> Result<DgSizeTag, IteratorError> {
-        self.read_u16().map(|v| v.into())
+        self.read_u16()
     }
 
     #[inline]
     pub fn read_channel(&mut self) -> Result<Channel, IteratorError> {
-        self.read_u64().map(|v| v.into())
+        self.read_u64()
     }
 
     #[inline]
     pub fn read_doid(&mut self) -> Result<DoId, IteratorError> {
-        self.read_u32().map(|v| v.into())
+        self.read_u32()
     }
 
     #[inline]
     pub fn read_zone(&mut self) -> Result<Zone, IteratorError> {
-        self.read_u32().map(|v| v.into())
+        self.read_u32()
     }
 
     /// Reads a `blob` data type and returns a [`Datagram`].

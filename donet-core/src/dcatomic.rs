@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -34,13 +34,13 @@ pub struct DCAtomicField<'dc> {
     elements: Vec<&'dc DCParameter<'dc>>,
 }
 
-impl<'dc> std::fmt::Display for DCAtomicField<'dc> {
+impl std::fmt::Display for DCAtomicField<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "TODO")
     }
 }
 
-impl<'dc> LegacyDCHash for DCAtomicField<'dc> {
+impl LegacyDCHash for DCAtomicField<'_> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_field.generate_hash(hashgen);
 

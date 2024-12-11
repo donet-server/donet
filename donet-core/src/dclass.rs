@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -49,7 +49,7 @@ pub struct DClass<'dc> {
     field_id_2_field: FieldId2Field<'dc>,
 }
 
-impl<'dc> std::fmt::Display for DClass<'dc> {
+impl std::fmt::Display for DClass<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "dclass ")?;
         f.write_str(&self.get_name())?;
@@ -84,13 +84,13 @@ impl<'dc> std::fmt::Display for DClass<'dc> {
     }
 }
 
-impl<'dc> DCFileConfigAccessor for DClass<'dc> {
+impl DCFileConfigAccessor for DClass<'_> {
     fn get_dc_config(&self) -> &DCFileConfig {
         self.dcfile.get_dc_config()
     }
 }
 
-impl<'dc> LegacyDCHash for DClass<'dc> {
+impl LegacyDCHash for DClass<'_> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         hashgen.add_string(self.get_name());
         hashgen.add_int(self.get_num_parents().try_into().unwrap());

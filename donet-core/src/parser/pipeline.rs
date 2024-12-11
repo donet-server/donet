@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -66,7 +66,7 @@ pub(crate) struct PipelineData<'a> {
 /// pipeline finished, either with success or error.
 ///
 /// Upon drop, emit a final diagnostic with the finish status of the pipeline.
-impl<'a> Drop for PipelineData<'a> {
+impl Drop for PipelineData<'_> {
     fn drop(&mut self) {
         if self.errors_emitted > 0 {
             let diag = Diagnostic::error().with_message(format!(
@@ -79,7 +79,7 @@ impl<'a> Drop for PipelineData<'a> {
     }
 }
 
-impl<'a> From<DCFileConfig> for PipelineData<'a> {
+impl From<DCFileConfig> for PipelineData<'_> {
     fn from(value: DCFileConfig) -> Self {
         Self {
             dc_parser_config: value,
@@ -104,13 +104,13 @@ impl<'a> From<DCFileConfig> for PipelineData<'a> {
     }
 }
 
-impl<'a> DCFileConfigAccessor for PipelineData<'a> {
+impl DCFileConfigAccessor for PipelineData<'_> {
     fn get_dc_config(&self) -> &DCFileConfig {
         &self.dc_parser_config
     }
 }
 
-impl<'a> PipelineData<'a> {
+impl PipelineData<'_> {
     /// Thin wrapper for emitting a codespan diagnostic using `PipelineData` properties.
     pub(crate) fn emit_diagnostic(&mut self, diag: Diagnostic<usize>) -> Result<(), files::Error> {
         if diag.severity == Severity::Error {

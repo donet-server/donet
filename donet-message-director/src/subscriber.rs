@@ -27,7 +27,6 @@ use interval::IntervalSet;
 use log::trace;
 use multimap::MultiMap;
 use std::collections::HashSet;
-use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::{Mutex, MutexGuard};
@@ -208,10 +207,10 @@ impl Subscriber {
     }
 
     pub async fn receive_disconnect(&mut self) {
-        () // TODO!
+        // TODO!
     }
 
     pub async fn post_remove(&mut self) {
-        () // TODO!
+        // TODO!
     }
 }

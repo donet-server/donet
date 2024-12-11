@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -28,19 +28,19 @@ pub struct DCStruct<'dc> {
     dcfile: &'dc DCFile<'dc>,
 }
 
-impl<'dc> std::fmt::Display for DCStruct<'dc> {
+impl std::fmt::Display for DCStruct<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "TODO")
     }
 }
 
-impl<'dc> DCFileConfigAccessor for DCStruct<'dc> {
+impl DCFileConfigAccessor for DCStruct<'_> {
     fn get_dc_config(&self) -> &DCFileConfig {
         self.dcfile.get_dc_config()
     }
 }
 
-impl<'dc> LegacyDCHash for DCStruct<'dc> {
+impl LegacyDCHash for DCStruct<'_> {
     fn generate_hash(&self, _: &mut DCHashGenerator) {
         // TODO
     }
