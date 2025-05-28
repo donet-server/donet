@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -27,7 +27,7 @@ use std::io::{Error, ErrorKind, Result};
 /// interact with the rest of the Donet cluster of services
 /// via a message director service instance.
 ///
-/// It is called a subcriber, as its indirectly a subscriber
+/// It is called a subscriber, as its indirectly a subscriber
 /// to the Donet cluster via its message director service.
 pub trait ClusterSubscriber
 where
