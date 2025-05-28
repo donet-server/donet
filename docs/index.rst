@@ -71,5 +71,8 @@ The official instant messaging channel for Donet development is
 the ``#donet`` channel on the `matrix.org`_ homeserver. A link to
 the channel can be found here_.
 
+Feel free to also join our `community discord server`_!
+
 .. _matrix.org: https://matrix.org/
 .. _here: https://matrix.to/#/#donet:matrix.org
+.. _community discord server: https://discord.gg/8WRwgve8uC

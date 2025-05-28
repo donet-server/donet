@@ -42,7 +42,7 @@ The address of the official Matrix channel for Donet development is
 
 ## Copyright and License
 
-Copyright © 2023-2024 Donet Authors
+Copyright © 2023-2025 Donet Authors
 
 "Donet" can be found at https://gitlab.com/donet-server/donet
 

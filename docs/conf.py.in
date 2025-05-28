@@ -15,7 +15,7 @@ sphinx_url = @SPHINX_URL@
 # ----- Project Information ----- #
 
 project = 'Donet'
-copyright = '2024, The Donet Authors'
+copyright = '2024-2025, The Donet Authors'
 author = 'The Donet Authors'
 needs_sphinx = sphinx_version
 language = 'en'
