@@ -1,7 +1,7 @@
 ..
    This file is part of the Donet reference manual.
 
-   Copyright (c) 2024 Max Rodriguez.
+   Copyright (c) 2024-2025 Max Rodriguez.
 
    Permission is granted to copy, distribute and/or modify this document
    under the terms of the GNU Free Documentation License, Version 1.3
@@ -76,12 +76,35 @@ CLIENT_EJECT (4)
 
 .. code-block:: rust
 
-    args(error_code: u16, reason: &str)
+    args(eject_code: u16, reason: &str)
 
 This is sent by the Client Agent to the client when the client is
-being disconnected. The ``error_code`` and ``reason`` arguments
+being disconnected. The ``eject_code`` and ``reason`` arguments
 provide some explanation as to why the client is being dropped
 from the game.
+
+Eject Reasons
+^^^^^^^^^^^^^
+
+These are reasons sent by the Client Agent itself. As such, clients
+should be prepared to receive them even if nothing else in the
+cluster uses these codes.
+
+    - **106**: The client sent an oversized datagram.
+    - **107**: The client's first message was not CLIENT_HELLO.
+    - **108**: The client sent an invalid msgtype.
+    - **109**: The client sent a truncated datagram.
+    - **113**: The client violated the rules of the anonymous sandbox.
+    - **115**: The client tried to send an unpermitted interest operation.
+    - **117**: The client tried to manipulate a nonexistent/unseen/unknown object ID.
+    - **118**: The client sent a CLIENT_OBJECT_SET_FIELD for a field they may not update.
+    - **119**: The client sent a CLIENT_OBJECT_LOCATION for an object they may not relocate.
+    - **124**: The client sent a CLIENT_HELLO with an invalid version string.
+    - **125**: The client sent a CLIENT_HELLO with an invalid DC hash.
+    - **153**: One of the client's "session objects" has been unexpectedly deleted.
+    - **345**: The client hasn't sent a CLIENT_HEARTBEAT for an extended period of time.
+    - **347**: The Client Agent had a network I/O error while trying to send a datagram.
+    - **348**: The Client Agent had a network I/O error while trying to read a datagram.
 
 .. note::
 
@@ -91,6 +114,14 @@ from the game.
     Copyright © 2013 Sam "CFSworks" Edwards
 
     Copyright © 2013 Kevin "Kestred" Stenerson
+
+Cluster Eject Reasons
+^^^^^^^^^^^^^^^^^^^^^
+
+There are some reserved eject reason codes for the application
+developer to use. The Client Agent will **not** send eject messages
+with these codes. See :ref:`CLIENTAGENT_EJECT <1004>` for reserved
+codes.
 
 .. _5:
 

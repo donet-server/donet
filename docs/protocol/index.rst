@@ -1,7 +1,7 @@
 ..
    This file is part of the Donet reference manual.
 
-   Copyright (c) 2024 Max Rodriguez.
+   Copyright (c) 2024-2025 Max Rodriguez.
 
    Permission is granted to copy, distribute and/or modify this document
    under the terms of the GNU Free Documentation License, Version 1.3
@@ -135,7 +135,7 @@ Client Messages
 +------------------------------------------------+------+-------------------------------+
 | :ref:`DISCONNECT <3>`                          | 3    |                               |
 +------------------------------------------------+------+-------------------------------+
-| :ref:`EJECT <4>`                               | 4    | **uint16** error_code,        |
+| :ref:`EJECT <4>`                               | 4    | **uint16** eject_code,        |
 |                                                |      | **string** reason             |
 +------------------------------------------------+------+-------------------------------+
 | :ref:`HEARTBEAT <5>`                           | 5    |                               |

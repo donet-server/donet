@@ -1,7 +1,7 @@
 ..
    This file is part of the Donet reference manual.
 
-   Copyright (c) 2024 Max Rodriguez <me@maxrdz.com>
+   Copyright (c) 2024-2025 Max Rodriguez <me@maxrdz.com>
 
    Permission is granted to copy, distribute and/or modify this document
    under the terms of the GNU Free Documentation License, Version 1.3
@@ -34,6 +34,37 @@ CLIENTAGENT_SEND_DATAGRAM (1002)
 
 CLIENTAGENT_EJECT (1004)
 ------------------------
+
+.. code-block:: rust
+
+    args(eject_code: u16, reason: &str)
+
+Manually disconnect the client.
+
+Translates to a :ref:`CLIENT_EJECT <4>` message, which is sent from
+the CA to the client.
+
+Reserved Eject Reasons
+^^^^^^^^^^^^^^^^^^^^^^
+
+These codes are reserved for the convenience of game developers, as
+they may be useful for certain games:
+
+    - **100**: Another client logged in on the same account elsewhere.
+    - **122**: Login issue; the login mechanism rejected the client's credentials.
+    - **126**: Administrative access violation; the client attempted to issue an administrator command, but the gameserver did not authorize it.
+    - **151**: Client logged out by administrator command, not necessarily for rules violation.
+    - **152**: Client logged out (and possibly banned) by a moderator for rules violation.
+    - **154**: Gameserver is going down for maintenance.
+
+.. note::
+
+    Excerpt taken from the Astron_ project, licensed under the
+    BSD-3-Clause_ license.
+
+    Copyright © 2013 Sam "CFSworks" Edwards
+
+    Copyright © 2013 Kevin "Kestred" Stenerson
 
 .. _1005:
 
@@ -119,3 +150,6 @@ CLIENTAGENT_ADD_INTEREST_MULTIPLE (1201)
 
 CLIENTAGENT_REMOVE_INTEREST (1203)
 ----------------------------------
+
+.. _Astron: https://github.com/Astron/Astron
+.. _BSD-3-Clause: https://raw.githubusercontent.com/Astron/Astron/master/LICENSE.md
