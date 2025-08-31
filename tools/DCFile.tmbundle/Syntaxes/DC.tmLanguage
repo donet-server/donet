@@ -25,8 +25,10 @@
           "name": "comment.block.dc",
           "begin": "\/\\*",
           "end": "\\*\/",
-          "beginCaptures": { "-2": { "name": "punctuation.definition.comment.begin.dc" } },
-          "endCaptures": { "2": { "name": "punctuation.definition.comment.end.dc" } }
+          "captures": {
+            "1": { "name": "punctuation.definition.comment.begin.dc" },
+            "2": { "name": "punctuation.definition.comment.end.dc" }
+          }
         }
       ]
     },
@@ -36,17 +38,23 @@
           "name": "string.quoted.double.dc",
           "begin": "\"",
           "end": "\"",
-          "beginCaptures": { "-1": { "name": "punctuation.definition.string.begin.dc" } },
-          "endCaptures": { "1": { "name": "punctuation.definition.string.end.dc" } },
-          "patterns": [{ "name": "constant.character.escape.dc", "match": "\\\\." }]
+          "patterns": [{ "name": "constant.character.escape.dc", "match": "\\\\." }],
+          "captures": {
+            "1": { "name": "punctuation.definition.string.begin.dc" },
+            "2": { "name": "punctuation.definition.string.end.dc" }
+          }
         },
         {
           "name": "string.quoted.single.dc",
           "begin": "'",
           "end": "'",
-          "beginCaptures": { "-1": { "name": "punctuation.definition.string.begin.dc" } },
-          "endCaptures": { "1": { "name": "punctuation.definition.string.end.dc" } },
-          "patterns": [{ "name": "constant.character.escape.dc", "match": "\\\\." }]
+          "beginCaptures": { "1": { "name": "punctuation.definition.string.begin.dc" } },
+          "endCaptures": { "2": { "name": "punctuation.definition.string.end.dc" } },
+          "patterns": [{ "name": "constant.character.escape.dc", "match": "\\\\." }],
+          "captures": {
+            "1": { "name": "punctuation.definition.string.begin.dc" },
+            "2": { "name": "punctuation.definition.string.end.dc" }
+          }
         }
       ]
     },
