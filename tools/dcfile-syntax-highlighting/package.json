@@ -1,0 +1,32 @@
+{
+  "name": "dcfile-syntax-highlighting",
+  "displayName": "DCFile Support",
+  "description": "Support for the DistributedClass language, also known as the DC file.",
+  "keywords": ["astron", "donet", "dcfile", "dc", "panda3d", "distributedclass"],
+  "version": "0.1.0",
+  "publisher": "maxrdz",
+  "license": "AGPL-3.0-only",
+  "engines": {
+    "vscode": "^1.104.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "dcfile",
+      "aliases": ["DistributedClass", "dcfile"],
+      "extensions": [".dc"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "dcfile",
+      "scopeName": "source.dc",
+      "path": "./syntaxes/DC.tmLanguage.json"
+    }]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/donet-server/donet"
+  }
+}
