@@ -3,9 +3,10 @@
   "displayName": "DCFile Support",
   "description": "Support for the DistributedClass language, also known as the DC file.",
   "keywords": ["astron", "donet", "dcfile", "dc", "panda3d", "distributedclass"],
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "maxrdz",
   "license": "AGPL-3.0-only",
+  "icon": "logo.png",
   "engines": {
     "vscode": "^1.104.0"
   },

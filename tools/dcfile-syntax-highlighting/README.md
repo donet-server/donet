@@ -12,11 +12,15 @@ The source code for this Visual Studio Code extension is available at https://gi
 
 Offers **basic syntax highlighting** via a TextMate grammar bundle that is loaded by Visual Studio Code.
 
-![Syntax Highlighting Example](https://gitlab.com/donet-server/donet/-/tree/master/tools/dcfile-syntax-highlighting/example.jpg)
+![Syntax Highlighting Example](https://gitlab.com/donet-server/donet/-/raw/master/tools/dcfile-syntax-highlighting/example.jpg)
 
 > **NOTE:** This extension does **not** (yet) provide a language server, therefore no fancy real-time error diagnostics, reference lookup, or auto complete.
 
 ## Release Notes
+
+### 0.1.1
+
+Fixed broken URL for example image and added an icon to the extension.
 
 ### 0.1.0
 
