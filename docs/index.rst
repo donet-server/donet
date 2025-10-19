@@ -68,11 +68,10 @@ between the different sections and their contained pages.
 Get in Touch
 ------------
 The official instant messaging channel for Donet development is
-the ``#donet`` channel on the `matrix.org`_ homeserver. A link to
+the ``#donet`` channel on the ``maxrdz.com`` homeserver. A link to
 the channel can be found here_.
 
 Feel free to also join our `community discord server`_!
 
-.. _matrix.org: https://matrix.org/
-.. _here: https://matrix.to/#/#donet:matrix.org
+.. _here: https://matrix.to/#/#donet:maxrdz.com
 .. _community discord server: https://discord.gg/8WRwgve8uC
