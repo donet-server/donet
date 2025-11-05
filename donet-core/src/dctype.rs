@@ -135,8 +135,7 @@ impl std::fmt::Display for DCTypeDefinition {
             write!(f, " ")?;
             self.alias.clone().unwrap().fmt(f)?;
         }
-        write!(f, ";")?;
-        writeln!(f)
+        write!(f, ";")
     }
 }
 

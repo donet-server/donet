@@ -41,10 +41,6 @@ pub enum TypeDeclaration {
     StructType(Struct),
     DClassType(DClass),
     TypedefType(TypeDefinition),
-    // Returned by productions that parsed certain grammar that may be
-    // deprecated but ignored for compatibility & should not be added
-    // to the output DC file element structure.
-    Ignore,
 }
 
 /// Paired with the `python_style_import` production in the Context Free Grammar.

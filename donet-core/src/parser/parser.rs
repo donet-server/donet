@@ -71,10 +71,7 @@ parser! {
         keyword_type[keyword] => ast::TypeDeclaration::KeywordType(keyword),
         struct_type[strct] => ast::TypeDeclaration::StructType(strct),
         distributed_class_type[dclass] => ast::TypeDeclaration::DClassType(dclass),
-        type_definition[type_def] => match type_def {
-            Some(td) => ast::TypeDeclaration::TypedefType(td),
-            None => ast::TypeDeclaration::Ignore,
-        },
+        type_definition[type_def] => ast::TypeDeclaration::TypedefType(type_def),
     }
 
     // ---------- Python-style Imports ---------- //
@@ -188,24 +185,18 @@ parser! {
 
     // ---------- Type Definitions ---------- //
 
-    type_definition: Option<ast::TypeDefinition> {
+    type_definition: ast::TypeDefinition {
         Typedef nonmethod_type_with_name[nmt] => {
-            Some(ast::TypeDefinition {
+            ast::TypeDefinition {
                 span: span!(),
                 data_type: nmt.data_type,
                 array_range: None,
                 alias_identifier: nmt.identifier,
-            })
-        },
-        type_definition[td] OpenBrackets array_range[ar] CloseBrackets => {
-            if td.is_none() {
-                return td;
             }
-            let mut type_def = td.unwrap();
-
-            type_def.array_range = ar;
-
-            Some(type_def)
+        },
+        type_definition[mut td] OpenBrackets array_range[ar] CloseBrackets => {
+            td.array_range = ar;
+            td
         },
     }
 

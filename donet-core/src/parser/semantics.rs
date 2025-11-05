@@ -63,10 +63,6 @@ pub fn semantic_analyzer<'a>(pipeline: &mut PipelineData) -> Result<dcfile::DCFi
                 ast::TypeDeclaration::TypedefType(typedef) => {
                     dc_file.add_typedef(pipeline, typedef);
                 }
-                // Ignore is returned by productions that parsed certain
-                // grammar that may be deprecated but ignored for
-                // compatibility & should not be added to the DC file.
-                ast::TypeDeclaration::Ignore => {}
             }
         }
         pipeline.next_file(); // tell the pipeline we are processing the next file

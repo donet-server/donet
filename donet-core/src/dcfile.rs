@@ -132,16 +132,19 @@ impl std::fmt::Display for DCFile<'_> {
             type_def.fmt(f)?;
             writeln!(f)?;
         }
+        writeln!(f)?;
         // Print Keyword definitions
         for kw in &self.keywords {
             kw.fmt(f)?;
             writeln!(f)?;
         }
+        writeln!(f)?;
         // Print Structs
         for strukt in &self.structs {
             strukt.fmt(f)?;
             writeln!(f)?;
         }
+        writeln!(f)?;
         // Print DClasses
         for dclass in &self.dclasses {
             dclass.fmt(f)?;
