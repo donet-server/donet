@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -106,7 +106,7 @@ impl From<interim::DCFile> for DCFile<'_> {
             dclasses: vec![],
             imports,
             keywords,
-            type_defs: vec![],
+            type_defs: value.typedefs,
             field_id_2_field: vec![],
             all_object_valid: true,
             inherited_fields_stale: false,
@@ -159,22 +159,22 @@ impl DCFileConfigAccessor for DCFile<'_> {
 
 impl LegacyDCHash for DCFile<'_> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        if self.config.dc_virtual_inheritance {
-            // Just to change the hash output in this case.
-            if self.config.dc_sort_inheritance_by_file {
-                hashgen.add_int(1);
-            } else {
-                hashgen.add_int(2);
-            }
-        }
         hashgen.add_int(self.get_num_dclasses().try_into().unwrap());
+
+        for dclass in &self.dclasses {
+            dclass.generate_hash(hashgen);
+        }
+
+        hashgen.add_int(self.get_num_structs().try_into().unwrap());
 
         for strukt in &self.structs {
             strukt.generate_hash(hashgen);
         }
 
-        for dclass in &self.dclasses {
-            dclass.generate_hash(hashgen);
+        hashgen.add_int(self.get_num_keywords().try_into().unwrap());
+
+        for kw in &self.keywords {
+            kw.generate_hash(hashgen);
         }
     }
 }
@@ -215,7 +215,7 @@ impl<'dc> DCFile<'dc> {
     // ---------- DC Keyword ---------- //
 
     pub fn get_num_keywords(&self) -> usize {
-        todo!();
+        self.keywords.len()
     }
 
     pub fn get_keyword(&self, _index: usize) -> &'dc DCKeyword {
@@ -247,7 +247,7 @@ impl<'dc> DCFile<'dc> {
     // ---------- DC Struct ---------- //
 
     pub fn get_num_structs(&self) -> usize {
-        todo!();
+        self.structs.len()
     }
 
     pub fn get_struct(&self, _index: usize) -> &'dc DCStruct {
@@ -323,6 +323,7 @@ pub(crate) mod interim {
     use crate::dckeyword::interim::DCKeyword;
     use crate::dclass::interim::DClass;
     use crate::dcstruct::interim::DCStruct;
+    use crate::dctype::DCTypeDefinition;
     use crate::parser::error::{Diagnostic, SemanticError};
     use crate::parser::pipeline::PipelineData;
     use anyhow::{anyhow, Result};
@@ -342,6 +343,7 @@ pub(crate) mod interim {
         pub dclasses: Vec<DClass>,
         pub imports: Vec<PythonImport>,
         pub keywords: Vec<DCKeyword>,
+        pub typedefs: Vec<DCTypeDefinition>,
         //pub field_id_2_field: Vec<Rc<DCField>>,
         // TODO: type_id_2_type, type_name_2_type
         pub all_object_valid: bool,
@@ -356,6 +358,7 @@ pub(crate) mod interim {
                 dclasses: vec![],
                 imports: vec![],
                 keywords: vec![],
+                typedefs: vec![],
                 //field_id_2_field: vec![],
                 all_object_valid: true,
                 inherited_fields_stale: false,
@@ -466,8 +469,10 @@ pub(crate) mod interim {
             self.keywords.push(new_kw);
         }
 
-        pub fn add_typedef(&mut self, _name: String) -> Result<(), ()> {
-            todo!();
+        pub fn add_typedef(&mut self, _: &mut PipelineData, typedef: ast::TypeDefinition) {
+            let new_td: DCTypeDefinition = typedef.into();
+            // TODO: semantic checks (e.g. typedef Struct Name; -> verify Struct exists)
+            self.typedefs.push(new_td);
         }
 
         pub fn add_dclass(&mut self, dclass: DClass) {

@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024-2025 Max Rodriguez
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -60,7 +60,9 @@ pub fn semantic_analyzer<'a>(pipeline: &mut PipelineData) -> Result<dcfile::DCFi
                 }
                 ast::TypeDeclaration::StructType(_) => {}
                 ast::TypeDeclaration::DClassType(_) => {}
-                ast::TypeDeclaration::TypedefType(_) => {}
+                ast::TypeDeclaration::TypedefType(typedef) => {
+                    dc_file.add_typedef(pipeline, typedef);
+                }
                 // Ignore is returned by productions that parsed certain
                 // grammar that may be deprecated but ignored for
                 // compatibility & should not be added to the DC file.

@@ -357,14 +357,6 @@ pub type ArrayRange = std::ops::Range<f64>;
 pub enum SizedTypeToken {
     String,
     Blob,
-    Blob32,
-    Int8Array,
-    Int16Array,
-    Int32Array,
-    UInt8Array,
-    UInt16Array,
-    UInt32Array,
-    UInt32UInt8Array,
 }
 
 /// Paired with the `char_or_number` production in the Context Free Grammar.
@@ -411,13 +403,6 @@ impl DataType {
                 DCToken::UInt16T => DCTypeEnum::TUInt16,
                 DCToken::UInt32T => DCTypeEnum::TUInt32,
                 DCToken::UInt64T => DCTypeEnum::TUInt64,
-                DCToken::Int8ArrayT => DCTypeEnum::TArray,
-                DCToken::Int16ArrayT => DCTypeEnum::TArray,
-                DCToken::Int32ArrayT => DCTypeEnum::TArray,
-                DCToken::UInt8ArrayT => DCTypeEnum::TArray,
-                DCToken::UInt16ArrayT => DCTypeEnum::TArray,
-                DCToken::UInt32ArrayT => DCTypeEnum::TArray,
-                DCToken::UInt32UInt8ArrayT => DCTypeEnum::TArray,
                 _ => panic!("DC token matches no production in CFG."),
             },
         }

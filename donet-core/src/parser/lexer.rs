@@ -65,18 +65,10 @@ pub enum DCToken {
     UInt16T,           // "uint16"
     UInt32T,           // "uint32"
     UInt64T,           // "uint64"
-    Float32T,          // "float32" (used on Astron)
+    Float32T,          // "float32"
     Float64T,          // "float64"
-    Int8ArrayT,        // "int8array"
-    Int16ArrayT,       // "int16array"
-    Int32ArrayT,       // "int32array"
-    UInt8ArrayT,       // "uint8array"
-    UInt16ArrayT,      // "uint16array"
-    UInt32ArrayT,      // "uint32array"
-    UInt32UInt8ArrayT, // "uint32uint8array"
     StringT,           // "string"
     BlobT,             // "blob"
-    Blob32T,           // "blob32" (used on Panda)
 
     // Keywords
     DClass,  // "dclass"
@@ -163,16 +155,8 @@ lexer! {
     r#"uint64"# => (DCToken::UInt64T, text),
     r#"float32"# => (DCToken::Float32T, text),
     r#"float64"# => (DCToken::Float64T, text),
-    r#"int8array"# => (DCToken::Int8ArrayT, text),
-    r#"int16array"# => (DCToken::Int16ArrayT, text),
-    r#"int32array"# => (DCToken::Int32ArrayT, text),
-    r#"uint8array"# => (DCToken::UInt8ArrayT, text),
-    r#"uint16array"# => (DCToken::UInt16ArrayT, text),
-    r#"uint32array"# => (DCToken::UInt32ArrayT, text),
-    r#"uint32uint8array"# => (DCToken::UInt32UInt8ArrayT, text),
     r#"string"# => (DCToken::StringT, text),
     r#"blob"# => (DCToken::BlobT, text),
-    r#"blob32"# => (DCToken::Blob32T, text),
 
     r#"dclass"# => (DCToken::DClass, text),
     r#"struct"# => (DCToken::Struct, text),
@@ -443,25 +427,18 @@ mod tests {
             // Signed / Unsigned Integers
             DCToken::Int8T, DCToken::Int16T, DCToken::Int32T, DCToken::Int64T,
             DCToken::UInt8T, DCToken::UInt16T, DCToken::UInt32T, DCToken::UInt64T,
-            // Array Data Types
-            DCToken::Int8ArrayT, DCToken::Int16ArrayT, DCToken::Int32ArrayT,
-            DCToken::UInt8ArrayT, DCToken::UInt16ArrayT, DCToken::UInt32ArrayT,
-            DCToken::UInt32UInt8ArrayT,
             // Floating Point
             DCToken::Float32T,
             DCToken::Float64T,
             // Sized Types (string / blob)
             DCToken::StringT,
             DCToken::BlobT,
-            DCToken::Blob32T,
         ];
         lexer_test_for_target(
             "char \
             int8 int16 int32 int64 \
             uint8 uint16 uint32 uint64 \
-            int8array int16array int32array \
-            uint8array uint16array uint32array uint32uint8array \
-            float32 float64 string blob blob32",
+            float32 float64 string blob",
             target,
         );
     }

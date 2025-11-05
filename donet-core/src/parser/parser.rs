@@ -59,7 +59,7 @@ parser! {
         epsilon => ast::Root {
             type_declarations: vec![],
         },
-        dc_file[mut root] type_decl[type_decl] => {
+        dc_file[mut root] type_decl[type_decl] optional_semicolon => {
             root.type_declarations.push(type_decl);
             root
         },
@@ -68,10 +68,10 @@ parser! {
     type_decl: ast::TypeDeclaration {
         // only python-style imports do not require a semicolon delimiter
         python_style_import[py_imports] => ast::TypeDeclaration::PythonImport(py_imports),
-        keyword_type[keyword] Semicolon => ast::TypeDeclaration::KeywordType(keyword),
-        struct_type[strct] Semicolon => ast::TypeDeclaration::StructType(strct),
-        distributed_class_type[dclass] Semicolon => ast::TypeDeclaration::DClassType(dclass),
-        type_definition[type_def] Semicolon => match type_def {
+        keyword_type[keyword] => ast::TypeDeclaration::KeywordType(keyword),
+        struct_type[strct] => ast::TypeDeclaration::StructType(strct),
+        distributed_class_type[dclass] => ast::TypeDeclaration::DClassType(dclass),
+        type_definition[type_def] => match type_def {
             Some(td) => ast::TypeDeclaration::TypedefType(td),
             None => ast::TypeDeclaration::Ignore,
         },
@@ -140,16 +140,8 @@ parser! {
         UInt64T => "uint64".to_string(),
         Float32T => "float32".to_string(),
         Float64T => "float64".to_string(),
-        Int8ArrayT => "int8array".to_string(),
-        Int16ArrayT => "int16array".to_string(),
-        Int32ArrayT => "int32array".to_string(),
-        UInt8ArrayT => "uint8array".to_string(),
-        UInt16ArrayT => "uint16array".to_string(),
-        UInt32ArrayT => "uint32array".to_string(),
-        UInt32UInt8ArrayT => "uint32uint8array".to_string(),
         StringT => "string".to_string(),
         BlobT => "blob".to_string(),
-        Blob32T => "blob32".to_string(),
         DClass => "dclass".to_string(),
         Struct => "struct".to_string(),
         Keyword => "keyword".to_string(),
@@ -822,17 +814,6 @@ parser! {
     sized_type_token: ast::SizedTypeToken {
         StringT => ast::SizedTypeToken::String,
         BlobT => ast::SizedTypeToken::Blob,
-        Blob32T => ast::SizedTypeToken::Blob32,
-        array_data_type[dt] => match dt.token {
-            Int8ArrayT => ast::SizedTypeToken::Int8Array,
-            Int16ArrayT => ast::SizedTypeToken::Int16Array,
-            Int32ArrayT => ast::SizedTypeToken::Int32Array,
-            UInt8ArrayT => ast::SizedTypeToken::UInt8Array,
-            UInt16ArrayT => ast::SizedTypeToken::UInt16Array,
-            UInt32ArrayT => ast::SizedTypeToken::UInt32Array,
-            UInt32UInt8ArrayT => ast::SizedTypeToken::UInt32UInt8Array,
-            _ => unreachable!("Not possible due to production rules."),
-        },
     }
 
     numeric_type_token: ast::NumericType {
@@ -902,19 +883,14 @@ parser! {
         UInt64T => ast::DataType::from_token(UInt64T, span!()),
     }
 
-    array_data_type: ast::DataType {
-        Int8ArrayT => ast::DataType::from_token(Int8ArrayT, span!()),
-        Int16ArrayT => ast::DataType::from_token(Int16ArrayT, span!()),
-        Int32ArrayT => ast::DataType::from_token(Int32ArrayT, span!()),
-        UInt8ArrayT => ast::DataType::from_token(UInt8ArrayT, span!()),
-        UInt16ArrayT => ast::DataType::from_token(UInt16ArrayT, span!()),
-        UInt32ArrayT => ast::DataType::from_token(UInt32ArrayT, span!()),
-        UInt32UInt8ArrayT => ast::DataType::from_token(UInt32UInt8ArrayT, span!()),
-    }
-
     optional_name: Option<String> {
         epsilon => None,
         Identifier(id) => Some(id)
+    }
+
+    optional_semicolon: () {
+        epsilon => (),
+        Semicolon => (),
     }
 
     epsilon: () {
@@ -970,9 +946,7 @@ mod tests {
         let legal_identifiers: Vec<&str> = vec![
             "char", "int8", "int16", "int32", "int64",
             "uint8", "uint16", "uint32", "uint64", "float32", "float64",
-            "int8array", "int16array", "int32array",
-            "uint8array", "uint16array", "uint32array", "uint32uint8array",
-            "string", "blob", "blob32", "dclass", "struct", "keyword",
+            "string", "blob", "dclass", "struct", "keyword",
             "typedef", "switch", "default", "break",
         ];
         let mut dc_file: String = String::new();
@@ -1086,7 +1060,6 @@ mod tests {
                         break;
                     default:
                         uint8 value[0-5];
-                        uint32uint8array value2;
                         SomeStruct value3;
                         break;
                 };
@@ -1158,20 +1131,12 @@ mod tests {
             struct MethodDataTypesTest {
                 Char character;
                 blob Item;
-                blob32 pandaOnlyToken;
                 float32 astronOnlyToken;
                 string giftTag;
                 int32(0-990999) testMethodValue;
                 int8(-1-1) testNegativeValues;
                 int8(-5--99) testNegativeValuesPartTwo;
                 int8(+0-+9) plusForPositiveForSomeReason;
-                int8array arrayDataTypeTest;
-                int16array anotherArray;
-                int32array evenMoreComplexArray;
-                uint8array byteArray;
-                uint16array unsignedIntegerArray;
-                uint32array unsignedLongArray;
-                uint32uint8array thisWeirdPandaArrayType;
             };
             ",
         );
@@ -1258,8 +1223,8 @@ mod tests {
             struct ArrayRangesTest {
                 uint8 test['a'];
                 uint8 test2[9];
-                uint32uint8array[0-1] test3;
-                uint32uint8array[0-1][9-99] test4;
+                uint32[0-1] test3;
+                uint32[0-1][9-99] test4;
                 uint8 test5['a'-'b'] [ ];
                 string(5) test6; // builtin array type
             };
@@ -1272,12 +1237,12 @@ mod tests {
         parse_dcfile_string(
             "
             struct ArrayExpansionsTest {
-                uint8array test = [0];
-                uint8array test2 = [0 * 10];
-                int8array test3 = [-1 * 10];
-                int8array test4 = [5 * 5, 10 * 10, -2 * 4];
-                uint8array test5 = [0xf * 10];
-                uint8array test6 = [\"TEST\" * 2];
+                uint8[] test = [0];
+                uint8[] test2 = [0 * 10];
+                int8[] test3 = [-1 * 10];
+                int8[] test4 = [5 * 5, 10 * 10, -2 * 4];
+                uint8[] test5 = [0xf * 10];
+                uint8[] test6 = [\"TEST\" * 2];
             };
             ",
         );
@@ -1289,7 +1254,7 @@ mod tests {
         parse_dcfile_string(
             "
             struct OverflowTest {
-                test(uint8array = [0 * 4294967296]);
+                test(uint8[] = [0 * 4294967296]);
             };
             ",
         );

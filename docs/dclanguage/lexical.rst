@@ -1,7 +1,7 @@
 ..
    This file is part of the Donet reference manual.
 
-   Copyright (c) 2024 Max Rodriguez.
+   Copyright (c) 2024-2025 Max Rodriguez.
 
    Permission is granted to copy, distribute and/or modify this document
    under the terms of the GNU Free Documentation License, Version 1.3
@@ -49,7 +49,6 @@ Literals
 
 .. code-block:: ebnf
 
-    boolean literal = 'true' | 'false';
     decimal literal = ( decimal digit - '0' ), { decimal digit };
     octal literal = '0', { octal digit };
     hex literal = '0', ( 'x' | 'X' ), hexadecimal digit, { hexadecimal digit };
@@ -65,7 +64,6 @@ Data Types
 .. code-block:: ebnf
 
     char type = 'char';
-    bool type = 'bool'; (* Unique to Donet; alias for uint8 *)
 
     (* Signed integer types *)
     int8 type = 'int8';
@@ -80,22 +78,12 @@ Data Types
     uint64 type = 'uint64';
 
     (* Floating point types *)
-    float32 type = 'float32'; (* Introduced by Astron *)
+    float32 type = 'float32';
     float64 type = 'float64';
-
-    (* Array types *)
-    int8 array type = 'int8array';
-    int16 array type = 'int16array';
-    int32 array type = 'int32array';
-    uint8 array type = 'uint8array';
-    uint16 array type = 'uint16array';
-    uint32 array type = 'uint32array';
-    uint32 uint8 array type = 'uint32uint8array';
 
     (* Sized types *)
     string type = 'string';
     blob type = 'blob';
-    blob32 type = 'blob32'; (* Used in Panda *)
 
 Keywords
 ^^^^^^^^

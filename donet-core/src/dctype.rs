@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -22,6 +22,7 @@
 
 use crate::globals::DgSizeTag;
 use crate::hashgen::*;
+use crate::parser::ast;
 
 /// The DCTypeEnum variants have assigned u8 values
 /// to keep compatibility with Astron's DC hash inputs.
@@ -38,11 +39,12 @@ pub enum DCTypeEnum {
     TString = 11, // a string with a fixed byte length
     TVarString = 12, // a string with a variable byte length
     TBlob = 13, TVarBlob = 14,
-    TBlob32 = 19, TVarBlob32 = 20,
     TArray = 15, TVarArray = 16,
 
     // Complex DC Types
     TStruct = 17, TMethod = 18,
+
+    TInvalid = 19,
 }
 
 impl std::fmt::Display for DCTypeEnum {
@@ -63,12 +65,20 @@ impl std::fmt::Display for DCTypeEnum {
             Self::TVarString => write!(f, "var string"),
             Self::TBlob => write!(f, "blob"),
             Self::TVarBlob => write!(f, "var blob"),
-            Self::TBlob32 => write!(f, "blob32"),
-            Self::TVarBlob32 => write!(f, "var blob32"),
             Self::TArray => write!(f, "array"),
             Self::TVarArray => write!(f, "var array"),
             Self::TStruct => write!(f, "struct"),
             Self::TMethod => write!(f, "method"),
+            Self::TInvalid => Ok(()), // ignore
+        }
+    }
+}
+
+impl From<ast::SizedTypeToken> for DCTypeEnum {
+    fn from(value: ast::SizedTypeToken) -> Self {
+        match value {
+            ast::SizedTypeToken::Blob => DCTypeEnum::TBlob,
+            ast::SizedTypeToken::String => DCTypeEnum::TString,
         }
     }
 }
@@ -91,6 +101,32 @@ impl From<DCTypeEnum> for DCTypeDefinition {
     }
 }
 
+impl From<ast::TypeDefinition> for DCTypeDefinition {
+    fn from(value: ast::TypeDefinition) -> Self {
+        Self {
+            alias: value.alias_identifier,
+            data_type: match value.data_type {
+                ast::NonMethodDataType::NumericType(a) => a.base_type,
+                ast::NonMethodDataType::StructType(_) => {
+                    // FIXME: Store struct identifier!!
+                    DCTypeEnum::TStruct
+                }
+                ast::NonMethodDataType::TypeWithArray(a) => {
+                    match a.data_type {
+                        ast::ArrayableType::Numeric(a) => a.base_type,
+                        ast::ArrayableType::Struct(_) => {
+                            // FIXME: Store struct identifier!!
+                            DCTypeEnum::TStruct
+                        }
+                        ast::ArrayableType::Sized(a) => a.into(),
+                    }
+                }
+            },
+            size: 0_u16, // FIXME: have no idea what this does in Astron source
+        }
+    }
+}
+
 impl std::fmt::Display for DCTypeDefinition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "typedef ")?;
@@ -108,7 +144,7 @@ impl LegacyDCHash for DCTypeDefinition {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         hashgen.add_int(i32::from(self.data_type.clone() as u8));
 
-        if self.alias.is_some() {
+        if self.has_alias() {
             hashgen.add_string(self.alias.clone().unwrap())
         }
     }
