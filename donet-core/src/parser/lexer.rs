@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -36,7 +36,6 @@ pub enum DCToken {
     // BinDigit ::= "0" | "1"
 
     // Integers
-    BooleanLiteral(bool),  // "true" | "false"
     DecimalLiteral(i64),   // ( "1" … "9" ) { DecDigit }
     OctalLiteral(String),  // "0" { OctDigit }
     HexLiteral(String),    // "0" ( "x" | "X" ) HexDigit { HexDigit }
@@ -63,7 +62,6 @@ pub enum DCToken {
     Int32T,            // "int32"
     Int64T,            // "int64"
     UInt8T,            // "uint8"
-    BoolT,             // "bool" (unique to donet. alias for uint8)
     UInt16T,           // "uint16"
     UInt32T,           // "uint32"
     UInt64T,           // "uint64"
@@ -128,9 +126,6 @@ lexer! {
     r#"/[*](~(.*[*]/.*))[*]/"# => (DCToken::Comment, text),
     r#"\n"# => (DCToken::Newline, text),
 
-    r#"true"# => (DCToken::BooleanLiteral(true), text),
-    r#"false"# => (DCToken::BooleanLiteral(false), text),
-
     r#"0|([1-9][0-9]*)"# => (DCToken::DecimalLiteral(match text.parse::<i64>() {
         Ok(n) => { n },
         Err(err) => {
@@ -163,7 +158,6 @@ lexer! {
     r#"int32"# => (DCToken::Int32T, text),
     r#"int64"# => (DCToken::Int64T, text),
     r#"uint8"# => (DCToken::UInt8T, text),
-    r#"bool"# => (DCToken::BoolT, text),
     r#"uint16"# => (DCToken::UInt16T, text),
     r#"uint32"# => (DCToken::UInt32T, text),
     r#"uint64"# => (DCToken::UInt64T, text),
@@ -404,9 +398,6 @@ mod tests {
             DCToken::FloatLiteral(0.0),
             DCToken::FloatLiteral(0.9),
             DCToken::FloatLiteral(1.23456789),
-            // Boolean Literal
-            DCToken::BooleanLiteral(true),
-            DCToken::BooleanLiteral(false),
         ];
         lexer_test_for_target(
             "
@@ -415,7 +406,6 @@ mod tests {
             0xa 0xA 0Xa 0XA 0x123456789abcdef
             0b1 0B1 0b0 0b010 0b101110
             0.0 9.0 .0 .9 1.23456789
-            true false
             ",
             target,
         );
@@ -450,7 +440,6 @@ mod tests {
         #[rustfmt::skip]
         let target: Vec<DCToken> = vec![
             DCToken::CharT,
-            DCToken::BoolT,
             // Signed / Unsigned Integers
             DCToken::Int8T, DCToken::Int16T, DCToken::Int32T, DCToken::Int64T,
             DCToken::UInt8T, DCToken::UInt16T, DCToken::UInt32T, DCToken::UInt64T,
@@ -467,7 +456,7 @@ mod tests {
             DCToken::Blob32T,
         ];
         lexer_test_for_target(
-            "char bool \
+            "char \
             int8 int16 int32 int64 \
             uint8 uint16 uint32 uint64 \
             int8array int16array int32array \

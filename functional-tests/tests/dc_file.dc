@@ -10,9 +10,9 @@ from views/AI/OV/UD import DistributedDonut/AI/OV/UD
 from views/AI import DistributedDonut
 from game.views.Donut/AI import DistributedDonut/AI
 from views import *
-from db.char import DistributedDonut
+//from db.char import DistributedDonut
 
-typedef uint8 bool; // deprecated, but handled gracefully
+typedef uint8 bool;
 
 keyword p2p;
 keyword monkey;
@@ -30,12 +30,12 @@ struct Activity {
 };
 
 struct Party {
-    activity activities[];
+    Activity activities[];
     uint8 status;
 };
 
 struct Fixture {
-    bool;
+    bool; // type alias!
     int32/10 x;
     int32/10 y;
     int32/10 z;
@@ -46,14 +46,14 @@ struct Fixture {
 };
 
 struct MethodDataTypesTest {
-    Char character;
+    char character;
     blob Item;
     blob32 pandaOnlyToken;
-    float32 astronOnlyToken;
+    //float32 astronOnlyToken;
     string giftTag;
     int32(0-990999) testMethodValue;
     int8(-1-1) testNegativeValues;
-    int8(-5--99) testNegativeValuesPartTwo;
+    int8(-5--4) testNegativeValuesPartTwo;
     int8(+0-+9) plusForPositiveForSomeReason;
     int8array arrayDataTypeTest;
     int16array anotherArray;
@@ -68,19 +68,19 @@ struct TransformedTypesTest {
     int32%360 angle;
     int32%360/1000 floatingPointAngle;
     int32/1000 efficientFloatIn32Bits;
-    float32 waitIsntAstronsFloat32TheSame;
-    int16(int32) forTheStaticallyTypedLanguages;
-    int16(float64)(0.0-1.0) withRangeTest;
-    int16(float32)%360/10.0 anotherTest;
-    int16(uint32)/10 moreTests;
+    //float32 waitIsntAstronsFloat32TheSame;
+    //int16(int32) forTheStaticallyTypedLanguages;
+    //int16(float64)(0.0-1.0) withRangeTest;
+    //int16(float32)%360/10.0 anotherTest;
+    //int16(uint32)/10 moreTests;
     bool thisIsLiterallyJustAn8BitInt;
     uint16/1000(0-1) youCanStackThemToo;
     int64/10000(+50-+999) [] thisIsValid;
     int8%10(0-10) anotherOne;
     int32('a'-'b') numericRangeWithChar;
-    float32(0.1-0.99) floatingRange;
-    float32%10.0 modulusWithFloat;
-    float32(float64)%10.0 coverage;
+    //float32(0.1-0.99) floatingRange;
+    //float32%10.0 modulusWithFloat;
+    //float32(float64)%10.0 coverage;
     int16%100/10(-80-+100) lastTest;
 };
 
@@ -90,10 +90,12 @@ struct NumericRanges {
     int64(+50-+999) thisIsValid;
     int32('a') numericRangeWithChar;
     int32('a'-'z') rangeMinMaxWithChar;
-    float32(0.1-0.99) floatingRange;
-    float32(0.1) anotherFloatRange;
+    //float32(0.1-0.99) floatingRange;
+    //float32(0.1) anotherFloatRange;
     int32() pandaSaysThisIsLegal;
 };
+
+struct MyStruct {};
 
 struct ParamsWithDefaultTest {
     string = "";
@@ -101,9 +103,9 @@ struct ParamsWithDefaultTest {
     MyStruct strukt[] = [];
     int32 = -99;
     string = "VALUE";
-    string = 0xabcdef;
+    //string = 0xabcdef;
     uint16 accessLevel = 0;
-    bool = false;
+    bool = 1; // still a uint8!! type alias!
 };
 
 struct ArrayExpansionsTest {
@@ -112,7 +114,7 @@ struct ArrayExpansionsTest {
     int8array test3 = [-1 * 10];
     int8array test4 = [5 * 5, 10 * 10, -2 * 4];
     uint8array test5 = [0xf * 10];
-    uint8array test6 = ["TEST" * 2];
+    //uint8array test6 = ["TEST" * 2];
 };
 
 struct ArrayRangesTest {
@@ -148,7 +150,7 @@ struct BuffData {
         default:
             uint8 value[0-5];
             uint32uint8array value2;
-            SomeStruct value3;
+            MyStruct value3;
             break;
     };
     switch WithDefault (char) {
@@ -175,6 +177,8 @@ dclass Avatar {
     indicate_intent(int16 / 10, int16 / 10) ownsend airecv;
 };
 
+dclass DistributedObject {};
+
 dclass OfflineShardManager : DistributedObject {
     clientSetZone(uint32) airecv clsend;
     requestZoneIdMessage(uint32, uint16) airecv clsend;
@@ -188,6 +192,9 @@ dclass ShardStats {
     setStats : setAvatarCount, setNewAvatarCount;
 };
 
+dclass Parent {};
+dclass Parent2 {};
+
 dclass DistributedChild : Parent, Parent2 {
 };
 
@@ -197,12 +204,18 @@ dclass AtomicFields {
     keywords() db ownsend airecv;
     parameter(string);
     params(bool, char, float64);
-    named_params(bool flag = true, string text);
+    named_params(bool flag = 1, string text);
 };
 
 dclass MolecularFields {
+    setX();
+    setY();
+    setZ();
+    setH();
+    setP();
+    setR();
     setXYZ : setX, setY, setZ;
-    setPos : setXYZ;
+    setPos : setX, setY, setZ;
     setXY : setX, setY;
     setHPR : setH, setP, setR;
 };

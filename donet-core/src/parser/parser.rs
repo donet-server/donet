@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -200,21 +200,10 @@ parser! {
         Typedef nonmethod_type_with_name[nmt] => {
             Some(ast::TypeDefinition {
                 span: span!(),
-                deprecated: true,
                 data_type: nmt.data_type,
                 array_range: None,
                 alias_identifier: nmt.identifier,
             })
-        },
-        // This rule handles a specific piece of illegal grammar that is legal in Panda.
-        // The parser will print a useful message to stdout describing the issue,
-        // and will ignore this grammar and continue without a panic.
-        Typedef UInt8T BoolT => {
-            println!("{}\n\n\"typedef uint8 bool;\" is deprecated!\n\n\
-            Cannot declare type alias for uint8 as 'bool', as it is a reserved identifier \
-            in the DC language.\nDonet introduces the 'bool' data type, which is an alias \
-            for uint8 under the hood.\n", span!());
-            None
         },
         type_definition[td] OpenBrackets array_range[ar] CloseBrackets => {
             if td.is_none() {
@@ -667,10 +656,6 @@ parser! {
     }
 
     type_value: ast::TypeValue {
-        BooleanLiteral(b) => ast::TypeValue::I64(match b {
-            true => 1,
-            false => 0,
-        }),
         DecimalLiteral(i) => ast::TypeValue::I64(i),
         CharacterLiteral(c) => ast::TypeValue::Char(c),
         StringLiteral(s) => ast::TypeValue::String(s),
@@ -741,7 +726,7 @@ parser! {
     // operations on numeric types after they are received from the network.
     numeric_with_explicit_cast: ast::NumericType {
         // Explicit casts do not use the `numeric_type_token` non-terminal, because
-        // there is zero need to cast any numeric data type to a Char or Bool, since
+        // there is zero need to cast any numeric data type to a Char ~~or Bool~~, since
         // this is used for types that have arithmetic operations applied, such as division.
         //
         // Also because it is 2:27 AM and its giving me a shift-reduce conflict again.
@@ -852,8 +837,6 @@ parser! {
 
     numeric_type_token: ast::NumericType {
         CharT => ast::NumericType::from_type(DCTypeEnum::TChar, span!()),
-        // 'bool' is an alias for uint8
-        BoolT => ast::NumericType::from_type(DCTypeEnum::TUInt8, span!()),
         signed_integer_type[dt] => ast::NumericType::from_type(dt.dctype, span!()),
         unsigned_integer_type[dt] => ast::NumericType::from_type(dt.dctype, span!()),
         floating_point_type[dt] => ast::NumericType::from_type(dt.dctype, span!()),
@@ -1033,7 +1016,6 @@ mod tests {
             };
 
             struct Fixture {
-                bool;
                 int32/10 x;
                 int32/10 y;
                 int32/10 z;
@@ -1148,8 +1130,8 @@ mod tests {
                 keyw0rd() ram;
                 keywords() db ownsend airecv;
                 parameter(string);
-                params(bool, char, float64);
-                named_params(bool flag = true, string text);
+                params(uint8, char, float64);
+                named_params(uint8 flag = 1, string text);
             };
             ",
         );
@@ -1208,7 +1190,6 @@ mod tests {
                 int16(float64)(0.0-1.0) withRangeTest;
                 int16(float32)%360/10.0 anotherTest;
                 int16(uint32)/10 moreTests;
-                bool thisIsLiterallyJustAn8BitInt;
                 uint16/1000(0-1) youCanStackThemToo;
                 int64/10000(+50-+999) [] thisIsValid;
                 int8%10(0-10) anotherOne;
@@ -1264,7 +1245,7 @@ mod tests {
                 string = \"VALUE\";
                 string = 0xabcdef;
                 uint16 accessLevel = 0;
-                bool = false;
+                uint8 = 1;
             };
             ",
         );
@@ -1323,18 +1304,6 @@ mod tests {
             dclass DistributedDonut {
                 testingField() f6f7;
             };
-            ",
-        );
-    }
-
-    #[test]
-    fn handle_deprecated_bool_alias() {
-        // The lexer picks up 'bool' as a data type token,
-        // not an identifier, so it would be illegal grammar.
-        // This test ensures we handle this as a deprecation warning.
-        parse_dcfile_string(
-            "
-            typedef uint8 bool;
             ",
         );
     }

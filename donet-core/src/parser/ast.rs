@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024-2025 Max Rodriguez
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -78,8 +78,6 @@ pub struct ViewSuffix {
 #[derive(Debug, Clone)]
 pub struct TypeDefinition {
     pub span: Span,
-    /// Used if deprecated type aliases are found, such as `typedef uint8 bool;`
-    pub deprecated: bool,
     pub data_type: NonMethodDataType,
     pub array_range: Option<ArrayRange>,
     pub alias_identifier: Option<String>,
