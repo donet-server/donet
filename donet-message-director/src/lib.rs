@@ -450,7 +450,7 @@ impl MessageDirector {
         // replicate the message to all receiving subscribers
         for sub in receiving_subscribers {
             if let Err(err) = sub.lock().await.handle_datagram(&mut data.dg).await {
-                return Err(Error::new(ErrorKind::Other, err.to_string()));
+                return Err(Error::other(err.to_string()));
             }
         }
 

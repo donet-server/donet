@@ -72,7 +72,6 @@ impl std::fmt::Display for DCPythonImport {
 /// type definitions, structures, and Distributed Classes.
 #[derive(Debug, Clone)]
 pub struct DCFile<'dc> {
-    baked_legacy_hash: globals::DCFileHash,
     structs: Vec<DCStruct<'dc>>,
     dclasses: Vec<DClass<'dc>>,
     imports: Vec<DCPythonImport>,
@@ -98,7 +97,6 @@ impl From<interim::DCFile> for DCFile<'_> {
         }
 
         Self {
-            baked_legacy_hash: 0_u32,
             structs: vec![],
             dclasses: vec![],
             imports,
@@ -180,18 +178,11 @@ impl<'dc> DCFile<'dc> {
     /// Returns a 32-bit hash index associated with this file.  This number is
     /// guaranteed to be consistent if the contents of the file have not changed,
     /// and it is very likely to be different if the contents of the file do change.
-    ///
-    /// If called more than once, it will reuse the already calculated hash,
-    /// as this structure is guaranteed to be immutable after initialization.
     pub fn get_legacy_hash(&self) -> globals::DCFileHash {
-        if self.baked_legacy_hash != 0 {
-            self.baked_legacy_hash
-        } else {
-            let mut hashgen: DCHashGenerator = DCHashGenerator::default();
+        let mut hashgen: DCHashGenerator = DCHashGenerator::default();
 
-            self.generate_hash(&mut hashgen);
-            hashgen.get_hash()
-        }
+        self.generate_hash(&mut hashgen);
+        hashgen.get_hash()
     }
 
     /// Returns a string with the hash as a pretty format hexadecimal.
@@ -284,7 +275,6 @@ mod tests {
         ];
 
         let dcf: DCFile<'_> = DCFile {
-            baked_legacy_hash: 0_u32,
             structs: vec![],
             dclasses: vec![],
             imports,
