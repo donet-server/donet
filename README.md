@@ -38,7 +38,7 @@ The Donet project documentation is available at
 ## Communication
 
 The address of the official Matrix channel for Donet development is
-[#donet:matrix.org](https://matrix.to/#/#donet:matrix.org).
+[#donet:maxrdz.com](https://matrix.to/#/#donet:maxrdz.com).
 
 We also have a Discord community server, which you can join [here!](https://discord.gg/8WRwgve8uC)
 
