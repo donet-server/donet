@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -21,7 +21,6 @@
 //! data stored in memory throughout the DC parser pipeline.
 
 use super::ast;
-use crate::dconfig::*;
 use codespan_reporting::diagnostic::Diagnostic;
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::files::{self, SimpleFiles};
@@ -51,7 +50,6 @@ impl PipelineStage {
 /// Sets up writer and codespan config for rendering diagnostics
 /// to stderr & storing DC files that implement codespan's File trait.
 pub(crate) struct PipelineData<'a> {
-    dc_parser_config: DCFileConfig,
     stage: PipelineStage,
     _writer: StandardStream,
     _config: term::Config,
@@ -79,10 +77,9 @@ impl Drop for PipelineData<'_> {
     }
 }
 
-impl From<DCFileConfig> for PipelineData<'_> {
-    fn from(value: DCFileConfig) -> Self {
+impl Default for PipelineData<'_> {
+    fn default() -> Self {
         Self {
-            dc_parser_config: value,
             stage: PipelineStage::default(),
             _writer: StandardStream::stderr(ColorChoice::Always),
             _config: term::Config::default(),
@@ -101,12 +98,6 @@ impl From<DCFileConfig> for PipelineData<'_> {
             current_file: 0,
             syntax_trees: vec![],
         }
-    }
-}
-
-impl DCFileConfigAccessor for PipelineData<'_> {
-    fn get_dc_config(&self) -> &DCFileConfig {
-        &self.dc_parser_config
     }
 }
 
@@ -153,7 +144,7 @@ mod tests {
 
     #[test]
     fn next_stage_state() {
-        let mut pipeline: PipelineData = DCFileConfig::default().into();
+        let mut pipeline: PipelineData = PipelineData::default();
 
         pipeline.next_file(); // increase file counter to 1
 

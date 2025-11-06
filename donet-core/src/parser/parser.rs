@@ -1263,4 +1263,31 @@ mod tests {
             ",
         );
     }
+
+    #[test]
+    #[should_panic]
+    fn dclass_fields_in_struct() {
+        // Make sure that a struct production should not accept
+        // atomic or molecular field productions in its grammar.
+        parse_dcfile_string(
+            "
+            struct MolecularInStruct {
+                float32 x;
+                float32 y;
+                float32 z;
+                setXyz : x, y, z;
+            };
+            ",
+        );
+        parse_dcfile_string(
+            "
+            struct AtomicInStruct {
+                float32 x;
+                float32 y;
+                float32 z;
+                setH(uint32 heading);
+            };
+            ",
+        );
+    }
 }

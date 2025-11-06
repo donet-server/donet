@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -74,7 +74,6 @@ cfg_if! {
         pub mod dclass;
         pub mod dcmolecular;
         pub mod dcnumeric;
-        pub mod dconfig;
         pub mod dcparameter;
         pub mod dcstruct;
         pub mod dcswitch;
@@ -123,10 +122,7 @@ fn init_logger() {
 /// the DC files, instantiating the DC parsing pipeline, and either
 /// returns the DCFile object or a Parse/File error.
 #[cfg(feature = "dcfile")]
-pub fn read_dc_files<'a>(
-    config: dconfig::DCFileConfig,
-    file_paths: Vec<String>,
-) -> Result<DCFile<'a>, DCReadError> {
+pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadError> {
     use log::{info, warn};
     use parser::InputFile;
     use std::fs::File;
@@ -142,7 +138,7 @@ pub fn read_dc_files<'a>(
 
     if file_paths.is_empty() {
         warn!("No DC files given! Using empty DC file.");
-        return read_dc(config, String::default());
+        return read_dc(String::default());
     }
 
     for file_path in &file_paths {
@@ -187,7 +183,7 @@ pub fn read_dc_files<'a>(
         }
     }
 
-    parser::dcparse_pipeline(config, pipeline_input)
+    parser::dcparse_pipeline(pipeline_input)
 }
 
 /// Front end to the donet-core DC parser pipeline.
@@ -199,7 +195,6 @@ pub fn read_dc_files<'a>(
 /// ```rust
 /// use donet_core::dcfile::DCFile;
 /// use donet_core::dclass::DClass;
-/// use donet_core::dconfig::*;
 /// use donet_core::read_dc;
 ///
 /// let dc_file = "
@@ -232,8 +227,7 @@ pub fn read_dc_files<'a>(
 ///
 /// ";
 ///
-/// let dc_conf = DCFileConfig::default();
-/// let dc_read = read_dc(dc_conf, dc_file.into());
+/// let dc_read = read_dc(dc_file.into());
 ///
 /// if let Ok(dc_file) = dc_read {
 ///     // Print the DC File's 32-bit hash in hexadecimal format.
@@ -255,8 +249,8 @@ pub fn read_dc_files<'a>(
 /// <br><img src="https://c.tenor.com/myQHgyWQQ9sAAAAd/tenor.gif">
 ///
 #[cfg(feature = "dcfile")]
-pub fn read_dc<'a>(config: dconfig::DCFileConfig, input: String) -> Result<DCFile<'a>, DCReadError> {
+pub fn read_dc<'a>(input: String) -> Result<DCFile<'a>, DCReadError> {
     let dcparse_input: Vec<parser::InputFile> = vec![("input.dc".to_string(), input)];
 
-    parser::dcparse_pipeline(config, dcparse_input)
+    parser::dcparse_pipeline(dcparse_input)
 }

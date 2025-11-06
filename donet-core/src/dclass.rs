@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -23,7 +23,6 @@
 use crate::dcatomic::DCAtomicField;
 use crate::dcfield::ClassField;
 use crate::dcfile::DCFile;
-use crate::dconfig::*;
 use crate::globals;
 use crate::hashgen::*;
 use multimap::MultiMap;
@@ -81,12 +80,6 @@ impl std::fmt::Display for DClass<'_> {
             }
         }
         writeln!(f, "}};")
-    }
-}
-
-impl DCFileConfigAccessor for DClass<'_> {
-    fn get_dc_config(&self) -> &DCFileConfig {
-        self.dcfile.get_dc_config()
     }
 }
 

@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024-2025 Max Rodriguez
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -35,7 +35,6 @@ pub(crate) mod pipeline;
 mod semantics;
 
 use crate::dcfile::DCFile;
-use crate::dconfig::*;
 use anyhow::Result;
 use error::DCReadError;
 use pipeline::PipelineData;
@@ -47,12 +46,9 @@ pub(crate) type InputFile = (String, String);
 /// Runs the entire DC parser pipeline. The input is an array of strings
 /// that represent the input DC files in UTF-8, and the output is the final
 /// DC element tree data structure to be used by Donet.
-pub(crate) fn dcparse_pipeline<'a>(
-    config: DCFileConfig,
-    inputs: Vec<InputFile>,
-) -> Result<DCFile<'a>, DCReadError> {
-    // Create new pipeline data struct with [`DCFileConfig`]
-    let mut pipeline_data: PipelineData<'_> = PipelineData::from(config);
+pub(crate) fn dcparse_pipeline<'a>(inputs: Vec<InputFile>) -> Result<DCFile<'a>, DCReadError> {
+    // Create new pipeline data struct
+    let mut pipeline_data: PipelineData<'_> = PipelineData::default();
 
     // Create codespan files for each DC file
     for input in &inputs {

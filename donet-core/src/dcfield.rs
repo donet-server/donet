@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -25,7 +25,6 @@ use crate::dcatomic::DCAtomicField;
 use crate::dckeyword::{DCKeywordList, IdentifyKeyword};
 use crate::dclass::DClass;
 use crate::dcmolecular::DCMolecularField;
-use crate::dconfig::*;
 use crate::dcstruct::DCStruct;
 use crate::dctype::DCTypeDefinition;
 use crate::globals;
@@ -50,14 +49,6 @@ use crate::hashgen::*;
 pub enum ClassField<'dc> {
     Field(DCField<'dc>),
     Atomic(DCAtomicField<'dc>),
-    Molecular(DCMolecularField<'dc>),
-}
-
-/// A different enumerator representing DC Field types used
-/// for DC Structs, since they cannot contain DC Atomic Fields.
-#[derive(Debug)]
-pub enum StructField<'dc> {
-    Field(DCField<'dc>),
     Molecular(DCMolecularField<'dc>),
 }
 
@@ -101,15 +92,6 @@ impl std::fmt::Display for DCField<'_> {
     }
 }
 
-impl DCFileConfigAccessor for DCField<'_> {
-    fn get_dc_config(&self) -> &DCFileConfig {
-        match self.parent_element {
-            FieldParent::DClass(dc) => dc.get_dc_config(),
-            FieldParent::Strukt(s) => s.get_dc_config(),
-        }
-    }
-}
-
 impl LegacyDCHash for DCField<'_> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.keyword_list.generate_hash(hashgen);
@@ -121,13 +103,6 @@ impl LegacyDCHash for DCField<'_> {
         // explicitly will be redundant. However, the field name is
         // significant.
         hashgen.add_string(self.field_name.clone());
-
-        // The field ID is added to the hash here, since we need to
-        // ensure the hash code comes out different in the
-        // DC_MULTIPLE_INHERITANCE case.
-        if self.get_dc_config().dc_multiple_inheritance {
-            hashgen.add_int(i32::from(self.field_id));
-        }
     }
 }
 
@@ -255,5 +230,18 @@ impl<'dc> DCField<'dc> {
 
     fn _refresh_default_value(&self) {
         todo!()
+    }
+}
+
+pub(crate) mod interim {
+    use crate::parser::ast;
+
+    #[derive(Debug)]
+    pub struct DCField {}
+
+    impl From<ast::StructField> for DCField {
+        fn from(value: ast::StructField) -> Self {
+            Self {}
+        }
     }
 }

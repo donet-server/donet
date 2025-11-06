@@ -157,7 +157,6 @@ pub struct Struct {
 #[derive(Debug, Clone)]
 pub enum StructField {
     ParameterField(ParameterField),
-    MethodAsField(MethodAsField),
     Switch(Switch),
 }
 
@@ -165,7 +164,7 @@ impl From<NamedField> for StructField {
     fn from(value: NamedField) -> Self {
         match value {
             NamedField::ParameterField(pf) => Self::ParameterField(pf),
-            NamedField::MethodAsField(mf) => Self::MethodAsField(mf),
+            NamedField::MethodAsField(_) => panic!("MethodAsField cannot be a StructField."),
         }
     }
 }

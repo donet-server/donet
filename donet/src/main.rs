@@ -37,7 +37,7 @@ extern crate cfg_if;
 use donet_daemon::meson::*;
 
 #[cfg(feature = "requires_dc")]
-use donet_core::{dconfig::DCFileConfig, read_dc_files};
+use donet_core::read_dc_files;
 use donet_daemon::config::*;
 use donet_daemon::logger;
 use donet_daemon::logger::DaemonLogger;
@@ -183,7 +183,7 @@ fn main() -> std::io::Result<()> {
     if want_dc_check {
         cfg_if! {
             if #[cfg(feature = "requires_dc")] {
-                return validate_dc_files(&daemon_config, dc_check_files);
+                return validate_dc_files(dc_check_files);
             } else {
                 error!("This build of Donet does not include DC file support.");
                 return Err(Error::new(ErrorKind::Unsupported, "No DC file support."));
@@ -200,10 +200,9 @@ fn main() -> std::io::Result<()> {
     // Services like the Event Logger and Message Director do not need the DC file.
     cfg_if! {
         if #[cfg(feature = "requires_dc")] {
-            let conf: DCFileConfig = daemon_config.clone().into();
             let files: Vec<String> = daemon_config.global.dc_files.clone();
 
-            let dc: DCFile = match read_dc_files(conf, files) {
+            let dc: DCFile = match read_dc_files(files) {
                 Ok(dc) => dc,
                 Err(dc_err) => {
                     error!("Failed to parse DC file(s): {}", dc_err);
@@ -436,16 +435,12 @@ fn print_version() {
 /// Performs the operation for the `-c` flag, or the `--validate-dc`
 /// GNU-style long flag in the daemon binary.
 #[cfg(feature = "requires_dc")]
-fn validate_dc_files(conf: &DonetConfig, files: Vec<String>) -> std::io::Result<()> {
-    use donet_core::dconfig::DCFileConfig;
+fn validate_dc_files(files: Vec<String>) -> std::io::Result<()> {
     use donet_core::read_dc_files;
     use log::{error, info};
     use std::io::{Error, ErrorKind};
 
-    // DC parser pipeline requires configuration; Build from TOML config.
-    let dc_config: DCFileConfig = conf.clone().into();
-
-    match read_dc_files(dc_config, files.to_owned()) {
+    match read_dc_files(files.to_owned()) {
         Ok(dc_file) => {
             let hash: u32 = dc_file.get_legacy_hash();
             let signed: i32 = hash as i32;

@@ -23,7 +23,6 @@
 use crate::dcfield::DCField;
 use crate::dckeyword::DCKeyword;
 use crate::dclass::DClass;
-use crate::dconfig::*;
 use crate::dcstruct::DCStruct;
 use crate::dctype::DCTypeDefinition;
 use crate::globals;
@@ -73,7 +72,6 @@ impl std::fmt::Display for DCPythonImport {
 /// type definitions, structures, and Distributed Classes.
 #[derive(Debug, Clone)]
 pub struct DCFile<'dc> {
-    config: DCFileConfig,
     baked_legacy_hash: globals::DCFileHash,
     structs: Vec<DCStruct<'dc>>,
     dclasses: Vec<DClass<'dc>>,
@@ -100,7 +98,6 @@ impl From<interim::DCFile> for DCFile<'_> {
         }
 
         Self {
-            config: value.config,
             baked_legacy_hash: 0_u32,
             structs: vec![],
             dclasses: vec![],
@@ -116,9 +113,6 @@ impl From<interim::DCFile> for DCFile<'_> {
 
 impl std::fmt::Display for DCFile<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // output dc parser configuration variables used
-        f.write_str(&self.config.to_string())?;
-
         // Print Python-style imports
         if !self.imports.is_empty() {
             for import in &self.imports {
@@ -132,31 +126,31 @@ impl std::fmt::Display for DCFile<'_> {
             type_def.fmt(f)?;
             writeln!(f)?;
         }
-        writeln!(f)?;
+        if !self.keywords.is_empty() {
+            writeln!(f)?;
+        }
         // Print Keyword definitions
         for kw in &self.keywords {
             kw.fmt(f)?;
             writeln!(f)?;
         }
-        writeln!(f)?;
+        if !self.structs.is_empty() {
+            writeln!(f)?;
+        }
         // Print Structs
         for strukt in &self.structs {
             strukt.fmt(f)?;
             writeln!(f)?;
         }
-        writeln!(f)?;
+        if !self.dclasses.is_empty() {
+            writeln!(f)?;
+        }
         // Print DClasses
         for dclass in &self.dclasses {
             dclass.fmt(f)?;
             writeln!(f)?;
         }
         Ok(())
-    }
-}
-
-impl DCFileConfigAccessor for DCFile<'_> {
-    fn get_dc_config(&self) -> &DCFileConfig {
-        &self.config
     }
 }
 
@@ -290,7 +284,6 @@ mod tests {
         ];
 
         let dcf: DCFile<'_> = DCFile {
-            config: DCFileConfig::default(),
             baked_legacy_hash: 0_u32,
             structs: vec![],
             dclasses: vec![],
@@ -305,11 +298,6 @@ mod tests {
         assert_eq!(
             dcf.to_string(),
             "\
-            /*\n\
-            DC_MULTIPLE_INHERITANCE = true\n\
-            DC_SORT_INHERITANCE_BY_FILE = true\n\
-            DC_VIRTUAL_INHERITANCE = true\n\
-            */\n\n\
             import views\n\
             from views import DistributedDonut\n\
             from views import Class, ClassAI, ClassOV\n\
@@ -322,7 +310,7 @@ mod tests {
 /// Contains intermediate DC file structure and logic
 /// for semantic analysis as the DC file is being built.
 pub(crate) mod interim {
-    use super::{ast, globals, DCField, DCFileConfig};
+    use super::{ast, globals, DCField};
     use crate::dckeyword::interim::DCKeyword;
     use crate::dclass::interim::DClass;
     use crate::dcstruct::interim::DCStruct;
@@ -341,7 +329,6 @@ pub(crate) mod interim {
     /// DC file structure for internal use by the DC parser.
     #[derive(Debug)]
     pub(crate) struct DCFile {
-        pub config: DCFileConfig,
         pub structs: Vec<DCStruct>,
         pub dclasses: Vec<DClass>,
         pub imports: Vec<PythonImport>,
@@ -353,16 +340,14 @@ pub(crate) mod interim {
         pub inherited_fields_stale: bool,
     }
 
-    impl From<DCFileConfig> for DCFile {
-        fn from(value: DCFileConfig) -> Self {
+    impl Default for DCFile {
+        fn default() -> Self {
             Self {
-                config: value,
                 structs: vec![],
                 dclasses: vec![],
                 imports: vec![],
                 keywords: vec![],
                 typedefs: vec![],
-                //field_id_2_field: vec![],
                 all_object_valid: true,
                 inherited_fields_stale: false,
             }
@@ -478,12 +463,13 @@ pub(crate) mod interim {
             self.typedefs.push(new_td);
         }
 
-        pub fn add_dclass(&mut self, dclass: DClass) {
+        pub fn add_dclass(&mut self, _: &mut PipelineData, dclass: DClass) {
             self.dclasses.push(dclass);
         }
 
-        pub fn add_struct(&mut self, _strct: DCStruct) {
-            todo!();
+        pub fn add_struct(&mut self, _: &mut PipelineData, strukt: ast::Struct) {
+            let new_struct: DCStruct = strukt.into();
+            self.structs.push(new_struct);
         }
 
         /// Gets the next dclass ID based on the current allocated IDs.

@@ -102,27 +102,3 @@ pub struct EventLogger {
     pub log_format: String,      // e.g. "el-%Y-%m-%d-%H-%M-%S.log"
     pub rotate_interval: String, // e.g. "1d"
 }
-
-/// Creates a donet-core `DCFileConfig` struct from [`DonetConfig`].
-#[cfg(feature = "requires_dc")]
-impl From<DonetConfig> for donet_core::dconfig::DCFileConfig {
-    fn from(value: DonetConfig) -> Self {
-        let mut this = Self::default();
-
-        this.dc_multiple_inheritance = value
-            .global
-            .dc_multiple_inheritance
-            .unwrap_or(this.dc_multiple_inheritance);
-
-        this.dc_sort_inheritance_by_file = value
-            .global
-            .dc_sort_inheritance_by_file
-            .unwrap_or(this.dc_sort_inheritance_by_file);
-
-        this.dc_virtual_inheritance = value
-            .global
-            .dc_virtual_inheritance
-            .unwrap_or(this.dc_virtual_inheritance);
-        this
-    }
-}

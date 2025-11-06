@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024-2025 Max Rodriguez
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -22,7 +22,7 @@
 use crate::globals::{DCFileHash, MAX_PRIME_NUMBERS};
 
 /// Trait shared by all DC element structures to generate the DC file hash
-/// using the same hashing method as the original DClass library from Panda.
+/// using the same hashing method as the dclass library from Astron.
 pub trait LegacyDCHash {
     /// Accumulates the properties of this DC element into the file hash.
     fn generate_hash(&self, hashgen: &mut DCHashGenerator);

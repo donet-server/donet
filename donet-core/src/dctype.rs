@@ -62,14 +62,10 @@ impl std::fmt::Display for DCTypeEnum {
             Self::TFloat32 => write!(f, "float32"),
             Self::TFloat64 => write!(f, "float64"),
             Self::TString => write!(f, "string"),
-            Self::TVarString => write!(f, "var string"),
             Self::TBlob => write!(f, "blob"),
-            Self::TVarBlob => write!(f, "var blob"),
             Self::TArray => write!(f, "array"),
-            Self::TVarArray => write!(f, "var array"),
             Self::TStruct => write!(f, "struct"),
-            Self::TMethod => write!(f, "method"),
-            Self::TInvalid => Ok(()), // ignore
+            _ => Ok(()), // not written
         }
     }
 }
