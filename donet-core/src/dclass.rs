@@ -88,17 +88,17 @@ impl LegacyDCHash for DClass<'_> {
         hashgen.add_string(self.get_name());
         hashgen.add_int(self.get_num_parents().try_into().unwrap());
 
+        // Hash our inheritance tree
         for parent in &self.class_parents {
-            {
-                hashgen.add_int(i32::from(parent.get_dclass_id()));
-            }
+            hashgen.add_int(i32::from(parent.get_dclass_id()));
+        }
 
-            if let Some(constructor) = &self.constructor {
-                constructor.generate_hash(hashgen);
-            }
+        if let Some(constructor) = &self.constructor {
+            constructor.generate_hash(hashgen);
         }
         hashgen.add_int(self.fields.len().try_into().unwrap());
 
+        // Hash our DC fields
         for field in &self.fields {
             match field {
                 ClassField::Field(field) => field.generate_hash(hashgen),

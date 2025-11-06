@@ -17,7 +17,7 @@
     License along with Donet. If not, see <https://www.gnu.org/licenses/>.
 */
 
-//! Prime Number Generator and 32-bit DC File Hash generator based off Panda3D.
+//! Prime Number Generator and 32-bit DC File Hash generator based off Astron.
 
 use crate::globals::{DCFileHash, MAX_PRIME_NUMBERS};
 
@@ -83,7 +83,7 @@ impl PrimeNumberGenerator {
 /// order 32 bits.
 #[derive(Default)]
 pub struct DCHashGenerator {
-    hash: i32,
+    hash: i64,
     index: u16,
     primes: PrimeNumberGenerator,
 }
@@ -93,7 +93,7 @@ impl DCHashGenerator {
     pub fn add_int(&mut self, number: i32) {
         assert!(self.index < MAX_PRIME_NUMBERS);
 
-        self.hash += i32::from(self.primes.get_prime(self.index)) * number;
+        self.hash += i64::from(self.primes.get_prime(self.index)) * i64::from(number);
         self.index = (self.index + 1) % MAX_PRIME_NUMBERS;
     }
 
@@ -111,6 +111,9 @@ impl DCHashGenerator {
         self.add_blob(string.into_bytes());
     }
 
+    /// Gets the DC file hash, a 32-bit value.
+    ///
+    /// It is internally stored as an `i64`, but gets truncated to a `u32`.
     pub const fn get_hash(&self) -> DCFileHash {
         self.hash as u32
     }

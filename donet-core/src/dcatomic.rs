@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -21,7 +21,6 @@
 //! procedure call method of a Distributed Class.
 
 use crate::dcfield::DCField;
-use crate::dckeyword::DCKeywordList;
 use crate::dcparameter::DCParameter;
 use crate::hashgen::*;
 
@@ -61,9 +60,5 @@ impl<'dc> DCAtomicField<'dc> {
     #[inline(always)]
     pub fn get_element(&self, index: usize) -> Option<&'dc DCParameter<'dc>> {
         self.elements.get(index).copied()
-    }
-
-    pub fn set_keyword_list(&mut self, kw_list: DCKeywordList<'dc>) {
-        self.base_field.set_field_keyword_list(kw_list)
     }
 }

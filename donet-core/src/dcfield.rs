@@ -79,7 +79,7 @@ pub struct DCField<'dc> {
     parent_element: FieldParent<'dc>,
     field_name: String,
     field_id: globals::FieldId,
-    field_type: Option<DCTypeDefinition>,
+    field_type: DCTypeDefinition,
     default_value_stale: bool,
     has_default_value: bool,
     default_value: Vec<u8>, // stored as byte array
@@ -94,15 +94,11 @@ impl std::fmt::Display for DCField<'_> {
 
 impl LegacyDCHash for DCField<'_> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        self.keyword_list.generate_hash(hashgen);
-        self.field_type.clone().unwrap().generate_hash(hashgen);
-
-        // It shouldn't be necessary to explicitly add the field ID
-        // to the hash--this is computed based on the relative
-        // position of this field with the other fields, so adding it
-        // explicitly will be redundant. However, the field name is
-        // significant.
+        hashgen.add_int(self.field_id.into());
         hashgen.add_string(self.field_name.clone());
+
+        self.field_type.clone().generate_hash(hashgen);
+        self.keyword_list.generate_hash(hashgen);
     }
 }
 
@@ -125,37 +121,6 @@ impl<'dc> DCField<'dc> {
             FieldParent::DClass(dclass_ref) => dclass_ref,
             FieldParent::Strukt(_) => panic!("Field parent is not a DClass."),
         }
-    }
-
-    #[inline(always)]
-    pub fn set_field_id(&mut self, id: globals::FieldId) {
-        self.field_id = id
-    }
-
-    #[inline(always)]
-    pub fn set_field_name(&mut self, name: String) {
-        self.field_name = name
-    }
-
-    pub fn set_field_type(&mut self, dtype: DCTypeDefinition) {
-        self.field_type = Some(dtype);
-        self.has_default_value = false;
-        self.default_value = vec![];
-    }
-
-    pub fn set_field_keyword_list(&mut self, kw_list: DCKeywordList<'dc>) {
-        self.keyword_list = kw_list;
-    }
-
-    pub fn set_default_value(&mut self, value: Vec<u8>) {
-        self.default_value = value;
-        self.has_default_value = true;
-        self.default_value_stale = false;
-    }
-
-    #[inline(always)]
-    pub fn set_bogus_field(&mut self, is_bogus: bool) {
-        self.bogus_field = is_bogus
     }
 
     #[inline(always)]

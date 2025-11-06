@@ -23,51 +23,33 @@
 use crate::hashgen::*;
 use multimap::MultiMap;
 
-/// This is a flag bitmask for historical keywords.
-/// Panda uses a C/C++ 'int' for this, which is stored
-/// as 4 bytes in modern 32-bit and 64-bit C/C++ compilers.
-pub type HistoricalFlag = i32;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DCKeyword {
-    name: String,
-    // This flag is only kept for historical reasons, so we can
-    // preserve the DC file's hash code if no new flags are in use.
-    historical_flag: HistoricalFlag,
-}
+pub struct DCKeyword(String);
 
 impl From<interim::DCKeyword> for DCKeyword {
     fn from(value: interim::DCKeyword) -> Self {
-        Self {
-            name: value.name,
-            historical_flag: value.historical_flag,
-        }
+        Self(value.name)
     }
 }
 
 impl std::fmt::Display for DCKeyword {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "keyword ")?;
-        f.write_str(&self.name)?;
+        f.write_str(&self.0)?;
         write!(f, ";")
     }
 }
 
 impl LegacyDCHash for DCKeyword {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        hashgen.add_string(self.name.clone());
+        hashgen.add_string(self.0.clone());
     }
 }
 
 impl DCKeyword {
     #[inline]
     pub fn get_name(&self) -> String {
-        self.name.clone()
-    }
-
-    #[inline]
-    pub fn get_historical_flag(&self) -> HistoricalFlag {
-        self.historical_flag
+        self.0.clone()
     }
 }
 
@@ -88,7 +70,6 @@ pub enum IdentifyKeyword {
 pub struct DCKeywordList<'dc> {
     keywords: Vec<&'dc DCKeyword>,
     kw_name_2_keyword: KeywordName2Keyword<'dc>,
-    flags: HistoricalFlag,
 }
 
 impl std::cmp::PartialEq for DCKeywordList<'_> {
@@ -117,7 +98,7 @@ impl std::fmt::Display for DCKeywordList<'_> {
             // We do not call the fmt::Display impl of [`DCKeyword`] here,
             // as that formats it as a declaration, not use in a field's
             // keyword list. So, we just need to format the kw identifier.
-            f.write_str(&kw.name)?;
+            f.write_str(&kw.0)?;
 
             if i != self.keywords.len() - 1 {
                 write!(f, " ")?;
@@ -129,16 +110,10 @@ impl std::fmt::Display for DCKeywordList<'_> {
 
 impl LegacyDCHash for DCKeywordList<'_> {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
-        if self.flags != !0 {
-            // All of the flags are historical flags only, so add just the flags
-            // bitmask to keep the hash code the same as it has historically been.
-            hashgen.add_int(self.flags);
-        } else {
-            hashgen.add_int(self.keywords.len().try_into().unwrap());
+        hashgen.add_int(self.keywords.len().try_into().unwrap());
 
-            for keyword in &self.keywords {
-                keyword.generate_hash(hashgen);
-            }
+        for keyword in &self.keywords {
+            keyword.generate_hash(hashgen);
         }
     }
 }
@@ -184,7 +159,6 @@ impl<'dc> DCKeywordList<'dc> {
 /// Contains intermediate keyword structures and logic
 /// for semantic analysis as the keyword/lists is being built.
 pub(crate) mod interim {
-    use super::HistoricalFlag;
     use crate::parser::ast;
     use crate::parser::lexer::Span;
     use multimap::MultiMap;
@@ -194,7 +168,6 @@ pub(crate) mod interim {
     pub struct DCKeyword {
         pub span: Span,
         pub name: String,
-        pub historical_flag: HistoricalFlag,
     }
 
     impl From<ast::KeywordDefinition> for DCKeyword {
@@ -202,16 +175,6 @@ pub(crate) mod interim {
             Self {
                 span: value.span,
                 name: value.identifier,
-                historical_flag: {
-                    if value.historical {
-                        // Sets the historical flag bitmask to the bitwise complement of 0
-                        // (!0 in Rust, or ~0 in C/C++), as if the keyword were not one
-                        // of the historically defined keywords.
-                        !0
-                    } else {
-                        0
-                    }
-                },
             }
         }
     }
@@ -220,7 +183,6 @@ pub(crate) mod interim {
     pub struct DCKeywordList {
         pub keywords: Vec<Rc<DCKeyword>>,
         pub kw_name_2_keyword: MultiMap<String, Rc<DCKeyword>>,
-        pub flags: HistoricalFlag,
     }
 
     impl Default for DCKeywordList {
@@ -228,10 +190,6 @@ pub(crate) mod interim {
             Self {
                 keywords: vec![],
                 kw_name_2_keyword: MultiMap::new(),
-                // Panda initializes its keyword list class with the flags bitmask
-                // set to 0 as a regular int (signed). But, it still confuses me why
-                // since a clear bitmask (no historical kw flags) is the bitwise complement of 0.
-                flags: 0_i32,
             }
         }
     }
@@ -243,9 +201,6 @@ pub(crate) mod interim {
             if self.kw_name_2_keyword.get(&kw_name).is_some() {
                 return Err(()); // keyword is already in our list!
             }
-
-            // Mixes the bitmask of this keyword into our KW list flags bitmask.
-            self.flags |= keyword.historical_flag;
 
             self.keywords.push(Rc::new(keyword));
             self.kw_name_2_keyword
@@ -277,7 +232,6 @@ pub(crate) mod interim {
         pub fn clear_keywords(&mut self) {
             self.keywords.clear();
             self.kw_name_2_keyword.clear();
-            self.flags = 0_i32;
         }
     }
 }
