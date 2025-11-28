@@ -20,7 +20,6 @@
 //! Root structure that stores the collection of DC elements
 //! in memory. Provides functions for manipulating the tree.
 
-use crate::dcfield::DCField;
 use crate::dckeyword::DCKeyword;
 use crate::dclass::DClass;
 use crate::dcstruct::DCStruct;
@@ -34,15 +33,6 @@ use crate::parser::ast;
 pub struct DCPythonImport {
     pub module: String,
     pub symbols: Vec<String>,
-}
-
-impl From<interim::PythonImport> for DCPythonImport {
-    fn from(value: interim::PythonImport) -> Self {
-        Self {
-            module: value.module,
-            symbols: value.symbols,
-        }
-    }
 }
 
 impl std::fmt::Display for DCPythonImport {
@@ -70,46 +60,18 @@ impl std::fmt::Display for DCPythonImport {
 /// Data model that provides a high level representation of a single,
 /// or collection, of DC files and their elements such as class imports,
 /// type definitions, structures, and Distributed Classes.
-#[derive(Debug, Clone)]
-pub struct DCFile<'dc> {
-    structs: Vec<DCStruct<'dc>>,
-    dclasses: Vec<DClass<'dc>>,
-    imports: Vec<DCPythonImport>,
-    keywords: Vec<DCKeyword>,
-    type_defs: Vec<DCTypeDefinition>,
-    field_id_2_field: Vec<&'dc DCField<'dc>>,
-    // TODO: type_id_2_type, type_name_2_type
-    all_object_valid: bool,
-    inherited_fields_stale: bool,
+#[derive(Debug)]
+pub struct DCFile {
+    pub(crate) imports: Vec<DCPythonImport>,
+    pub(crate) type_defs: Vec<DCTypeDefinition>,
+    pub(crate) keywords: Vec<DCKeyword>,
+    pub(crate) structs: Vec<DCStruct>,
+    pub(crate) dclasses: Vec<DClass>,
+    pub(crate) all_object_valid: bool,
+    pub(crate) inherited_fields_stale: bool,
 }
 
-impl From<interim::DCFile> for DCFile<'_> {
-    fn from(value: interim::DCFile) -> Self {
-        let mut imports: Vec<DCPythonImport> = vec![];
-        let mut keywords: Vec<DCKeyword> = vec![];
-
-        for imp in value.imports {
-            imports.push(imp.into());
-        }
-
-        for kw in value.keywords {
-            keywords.push(kw.into());
-        }
-
-        Self {
-            structs: vec![],
-            dclasses: vec![],
-            imports,
-            keywords,
-            type_defs: value.typedefs,
-            field_id_2_field: vec![],
-            all_object_valid: true,
-            inherited_fields_stale: false,
-        }
-    }
-}
-
-impl std::fmt::Display for DCFile<'_> {
+impl std::fmt::Display for DCFile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Print Python-style imports
         if !self.imports.is_empty() {
@@ -152,7 +114,7 @@ impl std::fmt::Display for DCFile<'_> {
     }
 }
 
-impl LegacyDCHash for DCFile<'_> {
+impl LegacyDCHash for DCFile {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         hashgen.add_int(self.get_num_dclasses().try_into().unwrap());
 
@@ -174,7 +136,7 @@ impl LegacyDCHash for DCFile<'_> {
     }
 }
 
-impl<'dc> DCFile<'dc> {
+impl DCFile {
     /// Returns a 32-bit hash index associated with this file.  This number is
     /// guaranteed to be consistent if the contents of the file have not changed,
     /// and it is very likely to be different if the contents of the file do change.
@@ -206,7 +168,7 @@ impl<'dc> DCFile<'dc> {
         self.keywords.len()
     }
 
-    pub fn get_keyword(&self, _index: usize) -> &'dc DCKeyword {
+    pub fn get_keyword(&self, _index: usize) -> &DCKeyword {
         todo!();
     }
 
@@ -220,15 +182,15 @@ impl<'dc> DCFile<'dc> {
         self.dclasses.len()
     }
 
-    pub fn get_dclass(&self, _index: usize) -> &'dc DClass {
+    pub fn get_dclass(&self, _index: usize) -> &DClass {
         todo!();
     }
 
-    pub fn get_dclass_by_id(&self, id: globals::DClassId) -> &'dc DClass {
+    pub fn get_dclass_by_id(&self, id: globals::DClassId) -> &DClass {
         self.dclasses.get(usize::from(id)).unwrap()
     }
 
-    pub fn get_dclass_by_name(&self, _name: &str) -> &'dc DClass {
+    pub fn get_dclass_by_name(&self, _name: &str) -> &DClass {
         todo!();
     }
 
@@ -238,7 +200,7 @@ impl<'dc> DCFile<'dc> {
         self.structs.len()
     }
 
-    pub fn get_struct(&self, _index: usize) -> &'dc DCStruct {
+    pub fn get_struct(&self, _index: usize) -> &DCStruct {
         todo!();
     }
 }
@@ -274,13 +236,12 @@ mod tests {
             },
         ];
 
-        let dcf: DCFile<'_> = DCFile {
+        let dcf: DCFile = DCFile {
             structs: vec![],
             dclasses: vec![],
             imports,
             keywords: vec![],
             type_defs: vec![],
-            field_id_2_field: vec![],
             all_object_valid: false,
             inherited_fields_stale: false,
         };
@@ -297,195 +258,129 @@ mod tests {
     }
 }
 
-/// Contains intermediate DC file structure and logic
-/// for semantic analysis as the DC file is being built.
-pub(crate) mod interim {
-    use super::{ast, globals, DCField};
-    use crate::dckeyword::interim::DCKeyword;
-    use crate::dclass::interim::DClass;
-    use crate::dcstruct::interim::DCStruct;
-    use crate::dctype::DCTypeDefinition;
+pub(crate) mod semantics {
+    use super::ast;
     use crate::parser::error::{Diagnostic, SemanticError};
-    use crate::parser::pipeline::PipelineData;
-    use anyhow::{anyhow, Result};
+    use crate::parser::pipeline::{PipelineData, TopLevelSymbol};
     use std::collections::HashSet;
 
-    #[derive(Debug)]
-    pub struct PythonImport {
-        pub module: String,
-        pub symbols: Vec<String>,
-    }
+    /// Redundancy check for an array of strings that represent view suffixes.
+    /// The lexer already generates a specific token type for view suffixes,
+    /// and the parser grammar expects this token type, so we already are
+    /// guaranteed that the view suffixes are valid.
+    fn analyze_view_suffixes(pipeline: &mut PipelineData, view_suffixes: &ast::ViewSuffixes) {
+        let mut recorded_suffixes: HashSet<String> = HashSet::default();
 
-    /// DC file structure for internal use by the DC parser.
-    #[derive(Debug)]
-    pub(crate) struct DCFile {
-        pub structs: Vec<DCStruct>,
-        pub dclasses: Vec<DClass>,
-        pub imports: Vec<PythonImport>,
-        pub keywords: Vec<DCKeyword>,
-        pub typedefs: Vec<DCTypeDefinition>,
-        //pub field_id_2_field: Vec<Rc<DCField>>,
-        // TODO: type_id_2_type, type_name_2_type
-        pub all_object_valid: bool,
-        pub inherited_fields_stale: bool,
-    }
-
-    impl Default for DCFile {
-        fn default() -> Self {
-            Self {
-                structs: vec![],
-                dclasses: vec![],
-                imports: vec![],
-                keywords: vec![],
-                typedefs: vec![],
-                all_object_valid: true,
-                inherited_fields_stale: false,
-            }
-        }
-    }
-
-    impl DCFile {
-        /// Assigns unique ID to the field for the scope of the entire DC file.
-        pub fn add_field(&mut self, _field: DCField) {
-            todo!();
-        }
-
-        /// Redundancy check for an array of strings that represent view suffixes.
-        /// The lexer already generates a specific token type for view suffixes,
-        /// and the parser grammar expects this token type, so we already are
-        /// guaranteed that the view suffixes are valid.
-        fn check_view_suffixes(pipeline: &mut PipelineData, view_suffixes: &ast::ViewSuffixes) {
-            let mut recorded_suffixes: HashSet<String> = HashSet::default();
-
-            for view_suffix in view_suffixes {
-                if !recorded_suffixes.insert(view_suffix.view.clone()) {
-                    let diag: Diagnostic = Diagnostic::error(
-                        view_suffix.span,
-                        pipeline,
-                        SemanticError::RedundantViewSuffix(view_suffix.view.clone()),
-                    );
-
-                    pipeline
-                        .emit_diagnostic(diag.into())
-                        .expect("Failed to emit diagnostic.");
-                }
-            }
-        }
-
-        /// 'Untangles' a [`ast::PythonImport`], which represents a python import line,
-        /// into one or more [`PythonImport`] structures, which represent symbol imports
-        /// from a python module (with view suffixes applied) and adds them to the DC file.
-        pub fn add_python_import(&mut self, pipeline: &mut PipelineData, import: ast::PythonImport) {
-            let mut imports: Vec<PythonImport> = vec![];
-            let mut class_symbols: Vec<String> = vec![import.class.symbol.clone()];
-
-            // check view suffixes
-            Self::check_view_suffixes(pipeline, &import.module.symbol_views);
-            Self::check_view_suffixes(pipeline, &import.class.symbol_views);
-
-            // Separates "Class/AI/OV" to ["Class", "ClassAI", "ClassOV"]
-            if !import.class.symbol_views.is_empty() {
-                for class_suffix in &import.class.symbol_views {
-                    class_symbols.push(import.class.symbol.clone() + &class_suffix.view);
-                }
-            }
-
-            // Handles e.g. "from module/AI/OV/UD import DistributedThing/AI/OV/UD"
-            if !import.module.symbol_views.is_empty() {
-                let mut c_symbol: String = class_symbols.first().unwrap().clone();
-
-                imports.push(PythonImport {
-                    module: import.module.symbol.clone(),
-                    symbols: vec![c_symbol],
-                });
-
-                for (i, module_suffix) in import.module.symbol_views.into_iter().enumerate() {
-                    let full_import: String = import.module.symbol.clone() + &module_suffix.view;
-
-                    if (class_symbols.len() - 1) <= i {
-                        c_symbol = class_symbols.last().unwrap().clone();
-                    } else {
-                        c_symbol = class_symbols.get(i + 1).unwrap().clone();
-                    }
-
-                    imports.push(PythonImport {
-                        module: full_import,
-                        symbols: vec![c_symbol],
-                    });
-                }
-            } else {
-                // No view suffixes for the module symbol, so just push the symbol.
-                imports.push(PythonImport {
-                    module: import.module.symbol,
-                    symbols: class_symbols,
-                });
-            }
-
-            for imp in imports {
-                self.imports.push(imp);
-            }
-        }
-
-        pub fn add_keyword(&mut self, pipeline: &mut PipelineData, keyword: ast::KeywordDefinition) {
-            // convert from AST node to its interim struct
-            let new_kw: DCKeyword = keyword.into();
-
-            for kw in &self.keywords {
-                if kw.name == new_kw.name {
-                    let diag: Diagnostic = Diagnostic::error(
-                        new_kw.span,
-                        pipeline,
-                        SemanticError::AlreadyDefined(new_kw.name.clone()),
-                    );
-
-                    pipeline
-                        .emit_diagnostic(diag.into())
-                        .expect("Failed to emit diagnostic.");
-                    return;
-                }
-            }
-            self.keywords.push(new_kw);
-        }
-
-        pub fn add_typedef(&mut self, _: &mut PipelineData, typedef: ast::TypeDefinition) {
-            let new_td: DCTypeDefinition = typedef.into();
-            // TODO: semantic checks (e.g. typedef Struct Name; -> verify Struct exists)
-            self.typedefs.push(new_td);
-        }
-
-        pub fn add_dclass(&mut self, _: &mut PipelineData, dclass: DClass) {
-            self.dclasses.push(dclass);
-        }
-
-        pub fn add_struct(&mut self, _: &mut PipelineData, strukt: ast::Struct) {
-            let new_struct: DCStruct = strukt.into();
-            self.structs.push(new_struct);
-        }
-
-        /// Gets the next dclass ID based on the current allocated IDs.
-        ///
-        /// If an error is returned, this DC file has run out of dclass
-        /// IDs to assign. This function will emit the error diagnostic.
-        ///
-        pub fn get_next_dclass_id(
-            &mut self,
-            pipeline: &mut PipelineData,
-            dclass: &DClass, // current dclass ref for diagnostic span
-        ) -> Result<globals::DClassId> {
-            let dc_num: u16 = self.dclasses.len().try_into().unwrap();
-
-            if dc_num == globals::DClassId::MAX {
-                // We have reached the maximum number of dclass declarations.
-                let diag: Diagnostic =
-                    Diagnostic::error(dclass.span, pipeline, SemanticError::DClassOverflow);
+        for view_suffix in view_suffixes {
+            if !recorded_suffixes.insert(view_suffix.view.clone()) {
+                let diag: Diagnostic = Diagnostic::error(
+                    view_suffix.span,
+                    pipeline,
+                    SemanticError::RedundantViewSuffix(view_suffix.view.clone()),
+                );
 
                 pipeline
                     .emit_diagnostic(diag.into())
                     .expect("Failed to emit diagnostic.");
-
-                return Err(anyhow!("Ran out of 16-bit DClass IDs!"));
             }
-            Ok(dc_num - 1_u16)
         }
+    }
+
+    pub fn analyze_python_import(pipeline: &mut PipelineData, import: &ast::PythonImport) {
+        // check view suffixes
+        analyze_view_suffixes(pipeline, &import.module.symbol_views);
+        analyze_view_suffixes(pipeline, &import.class.symbol_views);
+    }
+
+    pub fn analyze_keyword(pipeline: &mut PipelineData, keyword: &ast::KeywordDefinition) {
+        let already_defined: bool = pipeline
+            .dc_data
+            .symbol_exists(&keyword.identifier, TopLevelSymbol::KeywordDef);
+
+        if already_defined {
+            let diag: Diagnostic = Diagnostic::error(
+                keyword.span,
+                pipeline,
+                SemanticError::AlreadyDefined(keyword.identifier.clone()),
+            );
+
+            pipeline
+                .emit_diagnostic(diag.into())
+                .expect("Failed to emit diagnostic.");
+            return;
+        }
+        // add this keyword definition to our symbol map
+        pipeline
+            .dc_data
+            .register_symbol(keyword.identifier.clone(), TopLevelSymbol::KeywordDef);
+    }
+
+    pub fn analyze_typedef(pipeline: &mut PipelineData, typedef: &ast::TypeDefinition) {
+        //let new_td: DCTypeDefinition = typedef.into();
+        // TODO: semantic checks (e.g. typedef Struct Name; -> verify Struct exists)
+        //self.typedefs.push(new_td);
+    }
+
+    pub fn analyze_dclass(pipeline: &mut PipelineData, dclass: &ast::DClass) {
+        //self.dclasses.push(dclass);
+    }
+
+    pub fn analyze_struct(pipeline: &mut PipelineData, strukt: &ast::Struct) {
+        //let new_struct: DCStruct = strukt.into();
+        //self.structs.push(new_struct);
+    }
+}
+
+pub(crate) mod generation {
+    use super::DCPythonImport;
+    use crate::parser::ast;
+
+    /// 'Untangles' a [`ast::PythonImport`], which represents a python import line,
+    /// into one or more [`DCPythonImport`] structures, which represent symbol imports
+    /// from a python module (with view suffixes applied) and adds them to the DC tree.
+    ///
+    pub fn add_python_import(import: &ast::PythonImport) -> Vec<DCPythonImport> {
+        let mut imports: Vec<DCPythonImport> = vec![];
+        let mut class_symbols: Vec<String> = vec![import.class.symbol.clone()];
+
+        // Separates "Class/AI/OV" to ["Class", "ClassAI", "ClassOV"]
+        if !import.class.symbol_views.is_empty() {
+            for class_suffix in &import.class.symbol_views {
+                class_symbols.push(import.class.symbol.clone() + &class_suffix.view);
+            }
+        }
+
+        // Handles e.g. "from module/AI/OV/UD import DistributedThing/AI/OV/UD"
+        if !import.module.symbol_views.is_empty() {
+            let mut c_symbol: String = class_symbols.first().unwrap().clone();
+
+            imports.push(DCPythonImport {
+                module: import.module.symbol.clone(),
+                symbols: vec![c_symbol],
+            });
+
+            for (i, module_suffix) in import.module.symbol_views.iter().enumerate() {
+                let full_import: String = import.module.symbol.clone() + &module_suffix.view;
+
+                if (class_symbols.len() - 1) <= i {
+                    c_symbol = class_symbols.last().unwrap().clone();
+                } else {
+                    c_symbol = class_symbols.get(i + 1).unwrap().clone();
+                }
+
+                imports.push(DCPythonImport {
+                    module: full_import,
+                    symbols: vec![c_symbol],
+                });
+            }
+        } else {
+            // No view suffixes for the module symbol, so just push the symbol.
+            imports.push(DCPythonImport {
+                module: import.module.symbol.clone(),
+                symbols: class_symbols,
+            });
+        }
+
+        imports
     }
 }

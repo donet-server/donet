@@ -24,9 +24,9 @@
 //!
 //! This source file defines the process of taking in the DC file abstract
 //! syntax tree as input and generating an output of a class hierarchy structure,
-//! where each class has pointers to its children, and vice versa, with methods
-//! that make it easy for the Donet daemon to look up information on the DC contract
-//! at runtime in order to understand the network messages it receives.
+//! where each class has methods that make it easy for the Donet daemon to look up
+//! information on the DC contract at runtime in order to understand the
+//! network messages it receives.
 //!
 //! [`Abstract Syntax Tree`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
@@ -37,32 +37,32 @@ use crate::dcfile;
 use anyhow::Result;
 
 /// Takes in the [`Abstract Syntax Trees`] from the last stage of the pipeline
-/// and outputs a [`crate::dcfile::DCFile`] immutable structure.
+/// and outputs error diagnostics if any issues are found.
 ///
 /// [`Abstract Syntax Trees`]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
-pub fn semantic_analyzer<'a>(pipeline: &mut PipelineData) -> Result<dcfile::DCFile<'a>, DCReadError> {
+///
+pub fn semantic_analyzer(pipeline: &mut PipelineData) -> Result<(), DCReadError> {
     // tell the pipeline we are moving onto the next stage
     pipeline.next_stage();
 
-    // create a new interim DC file struct from our pipeline's dc parser configuration
-    let mut dc_file = dcfile::interim::DCFile::default();
-
-    // Iterate through all ASTs and add them to our DCFile intermediate object.
+    // Iterate through all ASTs and analyze it.
     for ast in pipeline.syntax_trees.clone() {
-        for type_declaration in ast.type_declarations {
+        for type_declaration in ast.type_declarations.iter() {
             match type_declaration {
                 ast::TypeDeclaration::PythonImport(import) => {
-                    dc_file.add_python_import(pipeline, import.clone());
+                    dcfile::semantics::analyze_python_import(pipeline, import);
                 }
                 ast::TypeDeclaration::KeywordType(keyword) => {
-                    dc_file.add_keyword(pipeline, keyword);
+                    dcfile::semantics::analyze_keyword(pipeline, keyword);
                 }
-                ast::TypeDeclaration::StructType(strukt) => {
-                    dc_file.add_struct(pipeline, strukt);
+                ast::TypeDeclaration::StructType(_strukt) => {
+                    // TODO
                 }
-                ast::TypeDeclaration::DClassType(_) => {}
-                ast::TypeDeclaration::TypedefType(typedef) => {
-                    dc_file.add_typedef(pipeline, typedef);
+                ast::TypeDeclaration::DClassType(_dclass) => {
+                    // TODO
+                }
+                ast::TypeDeclaration::TypedefType(_typedef) => {
+                    // TODO
                 }
             }
         }
@@ -72,8 +72,7 @@ pub fn semantic_analyzer<'a>(pipeline: &mut PipelineData) -> Result<dcfile::DCFi
     if pipeline.failing() {
         Err(DCReadError::Semantic)
     } else {
-        // Convert intermediate DC file structure to final immutable DC file structure.
-        Ok(dc_file.into())
+        Ok(())
     }
 }
 

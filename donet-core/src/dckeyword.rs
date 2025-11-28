@@ -21,16 +21,9 @@
 //! keywords as defined in the DC file.
 
 use crate::hashgen::*;
-use multimap::MultiMap;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct DCKeyword(String);
-
-impl From<interim::DCKeyword> for DCKeyword {
-    fn from(value: interim::DCKeyword) -> Self {
-        Self(value.name)
-    }
-}
 
 impl std::fmt::Display for DCKeyword {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -53,9 +46,6 @@ impl DCKeyword {
     }
 }
 
-/// A map of key/value pairs mapping keyword names to DCKeyword struct pointers.
-pub type KeywordName2Keyword<'dc> = MultiMap<String, &'dc DCKeyword>;
-
 /// Represents the two types of inputs that `DCKeywordList.has_keyword`
 /// accepts for looking up a Keyword. In Panda and Astron, the
 /// `has_keyword` method is overloaded instead.
@@ -67,12 +57,11 @@ pub enum IdentifyKeyword {
 /// This is a list of [`DCKeyword`] structures, which represent
 /// communication keywords that may be set on a particular field.
 #[derive(Debug)]
-pub struct DCKeywordList<'dc> {
-    keywords: Vec<&'dc DCKeyword>,
-    kw_name_2_keyword: KeywordName2Keyword<'dc>,
+pub struct DCKeywordList {
+    keywords: Vec<DCKeyword>,
 }
-
-impl std::cmp::PartialEq for DCKeywordList<'_> {
+/* TODO!
+impl std::cmp::PartialEq for DCKeywordList {
     fn eq(&self, other: &Self) -> bool {
         let target_kw_map: KeywordName2Keyword = other._get_keywords_by_name_map();
 
@@ -90,9 +79,9 @@ impl std::cmp::PartialEq for DCKeywordList<'_> {
         }
         true // no differences found
     }
-}
+}*/
 
-impl std::fmt::Display for DCKeywordList<'_> {
+impl std::fmt::Display for DCKeywordList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (i, kw) in self.keywords.iter().enumerate() {
             // We do not call the fmt::Display impl of [`DCKeyword`] here,
@@ -108,7 +97,7 @@ impl std::fmt::Display for DCKeywordList<'_> {
     }
 }
 
-impl LegacyDCHash for DCKeywordList<'_> {
+impl LegacyDCHash for DCKeywordList {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         hashgen.add_int(self.keywords.len().try_into().unwrap());
 
@@ -118,7 +107,7 @@ impl LegacyDCHash for DCKeywordList<'_> {
     }
 }
 
-impl<'dc> DCKeywordList<'dc> {
+impl DCKeywordList {
     /// Returns the number of keywords in this keyword list.
     pub fn get_num_keywords(&self) -> usize {
         self.keywords.len()
@@ -128,10 +117,10 @@ impl<'dc> DCKeywordList<'dc> {
     /// is present in this keyword list.
     pub fn has_keyword(&self, kw: IdentifyKeyword) -> bool {
         match kw {
-            IdentifyKeyword::ByName(kw_id) => self.get_keyword_by_name(kw_id).is_some(),
+            IdentifyKeyword::ByName(_kw_id) => todo!("TODO!"),
             IdentifyKeyword::ByStruct(kw_obj) => {
                 for keyword in &self.keywords {
-                    if **keyword == kw_obj {
+                    if *keyword == kw_obj {
                         return true;
                     }
                 }
@@ -141,97 +130,32 @@ impl<'dc> DCKeywordList<'dc> {
     }
 
     /// Returns [`DCKeyword`] reference by index, wrapped in an Option.
-    pub fn get_keyword(&self, index: usize) -> Option<&'dc DCKeyword> {
-        self.keywords.get(index).copied()
-    }
-
-    /// Returns [`DCKeyword`] reference by given name, wrapped in an Option.
-    pub fn get_keyword_by_name(&self, name: String) -> Option<&'dc DCKeyword> {
-        self.kw_name_2_keyword.get(&name).copied()
-    }
-
-    /// Returns a clone of this object's keyword name map.
-    pub fn _get_keywords_by_name_map(&self) -> KeywordName2Keyword {
-        self.kw_name_2_keyword.clone()
+    pub fn get_keyword(&self, index: usize) -> Option<&DCKeyword> {
+        self.keywords.get(index)
     }
 }
 
-/// Contains intermediate keyword structures and logic
-/// for semantic analysis as the keyword/lists is being built.
-pub(crate) mod interim {
-    use crate::parser::ast;
-    use crate::parser::lexer::Span;
-    use multimap::MultiMap;
-    use std::rc::Rc;
+pub(crate) mod semantics {
+    /* TODO!
+    pub fn add_keyword(element: &mut DCKeywordList, keyword: DCKeyword) -> Result<(), ()> {
+        let kw_name: String = keyword.name.clone(); // avoid moving 'name'
 
-    #[derive(Debug)]
-    pub struct DCKeyword {
-        pub span: Span,
-        pub name: String,
+        if self.kw_name_2_keyword.get(&kw_name).is_some() {
+            return Err(()); // keyword is already in our list!
+        }
+
+        self.keywords.push(Rc::new(keyword));
+        self.kw_name_2_keyword
+            .insert(kw_name, self.keywords.last().unwrap().clone());
+        Ok(())
     }
 
-    impl From<ast::KeywordDefinition> for DCKeyword {
-        fn from(value: ast::KeywordDefinition) -> Self {
-            Self {
-                span: value.span,
-                name: value.identifier,
-            }
-        }
-    }
+    /// Overwrites the DCKeywords of this list with the target's DCKeywords.
+    pub fn copy_keywords(element: &mut DCKeywordList, target: &DCKeywordList) {
+        let target_kw_array: Vec<Rc<DCKeyword>> = target._get_keyword_list();
+        let target_kw_map: MultiMap<String, Rc<DCKeyword>> = target._get_keywords_by_name_map();
 
-    #[derive(Debug)]
-    pub struct DCKeywordList {
-        pub keywords: Vec<Rc<DCKeyword>>,
-        pub kw_name_2_keyword: MultiMap<String, Rc<DCKeyword>>,
-    }
-
-    impl Default for DCKeywordList {
-        fn default() -> Self {
-            Self {
-                keywords: vec![],
-                kw_name_2_keyword: MultiMap::new(),
-            }
-        }
-    }
-
-    impl DCKeywordList {
-        pub fn add_keyword(&mut self, keyword: DCKeyword) -> Result<(), ()> {
-            let kw_name: String = keyword.name.clone(); // avoid moving 'name'
-
-            if self.kw_name_2_keyword.get(&kw_name).is_some() {
-                return Err(()); // keyword is already in our list!
-            }
-
-            self.keywords.push(Rc::new(keyword));
-            self.kw_name_2_keyword
-                .insert(kw_name, self.keywords.last().unwrap().clone());
-            Ok(())
-        }
-
-        /// Overwrites the DCKeywords of this list with the target's DCKeywords.
-        pub fn copy_keywords(&mut self, target: &DCKeywordList) {
-            let target_kw_array: Vec<Rc<DCKeyword>> = target._get_keyword_list();
-            let target_kw_map: MultiMap<String, Rc<DCKeyword>> = target._get_keywords_by_name_map();
-
-            self.keywords = target_kw_array; // old vec will be dropped from memory
-            self.kw_name_2_keyword = target_kw_map;
-        }
-
-        /// Returns a clone of this object's keyword array.
-        pub fn _get_keyword_list(&self) -> Vec<Rc<DCKeyword>> {
-            self.keywords.clone()
-        }
-
-        /// Returns a clone of this object's keyword name map.
-        pub fn _get_keywords_by_name_map(&self) -> MultiMap<String, Rc<DCKeyword>> {
-            self.kw_name_2_keyword.clone()
-        }
-
-        /// Clears the DCKeywords array, keyword name map, and
-        /// historical flags bitmask from this [`DCKeywordList`] struct.
-        pub fn clear_keywords(&mut self) {
-            self.keywords.clear();
-            self.kw_name_2_keyword.clear();
-        }
-    }
+        self.keywords = target_kw_array; // old vec will be dropped from memory
+        self.kw_name_2_keyword = target_kw_map;
+    }*/
 }

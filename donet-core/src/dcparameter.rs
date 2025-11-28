@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -20,59 +20,63 @@
 //! Data model that represents a single parameter of an atomic
 //! field, which together form a RPC method signature.
 
-use crate::dcatomic::DCAtomicField;
 use crate::dctype::DCTypeDefinition;
 use crate::hashgen::*;
 
-/// Represents the type specification of a parameter within an atomic field.
+/// Represents the type specification of a parameter,
+/// which can live under an atomic field, or become
+/// a standalone parameter field. (e.g. for structs)
 #[derive(Debug)]
-pub struct DCParameter<'dc> {
-    parent: &'dc DCAtomicField<'dc>,
+pub struct DCParameter {
     base_type: DCTypeDefinition,
     identifier: Option<String>,
-    type_alias: String,
     default_value: Vec<u8>,
-    has_default_value: bool,
 }
 
-impl std::fmt::Display for DCParameter<'_> {
+impl std::fmt::Display for DCParameter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "TODO")
+        self.base_type.data_type.fmt(f)?;
+
+        // if we have an identifier, write it out
+        if let Some(id) = &self.identifier {
+            write!(f, " {}", id)?;
+        }
+        // if we have a default value, write it as a hex literal
+        if self.has_default_value() {
+            write!(
+                f,
+                " = 0x{}",
+                self.default_value
+                    .clone()
+                    .iter()
+                    .map(|b| format!("{:02X}", b))
+                    .collect::<Vec<String>>()
+                    .join("")
+            )?;
+        }
+        Ok(())
     }
 }
 
-impl LegacyDCHash for DCParameter<'_> {
+impl LegacyDCHash for DCParameter {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_type.generate_hash(hashgen);
     }
 }
 
-impl<'dc> DCParameter<'dc> {
+impl DCParameter {
     #[inline(always)]
-    pub fn get_atomic_field(&self) -> &'dc DCAtomicField {
-        self.parent
+    pub fn has_identifier(&self) -> bool {
+        self.identifier.is_some()
     }
 
     #[inline(always)]
     pub fn has_default_value(&self) -> bool {
-        self.has_default_value
+        !self.default_value.is_empty()
     }
 
     #[inline(always)]
-    pub fn get_default_value(&self) -> Vec<u8> {
-        self.default_value.clone()
-    }
-
-    pub fn set_type(&mut self, dtype: DCTypeDefinition) {
-        self.base_type = dtype;
-    }
-
-    pub fn set_identifier(&mut self, name: &str) {
-        self.identifier = Some(name.to_owned());
-    }
-
-    pub fn set_default_value(&mut self, v: Vec<u8>) {
-        self.default_value = v;
-        self.has_default_value = true;
+    pub fn get_default_value(&self) -> &Vec<u8> {
+        &self.default_value
     }
 }

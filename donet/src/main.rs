@@ -446,6 +446,8 @@ fn validate_dc_files(files: Vec<String>) -> std::io::Result<()> {
             let signed: i32 = hash as i32;
             let pretty: String = dc_file.get_pretty_hash();
 
+            println!("{}", dc_file);
+
             info!(
                 "No issues found. Legacy file hash is {} (signed {}, hex {})",
                 hash, signed, pretty

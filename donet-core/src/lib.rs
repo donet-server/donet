@@ -122,7 +122,7 @@ fn init_logger() {
 /// the DC files, instantiating the DC parsing pipeline, and either
 /// returns the DCFile object or a Parse/File error.
 #[cfg(feature = "dcfile")]
-pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadError> {
+pub fn read_dc_files(file_paths: Vec<String>) -> Result<DCFile, DCReadError> {
     use log::{info, warn};
     use parser::InputFile;
     use std::fs::File;
@@ -243,13 +243,13 @@ pub fn read_dc_files<'a>(file_paths: Vec<String>) -> Result<DCFile<'a>, DCReadEr
 ///
 /// The output of the program would be the following:
 /// ```txt
-/// 0x9c737148
+/// 0x0a93c1b8
 /// DistributedAvatar
 /// ```
 /// <br><img src="https://c.tenor.com/myQHgyWQQ9sAAAAd/tenor.gif">
 ///
 #[cfg(feature = "dcfile")]
-pub fn read_dc<'a>(input: String) -> Result<DCFile<'a>, DCReadError> {
+pub fn read_dc(input: String) -> Result<DCFile, DCReadError> {
     let dcparse_input: Vec<parser::InputFile> = vec![("input.dc".to_string(), input)];
 
     parser::dcparse_pipeline(dcparse_input)

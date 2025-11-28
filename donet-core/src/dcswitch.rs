@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -25,8 +25,7 @@ use std::collections::HashMap;
 
 /// Represents a case in a DC switch declaration.
 #[derive(Debug)]
-pub struct SwitchCase<'dc> {
-    switch: &'dc DCSwitch<'dc>,
+pub struct SwitchCase {
     /// Note that in the legacy DC language, switch cases
     /// always assume to break, no matter if a break
     /// statement was parsed at syntax analysis. This
@@ -34,16 +33,16 @@ pub struct SwitchCase<'dc> {
     breaks: bool,
     /// Empty byte array signifies default case.
     value: Vec<u8>,
-    fields: Vec<DCField<'dc>>,
+    fields: Vec<DCField>,
 }
 
-impl std::fmt::Display for SwitchCase<'_> {
+impl std::fmt::Display for SwitchCase {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.is_default() {
             writeln!(f, "default:")?;
         } else {
             write!(f, "case ")?;
-            self.switch.key.format_packed_data(f, &self.value, false)?;
+            //self.switch.key.format_packed_data(f, &self.value, false)?;
             writeln!(f, ":")?;
         }
 
@@ -57,7 +56,7 @@ impl std::fmt::Display for SwitchCase<'_> {
     }
 }
 
-impl LegacyDCHash for SwitchCase<'_> {
+impl LegacyDCHash for SwitchCase {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         if !self.is_default() {
             hashgen.add_blob(self.value.clone());
@@ -71,7 +70,7 @@ impl LegacyDCHash for SwitchCase<'_> {
     }
 }
 
-impl<'dc> SwitchCase<'dc> {
+impl<'dc> SwitchCase {
     /// Returns true if this case is a default case.
     pub fn is_default(&self) -> bool {
         self.value.is_empty()
@@ -82,11 +81,11 @@ impl<'dc> SwitchCase<'dc> {
         self.fields.len()
     }
 
-    pub fn get_field(&self, index: usize) -> Option<&'dc DCField> {
+    pub fn get_field(&self, index: usize) -> Option<&DCField> {
         self.fields.get(index)
     }
 
-    pub fn get_field_by_name(&self, _name: String) -> Option<&'dc DCField> {
+    pub fn get_field_by_name(&self, _name: String) -> Option<&DCField> {
         todo!()
     }
 }
@@ -95,29 +94,15 @@ impl<'dc> SwitchCase<'dc> {
 /// a dclass declaration and represents two or more alternative
 /// unpacking schemes based on the first field read.
 #[derive(Debug)]
-pub struct DCSwitch<'dc> {
+pub struct DCSwitch {
     name: Option<String>,
-    key: DCField<'dc>,
-    cases: Vec<SwitchCase<'dc>>,
-    default_case: Option<SwitchCase<'dc>>,
-    case_fields: Vec<&'dc DCField<'dc>>,
+    key: DCField,
+    cases: Vec<SwitchCase>,
+    default_case: Option<SwitchCase>,
     cases_by_value: HashMap<Vec<u8>, usize>,
 }
 
-impl From<interim::DCSwitch> for DCSwitch<'_> {
-    fn from(value: interim::DCSwitch) -> Self {
-        Self {
-            name: value.name,
-            key: todo!(),
-            cases: vec![],
-            default_case: None,
-            case_fields: vec![],
-            cases_by_value: HashMap::default(),
-        }
-    }
-}
-
-impl std::fmt::Display for DCSwitch<'_> {
+impl std::fmt::Display for DCSwitch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "switch")?;
 
@@ -136,7 +121,7 @@ impl std::fmt::Display for DCSwitch<'_> {
     }
 }
 
-impl LegacyDCHash for DCSwitch<'_> {
+impl LegacyDCHash for DCSwitch {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         if let Some(name) = self.get_name() {
             hashgen.add_string(name)
@@ -156,7 +141,7 @@ impl LegacyDCHash for DCSwitch<'_> {
     }
 }
 
-impl<'dc> DCSwitch<'dc> {
+impl DCSwitch {
     /// Returns the optional identifier for this switch.
     #[inline(always)]
     pub fn get_name(&self) -> Option<String> {
@@ -168,7 +153,7 @@ impl<'dc> DCSwitch<'dc> {
     /// The value of this parameter in the record determines which
     /// one of the several cases within the switch will be used.
     #[inline(always)]
-    pub fn get_key_parameter(&self) -> &'dc DCField {
+    pub fn get_key_parameter(&self) -> &DCField {
         &self.key
     }
 
@@ -181,14 +166,14 @@ impl<'dc> DCSwitch<'dc> {
     }
 
     /// Returns case reference from given index wrapped in an Option.
-    pub fn get_case(&self, index: usize) -> Option<&'dc SwitchCase> {
+    pub fn get_case(&self, index: usize) -> Option<&SwitchCase> {
         self.cases.get(index)
     }
 
     /// Returns default case reference wrapped in an Option.
     ///
     /// A default case is optional, so `None` can be returned.
-    pub fn get_default_case(&self) -> Option<&'dc SwitchCase> {
+    pub fn get_default_case(&self) -> Option<&SwitchCase> {
         self.default_case.as_ref()
     }
 
@@ -201,28 +186,4 @@ impl<'dc> DCSwitch<'dc> {
 
     // TODO
     pub fn apply_switch(&self, _value: Vec<u8>, _length: usize) {}
-}
-
-/// Contains intermediate DC Switch structure and logic
-/// for semantic analysis as the DC Switch is being built.
-pub(crate) mod interim {
-    #[derive(Debug)]
-    pub struct SwitchCase {
-        pub breaks: bool,
-        pub value: Vec<u8>,
-    }
-
-    impl SwitchCase {
-        fn add_case_field(&mut self) {}
-    }
-
-    #[derive(Debug)]
-    pub struct DCSwitch {
-        pub name: Option<String>,
-        pub key_parameter: u8, // TODO
-    }
-
-    impl DCSwitch {
-        fn add_case(&mut self) {}
-    }
 }

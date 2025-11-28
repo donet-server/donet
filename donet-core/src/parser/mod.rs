@@ -29,6 +29,7 @@
 
 pub(crate) mod ast;
 pub mod error;
+mod generation;
 pub(crate) mod lexer;
 pub(crate) mod parser;
 pub(crate) mod pipeline;
@@ -46,7 +47,7 @@ pub(crate) type InputFile = (String, String);
 /// Runs the entire DC parser pipeline. The input is an array of strings
 /// that represent the input DC files in UTF-8, and the output is the final
 /// DC element tree data structure to be used by Donet.
-pub(crate) fn dcparse_pipeline<'a>(inputs: Vec<InputFile>) -> Result<DCFile<'a>, DCReadError> {
+pub(crate) fn dcparse_pipeline(inputs: Vec<InputFile>) -> Result<DCFile, DCReadError> {
     // Create new pipeline data struct
     let mut pipeline_data: PipelineData<'_> = PipelineData::default();
 
@@ -89,5 +90,10 @@ pub(crate) fn dcparse_pipeline<'a>(inputs: Vec<InputFile>) -> Result<DCFile<'a>,
     }
 
     // Process all abstract syntax trees in semantic analyzer.
-    semantics::semantic_analyzer(&mut pipeline_data)
+    // Will output diagnostics if any semantic issues are found.
+    semantics::semantic_analyzer(&mut pipeline_data)?;
+
+    // Final stage of the DC parser pipeline.
+    // Generates the final immutable DC element tree data structure.
+    Ok(generation::dc_tree_generation(&mut pipeline_data))
 }

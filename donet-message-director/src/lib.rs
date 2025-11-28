@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -32,7 +32,7 @@ use donet_network::{tcp, udp};
 use donet_network::{Client, HasClient, RecvData, RecvSendHandles};
 use log::{error, info, trace, warn};
 use std::collections::HashSet;
-use std::io::{Error, ErrorKind, Result};
+use std::io::{Error, Result};
 use std::sync::Arc;
 use subscriber::*;
 use tokio::net::TcpStream;
@@ -78,10 +78,7 @@ impl DonetService for MessageDirector {
     type Service = Self;
     type Configuration = CreateInfo;
 
-    async fn create(
-        conf: Self::Configuration,
-        _: Option<DCFile<'static>>,
-    ) -> Result<Arc<Mutex<Self::Service>>> {
+    async fn create(conf: Self::Configuration, _: Option<DCFile>) -> Result<Arc<Mutex<Self::Service>>> {
         let bind_addr: &str = conf.service_conf.bind.as_str();
         let upstream: Option<String> = conf.service_conf.upstream;
         let logger_uri: Option<String> = conf.event_logger_url;
@@ -118,7 +115,7 @@ impl DonetService for MessageDirector {
         })))
     }
 
-    async fn start(conf: config::DonetConfig, _: Option<DCFile<'static>>) -> Result<JoinHandle<Result<()>>> {
+    async fn start(conf: config::DonetConfig, _: Option<DCFile>) -> Result<JoinHandle<Result<()>>> {
         let service_conf: CreateInfo = CreateInfo {
             // We can unwrap safely here since this function only is called if it is `Some`.
             service_conf: conf.services.message_director.expect("MD conf not found."),

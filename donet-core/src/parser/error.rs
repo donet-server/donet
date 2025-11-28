@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez
+    Copyright © 2024-2025 Max Rodriguez
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -26,6 +26,8 @@ use codespan_diag::LabelStyle;
 use codespan_reporting::diagnostic as codespan_diag;
 use std::mem::discriminant;
 use thiserror::Error;
+
+const ERR_DOCS: &str = "https://docs.donet-server.org/master/dclanguage/error-codes";
 
 /// Convert `self` type to an error code.
 /// Used with DC parser pipeline error types.
@@ -224,8 +226,12 @@ impl From<Diagnostic> for codespan_diag::Diagnostic<usize> {
                         "Syntax errors are limited. Please see issue #19.".into(),
                         "https://gitlab.com/donet-server/donet/-/issues/19".into(),
                     ]
+                // for all other error codes, simply add a note that has a link to its doc page.
                 } else {
-                    vec![]
+                    vec![
+                        "For a more detailed explanation see:".into(),
+                        format!("{}/#{}", ERR_DOCS, val.error.error_code().to_lowercase()),
+                    ]
                 }
             })
     }

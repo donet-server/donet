@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -27,18 +27,18 @@ use crate::hashgen::*;
 /// An abstract field which provides an interface to access
 /// multiple atomic fields under one field and one identifier.
 #[derive(Debug)]
-pub struct DCMolecularField<'dc> {
-    base_field: DCField<'dc>,
-    atomic_fields: Vec<&'dc DCAtomicField<'dc>>,
+pub struct DCMolecularField {
+    base_field: DCField,
+    atomic_fields: Vec<DCAtomicField>,
 }
 
-impl std::fmt::Display for DCMolecularField<'_> {
+impl std::fmt::Display for DCMolecularField {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "TODO")
     }
 }
 
-impl LegacyDCHash for DCMolecularField<'_> {
+impl LegacyDCHash for DCMolecularField {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_field.generate_hash(hashgen);
 
@@ -50,14 +50,14 @@ impl LegacyDCHash for DCMolecularField<'_> {
     }
 }
 
-impl<'dc> DCMolecularField<'dc> {
+impl DCMolecularField {
     #[inline(always)]
     pub fn get_num_atomics(&self) -> usize {
         self.atomic_fields.len()
     }
 
     #[inline(always)]
-    pub fn get_atomic_field(&self, index: usize) -> Option<&'dc DCAtomicField> {
-        self.atomic_fields.get(index).copied()
+    pub fn get_atomic_field(&self, index: usize) -> Option<&DCAtomicField> {
+        self.atomic_fields.get(index)
     }
 }

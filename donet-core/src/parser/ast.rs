@@ -300,7 +300,6 @@ pub struct NumericType {
     pub span: Span,
     pub base_type: DCTypeEnum,
     // Transforms
-    pub cast: Option<DataType>,
     pub modulus: Option<f64>,
     pub divisor: Option<f64>,
     pub range: Option<NumericRange>,
@@ -311,7 +310,6 @@ impl NumericType {
         Self {
             span,
             base_type: value,
-            cast: None,
             modulus: None,
             divisor: None,
             range: None,

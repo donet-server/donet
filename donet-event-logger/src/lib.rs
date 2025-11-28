@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -64,10 +64,7 @@ impl DonetService for EventLogger {
     type Service = Self;
     type Configuration = config::EventLogger;
 
-    async fn create(
-        mut conf: Self::Configuration,
-        _: Option<DCFile<'static>>,
-    ) -> Result<Arc<Mutex<Self::Service>>> {
+    async fn create(mut conf: Self::Configuration, _: Option<DCFile>) -> Result<Arc<Mutex<Self::Service>>> {
         Ok(Arc::new(Mutex::new(Self {
             binding: udp::Socket::bind(&conf.bind).await?,
             log_format: {
@@ -83,7 +80,7 @@ impl DonetService for EventLogger {
         })))
     }
 
-    async fn start(conf: config::DonetConfig, _: Option<DCFile<'static>>) -> Result<JoinHandle<Result<()>>> {
+    async fn start(conf: config::DonetConfig, _: Option<DCFile>) -> Result<JoinHandle<Result<()>>> {
         // We can unwrap safely here since this function only is called if it is `Some`.
         let service_conf = conf.services.event_logger.unwrap();
 

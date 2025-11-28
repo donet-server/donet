@@ -649,7 +649,6 @@ parser! {
 
     numeric_type: ast::NumericType {
         numeric_type_token[nt] => nt,
-        numeric_with_explicit_cast[nt] => nt,
         numeric_with_modulus[nt] => nt,
         numeric_with_divisor[nt] => nt,
         numeric_with_range[nt] => nt,
@@ -657,10 +656,6 @@ parser! {
 
     numeric_with_range: ast::NumericType {
         numeric_type_token[mut nt] OpenParenthesis numeric_range[nr] CloseParenthesis => {
-            nt.range = nr;
-            nt
-        },
-        numeric_with_explicit_cast[mut nt] OpenParenthesis numeric_range[nr] CloseParenthesis => {
             nt.range = nr;
             nt
         },
@@ -679,10 +674,6 @@ parser! {
             nt.add_divisor(num);
             nt
         },
-        numeric_with_explicit_cast[mut nt] ForwardSlash number[num] => {
-            nt.add_divisor(num);
-            nt
-        },
         numeric_with_modulus[mut nt] ForwardSlash number[num] => {
             nt.add_divisor(num);
             nt
@@ -692,40 +683,6 @@ parser! {
     numeric_with_modulus: ast::NumericType {
         numeric_type_token[mut nt] Percent number[num] => {
             nt.add_modulus(num);
-            nt
-        },
-        numeric_with_explicit_cast[mut nt] Percent number[num] => {
-            nt.add_modulus(num);
-            nt
-        },
-    }
-
-    // This is unique to Donet, and a new addition to the historic DC language.
-    // Originally, the DC system was used with Python clients, which do not need
-    // strict type annotations as Python is a dynamically typed language.
-    //
-    // Since we are not expecting the client to use a dynamically typed language, we need
-    // to explicitly tell the client what data type to cast to when we perform these
-    // operations on numeric types after they are received from the network.
-    numeric_with_explicit_cast: ast::NumericType {
-        // Explicit casts do not use the `numeric_type_token` non-terminal, because
-        // there is zero need to cast any numeric data type to a Char ~~or Bool~~, since
-        // this is used for types that have arithmetic operations applied, such as division.
-        //
-        // Also because it is 2:27 AM and its giving me a shift-reduce conflict again.
-        numeric_type_token[mut nt]
-        OpenParenthesis signed_integer_type[dt] CloseParenthesis => {
-            nt.cast = Some(dt);
-            nt
-        },
-        numeric_type_token[mut nt]
-        OpenParenthesis unsigned_integer_type[dt] CloseParenthesis => {
-            nt.cast = Some(dt);
-            nt
-        },
-        numeric_type_token[mut nt]
-        OpenParenthesis floating_point_type[dt] CloseParenthesis => {
-            nt.cast = Some(dt);
             nt
         },
     }
@@ -1142,17 +1099,12 @@ mod tests {
                 int32%360/1000 floatingPointAngle;
                 int32/1000 efficientFloatIn32Bits;
                 float32 waitIsntAstronsFloat32TheSame;
-                int16(int32) forTheStaticallyTypedLanguages;
-                int16(float64)(0.0-1.0) withRangeTest;
-                int16(float32)%360/10.0 anotherTest;
-                int16(uint32)/10 moreTests;
                 uint16/1000(0-1) youCanStackThemToo;
                 int64/10000(+50-+999) [] thisIsValid;
                 int8%10(0-10) anotherOne;
                 int32('a'-'b') numericRangeWithChar;
                 float32(0.1-0.99) floatingRange;
                 float32%10.0 modulusWithFloat;
-                float32(float64)%10.0 coverage;
                 int16%100/10(-80-+100) lastTest;
             };
             ",

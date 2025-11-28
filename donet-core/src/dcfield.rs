@@ -23,9 +23,7 @@
 use crate::datagram::datagram::Datagram;
 use crate::dcatomic::DCAtomicField;
 use crate::dckeyword::{DCKeywordList, IdentifyKeyword};
-use crate::dclass::DClass;
 use crate::dcmolecular::DCMolecularField;
-use crate::dcstruct::DCStruct;
 use crate::dctype::DCTypeDefinition;
 use crate::globals;
 use crate::hashgen::*;
@@ -46,19 +44,10 @@ use crate::hashgen::*;
 /// represents, joined together in the order in which they were declared
 /// when the molecular field was declared.
 #[derive(Debug)]
-pub enum ClassField<'dc> {
-    Field(DCField<'dc>),
-    Atomic(DCAtomicField<'dc>),
-    Molecular(DCMolecularField<'dc>),
-}
-
-/// A DC field element can be declared within a dclass or a
-/// struct declaration. The DC field element must have a
-/// reference to its parent, which is stored in this enum type.
-#[derive(Debug)]
-pub enum FieldParent<'dc> {
-    DClass(&'dc DClass<'dc>),
-    Strukt(&'dc DCStruct<'dc>), // 'strukt' due to reserved keyword
+pub enum ClassField {
+    Field(DCField),
+    Atomic(DCAtomicField),
+    Molecular(DCMolecularField),
 }
 
 /// Macro for Panda historical keywords inline functions.
@@ -74,9 +63,8 @@ macro_rules! has_keyword {
 /// struct and dclass fields. In the DC language, there are three types
 /// of field declarations, which are: plain fields, atomic, and molecular.
 #[derive(Debug)]
-pub struct DCField<'dc> {
-    keyword_list: DCKeywordList<'dc>,
-    parent_element: FieldParent<'dc>,
+pub struct DCField {
+    keyword_list: DCKeywordList,
     field_name: String,
     field_id: globals::FieldId,
     field_type: DCTypeDefinition,
@@ -86,13 +74,13 @@ pub struct DCField<'dc> {
     bogus_field: bool,
 }
 
-impl std::fmt::Display for DCField<'_> {
+impl std::fmt::Display for DCField {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "TODO")
     }
 }
 
-impl LegacyDCHash for DCField<'_> {
+impl LegacyDCHash for DCField {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         hashgen.add_int(self.field_id.into());
         hashgen.add_string(self.field_name.clone());
@@ -102,7 +90,7 @@ impl LegacyDCHash for DCField<'_> {
     }
 }
 
-impl<'dc> DCField<'dc> {
+impl DCField {
     #[inline(always)]
     pub fn get_field_id(&self) -> globals::FieldId {
         self.field_id
@@ -111,16 +99,6 @@ impl<'dc> DCField<'dc> {
     #[inline(always)]
     pub fn get_field_name(&self) -> String {
         self.field_name.clone()
-    }
-
-    /// Gets the parent DClass element reference.
-    ///
-    /// Panics if this field's parent element is not a DClass.
-    pub fn get_dclass(&self) -> &'dc DClass {
-        match self.parent_element {
-            FieldParent::DClass(dclass_ref) => dclass_ref,
-            FieldParent::Strukt(_) => panic!("Field parent is not a DClass."),
-        }
     }
 
     #[inline(always)]
@@ -195,18 +173,5 @@ impl<'dc> DCField<'dc> {
 
     fn _refresh_default_value(&self) {
         todo!()
-    }
-}
-
-pub(crate) mod interim {
-    use crate::parser::ast;
-
-    #[derive(Debug)]
-    pub struct DCField {}
-
-    impl From<ast::StructField> for DCField {
-        fn from(value: ast::StructField) -> Self {
-            Self {}
-        }
     }
 }

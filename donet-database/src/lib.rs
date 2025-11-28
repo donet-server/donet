@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -65,7 +65,7 @@ struct Field {
 }
 
 pub struct DatabaseServer {
-    dc_file: DCFile<'static>,
+    dc_file: DCFile,
     _sql_pool: Pool,
     sql_conn: PooledConn,
     _credentials: DBCredentials,
@@ -75,10 +75,7 @@ impl DonetService for DatabaseServer {
     type Service = Self;
     type Configuration = config::DBServer;
 
-    async fn create(
-        conf: Self::Configuration,
-        dc: Option<DCFile<'static>>,
-    ) -> Result<Arc<Mutex<Self::Service>>> {
+    async fn create(conf: Self::Configuration, dc: Option<DCFile>) -> Result<Arc<Mutex<Self::Service>>> {
         // TODO: Check for db backend type once we have multiple DB backend support.
         let sql_config: config::SQL;
         let host_port: Vec<&str>;
@@ -156,7 +153,7 @@ impl DonetService for DatabaseServer {
         })))
     }
 
-    async fn start(conf: config::DonetConfig, dc: Option<DCFile<'static>>) -> Result<JoinHandle<Result<()>>> {
+    async fn start(conf: config::DonetConfig, dc: Option<DCFile>) -> Result<JoinHandle<Result<()>>> {
         // NOTE: We are unwrapping an Option without checking,
         // as this method can only be called if 'database_server'
         // is of a 'Some' type, which guarantees no panic scenario.

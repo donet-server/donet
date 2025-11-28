@@ -28,18 +28,18 @@ use crate::hashgen::*;
 /// This defines the interface to a DClass object, and is
 /// always implemented as a remote procedure call (RPC).
 #[derive(Debug)]
-pub struct DCAtomicField<'dc> {
-    base_field: DCField<'dc>,
-    elements: Vec<&'dc DCParameter<'dc>>,
+pub struct DCAtomicField {
+    base_field: DCField,
+    elements: Vec<DCParameter>,
 }
 
-impl std::fmt::Display for DCAtomicField<'_> {
+impl std::fmt::Display for DCAtomicField {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "TODO")
     }
 }
 
-impl LegacyDCHash for DCAtomicField<'_> {
+impl LegacyDCHash for DCAtomicField {
     fn generate_hash(&self, hashgen: &mut DCHashGenerator) {
         self.base_field.generate_hash(hashgen);
 
@@ -51,14 +51,14 @@ impl LegacyDCHash for DCAtomicField<'_> {
     }
 }
 
-impl<'dc> DCAtomicField<'dc> {
+impl DCAtomicField {
     #[inline(always)]
     pub fn get_num_elements(&self) -> usize {
         self.elements.len()
     }
 
     #[inline(always)]
-    pub fn get_element(&self, index: usize) -> Option<&'dc DCParameter<'dc>> {
-        self.elements.get(index).copied()
+    pub fn get_element(&self, index: usize) -> Option<&DCParameter> {
+        self.elements.get(index)
     }
 }

@@ -1,7 +1,7 @@
 /*
     This file is part of Donet.
 
-    Copyright © 2024 Max Rodriguez <me@maxrdz.com>
+    Copyright © 2024-2025 Max Rodriguez <me@maxrdz.com>
 
     Donet is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License,
@@ -53,12 +53,12 @@ pub trait DonetService {
 
     fn create(
         conf: Self::Configuration,
-        dc: Option<DCFile<'static>>,
+        dc: Option<DCFile>,
     ) -> impl Future<Output = Result<Arc<Mutex<Self::Service>>>> + Send;
 
     fn start(
         conf: config::DonetConfig,
-        dc: Option<DCFile<'static>>,
+        dc: Option<DCFile>,
     ) -> impl Future<Output = Result<JoinHandle<Result<()>>>> + Send;
 
     /// This service's main asynchronous loop.
