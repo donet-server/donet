@@ -263,6 +263,7 @@ test(
 
 message('Setting up Git pre-commit hook..')
 run_command('cp', '-f', 'build-aux/git/pre-commit.hook', '.git/hooks/pre-commit', check: false)
+run_command('cp', '-f', 'build-aux/git/pre-push.hook', '.git/hooks/pre-push', check: false)
 
 meson.add_dist_script(
   'build-aux/meson/dist-vendor.sh',
