@@ -44,7 +44,7 @@ We also have a Discord community server, which you can join [here!](https://disc
 
 ## Copyright and License
 
-Copyright © 2023-2025 Donet Authors
+Copyright © 2023-2026 Donet Authors
 
 "Donet" can be found at https://gitlab.com/donet-server/donet
 
