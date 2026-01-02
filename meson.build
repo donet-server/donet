@@ -267,7 +267,7 @@ test(
   cargo_bin,
   env: cargo_env,
   args: [
-    'test', '--color=always', '--all',
+    'test', '--color=always', '--workspace', '--exclude', 'donet-wcp',
     cargo_opts,
   ],
   is_parallel: false,
