@@ -25,3 +25,9 @@ option('build_state_server', type: 'boolean', value: false)
 option('build_database_server', type: 'boolean', value: false)
 option('build_dbss', type: 'boolean', value: false)
 option('build_event_logger', type: 'boolean', value: false)
+option(
+  'build_wcp',
+  type: 'boolean',
+  value: false,
+  description: 'Build the World Control Panel application.'
+)

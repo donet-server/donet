@@ -1,0 +1,20 @@
+[package]
+name = "donet-wcp"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+publish = false
+readme = "README.md"
+
+[[bin]]
+name = "donetwcp"
+path = "src/main.rs"
+
+[dependencies]
+donet-core = { version = "0.1.0", path = "../donet-core", default-features = false, features = ["datagram"] }
+log = { workspace = true }
+tokio = { workspace = true, features = ["net", "io-util"] }
+iced = { version = "0.14" }

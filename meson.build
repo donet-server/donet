@@ -56,7 +56,7 @@ if get_option('profile') == 'release'
   cargo_opts += [ '--release' ]
   rust_target = 'release'
 
-  message('Building Donet for Release.')
+  message('Building for Release.')
 else
   rust_target = 'debug'
   feature_flags += ['tokio_debugging']
@@ -64,41 +64,50 @@ else
   # Needed for Tokio async runtime instrumentation
   cargo_env.set('RUSTFLAGS', '--cfg tokio_unstable')
 
-  message('Building Donet for Debug.')
-endif
+  message('Building for Debug.')
+  endif
 
-if get_option('dockerized')
-  feature_flags += ['dockerized']
-endif
+if get_option('build_wcp')
+  cargo_opts += ['--package', 'donet-wcp']
 
-if get_option('build_client_agent')
-  feature_flags += [ 'client-agent' ]
-  message('Building the Client Agent.')
-endif
+  # override output bin to `donetwcp`
+  daemon_bin = 'donetwcp'
 
-if get_option('build_message_director')
-  feature_flags += [ 'message-director' ]
-  message('Building the Message Director.')
-endif
+  message('Building Donet WCP application.')
+else
+  if get_option('dockerized')
+    feature_flags += ['dockerized']
+  endif
 
-if get_option('build_state_server')
-  feature_flags += [ 'state-server' ]
-  message('Building the State Server.')
-endif
+  if get_option('build_client_agent')
+    feature_flags += [ 'client-agent' ]
+    message('Building the Client Agent.')
+  endif
 
-if get_option('build_database_server')
-  feature_flags += [ 'database-server' ]
-  message('Building the Database Server.')
-endif
+  if get_option('build_message_director')
+    feature_flags += [ 'message-director' ]
+    message('Building the Message Director.')
+  endif
 
-if get_option('build_dbss')
-  feature_flags += [ 'dbss' ]
-  message('Building the DBSS.')
-endif
+  if get_option('build_state_server')
+    feature_flags += [ 'state-server' ]
+    message('Building the State Server.')
+  endif
 
-if get_option('build_event_logger')
-  feature_flags += [ 'event-logger' ]
-  message('Building the Event Logger.')
+  if get_option('build_database_server')
+    feature_flags += [ 'database-server' ]
+    message('Building the Database Server.')
+  endif
+
+  if get_option('build_dbss')
+    feature_flags += [ 'dbss' ]
+    message('Building the DBSS.')
+  endif
+
+  if get_option('build_event_logger')
+    feature_flags += [ 'event-logger' ]
+    message('Building the Event Logger.')
+  endif
 endif
 
 # Convert FF list to argument string for --features option
@@ -116,7 +125,11 @@ endforeach
 if feature_flags.length() > 0
   cargo_opts += [ '--no-default-features', '--features', cargo_ff_arg ]
 else
-  message('Building all default Donet services.')
+  if get_option('build_wcp')
+    message('Building WCP with default feature flags..')
+  else
+    message('Building all default Donet services.')
+  endif
 endif
 
 subdir('donet-daemon')

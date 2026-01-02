@@ -8,6 +8,7 @@ members = [
     "donet-event-logger",
     "donet-message-director",
     "donet-network",
+    "donet-wcp",
 
     # Internal
     "functional-tests",
