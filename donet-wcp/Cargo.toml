@@ -13,8 +13,18 @@ readme = "README.md"
 name = "donetwcp"
 path = "src/main.rs"
 
+[features]
+tokio_debugging = ["default", "dep:console-subscriber", "tokio/full", "tokio/tracing"]
+default = []
+
 [dependencies]
+console-subscriber = { version = "0.4", optional = true }
 donet-core = { version = "0.1.0", path = "../donet-core", default-features = false, features = ["datagram"] }
+fluent = { version = "0.17" }
+iced = { version = "0.14" }
 log = { workspace = true }
 tokio = { workspace = true, features = ["net", "io-util"] }
-iced = { version = "0.14" }
+unic-langid = "0.9"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros"] }
