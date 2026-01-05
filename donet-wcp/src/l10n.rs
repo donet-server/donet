@@ -21,6 +21,8 @@ use fluent::{FluentArgs, FluentBundle, FluentError, FluentMessage, FluentResourc
 use std::rc::Rc;
 use unic_langid::LanguageIdentifier;
 
+static EN_US_LOCALE: &[u8] = include_bytes!("../l10n/en-US/app.ftl");
+
 #[derive(Clone)]
 pub struct Localization {
     inner: Rc<FluentBundle<FluentResource>>,
@@ -28,8 +30,7 @@ pub struct Localization {
 
 impl Default for Localization {
     fn default() -> Self {
-        let ftl_read: Vec<u8> = std::fs::read("./donet-wcp/l10n/en-US/app.ftl").unwrap();
-        let ftl_string: String = String::from_utf8(ftl_read).unwrap();
+        let ftl_string: String = String::from_utf8(EN_US_LOCALE.to_vec()).unwrap();
 
         let res = FluentResource::try_new(ftl_string).expect("Failed to parse an FTL string.");
 

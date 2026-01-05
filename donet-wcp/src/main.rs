@@ -31,8 +31,8 @@ use std::sync::Arc;
 const DEFAULT_WIN_SIZE: (u32, u32) = (1000, 750);
 
 /// Window icon is stored as RGBA values in the compiled binary.
-static WCP_ICON: &[u8] = include_bytes!("../../logo/donet_wcp_icon.rgba");
-const ICON_PX: u32 = 64;
+static APP_ICON_DATA: &[u8] = include_bytes!("../assets/icon.rgba");
+const ICON_PX: u32 = 32;
 
 /// Our custom theme for Donet WCP.
 static WCP_PALETTE: Palette = Palette {
@@ -44,9 +44,27 @@ static WCP_PALETTE: Palette = Palette {
     danger: color!(0xff0000),
 };
 
+// Store font files in the compiled binary.
+static CANTARELL_FONT_DATA: &[u8] = include_bytes!("../assets/Cantarell-VF.otf");
+static ICONS_FONT_DATA: &[u8] = include_bytes!("../assets/icons.otf");
+
+/// Iced [`Font`] struct to query our Icons font.
+static ICONS_FONT: Font = Font {
+    family: iced::font::Family::Name("wcpicons"),
+    weight: iced::font::Weight::Medium,
+    stretch: iced::font::Stretch::Normal,
+    style: iced::font::Style::Normal,
+};
+
 struct State {
     locale: Localization,
     view: TopLevelView,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Message {
+    TopLevelView(TopLevelView),
+    ToolbarSelection(ToolbarCategory),
 }
 
 #[derive(Default, Debug, Clone, Copy)]
@@ -73,12 +91,12 @@ impl State {
         }
     }
 
-    fn update(&mut self, message: ToolbarCategory) {
+    fn update(&mut self, message: Message) {
         ()
     }
 
-    fn view(&self) -> Column<'_, ToolbarCategory> {
-        let view: Container<'_, ToolbarCategory> = match &self.view {
+    fn view(&self) -> Column<'_, Message> {
+        let view: Container<'_, Message> = match &self.view {
             TopLevelView::ControlPanel => todo!(),
             TopLevelView::ConnectionWizard => self.build_connection_wizard(),
         };
@@ -86,24 +104,31 @@ impl State {
         column![self.build_toolbar(), view, self.build_status_bar()]
     }
 
-    fn build_toolbar(&self) -> Container<'_, ToolbarCategory> {
+    fn build_toolbar(&self) -> Container<'_, Message> {
         container(row![
-            button(text(self.locale.get_string("connection"))).on_press(ToolbarCategory::Connection),
-            button(text(self.locale.get_string("edit"))).on_press(ToolbarCategory::Edit),
-            button(text(self.locale.get_string("view"))).on_press(ToolbarCategory::View),
-            button(text(self.locale.get_string("help"))).on_press(ToolbarCategory::Help),
+            button(text(self.locale.get_string("connection")))
+                .on_press(Message::ToolbarSelection(ToolbarCategory::Connection)),
+            button(text(self.locale.get_string("edit")))
+                .on_press(Message::ToolbarSelection(ToolbarCategory::Edit)),
+            button(text(self.locale.get_string("view")))
+                .on_press(Message::ToolbarSelection(ToolbarCategory::Help)),
+            button(text(self.locale.get_string("help")))
+                .on_press(Message::ToolbarSelection(ToolbarCategory::View)),
         ])
         .width(Fill)
         .align_left(Fill)
     }
 
-    fn build_status_bar(&self) -> Container<'_, ToolbarCategory> {
-        container(text(self.locale.get_string("status-disconnected")))
-            .width(Fill)
-            .align_left(Fill)
+    fn build_status_bar(&self) -> Container<'_, Message> {
+        container(row![
+            text("k ").font(ICONS_FONT),
+            text(self.locale.get_string("status-disconnected"))
+        ])
+        .width(Fill)
+        .align_left(Fill)
     }
 
-    fn build_connection_wizard(&self) -> Container<'_, ToolbarCategory> {
+    fn build_connection_wizard(&self) -> Container<'_, Message> {
         container(text(self.locale.get_string("connection-wizard-title")))
             .width(Fill)
             .height(Fill)
@@ -132,9 +157,16 @@ fn main() -> iced::Result {
         .title(State::title)
         .window(Settings {
             size: DEFAULT_WIN_SIZE.into(),
-            icon: Some(from_rgba(WCP_ICON.to_vec(), ICON_PX, ICON_PX).expect("Failed to load icon.")),
+            icon: Some(from_rgba(APP_ICON_DATA.to_vec(), ICON_PX, ICON_PX).expect("Failed to load icon.")),
             ..Settings::default()
         })
-        .default_font(Font::MONOSPACE)
+        .font(CANTARELL_FONT_DATA)
+        .font(ICONS_FONT_DATA)
+        .default_font(Font {
+            family: iced::font::Family::Name("Cantarell"),
+            weight: iced::font::Weight::Normal,
+            stretch: iced::font::Stretch::Normal,
+            style: iced::font::Style::Normal,
+        })
         .run()
 }
