@@ -18,51 +18,31 @@
 */
 
 mod l10n;
+mod style;
+mod wizard;
 
-use iced::theme::{Custom, Palette};
+use iced::theme::Custom;
 use iced::widget::{button, column, container, row, text, Column, Container};
 use iced::window::icon::from_rgba;
 use iced::window::Settings;
 use iced::Length::Fill;
-use iced::{color, Font, Theme};
+use iced::{Task, Theme};
+use iced_moving_picture::widget::gif;
 use l10n::Localization;
 use std::sync::Arc;
 
-const DEFAULT_WIN_SIZE: (u32, u32) = (1000, 750);
-
-/// Window icon is stored as RGBA values in the compiled binary.
-static APP_ICON_DATA: &[u8] = include_bytes!("../assets/icon.rgba");
-const ICON_PX: u32 = 32;
-
-/// Our custom theme for Donet WCP.
-static WCP_PALETTE: Palette = Palette {
-    background: color!(0x101010),
-    text: color!(0xffffff),
-    primary: color!(0xf7717d),
-    success: color!(0x00ff00),
-    warning: color!(0xff0900),
-    danger: color!(0xff0000),
-};
-
-// Store font files in the compiled binary.
-static CANTARELL_FONT_DATA: &[u8] = include_bytes!("../assets/Cantarell-VF.otf");
-static ICONS_FONT_DATA: &[u8] = include_bytes!("../assets/icons.otf");
-
-/// Iced [`Font`] struct to query our Icons font.
-static ICONS_FONT: Font = Font {
-    family: iced::font::Family::Name("wcpicons"),
-    weight: iced::font::Weight::Medium,
-    stretch: iced::font::Stretch::Normal,
-    style: iced::font::Style::Normal,
-};
+use crate::wizard::ConnectionWizard;
 
 struct State {
     locale: Localization,
     view: TopLevelView,
+    frames: gif::Frames,
+    wizard: wizard::ConnectionWizard,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 enum Message {
+    E(wizard::WizardMessage),
     TopLevelView(TopLevelView),
     ToolbarSelection(ToolbarCategory),
 }
@@ -84,21 +64,35 @@ enum ToolbarCategory {
 
 impl State {
     fn new() -> State {
-        let locale = Localization::default();
+        // pass a clone of the rc pointer for the fluent bundle to any other components
+        let locale: Localization = Localization::default();
+
+        // load the tiny gif synchronously to make sure its always loaded
+        let gif_load_resp: Result<gif::Frames, gif::Error> =
+            gif::Frames::from_bytes(style::LOADING_GIF_DATA.to_vec());
+
         State {
-            locale: locale,
+            locale: locale.clone(),
             view: TopLevelView::default(),
+            frames: match gif_load_resp {
+                Ok(frames) => frames,
+                Err(err) => panic!("Error while loading gif: {err}"),
+            },
+            wizard: ConnectionWizard::new(locale),
         }
     }
 
-    fn update(&mut self, message: Message) {
-        ()
+    fn update(&mut self, message: Message) -> Task<Message> {
+        match message {
+            Message::E(m) => self.wizard.update(m),
+            _ => Task::none(),
+        }
     }
 
     fn view(&self) -> Column<'_, Message> {
         let view: Container<'_, Message> = match &self.view {
             TopLevelView::ControlPanel => todo!(),
-            TopLevelView::ConnectionWizard => self.build_connection_wizard(),
+            TopLevelView::ConnectionWizard => self.wizard.view(),
         };
 
         column![self.build_toolbar(), view, self.build_status_bar()]
@@ -107,12 +101,16 @@ impl State {
     fn build_toolbar(&self) -> Container<'_, Message> {
         container(row![
             button(text(self.locale.get_string("connection")))
+                .style(button::background)
                 .on_press(Message::ToolbarSelection(ToolbarCategory::Connection)),
             button(text(self.locale.get_string("edit")))
+                .style(button::background)
                 .on_press(Message::ToolbarSelection(ToolbarCategory::Edit)),
             button(text(self.locale.get_string("view")))
+                .style(button::background)
                 .on_press(Message::ToolbarSelection(ToolbarCategory::Help)),
             button(text(self.locale.get_string("help")))
+                .style(button::background)
                 .on_press(Message::ToolbarSelection(ToolbarCategory::View)),
         ])
         .width(Fill)
@@ -120,19 +118,15 @@ impl State {
     }
 
     fn build_status_bar(&self) -> Container<'_, Message> {
-        container(row![
-            text("k ").font(ICONS_FONT),
-            text(self.locale.get_string("status-disconnected"))
-        ])
+        container(
+            container(row![
+                text("m ").font(style::ICONS_FONT).size(20),
+                container(text(self.locale.get_string("status-disconnected"))).padding(3)
+            ])
+            .align_left(Fill),
+        )
         .width(Fill)
-        .align_left(Fill)
-    }
-
-    fn build_connection_wizard(&self) -> Container<'_, Message> {
-        container(text(self.locale.get_string("connection-wizard-title")))
-            .width(Fill)
-            .height(Fill)
-            .center(Fill)
+        .padding(7)
     }
 
     /// Gets the localized string for the window title from our loaded Fluent bundle.
@@ -150,23 +144,22 @@ fn main() -> iced::Result {
     if let Ok(_) = std::env::var("WAYLAND_DISPLAY") {
         std::env::set_var("WAYLAND_DISPLAY", "");
     }
-    let custom_palette: Arc<Custom> = Arc::new(Custom::new("".to_owned(), WCP_PALETTE));
+    let custom_palette: Arc<Custom> = Arc::new(Custom::new("".to_owned(), style::WCP_PALETTE));
 
     iced::application(State::new, State::update, State::view)
         .theme(Theme::Custom(custom_palette))
         .title(State::title)
         .window(Settings {
-            size: DEFAULT_WIN_SIZE.into(),
-            icon: Some(from_rgba(APP_ICON_DATA.to_vec(), ICON_PX, ICON_PX).expect("Failed to load icon.")),
+            size: style::DEFAULT_WIN_SIZE.into(),
+            icon: Some(
+                from_rgba(style::APP_ICON_DATA.to_vec(), style::ICON_PX, style::ICON_PX)
+                    .expect("Failed to load icon."),
+            ),
+            min_size: Some(style::MIN_WIN_SIZE.into()),
             ..Settings::default()
         })
-        .font(CANTARELL_FONT_DATA)
-        .font(ICONS_FONT_DATA)
-        .default_font(Font {
-            family: iced::font::Family::Name("Cantarell"),
-            weight: iced::font::Weight::Normal,
-            stretch: iced::font::Stretch::Normal,
-            style: iced::font::Style::Normal,
-        })
+        .font(style::CANTARELL_FONT_DATA)
+        .font(style::ICONS_FONT_DATA)
+        .default_font(style::DEFAULT_FONT)
         .run()
 }
