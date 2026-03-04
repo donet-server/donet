@@ -1,5 +1,7 @@
 # donet
 
+![Pipeline Status](https://gitlab.com/donet-server/donet/badges/master/pipeline.svg) ![Code Coverage](https://codecov.io/gl/donet-server/donet/branch/master/graph/badge.svg) ![Matrix Channel](https://img.shields.io/matrix/donet:maxrdz.com?color=blue&label=%23donet%3Amaxrdz.com&logo=matrix)
+
 <img src="logo/donet_banner.png" alt="Donet logo artwork by honeymatsu." align="right" width="40%"/>
 
 Donet is a free and open source network engine designed after the Distributed
@@ -12,12 +14,15 @@ Online and Pirates of the Caribbean Online, from 2001 to 2013.
 
 ## Getting Started
 
-The Donet repository is a monorepo that houses two main Rust projects:
+The Donet repository is a monorepo that houses three main Rust projects:
 - **donet** - The Donet daemon source, which includes all the Donet services.
 See [donet-server.org](https://www.donet-server.org).
 - **donet-core** - The core utilities for Donet services, including datagram
 utilities and the DC language parser. See
 [docs.donet-server.org](https://docs.donet-server.org/master/library).
+- **donet-wcp** - A cluster-internal client with a graphical user interface
+for interacting with Distributed Objects at runtime, or updating fields of
+Distributed Objects that are in the DBSS.
 
 Please read the
 [introduction to Donet](https://docs.donet-server.org/master/introduction)
@@ -46,7 +51,7 @@ We also have a Discord community server, which you can join [here!](https://disc
 
 Copyright © 2023-2026 Donet Authors
 
-"Donet" can be found at https://gitlab.com/donet-server/donet
+"Donet" can be found at https://git.maxrdz.com/donet/donet
 
 "Donet" is distributed under the terms of the GNU Affero General Public
 License, either version 3.0 or, at your option, any later
