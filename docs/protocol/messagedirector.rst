@@ -54,7 +54,7 @@ message director does not send any upstream messages, as it is the
 
 A **master** message director is an MD service that does not have an
 upstream connection, and only has subscribers connected to it. These
-subcribers can be Donet services, or other downstream MDs. There can
+subscribers can be Donet services, or other downstream MDs. There can
 only be **one** master message director in a Donet cluster. The
 network of Message Director nodes should form a tree, meaning no
 routing loops may exist in a Message Director network. Otherwise, a
