@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: (C) 2024 Max Rodriguez
+# SPDX-FileCopyrightText: (C) 2024, 2026 Max Rodriguez
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import re
@@ -9,6 +9,13 @@ Validates the commit string passed, returns
 a tuple with the exit code and exit message.
 """
 def validate_commit_title(title: str) -> (int, str):
+    # FIRST, lets sanitize the input. this title could include the entire commit message (title + desc)
+    newline_index = title.find('\n')
+    if newline_index != -1:
+        title = title[:newline_index]
+    # remove any trailing whitespace
+    title = title.rstrip()
+
     print(f"Validating commit title:\n\n  {title}\n")
 
     # Regex patterns should follow the following specification:
