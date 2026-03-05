@@ -40,7 +40,7 @@ jobs:
           git clone --mirror ${{ github.server_url }}/${{ github.repository }} repo.git
           cd repo.git
           ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push -v --mirror git@github.com:donet-server/donet'
-          ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push -v --mirror git@gitlab.com:donet-server/donet'
+          ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push --all git@gitlab.com:donet-server/donet'
 
   commit-validation:
     runs-on: docker
