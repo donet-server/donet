@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: CI
 
 on:
   push:
@@ -11,14 +11,16 @@ env:
 jobs:
   commit-validation:
     runs-on: docker
-    container: python:3.12-alpine
+    container: node:20-alpine
     steps:
       - uses: actions/checkout@v4
-      - run: python build-aux/validate-commit.py "${{ github.event.head_commit.message }}"
+      - run: |
+          apk add --no-cache python3 py3-pip git
+          python build-aux/validate-commit.py "${{ github.event.head_commit.message }}"
 
   typos:
     runs-on: docker
-    container: alpine
+    container: node:20-alpine
     steps:
       - uses: actions/checkout@v4
       - run: |

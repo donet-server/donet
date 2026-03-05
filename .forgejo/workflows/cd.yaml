@@ -1,9 +1,6 @@
-name: Continuous Deployment
+name: CD
 
 on:
-  push:
-    branches:
-      - master
   workflow_run:
     workflows: ["Continuous Integration"]
     types:
@@ -16,7 +13,9 @@ jobs:
   sync-mirror:
     runs-on: docker
     container: alpine
-    if: github.ref == 'refs/heads/master'
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'master'
     continue-on-error: true
 
     steps:
@@ -44,8 +43,10 @@ jobs:
 
   codecov-upload:
     runs-on: docker
-    container: alpine
-    if: github.ref == 'refs/heads/master'
+    container: node:20-alpine
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'master'
     continue-on-error: true
     steps:
       - uses: actions/download-artifact@v4
