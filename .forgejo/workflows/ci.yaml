@@ -41,7 +41,11 @@ jobs:
     runs-on: docker
     container: rust:slim
     steps:
-      - run: apt install nodejs -y
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y nodejs
+
       - uses: actions/checkout@v4
 
       - run: |
@@ -56,7 +60,14 @@ jobs:
     container: ubuntu:latest
     continue-on-error: true
     steps:
-      - run: apt install nodejs -y
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y git meson nodejs rustup pkg-config python3 python3-venv
+          apt-get install -y libssl-dev openssl
+          rustup default stable
+          rustup component add clippy rustfmt
+
       - uses: actions/checkout@v4
 
       - name: Cache Meson
@@ -64,14 +75,6 @@ jobs:
         with:
           path: build
           key: meson-cache-deny-${{ github.ref_name }}
-
-      - name: Install dependencies
-        run: |
-          apt-get update
-          apt-get install -y git meson rustup pkg-config python3 python3-venv
-          apt-get install -y libssl-dev openssl
-          rustup default stable
-          rustup component add clippy rustfmt
       
       - name: Run Cargo deny
         run: |
@@ -83,7 +86,14 @@ jobs:
     container: ubuntu:latest
     needs: [cargo-fmt, typos]
     steps:
-      - run: apt install nodejs -y
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y git meson nodejs rustup pkg-config python3 python3-venv
+          apt-get install -y libssl-dev openssl
+          rustup default stable
+          rustup component add clippy rustfmt
+
       - uses: actions/checkout@v4
 
       - name: Cache Meson
@@ -91,14 +101,6 @@ jobs:
         with:
           path: build
           key: meson-cache-build-${{ github.ref_name }}
-
-      - name: Install dependencies
-        run: |
-          apt-get update
-          apt-get install -y git meson rustup pkg-config python3 python3-venv
-          apt-get install -y libssl-dev openssl
-          rustup default stable
-          rustup component add clippy rustfmt
 
       - name: Meson build
         run: |
@@ -111,15 +113,14 @@ jobs:
     container: ubuntu:latest
     needs: build
     steps:
-      - run: apt install nodejs -y
-      - uses: actions/checkout@v4
-
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y git meson rustup pkg-config python3 python3-venv
+          apt-get install -y git meson nodejs rustup pkg-config python3 python3-venv
           apt-get install -y libssl-dev openssl
           rustup default stable
+
+      - uses: actions/checkout@v4
 
       - name: Run tests
         run: |
@@ -137,7 +138,16 @@ jobs:
     container: ubuntu:latest
     needs: build
     steps:
-      - run: apt install nodejs -y
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y git meson nodejs rustup pkg-config python3 python3-venv
+          apt-get install -y libssl-dev openssl
+
+          python3 -m venv venv
+          source venv/bin/activate
+          python3 -m pip install -r docs/requirements.txt
+
       - uses: actions/checkout@v4
 
       - name: Cache Meson
@@ -145,16 +155,6 @@ jobs:
         with:
           path: build
           key: meson-cache-doc-${{ github.ref_name }}
-
-      - name: Install dependencies
-        run: |
-          apt-get update
-          apt-get install -y git meson rustup pkg-config python3 python3-venv
-          apt-get install -y libssl-dev openssl
-
-          python3 -m venv venv
-          source venv/bin/activate
-          python3 -m pip install -r docs/requirements.txt
 
       - name: Build Sphinx / cargo-doc documentation
         run: |
@@ -178,20 +178,19 @@ jobs:
     container: ubuntu:latest
     needs: testing
     steps:
-      - run: apt install nodejs -y
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y git meson nodejs rustup pkg-config python3 python3-venv
+          apt-get install -y libssl-dev openssl
+          rustup default stable
+
       - uses: actions/checkout@v4
 
       - uses: actions/download-artifact@v4
         with:
           name: test-build
           path: build
-
-      - name: Install dependencies
-        run: |
-          apt-get update
-          apt-get install -y git meson rustup pkg-config python3 python3-venv
-          apt-get install -y libssl-dev openssl
-          rustup default stable
 
       - name: Run code coverage
         run: |
