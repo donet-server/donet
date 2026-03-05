@@ -47,7 +47,7 @@ jobs:
     container: node:25-alpine
     needs: sync-mirrors
     steps:
-      - uses: actions/checkout@v4
+      - uses: https://data.forgejo.org/actions/checkout@v6
       
       - name: Install Python3
         run: apk add --no-cache python3 py3-pip git
@@ -60,7 +60,7 @@ jobs:
     container: node:25-alpine
     needs: sync-mirrors
     steps:
-      - uses: actions/checkout@v4
+      - uses: https://data.forgejo.org/actions/checkout@v6
 
       - name: Install Typos binary
         run: |
@@ -82,7 +82,7 @@ jobs:
           apt-get update
           apt-get install -y nodejs
 
-      - uses: actions/checkout@v4
+      - uses: https://data.forgejo.org/actions/checkout@v6
 
       - run: |
           rustup component add rustfmt
@@ -108,18 +108,24 @@ jobs:
           rustup default stable
           rustup component add clippy rustfmt
 
-      - uses: actions/checkout@v4
+      - uses: https://data.forgejo.org/actions/checkout@v6
 
-      - name: Cache Meson
-        uses: actions/cache@v4
+      - name: Restore Meson build cache
+        uses: https://data.forgejo.org/actions/cache/restore@v5
         with:
           path: build
           key: meson-cache-deny-${{ github.ref_name }}
-      
+
       - name: Run Cargo deny
         run: |
           meson setup build -Dprofile=debug
           meson compile deny -C build
+
+      - name: Save Meson build cache
+        uses: https://data.forgejo.org/actions/cache/save@v5
+        with:
+          path: build
+          key: meson-cache-deny-${{ github.ref_name }}
 
   build:
     runs-on: docker
@@ -137,10 +143,10 @@ jobs:
           rustup default stable
           rustup component add clippy rustfmt
 
-      - uses: actions/checkout@v4
+      - uses: https://data.forgejo.org/actions/checkout@v6
 
-      - name: Cache Meson
-        uses: actions/cache@v4
+      - name: Restore Meson build cache
+        uses: https://data.forgejo.org/actions/cache/restore@v5
         with:
           path: build
           key: meson-cache-build-${{ github.ref_name }}
@@ -150,6 +156,12 @@ jobs:
           meson setup build -Dprofile=debug
           meson compile -C build
           meson compile linting -C build
+
+      - name: Save Meson build cache
+        uses: https://data.forgejo.org/actions/cache/save@v5
+        with:
+          path: build
+          key: meson-cache-build-${{ github.ref_name }}
 
   testing:
     runs-on: docker
@@ -165,14 +177,14 @@ jobs:
       - name: Setup Rust toolchain
         run: rustup default stable
 
-      - uses: actions/checkout@v4
+      - uses: https://data.forgejo.org/actions/checkout@v6
 
       - name: Run tests
         run: |
           meson setup build -Dprofile=debug
           meson compile tests -C build
 
-      - uses: actions/upload-artifact@v4
+      - uses: https://data.forgejo.org/forgejo/actions/upload-artifact@v4
         with:
           name: test-build
           path: build
@@ -193,10 +205,10 @@ jobs:
           source venv/bin/activate
           python3 -m pip install -r docs/requirements.txt
 
-      - uses: actions/checkout@v4
+      - uses: https://data.forgejo.org/actions/checkout@v6
 
-      - name: Cache Meson
-        uses: actions/cache@v4
+      - name: Restore Meson build cache
+        uses: https://data.forgejo.org/actions/cache/restore@v5
         with:
           path: build
           key: meson-cache-doc-${{ github.ref_name }}
@@ -212,7 +224,13 @@ jobs:
           cp -r build/target/doc/* doc
           chmod -R a=rwx doc
 
-      - uses: actions/upload-artifact@v4
+      - name: Save Meson build cache
+        uses: https://data.forgejo.org/actions/cache/save@v5
+        with:
+          path: build
+          key: meson-cache-doc-${{ github.ref_name }}
+
+      - uses: https://data.forgejo.org/forgejo/actions/upload-artifact@v4
         with:
           name: project-documentation
           path: doc
@@ -232,9 +250,9 @@ jobs:
       - name: Setup Rust toolchain
         run: rustup default stable
 
-      - uses: actions/checkout@v4
+      - uses: https://data.forgejo.org/actions/checkout@v6
 
-      - uses: actions/download-artifact@v4
+      - uses: https://data.forgejo.org/forgejo/actions/download-artifact@v4
         with:
           name: test-build
           path: build
@@ -247,7 +265,7 @@ jobs:
           chmod -R a=rwx tarpaulin
           cp -r build/target/tarpaulin tarpaulin
 
-      - uses: actions/upload-artifact@v4
+      - uses: https://data.forgejo.org/forgejo/actions/upload-artifact@v4
         with:
           name: code-coverage
           path: tarpaulin
@@ -260,7 +278,7 @@ jobs:
     needs: cargo-tarpaulin
     continue-on-error: true
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: https://data.forgejo.org/forgejo/actions/download-artifact@v4
         with:
           name: code-coverage
           path: tarpaulin
