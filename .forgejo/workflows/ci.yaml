@@ -24,7 +24,9 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.GIT_ACCESS_KEY }}" > ~/.ssh/privatekey
+          echo "-----BEGIN OPENSSH PRIVATE KEY-----" > ~/.ssh/privatekey
+          echo "${{ secrets.GIT_ACCESS_KEY }}" >> ~/.ssh/privatekey
+          echo "-----END OPENSSH PRIVATE KEY-----" >> ~/.ssh/privatekey
           chmod 600 ~/.ssh/privatekey
 
       - name: Add known hosts
