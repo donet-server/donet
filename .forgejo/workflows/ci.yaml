@@ -11,7 +11,7 @@ env:
   CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
 
 jobs:
-  sync-mirror:
+  sync-mirrors:
     runs-on: docker
     container: node:25-alpine
     if: forgejo.ref_name == 'master'
@@ -33,17 +33,19 @@ jobs:
         run: |
           ssh-keyscan git.maxrdz.com >> ~/.ssh/known_hosts
           ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
 
-      - name: Mirror repository
+      - name: Push to mirrors
         run: |
           git clone --mirror ${{ github.server_url }}/${{ github.repository }} repo.git
           cd repo.git
           ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push -v --mirror git@github.com:donet-server/donet'
+          ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push -v --mirror git@gitlab.com:donet-server/donet'
 
   commit-validation:
     runs-on: docker
     container: node:25-alpine
-    needs: sync-mirror
+    needs: sync-mirrors
     steps:
       - uses: actions/checkout@v4
       
@@ -56,7 +58,7 @@ jobs:
   typos:
     runs-on: docker
     container: node:25-alpine
-    needs: sync-mirror
+    needs: sync-mirrors
     steps:
       - uses: actions/checkout@v4
 
@@ -73,7 +75,7 @@ jobs:
   cargo-fmt:
     runs-on: docker
     container: rust:slim
-    needs: sync-mirror
+    needs: sync-mirrors
     steps:
       - name: Install dependencies
         run: |
@@ -93,7 +95,7 @@ jobs:
     runs-on: docker
     container: ubuntu:latest
     continue-on-error: true
-    needs: sync-mirror
+    needs: sync-mirrors
     steps:
       - name: Install dependencies
         run: |
