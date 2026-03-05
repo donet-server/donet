@@ -1,6 +1,9 @@
 # deny.toml is used by the cargo-deny utility.
 # Utility source: https://github.com/EmbarkStudios/cargo-deny
 
+[advisories]
+unmaintained = "workspace"
+
 # This section is considered when running `cargo deny check licenses`
 # More documentation for the licenses section can be found here:
 # https://embarkstudios.github.io/cargo-deny/checks/licenses/cfg.html
@@ -10,7 +13,7 @@ version = 2
 confidence-threshold = 0.93
 # Allow only OSI-Approved software licenses.
 allow = [
-    "AGPL-3.0",
+    "AGPL-3.0-or-later",
     "BSD-2-Clause",
     "BSD-3-Clause",
     "ISC",
@@ -19,4 +22,6 @@ allow = [
     "MIT",
     "Zlib",
     "Unicode-3.0",
+    "BSL-1.0",
+    "CC0-1.0",
 ]
