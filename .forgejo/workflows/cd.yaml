@@ -1,0 +1,73 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches:
+      - master
+  workflow_run:
+    workflows: ["Continuous Integration"]
+    types:
+      - completed
+
+env:
+  CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
+
+jobs:
+  sync-mirror:
+    runs-on: ubuntu-latest
+    container: alpine
+    if: github.ref == 'refs/heads/master'
+    continue-on-error: true
+
+    steps:
+      - name: Install tools
+        run: apk add --no-cache git openssh
+
+      - name: Setup SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.GIT_ACCESS_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/privatekey
+          chmod 600 ~/.ssh/privatekey
+
+      - name: Add known hosts
+        run: |
+          ssh-keyscan git.maxrdz.com >> ~/.ssh/known_hosts
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Mirror repository
+        run: |
+          git clone --mirror ${{ github.server_url }}/${{ github.repository }} repo.git
+          cd repo.git
+          ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push -v --mirror git@github.com:donet-server/donet'
+
+  codecov-upload:
+    runs-on: ubuntu-latest
+    container: alpine
+    if: github.ref == 'refs/heads/master'
+    continue-on-error: true
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: code-coverage
+          path: tarpaulin
+
+      - run: |
+          apk add --no-cache curl gnupg
+
+          curl -O ${CODECOV_CLI_UPSTREAM}
+
+          curl https://keybase.io/codecovsecurity/pgp_keys.asc | gpg --no-default-keyring --keyring trustedkeys.gpg --import
+          gpg --keyring trustedkeys.gpg --list-keys
+
+          curl -O ${CODECOV_CLI_UPSTREAM}.SHA256SUM
+          curl -O ${CODECOV_CLI_UPSTREAM}.SHA256SUM.sig
+          gpg --verify codecov.SHA256SUM.sig codecov.SHA256SUM
+
+          sha256sum -c codecov.SHA256SUM
+          chmod +x codecov
+          ./codecov --version
+
+          ./codecov -v upload-process --dir tarpaulin --git-service forgejo -t ${{ secrets.CODECOV_TOKEN }}
+
