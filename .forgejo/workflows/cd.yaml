@@ -12,22 +12,20 @@ env:
 jobs:
   sync-mirror:
     runs-on: docker
-    container: alpine
+    container: node:25-alpine
     if: |
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'master'
     continue-on-error: true
 
     steps:
-      - name: Install tools
+      - name: Install utilities
         run: apk add --no-cache git openssh
 
       - name: Setup SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.GIT_ACCESS_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/privatekey
+          echo "${{ secrets.GIT_ACCESS_KEY }}" > ~/.ssh/privatekey
           chmod 600 ~/.ssh/privatekey
 
       - name: Add known hosts
@@ -43,7 +41,7 @@ jobs:
 
   codecov-upload:
     runs-on: docker
-    container: node:20-alpine
+    container: node:25-alpine
     if: |
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'master'
