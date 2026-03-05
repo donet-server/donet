@@ -7,7 +7,7 @@ on:
 
 env:
   SPHINX_DEFAULT_DOC_VERSION: "master"
-  TYPOS_UPSTREAM: "https://github.com/crate-ci/typos/releases/download/v1.22.7/typos-v1.22.7-x86_64-unknown-linux-musl.tar.gz"
+  TYPOS_UPSTREAM: "https://github.com/crate-ci/typos/releases/download/v1.44.0/typos-v1.44.0-x86_64-unknown-linux-musl.tar.gz"
   CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
 
 jobs:
