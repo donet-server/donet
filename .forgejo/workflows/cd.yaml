@@ -14,7 +14,7 @@ env:
 
 jobs:
   sync-mirror:
-    runs-on: ubuntu-latest
+    runs-on: docker
     container: alpine
     if: github.ref == 'refs/heads/master'
     continue-on-error: true
@@ -43,7 +43,7 @@ jobs:
           ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push -v --mirror git@github.com:donet-server/donet'
 
   codecov-upload:
-    runs-on: ubuntu-latest
+    runs-on: docker
     container: alpine
     if: github.ref == 'refs/heads/master'
     continue-on-error: true

@@ -10,14 +10,14 @@ env:
 
 jobs:
   commit-validation:
-    runs-on: ubuntu-latest
+    runs-on: docker
     container: python:3.12-alpine
     steps:
       - uses: actions/checkout@v4
       - run: python build-aux/validate-commit.py "${{ github.event.head_commit.message }}"
 
   typos:
-    runs-on: ubuntu-latest
+    runs-on: docker
     container: alpine
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +29,7 @@ jobs:
           ./.tmp/typos
 
   cargo-fmt:
-    runs-on: ubuntu-latest
+    runs-on: docker
     container: rust:slim
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +41,7 @@ jobs:
           cargo fmt --all -- --color=always --check
 
   cargo-deny:
-    runs-on: ubuntu-latest
+    runs-on: docker
     container: ubuntu:latest
     continue-on-error: true
     steps:
@@ -63,7 +63,7 @@ jobs:
           meson compile deny -C build
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: docker
     container: ubuntu:latest
     needs: [cargo-fmt, typos]
     steps:
@@ -87,7 +87,7 @@ jobs:
           meson compile linting -C build
 
   testing:
-    runs-on: ubuntu-latest
+    runs-on: docker
     container: ubuntu:latest
     needs: build
     steps:
@@ -109,7 +109,7 @@ jobs:
           retention-days: 7
 
   documentation:
-    runs-on: ubuntu-latest
+    runs-on: docker
     container: ubuntu:latest
     needs: build
     steps:
@@ -146,7 +146,7 @@ jobs:
           retention-days: 7
 
   cargo-tarpaulin:
-    runs-on: ubuntu-latest
+    runs-on: docker
     container: ubuntu:latest
     needs: testing
     steps:
