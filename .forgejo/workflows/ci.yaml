@@ -8,12 +8,13 @@ on:
 env:
   SPHINX_DEFAULT_DOC_VERSION: "master"
   TYPOS_UPSTREAM: "https://github.com/crate-ci/typos/releases/download/v1.22.7/typos-v1.22.7-x86_64-unknown-linux-musl.tar.gz"
+  CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
 
 jobs:
   sync-mirror:
     runs-on: docker
     container: node:25-alpine
-    if: github.event.workflow_run.head_branch == 'master'
+    if: forgejo.ref_name == 'master'
     continue-on-error: true
 
     steps:
@@ -248,3 +249,32 @@ jobs:
           path: tarpaulin
           retention-days: 7
 
+  codecov-upload:
+    runs-on: docker
+    container: node:25-alpine
+    if: forgejo.ref_name == 'master'
+    needs: cargo-tarpaulin
+    continue-on-error: true
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: code-coverage
+          path: tarpaulin
+
+      - run: |
+          apk add --no-cache curl gnupg
+
+          curl -O ${CODECOV_CLI_UPSTREAM}
+
+          curl https://keybase.io/codecovsecurity/pgp_keys.asc | gpg --no-default-keyring --keyring trustedkeys.gpg --import
+          gpg --keyring trustedkeys.gpg --list-keys
+
+          curl -O ${CODECOV_CLI_UPSTREAM}.SHA256SUM
+          curl -O ${CODECOV_CLI_UPSTREAM}.SHA256SUM.sig
+          gpg --verify codecov.SHA256SUM.sig codecov.SHA256SUM
+
+          sha256sum -c codecov.SHA256SUM
+          chmod +x codecov
+          ./codecov --version
+
+          ./codecov -v upload-process --dir tarpaulin --git-service forgejo -t ${{ secrets.CODECOV_TOKEN }}
