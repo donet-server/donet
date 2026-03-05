@@ -14,9 +14,12 @@ jobs:
     container: node:20-alpine
     steps:
       - uses: actions/checkout@v4
-      - run: |
-          apk add --no-cache python3 py3-pip git
-          python build-aux/validate-commit.py "${{ github.event.head_commit.message }}"
+      
+      - name: Install Python3
+        run: apk add --no-cache python3 py3-pip git
+
+      - name: Validate Commit
+        run: python build-aux/validate-commit.py "${{ github.event.head_commit.message || github.event.commits[0].message }}"
 
   typos:
     runs-on: docker
