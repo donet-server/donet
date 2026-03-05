@@ -10,9 +10,37 @@ env:
   TYPOS_UPSTREAM: "https://github.com/crate-ci/typos/releases/download/v1.22.7/typos-v1.22.7-x86_64-unknown-linux-musl.tar.gz"
 
 jobs:
+  sync-mirror:
+    runs-on: docker
+    container: node:25-alpine
+    if: github.event.workflow_run.head_branch == 'master'
+    continue-on-error: true
+
+    steps:
+      - name: Install utilities
+        run: apk add --no-cache git openssh
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GIT_ACCESS_KEY }}" > ~/.ssh/privatekey
+          chmod 600 ~/.ssh/privatekey
+
+      - name: Add known hosts
+        run: |
+          ssh-keyscan git.maxrdz.com >> ~/.ssh/known_hosts
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Mirror repository
+        run: |
+          git clone --mirror ${{ github.server_url }}/${{ github.repository }} repo.git
+          cd repo.git
+          ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push -v --mirror git@github.com:donet-server/donet'
+
   commit-validation:
     runs-on: docker
     container: node:25-alpine
+    needs: sync-mirror
     steps:
       - uses: actions/checkout@v4
       
@@ -25,6 +53,7 @@ jobs:
   typos:
     runs-on: docker
     container: node:25-alpine
+    needs: sync-mirror
     steps:
       - uses: actions/checkout@v4
 
@@ -41,6 +70,7 @@ jobs:
   cargo-fmt:
     runs-on: docker
     container: rust:slim
+    needs: sync-mirror
     steps:
       - name: Install dependencies
         run: |
@@ -60,12 +90,16 @@ jobs:
     runs-on: docker
     container: ubuntu:latest
     continue-on-error: true
+    needs: sync-mirror
     steps:
       - name: Install dependencies
         run: |
           apt-get update
           apt-get install -y git meson nodejs rustup pkg-config python3 python3-venv
           apt-get install -y libssl-dev openssl
+
+      - name: Setup Rust toolchain
+        run: |
           rustup default stable
           rustup component add clippy rustfmt
 
@@ -92,6 +126,9 @@ jobs:
           apt-get update
           apt-get install -y git meson nodejs rustup pkg-config python3 python3-venv
           apt-get install -y libssl-dev openssl
+
+      - name: Setup Rust toolchain
+        run: |
           rustup default stable
           rustup component add clippy rustfmt
 
@@ -119,7 +156,9 @@ jobs:
           apt-get update
           apt-get install -y git meson nodejs rustup pkg-config python3 python3-venv
           apt-get install -y libssl-dev openssl
-          rustup default stable
+
+      - name: Setup Rust toolchain
+        run: rustup default stable
 
       - uses: actions/checkout@v4
 
@@ -184,7 +223,9 @@ jobs:
           apt-get update
           apt-get install -y git meson nodejs rustup pkg-config python3 python3-venv
           apt-get install -y libssl-dev openssl
-          rustup default stable
+
+      - name: Setup Rust toolchain
+        run: rustup default stable
 
       - uses: actions/checkout@v4
 
