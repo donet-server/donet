@@ -1,6 +1,6 @@
 # donet
 
-![Pipeline Status](https://gitlab.com/donet-server/donet/badges/master/pipeline.svg) ![Code Coverage](https://codecov.io/gl/donet-server/donet/branch/master/graph/badge.svg) ![Matrix Channel](https://img.shields.io/matrix/donet:maxrdz.com?color=blue&label=%23donet%3Amaxrdz.com&logo=matrix)
+![Pipeline Status](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgit.maxrdz.com%2Fapi%2Fv1%2Frepos%2Fdonet%2Fdonet%2Fstatuses%2Fmaster%3Fsort%3Dleastindex%26limit%3D1&query=%24[%3A1].status&style=flat&label=pipeline&color=white) ![Code Coverage](https://codecov.io/gl/donet-server/donet/branch/master/graph/badge.svg) ![Matrix Channel](https://img.shields.io/matrix/donet:maxrdz.com?color=blue&label=%23donet%3Amaxrdz.com&logo=matrix)
 
 <img src="logo/donet_banner.png" alt="Donet logo artwork by honeymatsu." align="right" width="40%"/>
 
