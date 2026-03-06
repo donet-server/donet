@@ -91,9 +91,9 @@ jobs:
         id: changes
         run: |
           if git diff --name-only ${{ github.event.before }} ${{ forgejo.sha }} | grep '\.rs$'; then
-            echo "proceed=true" >> ${{ forgejo.output }}
+            echo "proceed=true" >> ${{ forgejo.output }};
           else
-            echo "proceed=false" >> ${{ forgejo.output }}
+            echo "proceed=false" >> ${{ forgejo.output }};
           fi
 
       - name: Run rustfmt
@@ -123,9 +123,9 @@ jobs:
         id: changes
         run: |
           if git diff --name-only ${{ github.event.before }} ${{ forgejo.sha }} | grep -E '(build\.rs$|Cargo\.toml$|Cargo\.lock$|deny\.toml$)'; then
-            echo "proceed=true" >> ${{ forgejo.output }}
+            echo "proceed=true" >> ${{ forgejo.output }};
           else
-            echo "proceed=false" >> ${{ forgejo.output }}
+            echo "proceed=false" >> ${{ forgejo.output }};
           fi
 
       - name: Install dependencies
@@ -314,8 +314,8 @@ jobs:
   codecov-upload:
     runs-on: docker
     container: node:25-alpine
-    if: forgejo.ref_name == 'master'
     needs: cargo-tarpaulin
+    if: forgejo.ref_name == 'master'
     continue-on-error: true
     steps:
       - name: actions/download-artifact@v3
