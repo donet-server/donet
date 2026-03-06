@@ -122,6 +122,10 @@ jobs:
       - name: Check if we need to run cargo-deny
         id: changes
         run: |
+          echo "${{ github.event.before }}"
+          echo "${{ forgejo.sha }}"
+          echo "${{ forgejo.output }}"
+          echo "$FORGEJO_OUTPUT"
           if git diff --name-only ${{ github.event.before }} ${{ forgejo.sha }} | grep -E '(build\.rs$|Cargo\.toml$|Cargo\.lock$|deny\.toml$)'; then
             echo "proceed=true" >> ${{ forgejo.output }};
           else
