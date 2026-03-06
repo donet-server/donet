@@ -82,7 +82,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y nodejs
+          apt-get install -y nodejs git
 
       - name: actions/checkout@v6
         uses: https://git.maxrdz.com/actions/checkout@v6
@@ -105,10 +105,10 @@ jobs:
     continue-on-error: true
     needs: sync-mirrors
     steps:
-      - name: Setup NodeJS for actions/checkout
+      - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y nodejs
+          apt-get install -y nodejs git
 
       - name: actions/checkout@v6
         uses: https://git.maxrdz.com/actions/checkout@v6
@@ -122,12 +122,12 @@ jobs:
           fi
 
       - name: Install dependencies
-        if: $WANT_CARGO_DENY == 'true'
+        if: ${{ $WANT_CARGO_DENY == 'true' }}
         run: |
           apt-get install -y git meson rustup pkg-config python3 python3-venv libssl-dev openssl
 
       - name: Setup Rust toolchain
-        if: $WANT_CARGO_DENY == 'true'
+        if: ${{ $WANT_CARGO_DENY == 'true' }}
         run: |
           rustup default stable
           rustup component add clippy rustfmt
@@ -140,13 +140,13 @@ jobs:
           key: meson-cache-deny-${{ forgejo.ref_name }}
 
       - name: Run Cargo deny
-        if: $WANT_CARGO_DENY == 'true'
+        if: ${{ $WANT_CARGO_DENY == 'true' }}
         run: |
           meson setup build -Dprofile=debug
           meson compile deny -C build
 
       - name: Save Meson build cache
-        if: $WANT_CARGO_DENY == 'true'
+        if: ${{ $WANT_CARGO_DENY == 'true' }}
         uses: https://git.maxrdz.com/actions/cache/save@v5
         with:
           path: build
