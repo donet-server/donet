@@ -49,11 +49,9 @@ jobs:
     steps:
       - name: actions/checkout@v6
         uses: https://git.maxrdz.com/actions/checkout@v6
-      
-      - name: actions/setup-python@v6
-        uses: https://git.maxrdz.com/actions/setup-python@v6
-        with:
-          python-version: '3.14'
+
+      - name: Install Python3
+        run: apk add --no-cache python3 py3-pip git
 
       - name: Validate Commit
         run: python build-aux/validate-commit.py "${{ github.event.head_commit.message || github.event.commits[0].message }}"
