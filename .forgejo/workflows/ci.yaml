@@ -133,7 +133,7 @@ jobs:
           rustup component add clippy rustfmt
 
       - name: Restore Meson build cache
-        if: $WANT_CARGO_DENY == 'true'
+        if: ${{ $WANT_CARGO_DENY == 'true' }}
         uses: https://git.maxrdz.com/actions/cache/restore@v5
         with:
           path: build
