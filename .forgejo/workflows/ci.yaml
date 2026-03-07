@@ -89,38 +89,6 @@ jobs:
           cargo fmt --version
           cargo fmt --all -- --color=always --check
 
-  cargo-deny:
-    runs-on: docker
-    container: maxrdz1/forgejo-ci:latest
-    continue-on-error: true
-    needs: sync-mirrors
-    steps:
-      - name: actions/checkout@v6
-        uses: https://git.maxrdz.com/actions/checkout@v6
-
-      - name: Get Meson version
-        id: meson-version
-        run: echo "MESON_VERSION=$(meson --version)" >> $FORGEJO_ENV
-
-      - name: Restore Meson build cache
-        uses: https://git.maxrdz.com/actions/cache/restore@v5
-        with:
-          path: build
-          key: meson-cache-deny-${{ forgejo.ref_name }}-${{ env.MESON_VERSION }}
-
-      - name: Run Cargo deny
-        run: |
-          if [ ! -d build ]; then
-            meson setup build -Dprofile=debug
-          fi
-          meson compile deny -C build
-
-      - name: Save Meson build cache
-        uses: https://git.maxrdz.com/actions/cache/save@v5
-        with:
-          path: build
-          key: meson-cache-deny-${{ forgejo.ref_name }}-${{ env.MESON_VERSION }}
-
   build:
     runs-on: docker
     container: maxrdz1/forgejo-ci:latest
@@ -137,7 +105,7 @@ jobs:
         uses: https://git.maxrdz.com/actions/cache/restore@v5
         with:
           path: build
-          key: meson-cache-build-${{ forgejo.ref_name }}-${{ env.MESON_VERSION }}
+          key: meson-${{ env.MESON_VERSION }}-cache-build-${{ forgejo.ref_name }}
 
       - name: Meson build
         run: |
@@ -145,33 +113,53 @@ jobs:
             meson setup build -Dprofile=debug
           fi
           meson compile -C build
-          meson compile linting -C build
+
+      - name: Run linting
+        run: meson compile linting -C build
+
+      - name: Run unit tests
+        run: meson compile tests -C build
+
+      - name: Run cargo-deny
+        run: meson compile deny -C build
+
+      - name: Run cargo-tarpaulin
+        run: |
+          meson compile code-coverage -C build
+
+          mkdir tarpaulin
+          echo "Copying code coverage output files into artifact directory..."
+          cp -r build/target/tarpaulin tarpaulin
+          chmod -R a=rwx tarpaulin
+
+      - name: actions/upload-artifact@v3
+        uses: https://git.maxrdz.com/actions/upload-artifact@v3
+        with:
+          name: code-coverage
+          path: tarpaulin
+          retention-days: 7
+
+      - name: Run cargo-doc
+        run: |
+          meson compile cargo-doc -C build
+
+          mkdir doc
+          echo "Copying cargo-doc build into artifact directory..."
+          cp -r build/target/doc/* doc
+          chmod -R a=rwx doc
+
+      - name: actions/upload-artifact@v3
+        uses: https://git.maxrdz.com/actions/upload-artifact@v3
+        with:
+          name: rust-documentation
+          path: doc
+          retention-days: 7
 
       - name: Save Meson build cache
         uses: https://git.maxrdz.com/actions/cache/save@v5
         with:
           path: build
-          key: meson-cache-build-${{ forgejo.ref_name }}-${{ env.MESON_VERSION }}
-
-  testing:
-    runs-on: docker
-    container: maxrdz1/forgejo-ci:latest
-    needs: build
-    steps:
-      - name: actions/checkout@v6
-        uses: https://git.maxrdz.com/actions/checkout@v6
-
-      - name: Run tests
-        run: |
-          meson setup build -Dprofile=debug
-          meson compile tests -C build
-
-      - name: actions/upload-artifact@v3
-        uses: https://git.maxrdz.com/actions/upload-artifact@v3
-        with:
-          name: test-build
-          path: build
-          retention-days: 7
+          key: meson-${{ env.MESON_VERSION }}-cache-build-${{ forgejo.ref_name }}
 
   documentation:
     runs-on: docker
@@ -189,13 +177,17 @@ jobs:
         uses: https://git.maxrdz.com/actions/cache/restore@v5
         with:
           path: build
-          key: meson-cache-doc-${{ forgejo.ref_name }}-${{ env.MESON_VERSION }}
+          key: meson-${{ env.MESON_VERSION }}-cache-doc-${{ forgejo.ref_name }}
+
+      - name: Get Python version
+        id: python-version
+        run: echo "PYTHON_VERSION=$(python --version | grep -Eo '.\..*\..*$')" >> $FORGEJO_ENV
 
       - name: Restore Python venv cache
         uses: https://git.maxrdz.com/actions/cache/restore@v5
         with:
           path: venv
-          key: venv-cache-doc-${{ forgejo.ref_name }}
+          key: venv-${{ env.PYTHON_VERSION }}-cache-doc-${{ forgejo.ref_name }}
 
       - name: Setup Python venv
         run: |
@@ -205,73 +197,41 @@ jobs:
           source venv/bin/activate
           python3 -m pip install -r docs/requirements.txt
 
-      - name: Build Sphinx / cargo-doc documentation
+      - name: Build Sphinx documentation
         run: |
           if [ ! -d build ]; then
             meson setup build -Dprofile=debug -Dci_branch=${{ forgejo.ref_name }}
           fi
           meson compile sphinx -C build
-          meson compile cargo-doc -C build
 
           mkdir doc
           echo "Copying Sphinx build into artifact directory..."
           cp -r build/sphinx/* doc
-          echo "Copying cargo-doc build into artifact directory..."
-          cp -r build/target/doc/* doc
           chmod -R a=rwx doc
 
       - name: Save Meson build cache
         uses: https://git.maxrdz.com/actions/cache/save@v5
         with:
           path: build
-          key: meson-cache-doc-${{ forgejo.ref_name }}-${{ env.MESON_VERSION }}
+          key: meson-${{ env.MESON_VERSION }}-cache-doc-${{ forgejo.ref_name }}
 
       - name: Save Python venv cache
         uses: https://git.maxrdz.com/actions/cache/save@v5
         with:
           path: venv
-          key: venv-cache-doc-${{ forgejo.ref_name }}
+          key: venv-${{ env.PYTHON_VERSION }}-cache-doc-${{ forgejo.ref_name }}
 
       - name: actions/upload-artifact@v3
         uses: https://git.maxrdz.com/actions/upload-artifact@v3
         with:
-          name: project-documentation
+          name: sphinx-documentation
           path: doc
-          retention-days: 7
-
-  cargo-tarpaulin:
-    runs-on: docker
-    container: maxrdz1/forgejo-ci:latest
-    needs: testing
-    steps:
-      - name: actions/checkout@v6
-        uses: https://git.maxrdz.com/actions/checkout@v6
-
-      - name: actions/download-artifact@v3
-        uses: https://git.maxrdz.com/actions/download-artifact@v3
-        with:
-          name: test-build
-          path: build
-
-      - name: Run code coverage
-        run: |
-          meson compile code-coverage -C build
-
-          mkdir tarpaulin
-          chmod -R a=rwx tarpaulin
-          cp -r build/target/tarpaulin tarpaulin
-
-      - name: actions/upload-artifact@v3
-        uses: https://git.maxrdz.com/actions/upload-artifact@v3
-        with:
-          name: code-coverage
-          path: tarpaulin
           retention-days: 7
 
   codecov-upload:
     runs-on: docker
     container: node:25-alpine
-    needs: cargo-tarpaulin
+    needs: build
     if: forgejo.ref_name == 'master'
     continue-on-error: true
     steps:
