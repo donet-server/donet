@@ -265,4 +265,4 @@ jobs:
           ./codecov --version
 
       - name: Upload coverage files
-        run: ./codecov -v upload-process --dir tarpaulin --git-service github_enterprise -t ${{ secrets.CODECOV_TOKEN }}
+        run: ./codecov -v upload-process --dir tarpaulin --git-service gitlab -t ${{ secrets.CODECOV_TOKEN }}
