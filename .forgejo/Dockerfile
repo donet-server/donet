@@ -17,3 +17,6 @@ RUN apt-get install -y --no-install-recommends \
     openssl
 
 RUN rm -rf /var/lib/apt/lists/*
+
+RUN rustup default stable \
+    && rustup component add rustfmt clippy
