@@ -100,7 +100,7 @@ jobs:
 
       - name: Get Meson version
         id: meson-version
-        run: export MESON_VERSION=$(meson --version)
+        run: echo "MESON_VERSION=$(meson --version)" >> $FORGEJO_ENV
 
       - name: Restore Meson build cache
         uses: https://git.maxrdz.com/actions/cache/restore@v5
@@ -131,7 +131,7 @@ jobs:
 
       - name: Get Meson version
         id: meson-version
-        run: export MESON_VERSION=$(meson --version)
+        run: echo "MESON_VERSION=$(meson --version)" >> $FORGEJO_ENV
 
       - name: Restore Meson build cache
         uses: https://git.maxrdz.com/actions/cache/restore@v5
@@ -183,7 +183,7 @@ jobs:
 
       - name: Get Meson version
         id: meson-version
-        run: export MESON_VERSION=$(meson --version)
+        run: echo "MESON_VERSION=$(meson --version)" >> $FORGEJO_ENV
 
       - name: Restore Meson build cache
         uses: https://git.maxrdz.com/actions/cache/restore@v5
