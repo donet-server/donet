@@ -76,7 +76,7 @@ jobs:
 
   cargo-fmt:
     runs-on: docker
-    container: maxrdz1/forgejo-ci:latest
+    container: maxrdz1/forgejo-ci:3.7.26
     needs: sync-mirrors
     steps:
       - name: actions/checkout@v6
@@ -91,7 +91,7 @@ jobs:
 
   build:
     runs-on: docker
-    container: maxrdz1/forgejo-ci:latest
+    container: maxrdz1/forgejo-ci:3.7.26
     needs: [cargo-fmt, typos]
     steps:
       - name: actions/checkout@v6
@@ -99,7 +99,9 @@ jobs:
 
       - name: Get Meson version
         id: meson-version
-        run: echo "MESON_VERSION=$(meson --version)" >> $FORGEJO_ENV
+        run: |
+          echo "Meson version is $(meson --version)"
+          echo "MESON_VERSION=$(meson --version)" >> $FORGEJO_ENV
 
       - name: Restore Meson build cache
         uses: https://git.maxrdz.com/actions/cache/restore@v5
@@ -163,7 +165,7 @@ jobs:
 
   documentation:
     runs-on: docker
-    container: maxrdz1/forgejo-ci:latest
+    container: maxrdz1/forgejo-ci:3.7.26
     needs: build
     steps:
       - name: actions/checkout@v6
@@ -171,7 +173,9 @@ jobs:
 
       - name: Get Meson version
         id: meson-version
-        run: echo "MESON_VERSION=$(meson --version)" >> $FORGEJO_ENV
+        run: |
+          echo "Meson version is $(meson --version)"
+          echo "MESON_VERSION=$(meson --version)" >> $FORGEJO_ENV
 
       - name: Restore Meson build cache
         uses: https://git.maxrdz.com/actions/cache/restore@v5
