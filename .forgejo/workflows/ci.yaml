@@ -98,22 +98,28 @@ jobs:
       - name: actions/checkout@v6
         uses: https://git.maxrdz.com/actions/checkout@v6
 
+      - name: Get Meson version
+        id: meson-version
+        run: echo "MESON_VERSION=$(meson --version)" >> ${{ forgejo.env }}
+
       - name: Restore Meson build cache
         uses: https://git.maxrdz.com/actions/cache/restore@v5
         with:
           path: build
-          key: meson-cache-deny-${{ forgejo.ref_name }}
+          key: meson-cache-deny-${{ forgejo.ref_name }}-${{ env.MESON_VERSION }}
 
       - name: Run Cargo deny
         run: |
-          meson setup build -Dprofile=debug
+          if [ ! -d build ]; then
+            meson setup build -Dprofile=debug
+          fi
           meson compile deny -C build
 
       - name: Save Meson build cache
         uses: https://git.maxrdz.com/actions/cache/save@v5
         with:
           path: build
-          key: meson-cache-deny-${{ forgejo.ref_name }}
+          key: meson-cache-deny-${{ forgejo.ref_name }}-${{ env.MESON_VERSION }}
 
   build:
     runs-on: docker
@@ -123,15 +129,21 @@ jobs:
       - name: actions/checkout@v6
         uses: https://git.maxrdz.com/actions/checkout@v6
 
+      - name: Get Meson version
+        id: meson-version
+        run: echo "MESON_VERSION=$(meson --version)" >> ${{ forgejo.env }}
+
       - name: Restore Meson build cache
         uses: https://git.maxrdz.com/actions/cache/restore@v5
         with:
           path: build
-          key: meson-cache-build-${{ forgejo.ref_name }}
+          key: meson-cache-build-${{ forgejo.ref_name }}-${{ env.MESON_VERSION }}
 
       - name: Meson build
         run: |
-          meson setup build -Dprofile=debug
+          if [ ! -d build ]; then
+            meson setup build -Dprofile=debug
+          fi
           meson compile -C build
           meson compile linting -C build
 
@@ -139,7 +151,7 @@ jobs:
         uses: https://git.maxrdz.com/actions/cache/save@v5
         with:
           path: build
-          key: meson-cache-build-${{ forgejo.ref_name }}
+          key: meson-cache-build-${{ forgejo.ref_name }}-${{ env.MESON_VERSION }}
 
   testing:
     runs-on: docker
@@ -169,17 +181,21 @@ jobs:
       - name: actions/checkout@v6
         uses: https://git.maxrdz.com/actions/checkout@v6
 
+      - name: Get Meson version
+        id: meson-version
+        run: echo "MESON_VERSION=$(meson --version)" >> ${{ forgejo.env }}
+
       - name: Restore Meson build cache
         uses: https://git.maxrdz.com/actions/cache/restore@v5
         with:
           path: build
-          key: meson-cache-doc-${{ forgejo.ref_name }}
+          key: meson-cache-doc-${{ forgejo.ref_name }}-${{ env.MESON_VERSION }}
 
       - name: Restore Python venv cache
         uses: https://git.maxrdz.com/actions/cache/restore@v5
         with:
           path: venv
-          key: meson-cache-doc-venv-${{ forgejo.ref_name }}
+          key: venv-cache-doc-${{ forgejo.ref_name }}
 
       - name: Setup Python venv
         run: |
@@ -191,7 +207,9 @@ jobs:
 
       - name: Build Sphinx / cargo-doc documentation
         run: |
-          meson setup build -Dprofile=debug -Dci_branch=${{ forgejo.ref_name }}
+          if [ ! -d build ]; then
+            meson setup build -Dprofile=debug -Dci_branch=${{ forgejo.ref_name }}
+          fi
           meson compile sphinx -C build
           meson compile cargo-doc -C build
 
@@ -206,13 +224,13 @@ jobs:
         uses: https://git.maxrdz.com/actions/cache/save@v5
         with:
           path: build
-          key: meson-cache-doc-${{ forgejo.ref_name }}
+          key: meson-cache-doc-${{ forgejo.ref_name }}-${{ env.MESON_VERSION }}
 
       - name: Save Python venv cache
         uses: https://git.maxrdz.com/actions/cache/save@v5
         with:
           path: venv
-          key: meson-cache-doc-venv-${{ forgejo.ref_name }}
+          key: venv-cache-doc-${{ forgejo.ref_name }}
 
       - name: actions/upload-artifact@v3
         uses: https://git.maxrdz.com/actions/upload-artifact@v3
