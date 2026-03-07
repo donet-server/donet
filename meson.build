@@ -35,10 +35,10 @@ endif
 sphinx_version = '7.4'
 sphinx_release = 'master' # Full version tag (major.minor.patch)
 doc_versions = '[["master", "/master"]]' # Python nested list
-git_host = 'gitlab'
+git_host = 'forgejo'
 git_host_user = 'donet-server'
 git_host_repo = 'donet'
-git_url = 'https://gitlab.com/' + git_host_user + '/' + git_host_repo
+git_url = 'https://git.maxrdz.com/' + git_host_user + '/' + git_host_repo
 donet_website_url = 'https://www.donet-server.org'
 libdonet_website_url = 'https://docs.donet-server.org/donet_core'
 sphinx_website_url = 'https://docs.donet-server.org'
@@ -228,13 +228,14 @@ cargo_tarpaulin = custom_target(
 )
 
 # Runs cargo-tarpaulin to create code coverage JSON and XML files,
-# which is used by the GitLab CI/CD job to upload to codecov.io.
+# which is used by the Forgejo CI/CD job to upload to codecov.io.
 run_target(
   'code-coverage',
   env: cargo_env,
   command: [
     cargo_bin, 'tarpaulin',
     '--force-clean', '--all',
+    '--engine', 'llvm', # use LLVM instead of ptrace so we dont need to disable ASLR on CI/CD
     '--exclude-files', 'build/*',
     '--exclude-files', 'builddebug/*',
     '--out', 'xml',
