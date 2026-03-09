@@ -325,8 +325,8 @@ jobs:
           name: code-coverage
           path: tarpaulin
 
-      - name: Install GPG
-        run: apk add --no-cache curl gnupg
+      - name: Install utilities
+        run: apk add --no-cache curl gnupg git
 
       - name: Download Codecov binary
         run: curl -O ${CODECOV_CLI_UPSTREAM}
