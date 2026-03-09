@@ -85,17 +85,25 @@ jobs:
     steps:
       - name: actions/checkout@v6
         uses: https://git.maxrdz.com/actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Run rustfmt
         run: |
-          echo "" >> donet-daemon/src/meson.rs
-          rustc -Vv && cargo -Vv
-          cargo fmt --version
-          cargo fmt --all -- --color=always --check
+          if git diff --name-only ${{ github.event.before }} ${{ forgejo.sha }} | grep '\.rs$'; then
+            rustup component add rustfmt
+            echo "" >> donet-daemon/src/meson.rs
+            rustc -Vv && cargo -Vv
+            cargo fmt --version
+            cargo fmt --all -- --color=always --check
+          else
+            echo "Skipping; No rust files were changed."
+          fi
 
   build:
     runs-on: docker
     container: maxrdz1/forgejo-ci:3.8.26
+    if: "!contains(github.event.head_commit.message, '[skip build]')"
     needs: [cargo-fmt, typos]
     steps:
       - name: actions/checkout@v6
@@ -170,7 +178,6 @@ jobs:
   documentation:
     runs-on: docker
     container: maxrdz1/forgejo-ci:3.8.26
-    needs: build
     steps:
       - name: actions/checkout@v6
         uses: https://git.maxrdz.com/actions/checkout@v6
