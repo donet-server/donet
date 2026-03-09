@@ -262,7 +262,7 @@ jobs:
 
       - name: Clone pages repository
         run: |
-          ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git clone ${PAGES_REPOSITORY_REMOTE} repo
+          ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git clone ${PAGES_REPOSITORY_REMOTE} repo'
 
       - name: actions/download-artifact@v3 (Sphinx Documentation)
         uses: https://git.maxrdz.com/actions/download-artifact@v3
@@ -297,7 +297,7 @@ jobs:
           cd repo
           git add -A
           git commit -m "automated pages update from git.maxrdz.com CI/CD"
-          ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push origin main
+          ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push origin main'
 
   codecov-upload:
     runs-on: docker
