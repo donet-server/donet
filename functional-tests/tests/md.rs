@@ -42,6 +42,8 @@ static SERVICE_BIND_ADDR: &str = "127.0.0.1:57123";
 static NETWORK_PROCESS_TIME: u64 = 100; // milliseconds
 static TCP_READ_TIMEOUT: u64 = 100; // milliseconds
 static TCP_READ_BUFFER_SIZE: usize = 206; // bytes
+static MAX_RETRIES: u32 = 5;
+static RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(2);
 
 /// Perform an `assert_eq!` where we clean up the spawned
 /// Donet daemon process before actually panicking.
@@ -95,6 +97,30 @@ macro_rules! clean_panic {
             panic!($str, $($f),*);
         }
     }
+}
+
+/// Attempts to connect to the given address, retrying up to `max_retries` times.
+///
+fn retry_connect(addr: &str) -> Result<TcpStream, std::io::Error> {
+    let mut attempt: u32 = 0;
+    while attempt < MAX_RETRIES {
+        match TcpStream::connect(addr) {
+            Ok(sock) => return Ok(sock),
+            Err(err) => {
+                attempt += 1;
+                if attempt >= MAX_RETRIES {
+                    return Err(err);
+                }
+                println!("Failed to connect to MD; Retrying...");
+                std::thread::sleep(RETRY_DELAY);
+            }
+        }
+    }
+    // If all retries fail, return the last error
+    Err(std::io::Error::new(
+        std::io::ErrorKind::Other,
+        "Max retries reached, failed to connect to MD",
+    ))
 }
 
 /// Reads from a TCP stream without the risk of leaving the
@@ -168,7 +194,7 @@ fn md_functional_testing() -> std::io::Result<()> {
     sleep(Duration::from_millis(NETWORK_PROCESS_TIME));
 
     // setup our TCP socket to interact with the MD as a subscriber
-    let mut sock = match TcpStream::connect(SERVICE_BIND_ADDR) {
+    let mut sock = match retry_connect(SERVICE_BIND_ADDR) {
         Ok(sock) => sock,
         Err(err) => clean_panic!(&mut procs, "Could not connect to the message director.: {}", err),
     };
