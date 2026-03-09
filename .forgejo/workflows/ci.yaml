@@ -185,7 +185,9 @@ jobs:
 
       - name: Get Python version
         id: python-version
-        run: echo "PYTHON_VERSION=$(python3 --version | grep -Eo '.\..*\..*$')" >> $FORGEJO_ENV
+        run: |
+          echo "$(python3 --version)"
+          echo "PYTHON_VERSION=$(python3 --version | grep -Eo '.\..*\..*$')" >> $FORGEJO_ENV
 
       - name: Restore Python venv cache
         uses: https://git.maxrdz.com/actions/cache/restore@v5
@@ -204,6 +206,8 @@ jobs:
 
       - name: Build Sphinx documentation
         run: |
+          source venv/bin/activate
+
           if [ ! -d build ]; then
             meson setup build -Dprofile=debug -Dci_branch=${{ forgejo.ref_name }}
           fi
