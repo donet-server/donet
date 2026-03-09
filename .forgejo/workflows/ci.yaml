@@ -10,6 +10,7 @@ env:
   PAGES_REPOSITORY_REMOTE: "git@gitlab.com:donet-server/docs.donet-server.org"
   TYPOS_UPSTREAM: "https://github.com/crate-ci/typos/releases/download/v1.44.0/typos-v1.44.0-x86_64-unknown-linux-musl.tar.gz"
   CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/alpine/codecov"
+  CODECOV_SLUG: "donet-server/donet"
 
 jobs:
   sync-mirrors:
@@ -319,17 +320,14 @@ jobs:
     if: forgejo.ref_name == 'master'
     continue-on-error: true
     steps:
-      - name: actions/checkout@v6
-        uses: https://git.maxrdz.com/actions/checkout@v6
-
       - name: actions/download-artifact@v3
         uses: https://git.maxrdz.com/actions/download-artifact@v3
         with:
           name: code-coverage
           path: tarpaulin
 
-      - name: Install utilities
-        run: apk add --no-cache curl gnupg git
+      - name: Install GPG
+        run: apk add --no-cache curl gnupg
 
       - name: Download Codecov binary
         run: curl -O ${CODECOV_CLI_UPSTREAM}
@@ -349,5 +347,4 @@ jobs:
 
       - name: Upload coverage files
         run: |
-          git remote set-url origin https://gitlab.com/donet-server/donet
-          ./codecov --disable-telem -v upload-process --dir tarpaulin --git-service gitlab -t ${{ secrets.CODECOV_TOKEN }}
+          ./codecov --disable-telem -v upload-process --dir tarpaulin --slug ${CODECOV_SLUG} --git-service gitlab -t ${{ secrets.CODECOV_TOKEN }}
