@@ -347,4 +347,4 @@ jobs:
 
       - name: Upload coverage files
         run: |
-          ./codecov --disable-telem -v upload-process --dir tarpaulin --slug ${CODECOV_SLUG} --git-service gitlab -t ${{ secrets.CODECOV_TOKEN }}
+          ./codecov --disable-telem -v upload-process --dir tarpaulin --slug ${CODECOV_SLUG} --git-service github -t ${{ secrets.CODECOV_TOKEN }}
