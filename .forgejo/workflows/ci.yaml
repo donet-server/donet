@@ -178,6 +178,7 @@ jobs:
   documentation:
     runs-on: docker
     container: maxrdz1/forgejo-ci:3.8.26
+    needs: build
     steps:
       - name: actions/checkout@v6
         uses: https://git.maxrdz.com/actions/checkout@v6
