@@ -46,6 +46,7 @@ jobs:
   commit-validation:
     runs-on: docker
     container: node:25-alpine
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[ci skip]')"
     needs: sync-mirrors
     steps:
       - name: actions/checkout@v6
@@ -60,6 +61,7 @@ jobs:
   typos:
     runs-on: docker
     container: node:25-alpine
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[ci skip]')"
     needs: sync-mirrors
     steps:
       - name: actions/checkout@v6
@@ -78,6 +80,7 @@ jobs:
   cargo-fmt:
     runs-on: docker
     container: maxrdz1/forgejo-ci:3.8.26
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[ci skip]')"
     needs: sync-mirrors
     steps:
       - name: actions/checkout@v6
