@@ -295,6 +295,8 @@ jobs:
       - name: Deploy pages
         run: |
           cd repo
+          git config --global user.email "forgejo@maxrdz.com"
+          git config --global user.name "git.maxrdz.com"
           git add -A
           git commit -m "automated pages update from git.maxrdz.com CI/CD"
           ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push origin main'
