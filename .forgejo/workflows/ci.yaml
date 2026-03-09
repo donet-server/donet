@@ -262,7 +262,7 @@ jobs:
 
       - name: Clone pages repository
         run: |
-          git clone ${PAGES_REPOSITORY_REMOTE}
+          ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git clone ${PAGES_REPOSITORY_REMOTE} repo
 
       - name: actions/download-artifact@v3 (Sphinx Documentation)
         uses: https://git.maxrdz.com/actions/download-artifact@v3
@@ -278,23 +278,26 @@ jobs:
 
       - name: Combine Sphinx/cargo-doc output
         run: |
+          cd repo
           echo "Deleting old files from public..."
           rm -rf public/*
           echo "Copying Sphinx files into public..."
-          cp -r sphinx_doc/* public
+          cp -r ../sphinx_doc/* public
           echo "Copying cargo-doc files into public..."
-          cp -r rust_doc/* public
+          cp -r ../rust_doc/* public
           cd public
           touch index.html
           echo "<meta http-equiv=\"refresh\" content=\"0; url=/${SPHINX_DEFAULT_DOC_VERSION}\">" > index.html
           cd ..
           chmod -R a=rwx public
+          cd ..
 
       - name: Deploy pages
         run: |
+          cd repo
           git add -A
           git commit -m "automated pages update from git.maxrdz.com CI/CD"
-          git push
+          ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push origin main
 
   codecov-upload:
     runs-on: docker
