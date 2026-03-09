@@ -238,6 +238,8 @@ run_target(
     '--engine', 'llvm', # use LLVM instead of ptrace so we dont need to disable ASLR on CI/CD
     '--exclude-files', 'build/*',
     '--exclude-files', 'builddebug/*',
+    '--exclude-files', 'buildwcp/*',
+    '--exclude-files', 'buildwcpdebug/*',
     '--out', 'xml',
     '--output-dir', meson.project_build_root() / 'target' / 'tarpaulin',
     cargo_opts
