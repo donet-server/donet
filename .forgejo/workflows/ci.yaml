@@ -319,6 +319,9 @@ jobs:
     if: forgejo.ref_name == 'master'
     continue-on-error: true
     steps:
+      - name: actions/checkout@v6
+        uses: https://git.maxrdz.com/actions/checkout@v6
+
       - name: actions/download-artifact@v3
         uses: https://git.maxrdz.com/actions/download-artifact@v3
         with:
