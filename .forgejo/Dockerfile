@@ -4,6 +4,7 @@ RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
     git \
     curl \
+    gpg \
     wget \
     tar \
     python3 \
