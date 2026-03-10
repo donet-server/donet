@@ -1,7 +1,7 @@
 ..
    This file is part of the Donet reference manual.
 
-   Copyright (c) 2024 Max Rodriguez.
+   Copyright (c) 2024, 2026 Max Rodriguez.
 
    Permission is granted to copy, distribute and/or modify this document
    under the terms of the GNU Free Documentation License, Version 1.3
@@ -24,9 +24,9 @@ from the Rust by Example book.
 Code Coverage
 -------------
 
-.. image:: https://codecov.io/gl/donet-server/donet/graph/badge.svg?token=XCESKI8ISS
+.. image:: https://codecov.io/gh/donet-server/donet/graph/badge.svg?token=4ZKHLFDGFU
     :alt: Codecov Dashboard for Donet
-    :target: https://codecov.io/gl/donet-server/donet
+    :target: https://codecov.io/gh/donet-server/donet
 
 The Donet project uses Codecov_ as its online dashboard for viewing
 unit test coverage statistics. The CI/CD pipeline generates the
@@ -36,7 +36,7 @@ repository to go to the dashboard for Donet.
 
 .. _Codecov: https://codecov.io
 
-.. figure:: https://codecov.io/gl/donet-server/donet/graphs/sunburst.svg?token=XCESKI8ISS
+.. figure:: https://codecov.io/gh/donet-server/donet/graphs/tree.svg?token=4ZKHLFDGFU
     :alt: Latest coverage graph
     :align: center
 
@@ -78,7 +78,7 @@ online dashboard after pushing a new commit.
 Donet uses Tarpaulin_ to generate code coverage reports. To build the
 coverage report locally, run the following run target using Meson:
 
-.. _codecov.io: https://codecov.io/gl/donet-server/donet
+.. _codecov.io: https://codecov.io/gh/donet-server/donet
 .. _Tarpaulin: https://github.com/xd009642/tarpaulin
 
 .. code-block:: shell
