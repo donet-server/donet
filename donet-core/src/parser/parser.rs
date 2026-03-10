@@ -1027,19 +1027,21 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn switch_redundant_break() {
-        parse_dcfile_string(
-            "
-            struct BuffData {
-                switch (uint16) {
-                    case 0:
-                        break;
-                        break;
+        let result = std::panic::catch_unwind(|| {
+            parse_dcfile_string(
+                "
+                struct BuffData {
+                    switch (uint16) {
+                        case 0:
+                            break;
+                            break;
+                    };
                 };
-            };
-            ",
-        );
+                ",
+            );
+        });
+        assert!(result.is_err());
     }
 
     #[test]
@@ -1130,15 +1132,17 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn invalid_numeric_ranges() {
-        parse_dcfile_string(
-            "
-            struct InvalidNumericRange {
-                uint64('a'-10);
-            };
-            ",
-        );
+        let result = std::panic::catch_unwind(|| {
+            parse_dcfile_string(
+                "
+                struct InvalidNumericRange {
+                    uint64('a'-10);
+                };
+                ",
+            );
+        });
+        assert!(result.is_err());
     }
 
     #[test]
@@ -1192,15 +1196,17 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn integer_literal_overflow() {
-        parse_dcfile_string(
-            "
-            struct OverflowTest {
-                test(uint8[] = [0 * 4294967296]);
-            };
-            ",
-        );
+        let result = std::panic::catch_unwind(|| {
+            parse_dcfile_string(
+                "
+                struct OverflowTest {
+                    test(uint8[] = [0 * 4294967296]);
+                };
+                ",
+            );
+        });
+        assert!(result.is_err());
     }
 
     #[test]
@@ -1217,29 +1223,31 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn dclass_fields_in_struct() {
-        // Make sure that a struct production should not accept
-        // atomic or molecular field productions in its grammar.
-        parse_dcfile_string(
-            "
-            struct MolecularInStruct {
-                float32 x;
-                float32 y;
-                float32 z;
-                setXyz : x, y, z;
-            };
-            ",
-        );
-        parse_dcfile_string(
-            "
-            struct AtomicInStruct {
-                float32 x;
-                float32 y;
-                float32 z;
-                setH(uint32 heading);
-            };
-            ",
-        );
+        let result = std::panic::catch_unwind(|| {
+            // Make sure that a struct production should not accept
+            // atomic or molecular field productions in its grammar.
+            parse_dcfile_string(
+                "
+                struct MolecularInStruct {
+                    float32 x;
+                    float32 y;
+                    float32 z;
+                    setXyz : x, y, z;
+                };
+                ",
+            );
+            parse_dcfile_string(
+                "
+                struct AtomicInStruct {
+                    float32 x;
+                    float32 y;
+                    float32 z;
+                    setH(uint32 heading);
+                };
+                ",
+            );
+        });
+        assert!(result.is_err());
     }
 }
