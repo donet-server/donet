@@ -340,7 +340,7 @@ jobs:
 
           curl -O ${CODECOV_CLI_UPSTREAM}.SHA256SUM
           curl -O ${CODECOV_CLI_UPSTREAM}.SHA256SUM.sig
-          gpg --verify codecov.SHA256SUM.sig codecov.SHA256SUM
+          gpg --no-default-keyring --keyring trustedkeys.gpg --verify codecov.SHA256SUM.sig codecov.SHA256SUM
 
           sha256sum -c codecov.SHA256SUM
           rm codecov.SHA256SUM
