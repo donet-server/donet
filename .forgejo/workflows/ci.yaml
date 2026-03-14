@@ -8,13 +8,14 @@ on:
 env:
   SPHINX_DEFAULT_DOC_VERSION: "master"
   PAGES_REPOSITORY_REMOTE: "git@gitlab.com:donet-server/docs.donet-server.org"
-  TYPOS_UPSTREAM: "https://github.com/crate-ci/typos/releases/download/v1.44.0/typos-v1.44.0-x86_64-unknown-linux-musl.tar.gz"
-  CODECOV_CLI_UPSTREAM: "https://cli.codecov.io/latest/linux/codecov"
+  TYPOS_UPSTREAM: "https://github.com/crate-ci/typos/releases/download/v1.44.0/typos-v1.44.0-aarch64-unknown-linux-musl.tar.gz"
+  CODECOV_CLI_UPSTREAM: "https://github.com/getsentry/prevent-cli/releases/download/v11.2.6/codecovcli_linux_arm64"
+  CODECOV_CLI_BIN_SHA256: "ae5e862d2ac5ff2590e1402c0ac64da0f4025cc05fd50c360e2c3d83dec31c6f  codecovcli_linux_arm64"
   CODECOV_SLUG: "donet-server/donet"
 
 jobs:
   sync-mirrors:
-    runs-on: docker
+    runs-on: aarch64
     container: node:25-alpine
     if: forgejo.ref_name == 'master'
     continue-on-error: true
@@ -45,7 +46,7 @@ jobs:
           ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push --all git@gitlab.com:donet-server/donet'
 
   commit-validation:
-    runs-on: docker
+    runs-on: aarch64
     container: node:25-alpine
     if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[ci skip]')"
     needs: sync-mirrors
@@ -60,7 +61,7 @@ jobs:
         run: python build-aux/validate-commit.py "${{ github.event.head_commit.message || github.event.commits[0].message }}"
 
   typos:
-    runs-on: docker
+    runs-on: aarch64
     container: node:25-alpine
     if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[ci skip]')"
     needs: sync-mirrors
@@ -79,7 +80,7 @@ jobs:
         run: ./.tmp/typos
 
   cargo-fmt:
-    runs-on: docker
+    runs-on: aarch64
     container: maxrdz1/forgejo-ci:3.9.26
     if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[ci skip]')"
     needs: sync-mirrors
@@ -102,7 +103,7 @@ jobs:
           fi
 
   build:
-    runs-on: docker
+    runs-on: aarch64
     container: maxrdz1/forgejo-ci:3.9.26
     if: "!contains(github.event.head_commit.message, '[skip build]')"
     needs: [cargo-fmt, typos]
@@ -178,7 +179,7 @@ jobs:
           key: meson-${{ env.MESON_VERSION }}-cache-build-${{ forgejo.ref_name }}
 
   documentation:
-    runs-on: docker
+    runs-on: aarch64
     container: maxrdz1/forgejo-ci:3.9.26
     needs: build
     steps:
@@ -252,7 +253,7 @@ jobs:
           retention-days: 7
 
   pages-deploy:
-    runs-on: docker
+    runs-on: aarch64
     container: node:25-alpine
     needs: documentation
     if: forgejo.ref_name == 'master'
@@ -315,7 +316,7 @@ jobs:
           ssh-agent sh -c 'ssh-add ~/.ssh/privatekey; git push origin main'
 
   codecov-upload:
-    runs-on: docker
+    runs-on: aarch64
     container: maxrdz1/forgejo-ci:3.9.26
     needs: build
     if: forgejo.ref_name == 'master'
@@ -331,20 +332,16 @@ jobs:
           path: tarpaulin
 
       - name: Download Codecov binary
-        run: curl -O ${CODECOV_CLI_UPSTREAM}
+        run: |
+          wget ${CODECOV_CLI_UPSTREAM}
 
       - name: Verify download
         run: |
-          curl https://keybase.io/codecovsecurity/pgp_keys.asc | gpg --no-default-keyring --keyring trustedkeys.gpg --import
-          gpg --keyring trustedkeys.gpg --list-keys
-
-          curl -O ${CODECOV_CLI_UPSTREAM}.SHA256SUM
-          curl -O ${CODECOV_CLI_UPSTREAM}.SHA256SUM.sig
-          gpg --no-default-keyring --keyring trustedkeys.gpg --verify codecov.SHA256SUM.sig codecov.SHA256SUM
-
-          sha256sum -c codecov.SHA256SUM
-          rm codecov.SHA256SUM
-          rm codecov.SHA256SUM.sig
+          touch codecovcli_linux_arm64.SHA256SUM
+          echo "${CODECOV_CLI_BIN_SHA256}" > codecovcli_linux_arm64.SHA256SUM
+          sha256sum -c codecovcli_linux_arm64.SHA256SUM
+          rm codecovcli_linux_arm64.SHA256SUM
+          mv codecovcli_linux_arm64 codecov
           chmod +x codecov
           echo "Codecov universal uploader binary version is $(codecov --version)"
 
